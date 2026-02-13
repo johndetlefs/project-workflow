@@ -36,7 +36,7 @@ uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
 This creates:
 
 - `.project-workflow/` — Task folders, tracker, and local CLI
-- `.github/prompts/` — Five agent definition files used by Copilot custom chat modes
+- `.github/prompts/` — Six agent definition files used by Copilot custom chat modes
 - `.project-workflow/TRACKER.md` — Centralized task status tracking
 
 The setup is **idempotent**—safe to run again if you customized files; it asks before overwriting.
@@ -46,6 +46,14 @@ The setup is **idempotent**—safe to run again if you customized files; it asks
 ## How to Use (The Typical Workflow)
 
 You'll work in a cycle with Copilot. Here's the pattern for building a new feature:
+
+### 0. **Set Project Outcomes** (recommended once per repo)
+
+In **Copilot chat**, run `/project.constitution` with a brief description of your project.
+
+This agent scans your repo and creates/updates `.project-workflow/CONSTITUTION.md` as the source of truth for product outcomes (non-technical).
+
+If `.github/copilot-instructions.md` is missing, it will offer to create one for technical guidance.
 
 ### 1. **Create a Task** (5 min)
 
@@ -143,6 +151,7 @@ You review changes, iterate, and validate. Copilot keeps everything in sync.
 your-project/
 ├── .project-workflow/
 │   ├── TRACKER.md                    # ← Check this to see project status
+│   ├── CONSTITUTION.md               # ← Product outcomes (non-technical)
 │   ├── cli/
 │   │   ├── workflow                  # Advanced: manual task scaffolding
 │   │   └── workflow.py
@@ -154,6 +163,7 @@ your-project/
 │           └── ...
 ├── .github/
 │   └── prompts/                      # ← Agent definitions used by Copilot
+│       ├── Constitution.prompt.md    # /project.constitution
 │       ├── Scaffold.prompt.md        # /project.scaffold
 │       ├── Requirements.prompt.md    # /project.requirements
 │       ├── Clarify.prompt.md         # /project.clarify
@@ -170,7 +180,7 @@ your-project/
 
 The agents are designed to be used **in order**. Skipping steps = ambiguous code and rework.
 
-1. **Scaffold** → 2. **Requirements** → 3. **Planner** → 4. **Clarify** → 5. **Implement**
+1. **Constitution (once)** → 2. **Scaffold** → 3. **Requirements** → 4. **Planner** → 5. **Clarify** → 6. **Implement**
 
 Always run Clarify after Planner to verify internal consistency before implementation.
 
@@ -223,29 +233,33 @@ This keeps your history clean and lets teammates review requirements before codi
 $ uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
 ✅ Project workflow initialized
 
-# 2. In Copilot chat: /project.scaffold
-# 3. Answer: ID=APP-001, Title="Dark Mode Support", Branch=yes
-# 4. Copilot runs: ./.project-workflow/cli/workflow task init ...
-# 5. Commit: "scaffold: APP-001 Dark Mode Support"
+# 2. In Copilot chat: /project.constitution (once per repo)
+# 3. Provide a project brief; Copilot scans repo and updates CONSTITUTION.md
+# 4. Commit: "docs: establish project constitution"
 
-# 6. In Copilot chat: /project.requirements
-# 7. Answer discovery questions → Copilot updates REQUIREMENTS.md
-# 8. Commit: "requirements: APP-001 dark mode draft"
+# 5. In Copilot chat: /project.scaffold
+# 6. Answer: ID=APP-001, Title="Dark Mode Support", Branch=yes
+# 7. Copilot runs: ./.project-workflow/cli/workflow task init ...
+# 8. Commit: "scaffold: APP-001 Dark Mode Support"
 
-# 9. In Copilot chat: /project.planner
-# 10. Copilot generates implementation plan → Updates IMPLEMENTATION.md with task table
+# 9. In Copilot chat: /project.requirements
+# 10. Answer discovery questions → Copilot updates REQUIREMENTS.md
+# 11. Commit: "requirements: APP-001 dark mode draft"
 
-# 11. In Copilot chat: /project.clarify
-# 12. Resolve any conflicts/open questions between requirements and plan
-# 13. Repeat /project.clarify until consistent
-# 14. Commit: "plan+clarify: APP-001 dark mode aligned requirements and plan"
+# 12. In Copilot chat: /project.planner
+# 13. Copilot generates implementation plan → Updates IMPLEMENTATION.md with task table
 
-# 15. In Copilot chat: /project.implement
-# 16. Copilot implements Phase 1, runs tests, updates TRACKER
-# 17. You review changes, commit
-# 18. Repeat for Phase 2, 3, ... (each time running /project.implement with same task ID)
+# 14. In Copilot chat: /project.clarify
+# 15. Resolve any conflicts/open questions between requirements and plan
+# 16. Repeat /project.clarify until consistent
+# 17. Commit: "plan+clarify: APP-001 dark mode aligned requirements and plan"
 
-# 19. TRACKER shows APP-001 as Complete
+# 18. In Copilot chat: /project.implement
+# 19. Copilot implements Phase 1, runs tests, updates TRACKER
+# 20. You review changes, commit
+# 21. Repeat for Phase 2, 3, ... (each time running /project.implement with same task ID)
+
+# 22. TRACKER shows APP-001 as Complete
 ```
 
 ---
@@ -288,6 +302,7 @@ Everything is **plain text**—you can edit, version control, and code-review it
 
 - **Agents** (`/project.*`, defined in `.github/prompts/*.md`) — Structured workflow commands for Copilot chat
 - **Tracker** (`.project-workflow/TRACKER.md`) — Single source of truth for project status
+- **Constitution** (`.project-workflow/CONSTITUTION.md`) — Product outcome source of truth (non-technical)
 - **Task docs** (`.project-workflow/tasks/*/`) — REQUIREMENTS.md (goals) + IMPLEMENTATION.md (plan + user story)
 - **Local CLI** (`.project-workflow/cli/`) — Scaffolds new tasks, manages git branches (optional, can be automated via agents)
 

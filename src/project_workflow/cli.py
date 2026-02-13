@@ -253,6 +253,7 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     prompts_dir.mkdir(parents=True, exist_ok=True)
 
     prompt_files = [
+        "Constitution.prompt.md",
         "Clarify.prompt.md",
         "Implement.prompt.md",
         "Planner.prompt.md",
