@@ -14,6 +14,13 @@ from pathlib import Path
 from typing import Optional
 
 
+AGENT_CHOICES = {
+    "github-copilot": "GitHub Copilot",
+    "claude-code": "Claude Code",
+    "cursor": "Cursor",
+}
+
+
 def _words(value: str) -> list[str]:
     return [w for w in re.split(r"[^A-Za-z0-9]+", value.strip()) if w]
 
@@ -174,6 +181,24 @@ def _tracker_template() -> str:
     )
 
 
+def _normalize_agent(value: str) -> str:
+    normalized = value.strip().lower().replace("_", "-")
+    aliases = {
+        "copilot": "github-copilot",
+        "github": "github-copilot",
+        "github-copilot": "github-copilot",
+        "claude": "claude-code",
+        "claude-code": "claude-code",
+        "cursor": "cursor",
+    }
+    if normalized not in aliases:
+        allowed = ", ".join(sorted(AGENT_CHOICES))
+        raise argparse.ArgumentTypeError(
+            f"Unsupported agent '{value}'. Choose one of: {allowed}."
+        )
+    return aliases[normalized]
+
+
 def _update_tracker(tracker_path: Path, *, spec: TaskSpec, status: str, docs_rel_path: str) -> None:
     tracker = tracker_path.read_text(encoding="utf-8")
 
@@ -214,6 +239,10 @@ def _update_tracker(tracker_path: Path, *, spec: TaskSpec, status: str, docs_rel
 def cmd_project_init(args: argparse.Namespace) -> None:
     """Bootstrap project-workflow in the current directory."""
     cwd = Path.cwd()
+    selected_agent = args.agent
+    selected_agent_label = AGENT_CHOICES[selected_agent]
+
+    print(f"Selected agent mode: {selected_agent_label} ({selected_agent})")
 
     # Create .project-workflow structure
     project_workflow_dir = cwd / ".project-workflow"
@@ -268,6 +297,7 @@ def cmd_project_init(args: argparse.Namespace) -> None:
         print(f"✓ Created/updated: {prompt_path}")
 
     print(f"\n✅ Project workflow initialized in {cwd}")
+    print(f"   Agent mode applied: {selected_agent_label}")
     print(f"\nNext steps:")
     print(f"  • Review: .project-workflow/TRACKER.md")
     print(f"  • Customize: .github/prompts/* files")
@@ -341,7 +371,7 @@ def cmd_task_init(args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="project",
-        description="Project workflow: Spec-driven development with GitHub Copilot.",
+        description="Project workflow: Spec-driven development for GitHub Copilot, Claude Code, and Cursor.",
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -350,6 +380,16 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser = subparsers.add_parser(
         "init",
         help="Bootstrap project-workflow in current directory (idempotent)",
+    )
+    init_parser.add_argument(
+        "--agent",
+        type=_normalize_agent,
+        default="github-copilot",
+        metavar="AGENT",
+        help=(
+            "Target agent ecosystem: github-copilot (default), claude-code, or cursor. "
+            "Aliases accepted: copilot, claude, cursor."
+        ),
     )
     init_parser.set_defaults(func=cmd_project_init)
 
