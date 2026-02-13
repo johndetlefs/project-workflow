@@ -229,8 +229,27 @@ def _prompt_filename_to_claude_agent_name(prompt_file: str) -> str:
     return f"project-{slug_kebab_lower(base_name)}"
 
 
+def _prompt_filename_to_cursor_agent_name(prompt_file: str) -> str:
+    base_name = prompt_file.replace(".prompt.md", "")
+    return f"project-{slug_kebab_lower(base_name)}"
+
+
 def _to_claude_agent_markdown(prompt_content: str, agent_name: str) -> str:
     """Convert packaged prompt markdown into Claude subagent markdown format."""
+    frontmatter, body = _split_frontmatter(prompt_content)
+    description = _extract_frontmatter_value(frontmatter, "description") or agent_name
+    escaped_description = description.replace('"', r'\"')
+    return (
+        "---\n"
+        f"name: {agent_name}\n"
+        f"description: \"{escaped_description}\"\n"
+        "---\n\n"
+        f"{body.lstrip()}"
+    )
+
+
+def _to_cursor_agent_markdown(prompt_content: str, agent_name: str) -> str:
+    """Convert packaged prompt markdown into Cursor subagent markdown format."""
     frontmatter, body = _split_frontmatter(prompt_content)
     description = _extract_frontmatter_value(frontmatter, "description") or agent_name
     escaped_description = description.replace('"', r'\"')
@@ -336,6 +355,20 @@ def cmd_project_init(args: argparse.Namespace) -> None:
             print(f"✓ Created/updated: {agent_path}")
 
         customize_path_hint = ".claude/agents/* files"
+    elif selected_agent == "cursor":
+        # Create canonical Cursor project subagent layout at .cursor/agents/*.md
+        cursor_agents_dir = cwd / ".cursor" / "agents"
+        cursor_agents_dir.mkdir(parents=True, exist_ok=True)
+
+        for prompt_file in PROMPT_FILES:
+            prompt_content = _get_package_resource(f"prompts/{prompt_file}")
+            agent_name = _prompt_filename_to_cursor_agent_name(prompt_file)
+            agent_path = cursor_agents_dir / f"{agent_name}.md"
+            agent_content = _to_cursor_agent_markdown(prompt_content, agent_name)
+            _ensure_file(agent_path, agent_content, allow_conflicts=True)
+            print(f"✓ Created/updated: {agent_path}")
+
+        customize_path_hint = ".cursor/agents/* files"
     else:
         # Keep existing GitHub Copilot scaffold contract for default mode.
         github_dir = cwd / ".github"
