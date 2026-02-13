@@ -14,6 +14,22 @@ from pathlib import Path
 from typing import Optional
 
 
+AGENT_CHOICES = {
+    "github-copilot": "GitHub Copilot",
+    "claude-code": "Claude Code",
+    "cursor": "Cursor",
+}
+
+PROMPT_FILES = [
+    "Constitution.prompt.md",
+    "Clarify.prompt.md",
+    "Implement.prompt.md",
+    "Planner.prompt.md",
+    "Requirements.prompt.md",
+    "Scaffold.prompt.md",
+]
+
+
 def _words(value: str) -> list[str]:
     return [w for w in re.split(r"[^A-Za-z0-9]+", value.strip()) if w]
 
@@ -174,6 +190,78 @@ def _tracker_template() -> str:
     )
 
 
+def _normalize_agent(value: str) -> str:
+    normalized = value.strip().lower().replace("_", "-")
+    aliases = {
+        "copilot": "github-copilot",
+        "github": "github-copilot",
+        "github-copilot": "github-copilot",
+        "claude": "claude-code",
+        "claude-code": "claude-code",
+        "cursor": "cursor",
+    }
+    if normalized not in aliases:
+        allowed = ", ".join(sorted(AGENT_CHOICES))
+        raise argparse.ArgumentTypeError(
+            f"Unsupported agent '{value}'. Choose one of: {allowed}."
+        )
+    return aliases[normalized]
+
+
+def _split_frontmatter(content: str) -> tuple[str, str]:
+    """Return (frontmatter, body) from markdown content with YAML frontmatter."""
+    match = re.match(r"^---\n(.*?)\n---\n(.*)$", content, flags=re.DOTALL)
+    if not match:
+        return "", content
+    return match.group(1), match.group(2)
+
+
+def _extract_frontmatter_value(frontmatter: str, key: str) -> Optional[str]:
+    pattern = rf"^{re.escape(key)}:\s*(.+)$"
+    match = re.search(pattern, frontmatter, flags=re.MULTILINE)
+    if not match:
+        return None
+    return match.group(1).strip().strip('"').strip("'")
+
+
+def _prompt_filename_to_claude_agent_name(prompt_file: str) -> str:
+    base_name = prompt_file.replace(".prompt.md", "")
+    return f"project-{slug_kebab_lower(base_name)}"
+
+
+def _prompt_filename_to_cursor_agent_name(prompt_file: str) -> str:
+    base_name = prompt_file.replace(".prompt.md", "")
+    return f"project-{slug_kebab_lower(base_name)}"
+
+
+def _to_claude_agent_markdown(prompt_content: str, agent_name: str) -> str:
+    """Convert packaged prompt markdown into Claude subagent markdown format."""
+    frontmatter, body = _split_frontmatter(prompt_content)
+    description = _extract_frontmatter_value(frontmatter, "description") or agent_name
+    escaped_description = description.replace('"', r'\"')
+    return (
+        "---\n"
+        f"name: {agent_name}\n"
+        f"description: \"{escaped_description}\"\n"
+        "---\n\n"
+        f"{body.lstrip()}"
+    )
+
+
+def _to_cursor_agent_markdown(prompt_content: str, agent_name: str) -> str:
+    """Convert packaged prompt markdown into Cursor subagent markdown format."""
+    frontmatter, body = _split_frontmatter(prompt_content)
+    description = _extract_frontmatter_value(frontmatter, "description") or agent_name
+    escaped_description = description.replace('"', r'\"')
+    return (
+        "---\n"
+        f"name: {agent_name}\n"
+        f"description: \"{escaped_description}\"\n"
+        "---\n\n"
+        f"{body.lstrip()}"
+    )
+
+
 def _update_tracker(tracker_path: Path, *, spec: TaskSpec, status: str, docs_rel_path: str) -> None:
     tracker = tracker_path.read_text(encoding="utf-8")
 
@@ -214,6 +302,10 @@ def _update_tracker(tracker_path: Path, *, spec: TaskSpec, status: str, docs_rel
 def cmd_project_init(args: argparse.Namespace) -> None:
     """Bootstrap project-workflow in the current directory."""
     cwd = Path.cwd()
+    selected_agent = args.agent
+    selected_agent_label = AGENT_CHOICES[selected_agent]
+
+    print(f"Selected agent mode: {selected_agent_label} ({selected_agent})")
 
     # Create .project-workflow structure
     project_workflow_dir = cwd / ".project-workflow"
@@ -247,30 +339,53 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     workflow_sh_path.chmod(0o755)  # Make executable
     print(f"✓ Created/updated: {workflow_sh_path}")
 
-    # Create .github/prompts structure and copy prompts
-    github_dir = cwd / ".github"
-    prompts_dir = github_dir / "prompts"
-    prompts_dir.mkdir(parents=True, exist_ok=True)
+    customize_path_hint = ".github/prompts/* files"
 
-    prompt_files = [
-        "Constitution.prompt.md",
-        "Clarify.prompt.md",
-        "Implement.prompt.md",
-        "Planner.prompt.md",
-        "Requirements.prompt.md",
-        "Scaffold.prompt.md",
-    ]
+    if selected_agent == "claude-code":
+        # Create canonical Claude project subagent layout at .claude/agents/*.md
+        claude_agents_dir = cwd / ".claude" / "agents"
+        claude_agents_dir.mkdir(parents=True, exist_ok=True)
 
-    for prompt_file in prompt_files:
-        prompt_path = prompts_dir / prompt_file
-        prompt_content = _get_package_resource(f"prompts/{prompt_file}")
-        _ensure_file(prompt_path, prompt_content, allow_conflicts=True)
-        print(f"✓ Created/updated: {prompt_path}")
+        for prompt_file in PROMPT_FILES:
+            prompt_content = _get_package_resource(f"prompts/{prompt_file}")
+            agent_name = _prompt_filename_to_claude_agent_name(prompt_file)
+            agent_path = claude_agents_dir / f"{agent_name}.md"
+            agent_content = _to_claude_agent_markdown(prompt_content, agent_name)
+            _ensure_file(agent_path, agent_content, allow_conflicts=True)
+            print(f"✓ Created/updated: {agent_path}")
+
+        customize_path_hint = ".claude/agents/* files"
+    elif selected_agent == "cursor":
+        # Create canonical Cursor project subagent layout at .cursor/agents/*.md
+        cursor_agents_dir = cwd / ".cursor" / "agents"
+        cursor_agents_dir.mkdir(parents=True, exist_ok=True)
+
+        for prompt_file in PROMPT_FILES:
+            prompt_content = _get_package_resource(f"prompts/{prompt_file}")
+            agent_name = _prompt_filename_to_cursor_agent_name(prompt_file)
+            agent_path = cursor_agents_dir / f"{agent_name}.md"
+            agent_content = _to_cursor_agent_markdown(prompt_content, agent_name)
+            _ensure_file(agent_path, agent_content, allow_conflicts=True)
+            print(f"✓ Created/updated: {agent_path}")
+
+        customize_path_hint = ".cursor/agents/* files"
+    else:
+        # Keep existing GitHub Copilot scaffold contract for default mode.
+        github_dir = cwd / ".github"
+        prompts_dir = github_dir / "prompts"
+        prompts_dir.mkdir(parents=True, exist_ok=True)
+
+        for prompt_file in PROMPT_FILES:
+            prompt_path = prompts_dir / prompt_file
+            prompt_content = _get_package_resource(f"prompts/{prompt_file}")
+            _ensure_file(prompt_path, prompt_content, allow_conflicts=True)
+            print(f"✓ Created/updated: {prompt_path}")
 
     print(f"\n✅ Project workflow initialized in {cwd}")
+    print(f"   Agent mode applied: {selected_agent_label}")
     print(f"\nNext steps:")
     print(f"  • Review: .project-workflow/TRACKER.md")
-    print(f"  • Customize: .github/prompts/* files")
+    print(f"  • Customize: {customize_path_hint}")
     print(f"  • Create tasks: ./.project-workflow/cli/workflow task init --help")
 
 
@@ -341,7 +456,7 @@ def cmd_task_init(args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="project",
-        description="Project workflow: Spec-driven development with GitHub Copilot.",
+        description="Project workflow: Spec-driven development for GitHub Copilot, Claude Code, and Cursor.",
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -350,6 +465,16 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser = subparsers.add_parser(
         "init",
         help="Bootstrap project-workflow in current directory (idempotent)",
+    )
+    init_parser.add_argument(
+        "--agent",
+        type=_normalize_agent,
+        default="github-copilot",
+        metavar="AGENT",
+        help=(
+            "Target agent ecosystem: github-copilot (default), claude-code, or cursor. "
+            "Aliases accepted: copilot, claude, cursor."
+        ),
     )
     init_parser.set_defaults(func=cmd_project_init)
 
