@@ -67,29 +67,29 @@ List requirements as outcomes/expectations, not implementation details.
 ## Decisions Log
 
 - Decision:
-	- Context: Agent choices required for initialization.
-	- Options considered: GitHub Copilot only vs Copilot + Claude Code + Cursor.
-	- Chosen: Support all three, with GitHub Copilot as default.
-	- Why: Matches requested user outcome while preserving existing default behavior.
+  - Context: Agent choices required for initialization.
+  - Options considered: GitHub Copilot only vs Copilot + Claude Code + Cursor.
+  - Chosen: Support all three, with GitHub Copilot as default.
+  - Why: Matches requested user outcome while preserving existing default behavior.
 
 - Decision:
-	- Context: Canonical structure definitions for non-Copilot agents.
-	- Options considered: Define custom internal structure vs align to official agent docs.
-	- Chosen: Use official structures from https://code.claude.com/docs/en/sub-agents and https://cursor.com/docs/context/subagents.
-	- Why: Reduces ambiguity and ensures compatibility with each agent ecosystem.
+  - Context: Canonical structure definitions for non-Copilot agents.
+  - Options considered: Define custom internal structure vs align to official agent docs.
+  - Chosen: Use official structures from https://code.claude.com/docs/en/sub-agents and https://cursor.com/docs/context/subagents.
+  - Why: Reduces ambiguity and ensures compatibility with each agent ecosystem.
 
 - Decision:
-	- Context: Behavior when a repo already initialized for one agent is initialized again for another.
-	- Options considered: Keep both layouts vs migrate/replace vs fail with instructions.
-	- Chosen: Keep both layouts.
-	- Why: Matches requested behavior and avoids destructive migration.
+  - Context: Behavior when a repo already initialized for one agent is initialized again for another.
+  - Options considered: Keep both layouts vs migrate/replace vs fail with instructions.
+  - Chosen: Keep both layouts.
+  - Why: Matches requested behavior and avoids destructive migration.
 
 ## Validation Plan (User-Facing)
 
 - How the user will verify “done”:
-	- Run `project init` without agent selection and confirm Copilot-compatible scaffold is created.
-	- Run initialization in fresh test repos for Claude Code and Cursor modes and confirm expected paths/filenames exist.
-	- In an already-initialized repo, run initialization with a second agent mode and confirm existing layout is preserved while new layout is added.
-	- Re-run initialization for each mode and confirm no duplicate artifacts are produced.
-	- Modify a scaffolded file and re-run initialization to confirm conflict behavior still protects local edits.
+  - Run `project init` without agent selection and confirm Copilot-compatible scaffold is created.
+  - Run initialization in fresh test repos for Claude Code and Cursor modes and confirm expected paths/filenames exist.
+  - In an already-initialized repo, run initialization with a second agent mode and confirm existing layout is preserved while new layout is added.
+  - Re-run initialization for each mode and confirm no duplicate artifacts are produced.
+  - Modify a scaffolded file and re-run initialization to confirm conflict behavior still protects local edits.
 - Rollout notes (if any): Start with Copilot-default parity checks, then validate Claude/Cursor layouts in isolated temp repos before release.
