@@ -1,18 +1,25 @@
 # project-workflow
 
-Spec-driven development with GitHub Copilot.
+Spec-driven development with GitHub Copilot, Claude Code, and Cursor.
 
-A lightweight workflow framework for using **GitHub Copilot chat** to guide feature development from requirements through implementation. Works entirely in Markdown—no complex tools or dashboards.
+A lightweight workflow framework for guiding feature development from requirements through implementation. Works entirely in Markdown—no complex tools or dashboards.
 
 ## For the Impatient
 
-If your project is already a git repo and you have GitHub Copilot in VSCode:
+If your project is already a git repo:
 
 ```bash
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
 ```
 
-Then in VSCode, use the workflow agents in Copilot chat (via `/` commands) to build features spec-first.
+Or select an explicit agent mode:
+
+```bash
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent claude-code
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor
+```
+
+Then use your selected agent ecosystem to run the project workflow prompts/subagents.
 
 ---
 
@@ -22,7 +29,10 @@ Then in VSCode, use the workflow agents in Copilot chat (via `/` commands) to bu
 
 - Git repo initialized
 - Python 3.10+
-- GitHub Copilot extension in VSCode (or access via github.com/copilot)
+- One supported agent environment:
+  - GitHub Copilot (VSCode / github.com/copilot)
+  - Claude Code
+  - Cursor
 - UV or Python with pip
 
 ### One-Time Setup
@@ -33,13 +43,36 @@ From your project root:
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
 ```
 
+Optional: select agent mode explicitly:
+
+```bash
+project init --agent github-copilot   # default
+project init --agent claude-code
+project init --agent cursor
+```
+
 This creates:
 
 - `.project-workflow/` — Task folders, tracker, and local CLI
-- `.github/prompts/` — Six agent definition files used by Copilot custom chat modes
+- Agent definitions in one mode-specific location:
+  - `.github/prompts/` for GitHub Copilot
+  - `.claude/agents/` for Claude Code
+  - `.cursor/agents/` for Cursor
 - `.project-workflow/TRACKER.md` — Centralized task status tracking
 
-The setup is **idempotent**—safe to run again if you customized files; it asks before overwriting.
+Re-running is **idempotent** and safe. If local scaffold files were modified, init preserves conflict prompts instead of silently overwriting. Running init in a different mode is additive and keeps existing layouts.
+
+---
+
+## Agent Modes
+
+`project init` supports three modes:
+
+- `github-copilot` (default)
+- `claude-code`
+- `cursor`
+
+Aliases are also accepted for convenience (`copilot`, `claude`, `cursor`).
 
 ---
 
@@ -147,6 +180,8 @@ You review changes, iterate, and validate. Copilot keeps everything in sync.
 
 ## File Structure (After Init)
 
+### GitHub Copilot mode (`project init` or `project init --agent github-copilot`)
+
 ```
 your-project/
 ├── .project-workflow/
@@ -172,6 +207,52 @@ your-project/
 └── [your code]
 ```
 
+### Claude Code mode (`project init --agent claude-code`)
+
+```
+your-project/
+├── .project-workflow/
+│   ├── TRACKER.md
+│   ├── CONSTITUTION.md
+│   ├── cli/
+│   │   ├── workflow
+│   │   └── workflow.py
+│   └── tasks/
+│       └── ...
+├── .claude/
+│   └── agents/
+│       ├── project-constitution.md
+│       ├── project-scaffold.md
+│       ├── project-requirements.md
+│       ├── project-clarify.md
+│       ├── project-planner.md
+│       └── project-implement.md
+└── [your code]
+```
+
+### Cursor mode (`project init --agent cursor`)
+
+```
+your-project/
+├── .project-workflow/
+│   ├── TRACKER.md
+│   ├── CONSTITUTION.md
+│   ├── cli/
+│   │   ├── workflow
+│   │   └── workflow.py
+│   └── tasks/
+│       └── ...
+├── .cursor/
+│   └── agents/
+│       ├── project-constitution.md
+│       ├── project-scaffold.md
+│       ├── project-requirements.md
+│       ├── project-clarify.md
+│       ├── project-planner.md
+│       └── project-implement.md
+└── [your code]
+```
+
 ---
 
 ## Tips for Best Results
@@ -186,7 +267,11 @@ Always run Clarify after Planner to verify internal consistency before implement
 
 ### 📝 Keep Agent Definitions in the Repo
 
-Commit `.github/prompts/` so the whole team uses the same agents. You can customize these files—Copilot uses your edited definitions.
+Commit your mode-specific agent definitions so the whole team uses the same workflow:
+
+- `.github/prompts/` (Copilot)
+- `.claude/agents/` (Claude Code)
+- `.cursor/agents/` (Cursor)
 
 ### 🔍 Review Generated Docs Before Coding
 
@@ -287,7 +372,7 @@ Everything is **plain text**—you can edit, version control, and code-review it
 → Prefer running `/project.requirements` again so the agent updates REQUIREMENTS.md, then run `/project.planner`, then `/project.clarify`, and only then continue with `/project.implement`. In a pinch, you can edit REQUIREMENTS.md manually first, but still run Planner + Clarify before implementation.
 
 **"My agents keep generating the same output"**  
-→ Review `.github/prompts/` files. You can edit those agent definitions directly; add repo-specific constraints, design patterns, and tooling notes.
+→ Review your mode-specific agent definitions (`.github/prompts/`, `.claude/agents/`, or `.cursor/agents/`). You can edit them directly; add repo-specific constraints, design patterns, and tooling notes.
 
 **"I want to scaffold a task without using Copilot"**  
 → Use the local CLI:
@@ -300,7 +385,10 @@ Everything is **plain text**—you can edit, version control, and code-review it
 
 ## Architecture (if you're curious)
 
-- **Agents** (`/project.*`, defined in `.github/prompts/*.md`) — Structured workflow commands for Copilot chat
+- **Agents** (mode-specific definitions)
+  - Copilot: `/project.*` via `.github/prompts/*.prompt.md`
+  - Claude Code: `.claude/agents/*.md`
+  - Cursor: `.cursor/agents/*.md`
 - **Tracker** (`.project-workflow/TRACKER.md`) — Single source of truth for project status
 - **Constitution** (`.project-workflow/CONSTITUTION.md`) — Product outcome source of truth (non-technical)
 - **Task docs** (`.project-workflow/tasks/*/`) — REQUIREMENTS.md (goals) + IMPLEMENTATION.md (plan + user story)
