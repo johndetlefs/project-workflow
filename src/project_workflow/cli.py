@@ -20,6 +20,15 @@ AGENT_CHOICES = {
     "cursor": "Cursor",
 }
 
+PROMPT_FILES = [
+    "Constitution.prompt.md",
+    "Clarify.prompt.md",
+    "Implement.prompt.md",
+    "Planner.prompt.md",
+    "Requirements.prompt.md",
+    "Scaffold.prompt.md",
+]
+
 
 def _words(value: str) -> list[str]:
     return [w for w in re.split(r"[^A-Za-z0-9]+", value.strip()) if w]
@@ -199,6 +208,41 @@ def _normalize_agent(value: str) -> str:
     return aliases[normalized]
 
 
+def _split_frontmatter(content: str) -> tuple[str, str]:
+    """Return (frontmatter, body) from markdown content with YAML frontmatter."""
+    match = re.match(r"^---\n(.*?)\n---\n(.*)$", content, flags=re.DOTALL)
+    if not match:
+        return "", content
+    return match.group(1), match.group(2)
+
+
+def _extract_frontmatter_value(frontmatter: str, key: str) -> Optional[str]:
+    pattern = rf"^{re.escape(key)}:\s*(.+)$"
+    match = re.search(pattern, frontmatter, flags=re.MULTILINE)
+    if not match:
+        return None
+    return match.group(1).strip().strip('"').strip("'")
+
+
+def _prompt_filename_to_claude_agent_name(prompt_file: str) -> str:
+    base_name = prompt_file.replace(".prompt.md", "")
+    return f"project-{slug_kebab_lower(base_name)}"
+
+
+def _to_claude_agent_markdown(prompt_content: str, agent_name: str) -> str:
+    """Convert packaged prompt markdown into Claude subagent markdown format."""
+    frontmatter, body = _split_frontmatter(prompt_content)
+    description = _extract_frontmatter_value(frontmatter, "description") or agent_name
+    escaped_description = description.replace('"', r'\"')
+    return (
+        "---\n"
+        f"name: {agent_name}\n"
+        f"description: \"{escaped_description}\"\n"
+        "---\n\n"
+        f"{body.lstrip()}"
+    )
+
+
 def _update_tracker(tracker_path: Path, *, spec: TaskSpec, status: str, docs_rel_path: str) -> None:
     tracker = tracker_path.read_text(encoding="utf-8")
 
@@ -276,31 +320,39 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     workflow_sh_path.chmod(0o755)  # Make executable
     print(f"✓ Created/updated: {workflow_sh_path}")
 
-    # Create .github/prompts structure and copy prompts
-    github_dir = cwd / ".github"
-    prompts_dir = github_dir / "prompts"
-    prompts_dir.mkdir(parents=True, exist_ok=True)
+    customize_path_hint = ".github/prompts/* files"
 
-    prompt_files = [
-        "Constitution.prompt.md",
-        "Clarify.prompt.md",
-        "Implement.prompt.md",
-        "Planner.prompt.md",
-        "Requirements.prompt.md",
-        "Scaffold.prompt.md",
-    ]
+    if selected_agent == "claude-code":
+        # Create canonical Claude project subagent layout at .claude/agents/*.md
+        claude_agents_dir = cwd / ".claude" / "agents"
+        claude_agents_dir.mkdir(parents=True, exist_ok=True)
 
-    for prompt_file in prompt_files:
-        prompt_path = prompts_dir / prompt_file
-        prompt_content = _get_package_resource(f"prompts/{prompt_file}")
-        _ensure_file(prompt_path, prompt_content, allow_conflicts=True)
-        print(f"✓ Created/updated: {prompt_path}")
+        for prompt_file in PROMPT_FILES:
+            prompt_content = _get_package_resource(f"prompts/{prompt_file}")
+            agent_name = _prompt_filename_to_claude_agent_name(prompt_file)
+            agent_path = claude_agents_dir / f"{agent_name}.md"
+            agent_content = _to_claude_agent_markdown(prompt_content, agent_name)
+            _ensure_file(agent_path, agent_content, allow_conflicts=True)
+            print(f"✓ Created/updated: {agent_path}")
+
+        customize_path_hint = ".claude/agents/* files"
+    else:
+        # Keep existing GitHub Copilot scaffold contract for default mode.
+        github_dir = cwd / ".github"
+        prompts_dir = github_dir / "prompts"
+        prompts_dir.mkdir(parents=True, exist_ok=True)
+
+        for prompt_file in PROMPT_FILES:
+            prompt_path = prompts_dir / prompt_file
+            prompt_content = _get_package_resource(f"prompts/{prompt_file}")
+            _ensure_file(prompt_path, prompt_content, allow_conflicts=True)
+            print(f"✓ Created/updated: {prompt_path}")
 
     print(f"\n✅ Project workflow initialized in {cwd}")
     print(f"   Agent mode applied: {selected_agent_label}")
     print(f"\nNext steps:")
     print(f"  • Review: .project-workflow/TRACKER.md")
-    print(f"  • Customize: .github/prompts/* files")
+    print(f"  • Customize: {customize_path_hint}")
     print(f"  • Create tasks: ./.project-workflow/cli/workflow task init --help")
 
 
