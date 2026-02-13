@@ -1,0 +1,2 @@
+[console_scripts]
+project = project_workflow.cli:main

@@ -1,2 +1,308 @@
 # project-workflow
-Spec based development with Github Copilot
+
+Spec-driven development with GitHub Copilot.
+
+A lightweight workflow framework for using **GitHub Copilot chat** to guide feature development from requirements through implementation. Works entirely in Markdown—no complex tools or dashboards.
+
+## For the Impatient
+
+If your project is already a git repo and you have GitHub Copilot in VSCode:
+
+```bash
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+```
+
+Then in VSCode, use the workflow agents in Copilot chat (via `/` commands) to build features spec-first.
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Git repo initialized
+- Python 3.10+
+- GitHub Copilot extension in VSCode (or access via github.com/copilot)
+- UV or Python with pip
+
+### One-Time Setup
+
+From your project root:
+
+```bash
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+```
+
+This creates:
+
+- `.project-workflow/` — Task folders, tracker, and local CLI
+- `.github/prompts/` — Five agent definition files used by Copilot custom chat modes
+- `.project-workflow/TRACKER.md` — Centralized task status tracking
+
+The setup is **idempotent**—safe to run again if you customized files; it asks before overwriting.
+
+---
+
+## How to Use (The Typical Workflow)
+
+You'll work in a cycle with Copilot. Here's the pattern for building a new feature:
+
+### 1. **Create a Task** (5 min)
+
+In **Copilot chat**, type `/project.scaffold` and answer the quick questions:
+
+```
+Task ID: APP-001
+Task title: User Account Export
+Create a git branch: yes
+```
+
+Copilot will generate a task folder under `.project-workflow/tasks/` and update your tracker. Commit this scaffold.
+
+### 2. **Write Requirements** (15–30 min)
+
+In **Copilot chat**, run `/project.requirements` and provide your task details:
+
+```
+Task: APP-001
+Goal: Allow users to export their account data as PDF
+Context: [any relevant links, design docs, constraints]
+```
+
+Copilot will:
+
+- Ask discovery questions ("What format? Who sees this?")
+- Draft a user story
+- List acceptance criteria
+- Flag ambiguities as open questions
+
+Answer each question iteratively. Copilot updates `.project-workflow/tasks/APP-001-*/REQUIREMENTS.md` as you go.
+
+**Stop when:** REQUIREMENTS.md is drafted (even if it has open questions).
+
+### 3. **Create a Plan** (15 min)
+
+In **Copilot chat**, run `/project.planner`:
+
+```
+Task: APP-001
+Plan focus: API + UI for account export
+```
+
+Copilot generates:
+
+- A phased approach (e.g., Phase 1: Backend API, Phase 2: UI)
+- Implementation task list
+- Validation steps for each phase
+
+It updates `.project-workflow/tasks/APP-001-*/IMPLEMENTATION.md` with a task table.
+
+**Output:** You now have a clear roadmap to code against.
+
+### 4. **Clarify for Internal Consistency** (10–20 min, always)
+
+After planning, run `/project.clarify` to make sure REQUIREMENTS.md and IMPLEMENTATION.md are internally consistent:
+
+```
+Task: APP-001
+Topic: Validate consistency between requirements and plan
+```
+
+Copilot will:
+
+- Surface conflicts or ambiguous decisions
+- Propose options (A/B/C)
+- Record chosen decisions in REQUIREMENTS.md
+- Keep IMPLEMENTATION.md aligned with confirmed decisions
+
+Run Clarify until there are no unresolved questions or conflicts.
+
+### 5. **Implement & Validate** (varies)
+
+For each work item in the task list, run `/project.implement`:
+
+```
+Task: APP-001
+Work item: 1
+```
+
+Copilot will:
+
+- Read your requirements and plan
+- Make code changes incrementally
+- Run validation (tests, type checks, manual verification)
+- Update `.project-workflow/TRACKER.md` with status (`In Progress` → `Testing` → `Complete`)
+
+You review changes, iterate, and validate. Copilot keeps everything in sync.
+
+---
+
+## File Structure (After Init)
+
+```
+your-project/
+├── .project-workflow/
+│   ├── TRACKER.md                    # ← Check this to see project status
+│   ├── cli/
+│   │   ├── workflow                  # Advanced: manual task scaffolding
+│   │   └── workflow.py
+│   └── tasks/
+│       ├── APP-001-User-Export/
+│       │   ├── IMPLEMENTATION.md      # ← User story + task list (auto-updated)
+│       │   └── REQUIREMENTS.md        # ← Goals, specs, decisions (auto-updated)
+│       └── APP-002-*/
+│           └── ...
+├── .github/
+│   └── prompts/                      # ← Agent definitions used by Copilot
+│       ├── Scaffold.prompt.md        # /project.scaffold
+│       ├── Requirements.prompt.md    # /project.requirements
+│       ├── Clarify.prompt.md         # /project.clarify
+│       ├── Planner.prompt.md         # /project.planner
+│       └── Implement.prompt.md       # /project.implement
+└── [your code]
+```
+
+---
+
+## Tips for Best Results
+
+### 📌 Structure Your Workflow
+
+The agents are designed to be used **in order**. Skipping steps = ambiguous code and rework.
+
+1. **Scaffold** → 2. **Requirements** → 3. **Planner** → 4. **Clarify** → 5. **Implement**
+
+Always run Clarify after Planner to verify internal consistency before implementation.
+
+### 📝 Keep Agent Definitions in the Repo
+
+Commit `.github/prompts/` so the whole team uses the same agents. You can customize these files—Copilot uses your edited definitions.
+
+### 🔍 Review Generated Docs Before Coding
+
+When `/project.requirements` or `/project.planner` finishes:
+
+- Read the generated REQUIREMENTS.md and IMPLEMENTATION.md
+- Edit directly if something is wrong
+- Copilot will respect your edits on next use
+
+### 🚀 One Feature = One Task ID
+
+Don't mix multiple features under one task. It makes the tracker useless.
+
+Good: `APP-001: User Account Export`  
+Bad: `APP-001: Export + Billing View + Email Notifications`
+
+### ⚡ Use the TRACKER as Your Source of Truth
+
+`.project-workflow/TRACKER.md` is visible to everyone. Use it to communicate status to your team.
+
+```markdown
+| ID      | Title                  | Status      | Docs                                              |
+| ------- | ---------------------- | ----------- | ------------------------------------------------- |
+| APP-001 | User Account Export    | Complete    | `tasks/APP-001-User-Export/IMPLEMENTATION.md`     |
+| APP-002 | Fix login timeout      | In Progress | `tasks/APP-002-Login-Timeout/IMPLEMENTATION.md`   |
+| APP-003 | Email retention policy | To Do       | `tasks/APP-003-Email-Retention/IMPLEMENTATION.md` |
+```
+
+### Commit Early, Commit Often
+
+After Scaffold → Commit  
+After Requirements → Commit  
+After Planner + Clarify alignment → Commit  
+After each work item → Commit
+
+This keeps your history clean and lets teammates review requirements before coding starts.
+
+---
+
+## Example: Start to Finish
+
+```bash
+# 1. Initialize
+$ uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+✅ Project workflow initialized
+
+# 2. In Copilot chat: /project.scaffold
+# 3. Answer: ID=APP-001, Title="Dark Mode Support", Branch=yes
+# 4. Copilot runs: ./.project-workflow/cli/workflow task init ...
+# 5. Commit: "scaffold: APP-001 Dark Mode Support"
+
+# 6. In Copilot chat: /project.requirements
+# 7. Answer discovery questions → Copilot updates REQUIREMENTS.md
+# 8. Commit: "requirements: APP-001 dark mode draft"
+
+# 9. In Copilot chat: /project.planner
+# 10. Copilot generates implementation plan → Updates IMPLEMENTATION.md with task table
+
+# 11. In Copilot chat: /project.clarify
+# 12. Resolve any conflicts/open questions between requirements and plan
+# 13. Repeat /project.clarify until consistent
+# 14. Commit: "plan+clarify: APP-001 dark mode aligned requirements and plan"
+
+# 15. In Copilot chat: /project.implement
+# 16. Copilot implements Phase 1, runs tests, updates TRACKER
+# 17. You review changes, commit
+# 18. Repeat for Phase 2, 3, ... (each time running /project.implement with same task ID)
+
+# 19. TRACKER shows APP-001 as Complete
+```
+
+---
+
+## What Happens Inside Copilot Chat?
+
+When you run an agent command (for example `/project.requirements`) and provide inputs (task ID, goal, etc.), Copilot:
+
+1. **Reads** your existing task files (REQUIREMENTS.md, IMPLEMENTATION.md)
+2. **Asks** clarifying questions (discovers gaps)
+3. **Generates** structured Markdown (requirements, plans, code)
+4. **Updates** your local files (you can review before accepting)
+5. **Syncs** TRACKER.md with status (To Do → In Progress → Testing → Complete)
+
+Everything is **plain text**—you can edit, version control, and code-review it like any other file.
+
+---
+
+## When Things Go Wrong
+
+**"Copilot's plan doesn't match my codebase"**  
+→ Edit REQUIREMENTS.md to clarify constraints, re-run `/project.planner`, then run `/project.clarify` to ensure consistency before implementation.
+
+**"I want to change the requirements mid-way"**  
+→ Prefer running `/project.requirements` again so the agent updates REQUIREMENTS.md, then run `/project.planner`, then `/project.clarify`, and only then continue with `/project.implement`. In a pinch, you can edit REQUIREMENTS.md manually first, but still run Planner + Clarify before implementation.
+
+**"My agents keep generating the same output"**  
+→ Review `.github/prompts/` files. You can edit those agent definitions directly; add repo-specific constraints, design patterns, and tooling notes.
+
+**"I want to scaffold a task without using Copilot"**  
+→ Use the local CLI:
+
+```bash
+./.project-workflow/cli/workflow task init --id APP-009 --title "Manual Task" --update-tracker
+```
+
+---
+
+## Architecture (if you're curious)
+
+- **Agents** (`/project.*`, defined in `.github/prompts/*.md`) — Structured workflow commands for Copilot chat
+- **Tracker** (`.project-workflow/TRACKER.md`) — Single source of truth for project status
+- **Task docs** (`.project-workflow/tasks/*/`) — REQUIREMENTS.md (goals) + IMPLEMENTATION.md (plan + user story)
+- **Local CLI** (`.project-workflow/cli/`) — Scaffolds new tasks, manages git branches (optional, can be automated via agents)
+
+No database, no external service, no vendor lock-in—just Markdown and git.
+
+---
+
+## License
+
+MIT
+
+---
+
+## Questions?
+
+- 💬 Check [GitHub Issues](https://github.com/johndetlefs/project-workflow/issues)
+- 🔧 Customize `.github/prompts/` to fit your team's needs
+- 📚 Read the [Local CLI docs](.project-workflow/cli/README.md) for advanced task scaffolding

@@ -1,0 +1,125 @@
+Metadata-Version: 2.4
+Name: project-workflow
+Version: 0.1.0
+Summary: Spec-driven development with GitHub Copilot: workflow scaffolding and task management CLI
+Author-email: John Detlefs <john@example.com>
+License: MIT
+Project-URL: Homepage, https://github.com/johndetlefs/project-workflow
+Project-URL: Repository, https://github.com/johndetlefs/project-workflow.git
+Project-URL: Issues, https://github.com/johndetlefs/project-workflow/issues
+Keywords: workflow,spec-driven,ai,github-copilot,task-management
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Dynamic: license-file
+
+# project-workflow
+
+Spec-driven development with GitHub Copilot.
+
+A lightweight, opinionated workflow framework for using AI agents to scaffold, clarify, plan, and implement features with built-in task tracking, requirements validation, and iterative prompts.
+
+## Quick Start
+
+Bootstrap the workflow in your project:
+
+```bash
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+```
+
+This command:
+- ✅ Creates `.project-workflow/` directory structure
+- ✅ Creates `.github/prompts/` with AI agent prompts (Clarify, Implement, Planner, Requirements, Scaffold)
+- ✅ Sets up `.project-workflow/TRACKER.md` for task management
+- ✅ Copies the local workflow CLI to `.project-workflow/cli/`
+- ✅ Idempotent—safe to run multiple times; detects conflicts and asks before overwriting
+
+## Workflow
+
+After bootstrapping, you have two layers:
+
+### 1. Bootstrap layer (uvx)
+
+```bash
+# First-time setup in a new project
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+```
+
+### 2. Local workflow layer (.project-workflow/cli)
+
+Once initialized, use the local workflow CLI to scaffold and manage tasks:
+
+```bash
+# Create a new task
+./.project-workflow/cli/workflow task init \
+  --id APP-001 \
+  --title "My Feature" \
+  --update-tracker
+
+# With optional git branch
+./.project-workflow/cli/workflow task init \
+  --id APP-001 \
+  --title "My Feature" \
+  --update-tracker \
+  --create-branch
+```
+
+## Prompts (in .github/prompts/)
+
+After running `project init`, use these AI agent prompts with GitHub Copilot:
+
+- **Requirements.prompt.md** — Discover and document what you're building
+- **Clarify.prompt.md** — Resolve ambiguities before planning
+- **Planner.prompt.md** — Turn requirements into a phased implementation plan
+- **Implement.prompt.md** — Execute changes with validation and tracker updates
+- **Scaffold.prompt.md** — Create task scaffolding (wrapper around the CLI)
+
+## Project Structure
+
+Once initialized:
+
+```
+your-repo/
+├── .project-workflow/
+│   ├── TRACKER.md               # Task status tracker
+│   ├── cli/
+│   │   ├── workflow             # Shell wrapper
+│   │   └── workflow.py          # Local CLI (task scaffolding)
+│   └── tasks/
+│       └── APP-001-My-Feature/
+│           ├── IMPLEMENTATION.md  # User story + task list
+│           └── REQUIREMENTS.md    # Goals, acceptance criteria, decisions
+└── .github/
+    └── prompts/                 # AI agent prompts (editable)
+        ├── Clarify.prompt.md
+        ├── Implement.prompt.md
+        ├── Planner.prompt.md
+        ├── Requirements.prompt.md
+        └── Scaffold.prompt.md
+```
+
+## Documentation
+
+- [Local workflow CLI README](.project-workflow/cli/README.md) — Task scaffolding and branch creation
+- [AI Prompt Guide](.github/prompts/) — How to use the spec-driven workflow with GitHub Copilot
+
+## Design Philosophy
+
+- **Spec-first**: Write requirements before code
+- **Iterative**: Clarify ambiguities before planning; refine requirements with AI
+- **Traceable**: All changes tied to task IDs in TRACKER.md
+- **Automation-friendly**: Structured markdown for AI agents to read and update
+- **No vendor lock-in**: Plain Markdown files, stdlib Python, git-native workflows
+
+## License
+
+MIT
