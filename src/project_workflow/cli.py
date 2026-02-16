@@ -23,6 +23,7 @@ AGENT_CHOICES = {
 PROMPT_FILES = [
     "Constitution.prompt.md",
     "Clarify.prompt.md",
+    "Delegate.prompt.md",
     "Implement.prompt.md",
     "Planner.prompt.md",
     "Requirements.prompt.md",
