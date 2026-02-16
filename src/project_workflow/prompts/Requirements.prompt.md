@@ -168,5 +168,8 @@ Guardrails:
 
 - The requirements must be internally consistent (no contradictions across sections).
 - Every item in `## Acceptance Criteria` must be verifiable in `## Validation Plan (User-Facing)`.
+- In `## Validation Plan (User-Facing)`, include an explicit AC-by-AC mapping (`AC -> verification step`).
+- If this story includes delegated execution (`project.delegate`), ensure requirements, acceptance criteria, and decisions explicitly cover: execution modes, default `sequential` behavior, dependency-map input + strict validation (unknown IDs, self-dependencies, cycles), default parallel worker limit (`4`), fail-fast semantics (stop new launches, allow in-flight completion), and final status reporting (including halted items).
+- If delegated-execution decisions evolve, update both `## Acceptance Criteria` and `## Decisions Log` in the same pass so downstream planning/implementation stay aligned.
 - Do not create or update implementation task lists in `IMPLEMENTATION.md` from this prompt; the `project.planner` prompt owns tasks.
 - Do not move the story status past `Analysing` from this prompt.
