@@ -33,6 +33,10 @@ Execution contract:
 - In `parallel` mode, launch only eligible items whose prerequisites are completed.
 - In `parallel` mode, allow independent eligible items to run concurrently up to the worker limit.
 - Keep dependent items in `not started` until all prerequisites complete.
+- On first work-item failure, enter fail-fast mode and stop launching any new pending items.
+- Allow already `in progress` items to finish and report their terminal states.
+- Mark any items that never started because of fail-fast as `halted` in run output.
+- Final summary must clearly include overall result, failed item(s), failure cause, and halted item(s).
 - End with a final aggregate summary that includes overall result and per-item terminal status.
 - Preserve existing `project.*` agent behavior; do not rename or replace existing commands.
 

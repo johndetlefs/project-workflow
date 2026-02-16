@@ -125,6 +125,9 @@ Task list guardrails:
 - The `project.planner` prompt owns the implementation task list in `IMPLEMENTATION.md`.
 - Do not treat AC as optional; missing AC means the task is not ready.
 - The user should be able to verify each task without reading code (unless explicitly unavoidable).
+- Ensure every acceptance criterion in `REQUIREMENTS.md` is mapped to at least one concrete validation step in the task list (`User Verification` or explicit validation notes).
+- If any requirement/acceptance criterion is not covered by the plan, stop and route to `project.clarify` to resolve and record the decision in `REQUIREMENTS.md` before planning continues.
+- For delegate-execution stories (`project.delegate`), explicitly cover mode defaults, dependency-map validation, worker-limit behavior, and fail-fast/halted reporting in planned outcomes and validation steps.
 
 Tracker rules:
 

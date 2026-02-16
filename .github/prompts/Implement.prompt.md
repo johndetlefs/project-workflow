@@ -49,6 +49,7 @@ Requirements guardrails:
 - If `REQUIREMENTS.md` does not exist yet, stop and instruct the user to run the `project.requirements` prompt to create it.
 - If you discover a conflict between the current codebase constraints and `REQUIREMENTS.md` (or the `## User Story` in `IMPLEMENTATION.md`), stop and route to the `project.clarify` prompt; after the user chooses an option, ensure the decision is recorded in `REQUIREMENTS.md` before continuing.
 - Before coding, list the acceptance criteria in the inferred `workItem` and map each planned change to them. If any change does not map, do not proceed.
+- Before coding, cross-check the inferred work-item acceptance criteria against `REQUIREMENTS.md` and `IMPLEMENTATION.md`; if they conflict, stop and route to `project.clarify` and record the decision in `REQUIREMENTS.md`.
 
 User story tracker workflow:
 
@@ -76,6 +77,7 @@ Validation alignment guardrail:
 
 - Use `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` as the validation checklist source of truth.
 - Explicitly map each `## Acceptance Criteria` item (and any must-have `## Requirements`) to at least one validation step (automated test, manual verification, or query).
+- After running validation, report results in AC-by-AC form (`AC -> validation evidence/result`) for the current work item.
 - If a requirement is not verifiable, stop and route to Clarify to make it testable and record the decision/update in `REQUIREMENTS.md`.
 
 E2E exception:
