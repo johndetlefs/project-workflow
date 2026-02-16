@@ -15,10 +15,18 @@ Inputs:
 - Dependencies: `${input:dependencies:{"2":["1"]}}`
 - Worker limit: `${input:workers:4}`
 
+Defaults:
+
+- If `mode` is omitted, use `sequential`.
+
 Execution contract:
 
 - For each delegated work item, invoke `project.implement` as the execution path.
-- Keep delegation output concise and include per-item status updates.
+- Accept the provided work-item list and selected mode as the execution plan input.
+- In `sequential` mode, execute exactly one work item at a time, in listed order.
+- In `sequential` mode, initialize each item as `not started`, set current item to `in progress`, then mark it `completed` or `failed` before starting the next item.
+- Emit a completion status line for each item before moving to the next item.
+- End with a final aggregate summary that includes overall result and per-item terminal status.
 - Preserve existing `project.*` agent behavior; do not rename or replace existing commands.
 
 Scope note:
