@@ -418,6 +418,7 @@ def cmd_task_init(args: argparse.Namespace) -> None:
     else:
         folder_suffix = slug_titlecase_dashes(args.title)
     spec = TaskSpec(task_id=args.id, title=args.title, folder_suffix=folder_suffix)
+    branch_name: Optional[str] = None
 
     if args.create_branch:
         _ensure_clean_git(cwd)
@@ -450,7 +451,7 @@ def cmd_task_init(args: argparse.Namespace) -> None:
     if args.update_tracker:
         print(f"Updated tracker: {tracker_path}")
 
-    if args.create_branch:
+    if branch_name is not None:
         print(f"Created branch: {branch_name}")
 
 
