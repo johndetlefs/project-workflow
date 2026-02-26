@@ -115,6 +115,7 @@ Copilot will:
 - Ask discovery questions ("What format? Who sees this?")
 - Draft a user story
 - List acceptance criteria
+- Ensure acceptance criteria are explicitly mappable to validation steps
 - Flag ambiguities as open questions
 
 Answer each question iteratively. Copilot updates `.project-workflow/tasks/APP-001-*/REQUIREMENTS.md` as you go.
@@ -134,7 +135,7 @@ Copilot generates:
 
 - A phased approach (e.g., Phase 1: Backend API, Phase 2: UI)
 - Implementation task list
-- Validation steps for each phase
+- Validation steps for each phase, mapped to acceptance criteria
 
 It updates `.project-workflow/tasks/APP-001-*/IMPLEMENTATION.md` with a task table.
 
@@ -172,9 +173,28 @@ Copilot will:
 - Read your requirements and plan
 - Make code changes incrementally
 - Run validation (tests, type checks, manual verification)
+- Report validation evidence in acceptance-criteria order for the current work item
 - Update `.project-workflow/TRACKER.md` with status (`In Progress` → `Testing` → `Complete`)
 
 You review changes, iterate, and validate. Copilot keeps everything in sync.
+
+For multi-item orchestration, run `/project.delegate`:
+
+```
+Task: APP-001
+Work items: 1,2,3
+Mode: parallel
+Dependencies: {"2":["1"],"3":["1"]}
+```
+
+Delegate behavior:
+
+- Defaults to `sequential` when mode is omitted
+- Supports `parallel` mode with dependency-aware eligibility
+- Uses a default worker limit of `4` in `parallel` mode when not provided
+- Validates dependency maps strictly (unknown IDs, self-dependencies, cycles)
+- Uses fail-fast launch behavior while allowing in-flight items to finish
+- Routes each delegated item through `project.implement`
 
 ---
 
@@ -203,6 +223,7 @@ your-project/
 │       ├── Requirements.prompt.md    # /project.requirements
 │       ├── Clarify.prompt.md         # /project.clarify
 │       ├── Planner.prompt.md         # /project.planner
+│       ├── Delegate.prompt.md        # /project.delegate
 │       └── Implement.prompt.md       # /project.implement
 └── [your code]
 ```
@@ -226,6 +247,7 @@ your-project/
 │       ├── project-requirements.md
 │       ├── project-clarify.md
 │       ├── project-planner.md
+│       ├── project-delegate.md
 │       └── project-implement.md
 └── [your code]
 ```
@@ -249,6 +271,7 @@ your-project/
 │       ├── project-requirements.md
 │       ├── project-clarify.md
 │       ├── project-planner.md
+│       ├── project-delegate.md
 │       └── project-implement.md
 └── [your code]
 ```
@@ -264,6 +287,7 @@ The agents are designed to be used **in order**. Skipping steps = ambiguous code
 1. **Constitution (once)** → 2. **Scaffold** → 3. **Requirements** → 4. **Planner** → 5. **Clarify** → 6. **Implement**
 
 Always run Clarify after Planner to verify internal consistency before implementation.
+Use **Delegate** as an execution option when a task has multiple work items with dependencies.
 
 ### 📝 Keep Agent Definitions in the Repo
 
@@ -358,6 +382,13 @@ When you run an agent command (for example `/project.requirements`) and provide 
 3. **Generates** structured Markdown (requirements, plans, code)
 4. **Updates** your local files (you can review before accepting)
 5. **Syncs** TRACKER.md with status (To Do → In Progress → Testing → Complete)
+
+When you run `/project.delegate`, Copilot also:
+
+1. Validates dependency-map input before any item starts
+2. Runs work items in `sequential` or dependency-aware `parallel` mode
+3. Applies fail-fast launch behavior and reports failed/halted outcomes clearly
+4. Routes each delegated work item through `/project.implement`
 
 Everything is **plain text**—you can edit, version control, and code-review it like any other file.
 
