@@ -142,6 +142,22 @@ def _ensure_file(
     path.write_text(content, encoding="utf-8")
 
 
+def _migrate_legacy_scaffold_file(*, legacy_path: Path, replacement_path: Path) -> None:
+    """Remove legacy scaffold file during init to keep prompt/agent names canonical."""
+    if not legacy_path.exists():
+        return
+
+    # If replacement is absent, preserve local customizations by renaming.
+    if not replacement_path.exists():
+        legacy_path.rename(replacement_path)
+        print(f"✓ Migrated legacy scaffold file: {legacy_path} -> {replacement_path}")
+        return
+
+    # Replacement exists, so remove the legacy alias to avoid duplicate commands.
+    legacy_path.unlink()
+    print(f"✓ Removed legacy scaffold file: {legacy_path}")
+
+
 @dataclass(frozen=True)
 class TaskSpec:
     task_id: str
@@ -584,6 +600,11 @@ def cmd_project_init(args: argparse.Namespace) -> None:
             _ensure_file(agent_path, agent_content, allow_conflicts=True)
             print(f"✓ Created/updated: {agent_path}")
 
+        _migrate_legacy_scaffold_file(
+            legacy_path=claude_agents_dir / "project-scaffold.md",
+            replacement_path=claude_agents_dir / "project-task.md",
+        )
+
         customize_path_hint = ".claude/agents/* files"
     elif selected_agent == "cursor":
         # Create canonical Cursor project subagent layout at .cursor/agents/*.md
@@ -598,6 +619,11 @@ def cmd_project_init(args: argparse.Namespace) -> None:
             _ensure_file(agent_path, agent_content, allow_conflicts=True)
             print(f"✓ Created/updated: {agent_path}")
 
+        _migrate_legacy_scaffold_file(
+            legacy_path=cursor_agents_dir / "project-scaffold.md",
+            replacement_path=cursor_agents_dir / "project-task.md",
+        )
+
         customize_path_hint = ".cursor/agents/* files"
     else:
         # Keep existing GitHub Copilot scaffold contract for default mode.
@@ -610,6 +636,11 @@ def cmd_project_init(args: argparse.Namespace) -> None:
             prompt_content = _get_package_resource(f"prompts/{prompt_file}")
             _ensure_file(prompt_path, prompt_content, allow_conflicts=True)
             print(f"✓ Created/updated: {prompt_path}")
+
+        _migrate_legacy_scaffold_file(
+            legacy_path=prompts_dir / "Scaffold.prompt.md",
+            replacement_path=prompts_dir / "Task.prompt.md",
+        )
 
     print(f"\n✅ Project workflow initialized in {cwd}")
     print(f"   Agent mode applied: {selected_agent_label}")
