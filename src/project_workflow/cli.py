@@ -33,6 +33,8 @@ PROMPT_FILES = [
 TASK_ID_PREFIX = "TASK"
 EPIC_ID_PREFIX = "EPIC"
 ID_PADDING = 3
+EPIC_TRACKER_COLUMNS = ("ID", "Title", "Status", "Type", "Docs", "Branch", "Notes")
+EPIC_TRACKER_STATUSES = ("Proposed", "Approved", "In Progress", "Testing", "Complete")
 
 
 def _words(value: str) -> list[str]:
@@ -193,6 +195,109 @@ def _tracker_template() -> str:
         "| ID | Title | Status | Docs |\n"
         "|---|---|---|---|\n"
     )
+
+
+def _epic_tracker_template() -> str:
+    return (
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|\n"
+    )
+
+
+def _parse_markdown_table_cells(line: str) -> list[str] | None:
+    stripped = line.strip()
+    if not stripped.startswith("|"):
+        return None
+    return [cell.strip() for cell in stripped.strip("|").split("|")]
+
+
+def _epic_tracker_rows(epic_tracker_path: Path) -> tuple[list[str], int, list[dict[str, str]]]:
+    lines = epic_tracker_path.read_text(encoding="utf-8").splitlines(keepends=True)
+    header_idx: Optional[int] = None
+    for idx, line in enumerate(lines):
+        cells = _parse_markdown_table_cells(line)
+        if cells == list(EPIC_TRACKER_COLUMNS):
+            header_idx = idx
+            break
+
+    if header_idx is None:
+        expected = " | ".join(EPIC_TRACKER_COLUMNS)
+        raise SystemExit(
+            "Epic tracker schema mismatch. Expected header: "
+            f"'| {expected} |' in {epic_tracker_path}."
+        )
+
+    rows: list[dict[str, str]] = []
+    row_idx = header_idx + 2  # skip divider row
+    while row_idx < len(lines):
+        cells = _parse_markdown_table_cells(lines[row_idx])
+        if cells is None:
+            break
+        if len(cells) != len(EPIC_TRACKER_COLUMNS):
+            raise SystemExit(
+                "Epic tracker row has wrong number of columns. "
+                f"Expected {len(EPIC_TRACKER_COLUMNS)} columns in {epic_tracker_path}: "
+                f"{lines[row_idx].strip()}"
+            )
+        row = dict(zip(EPIC_TRACKER_COLUMNS, cells))
+        status = row["Status"]
+        if status and status not in EPIC_TRACKER_STATUSES:
+            raise SystemExit(
+                "Epic tracker contains invalid status "
+                f"'{status}'. Allowed: {', '.join(EPIC_TRACKER_STATUSES)}."
+            )
+        row["_line_idx"] = str(row_idx)
+        rows.append(row)
+        row_idx += 1
+
+    return lines, header_idx, rows
+
+
+def _format_epic_tracker_row(row: dict[str, str]) -> str:
+    return "| " + " | ".join(row[col] for col in EPIC_TRACKER_COLUMNS) + " |\n"
+
+
+def _update_epic_tracker_row_status(
+    epic_tracker_path: Path,
+    *,
+    row_id: str,
+    expected_from: str,
+    new_status: str,
+) -> dict[str, str]:
+    lines, _header_idx, rows = _epic_tracker_rows(epic_tracker_path)
+
+    for row in rows:
+        if row["ID"] != row_id:
+            continue
+        current = row["Status"]
+        if current != expected_from:
+            raise SystemExit(
+                f"Row {row_id} must be '{expected_from}' before this operation; "
+                f"found '{current}'."
+            )
+        row["Status"] = new_status
+        line_idx = int(row["_line_idx"])
+        lines[line_idx] = _format_epic_tracker_row(row)
+        epic_tracker_path.write_text("".join(lines), encoding="utf-8")
+        return row
+
+    raise SystemExit(f"No epic tracker row found for ID '{row_id}' in {epic_tracker_path}.")
+
+
+def _resolve_epic_dir(tasks_dir: Path, epic_id: str) -> Path:
+    matches = [p for p in tasks_dir.glob(f"{epic_id}-*") if p.is_dir()]
+    if not matches:
+        raise SystemExit(
+            f"Could not find epic folder for {epic_id}. Expected a folder like '{epic_id}-...'."
+        )
+    if len(matches) > 1:
+        raise SystemExit(
+            f"Multiple epic folders found for {epic_id}: "
+            + ", ".join(p.name for p in matches)
+            + ". Use a unique epic ID."
+        )
+    return matches[0]
 
 
 def _normalize_agent(value: str) -> str:
@@ -555,7 +660,7 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
     if args.overwrite or not reqs_path.exists():
         _write_file(reqs_path, _requirements_template(spec.task_id, spec.title), overwrite=True)
     if args.overwrite or not epic_tracker_path.exists():
-        _write_file(epic_tracker_path, _tracker_template(), overwrite=True)
+        _write_file(epic_tracker_path, _epic_tracker_template(), overwrite=True)
 
     docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
     row_written = _update_tracker(
@@ -572,6 +677,85 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
     else:
         print(f"Tracker already had row for ID {spec.task_id}; no duplicate added.")
     print(f"Assigned ID: {spec.task_id}")
+
+
+def cmd_epic_approve(args: argparse.Namespace) -> None:
+    """Approve a proposed epic child row by updating Status to Approved."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    epic_tracker_path = epic_dir / "TRACKER.md"
+    if not epic_tracker_path.exists():
+        raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
+
+    _update_epic_tracker_row_status(
+        epic_tracker_path,
+        row_id=args.id,
+        expected_from="Proposed",
+        new_status="Approved",
+    )
+    print(f"Approved epic row {args.id} in {epic_tracker_path}")
+
+
+def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
+    """Scaffold one approved child row from an epic tracker."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    epic_tracker_path = epic_dir / "TRACKER.md"
+    if not epic_tracker_path.exists():
+        raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
+
+    lines, _header_idx, rows = _epic_tracker_rows(epic_tracker_path)
+    target: Optional[dict[str, str]] = None
+    for row in rows:
+        if row["ID"] == args.id:
+            target = row
+            break
+
+    if target is None:
+        raise SystemExit(f"No epic tracker row found for ID '{args.id}' in {epic_tracker_path}.")
+    if target["Status"] != "Approved":
+        raise SystemExit(
+            f"Row {args.id} is '{target['Status']}'. "
+            "Only rows with status 'Approved' can be scaffolded."
+        )
+
+    child_spec = TaskSpec(
+        task_id=target["ID"],
+        title=target["Title"],
+        folder_suffix=slug_titlecase_dashes(target["Title"]),
+    )
+    child_dir = epic_dir / child_spec.task_folder_name
+    impl_path = child_dir / "IMPLEMENTATION.md"
+    reqs_path = child_dir / "REQUIREMENTS.md"
+
+    child_dir.mkdir(parents=True, exist_ok=True)
+    if args.overwrite or not impl_path.exists():
+        _write_file(
+            impl_path,
+            _implementation_template(child_spec.task_id, child_spec.title),
+            overwrite=True,
+        )
+    if args.overwrite or not reqs_path.exists():
+        _write_file(
+            reqs_path,
+            _requirements_template(child_spec.task_id, child_spec.title),
+            overwrite=True,
+        )
+
+    target["Docs"] = f"tasks/{epic_dir.name}/{child_spec.task_folder_name}/IMPLEMENTATION.md"
+    target["Status"] = "In Progress"
+    line_idx = int(target["_line_idx"])
+    lines[line_idx] = _format_epic_tracker_row(target)
+    epic_tracker_path.write_text("".join(lines), encoding="utf-8")
+
+    print(f"Scaffolded epic child: {child_dir}")
+    print(f"Updated epic tracker: {epic_tracker_path}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -673,6 +857,29 @@ def build_parser() -> argparse.ArgumentParser:
         help="Overwrite existing epic docs if epic folder already exists",
     )
     epic_init_parser.set_defaults(func=cmd_epic_init)
+
+    epic_approve_parser = epic_sub.add_parser(
+        "approve",
+        help="Approve a Proposed row in an epic TRACKER.md",
+    )
+    epic_approve_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
+    epic_approve_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
+    epic_approve_parser.set_defaults(func=cmd_epic_approve)
+
+    epic_scaffold_child_parser = epic_sub.add_parser(
+        "scaffold-child",
+        help="Scaffold one Approved child row from an epic TRACKER.md",
+    )
+    epic_scaffold_child_parser.add_argument(
+        "--epic-id", required=True, help="Epic ID (e.g. EPIC-001)"
+    )
+    epic_scaffold_child_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
+    epic_scaffold_child_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing child docs if child folder already exists",
+    )
+    epic_scaffold_child_parser.set_defaults(func=cmd_epic_scaffold_child)
 
     return parser
 
