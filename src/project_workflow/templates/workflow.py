@@ -232,6 +232,52 @@ def _next_task_id_from_used(used_ids: set[str]) -> str:
     return f"{TASK_ID_PREFIX}-{max_value + 1:0{ID_PADDING}d}"
 
 
+def _collect_used_task_ids(
+    *,
+    tasks_dir: Path,
+    global_tracker_path: Path,
+    exclude_epic_tracker_path: Path | None = None,
+    exclude_epic_tracker_line_idx: int | None = None,
+) -> set[str]:
+    used_ids: set[str] = set()
+    task_re = re.compile(rf"^{re.escape(TASK_ID_PREFIX)}-\d+$")
+
+    for path in tasks_dir.iterdir():
+        if not path.is_dir():
+            continue
+        match = re.match(rf"^{re.escape(TASK_ID_PREFIX)}-(\d+)-", path.name)
+        if match:
+            used_ids.add(f"{TASK_ID_PREFIX}-{int(match.group(1)):0{ID_PADDING}d}")
+
+    if global_tracker_path.exists():
+        tracker_text = global_tracker_path.read_text(encoding="utf-8")
+        for match in re.finditer(rf"\|\s*({re.escape(TASK_ID_PREFIX)}-\d+)\s*\|", tracker_text):
+            candidate = match.group(1)
+            if task_re.match(candidate):
+                used_ids.add(candidate)
+
+    for epic_dir in tasks_dir.iterdir():
+        if not epic_dir.is_dir():
+            continue
+        epic_tracker_path = epic_dir / "TRACKER.md"
+        if not epic_tracker_path.exists():
+            continue
+        _lines, _header_idx, epic_rows = _epic_tracker_rows(epic_tracker_path)
+        for row in epic_rows:
+            if (
+                exclude_epic_tracker_path is not None
+                and epic_tracker_path == exclude_epic_tracker_path
+                and exclude_epic_tracker_line_idx is not None
+                and int(row["_line_idx"]) == exclude_epic_tracker_line_idx
+            ):
+                continue
+            candidate = row["ID"].strip()
+            if task_re.match(candidate):
+                used_ids.add(candidate)
+
+    return used_ids
+
+
 def _decompose_epic_requirements_to_titles(requirements_text: str, *, limit: int) -> list[str]:
     lines = requirements_text.splitlines()
     bullets: list[str] = []
@@ -583,6 +629,7 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
     repo_root = here.resolve().parents[2]
     workflow_dir = repo_root / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
+    tracker_path = workflow_dir / "TRACKER.md"
 
     epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
     epic_tracker_path = epic_dir / "TRACKER.md"
@@ -604,8 +651,30 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
             "Only rows with status 'Approved' can be scaffolded."
         )
 
+    assigned_id = target["ID"]
+    occupied_task_ids = _collect_used_task_ids(
+        tasks_dir=tasks_dir,
+        global_tracker_path=tracker_path,
+        exclude_epic_tracker_path=epic_tracker_path,
+        exclude_epic_tracker_line_idx=int(target["_line_idx"]),
+    )
+    if not re.match(rf"^{re.escape(TASK_ID_PREFIX)}-\d+$", assigned_id):
+        reassigned_id = _next_task_id_from_used(occupied_task_ids)
+        print(
+            f"Row {args.id} used non-task ID '{assigned_id}'. "
+            f"Assigned next available global ID: {reassigned_id}."
+        )
+        assigned_id = reassigned_id
+    elif assigned_id in occupied_task_ids:
+        reassigned_id = _next_task_id_from_used(occupied_task_ids)
+        print(
+            f"Detected ID collision for {assigned_id}. "
+            f"Assigned next available global ID: {reassigned_id}."
+        )
+        assigned_id = reassigned_id
+
     child_spec = TaskSpec(
-        task_id=target["ID"],
+        task_id=assigned_id,
         title=target["Title"],
         folder_suffix=slug_titlecase_dashes(target["Title"]),
     )
@@ -626,6 +695,13 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
             _requirements_template(child_spec.task_id, child_spec.title),
             overwrite=True,
         )
+
+    if target["ID"] != assigned_id:
+        prior_id = target["ID"]
+        target["ID"] = assigned_id
+        note = target["Notes"].strip()
+        collision_note = f"Reassigned from {prior_id} due to ID collision"
+        target["Notes"] = f"{note}; {collision_note}" if note else collision_note
 
     target["Docs"] = f"tasks/{epic_dir.name}/{child_spec.task_folder_name}/IMPLEMENTATION.md"
     target["Status"] = "In Progress"

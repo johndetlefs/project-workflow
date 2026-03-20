@@ -1,4 +1,5 @@
 .gitignore
+CHANGELOG.md
 LICENSE
 README.md
 pyproject.toml
@@ -19,6 +20,8 @@ pyproject.toml
 .project-workflow/tasks/APP-001-Cursor-Claude/REQUIREMENTS.md
 .project-workflow/tasks/APP-002-Delegate-Agent/IMPLEMENTATION.md
 .project-workflow/tasks/APP-002-Delegate-Agent/REQUIREMENTS.md
+.project-workflow/tasks/APP-003-Epic-Support/IMPLEMENTATION.md
+.project-workflow/tasks/APP-003-Epic-Support/REQUIREMENTS.md
 src/project_workflow/__init__.py
 src/project_workflow/cli.py
 src/project_workflow.egg-info/PKG-INFO
