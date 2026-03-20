@@ -90,7 +90,7 @@ If `.github/copilot-instructions.md` is missing, it will offer to create one for
 
 ### 1. **Create a Task** (5 min)
 
-In **Copilot chat**, type `/project.scaffold` and answer the quick questions:
+In **Copilot chat**, type `/project.task` and answer the quick questions:
 
 ```
 Task title: User Account Export
@@ -195,6 +195,37 @@ Delegate behavior:
 - Uses fail-fast launch behavior while allowing in-flight items to finish
 - Routes each delegated item through `project.implement`
 
+### Epic Workflow (Proposal-First)
+
+Use this when work spans multiple child tasks under a single epic.
+
+Installed CLI path:
+
+```bash
+project epic init --title "Checkout Reliability"
+project epic decompose --epic-id EPIC-001 --limit 5 --type Task
+project epic approve --epic-id EPIC-001 --id TASK-014
+project epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
+```
+
+Local workflow script path (inside an initialized repo):
+
+```bash
+.venv/bin/python .project-workflow/cli/workflow.py epic init --title "Checkout Reliability"
+.venv/bin/python .project-workflow/cli/workflow.py epic decompose --epic-id EPIC-001 --limit 5 --type Task
+.venv/bin/python .project-workflow/cli/workflow.py epic approve --epic-id EPIC-001 --id TASK-014
+.venv/bin/python .project-workflow/cli/workflow.py epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
+```
+
+Epic workflow rules:
+
+- `epic init` auto-assigns the next sequential epic ID and writes an epic `REQUIREMENTS.md` plus epic `TRACKER.md`.
+- `epic decompose` writes Proposed child rows only. It does not scaffold child folders/docs.
+- `epic approve` moves a row from Proposed to Approved (same semantics as manually editing status in epic tracker).
+- `epic scaffold-child` only accepts Approved rows and moves the row to In Progress after scaffold.
+- Child IDs remain globally unique task IDs (`TASK-###`) across standalone and epic-managed work.
+- If `--create-branch` is used for epic child scaffold, `--epic-branch` must already exist; the command fails fast and never falls back to a base branch.
+
 ---
 
 ## File Structure (After Init)
@@ -218,7 +249,8 @@ your-project/
 ├── .github/
 │   └── prompts/                      # ← Agent definitions used by Copilot
 │       ├── Constitution.prompt.md    # /project.constitution
-│       ├── Scaffold.prompt.md        # /project.scaffold
+│       ├── Task.prompt.md            # /project.task
+│       ├── Epic.prompt.md            # /project.epic
 │       ├── Requirements.prompt.md    # /project.requirements
 │       ├── Clarify.prompt.md         # /project.clarify
 │       ├── Planner.prompt.md         # /project.planner
@@ -242,7 +274,8 @@ your-project/
 ├── .claude/
 │   └── agents/
 │       ├── project-constitution.md
-│       ├── project-scaffold.md
+│       ├── project-task.md
+│       ├── project-epic.md
 │       ├── project-requirements.md
 │       ├── project-clarify.md
 │       ├── project-planner.md
@@ -266,7 +299,8 @@ your-project/
 ├── .cursor/
 │   └── agents/
 │       ├── project-constitution.md
-│       ├── project-scaffold.md
+│       ├── project-task.md
+│       ├── project-epic.md
 │       ├── project-requirements.md
 │       ├── project-clarify.md
 │       ├── project-planner.md
@@ -283,7 +317,7 @@ your-project/
 
 The agents are designed to be used **in order**. Skipping steps = ambiguous code and rework.
 
-1. **Constitution (once)** → 2. **Scaffold** → 3. **Requirements** → 4. **Planner** → 5. **Clarify** → 6. **Implement**
+1. **Constitution (once)** → 2. **Task** → 3. **Requirements** → 4. **Planner** → 5. **Clarify** → 6. **Implement**
 
 Always run Clarify after Planner to verify internal consistency before implementation.
 Use **Delegate** as an execution option when a task has multiple work items with dependencies.
@@ -359,7 +393,7 @@ $ uvx --from git+https://github.com/johndetlefs/project-workflow.git project ini
 # 3. Provide a project brief; Copilot scans repo and updates CONSTITUTION.md
 # 4. Commit: "docs: establish project constitution"
 
-# 5. In Copilot chat: /project.scaffold
+# 5. In Copilot chat: /project.task
 # 6. Answer: Title="Dark Mode Support", Branch=yes
 # 7. Copilot runs: ./.project-workflow/cli/workflow task init ...
 # 8. Commit: "scaffold: TASK-001 Dark Mode Support"

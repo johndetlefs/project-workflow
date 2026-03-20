@@ -98,7 +98,7 @@ When behavior changes:
 Use this sequence unless user direction overrides it:
 
 1. `/project.constitution` (once per repo, or when outcomes change)
-2. `/project.scaffold`
+2. `/project.task`
 3. `/project.requirements`
 4. `/project.planner`
 5. `/project.clarify`

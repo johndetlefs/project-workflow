@@ -24,10 +24,11 @@ PROMPT_FILES = [
     "Constitution.prompt.md",
     "Clarify.prompt.md",
     "Delegate.prompt.md",
+    "Epic.prompt.md",
     "Implement.prompt.md",
     "Planner.prompt.md",
     "Requirements.prompt.md",
-    "Scaffold.prompt.md",
+    "Task.prompt.md",
 ]
 
 TASK_ID_PREFIX = "TASK"
@@ -993,7 +994,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     epic_init_parser = epic_sub.add_parser(
         "init",
-        help="Scaffold a new epic folder + REQUIREMENTS/TRACKER docs",
+        help="Scaffold a new epic with auto EPIC ID + REQUIREMENTS/TRACKER docs",
     )
     epic_init_parser.add_argument("--title", required=True, help="Epic title")
     epic_init_parser.add_argument(
@@ -1017,7 +1018,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     epic_approve_parser = epic_sub.add_parser(
         "approve",
-        help="Approve a Proposed row in an epic TRACKER.md",
+        help="Move one epic tracker row from Proposed to Approved",
     )
     epic_approve_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
     epic_approve_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
@@ -1025,7 +1026,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     epic_decompose_parser = epic_sub.add_parser(
         "decompose",
-        help="Generate Proposed child rows from an epic REQUIREMENTS.md",
+        help="Generate Proposed child rows only (no child scaffolding)",
     )
     epic_decompose_parser.add_argument(
         "--epic-id", required=True, help="Epic ID (e.g. EPIC-001)"
@@ -1046,7 +1047,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     epic_scaffold_child_parser = epic_sub.add_parser(
         "scaffold-child",
-        help="Scaffold one Approved child row from an epic TRACKER.md",
+        help="Scaffold one Approved child row and move it to In Progress",
     )
     epic_scaffold_child_parser.add_argument(
         "--epic-id", required=True, help="Epic ID (e.g. EPIC-001)"
@@ -1060,14 +1061,15 @@ def build_parser() -> argparse.ArgumentParser:
     epic_scaffold_child_parser.add_argument(
         "--create-branch",
         action="store_true",
-        help="Create and checkout a child branch from the epic branch",
+        help="Create and checkout a child branch from an existing epic branch",
     )
     epic_scaffold_child_parser.add_argument(
         "--epic-branch",
         default="epic/main",
         help=(
             "Existing epic branch to derive child branches from "
-            "(default: epic/main)"
+            "(default: epic/main). Must exist when --create-branch is used; "
+            "no fallback branch is allowed."
         ),
     )
     epic_scaffold_child_parser.add_argument(

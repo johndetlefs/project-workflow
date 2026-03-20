@@ -1,11 +1,11 @@
 ---
-name: project.scaffold
+name: project.task
 description: Create minimal task scaffolding (task folder, tracker row, optional branch).
 argument-hint: title="..." branch=yes|no base=develop prefix=feature/
 agent: agent
 ---
 
-# scaffold (Task + Optional Branch)
+# task (Task + Optional Branch)
 
 Purpose: create the minimal workflow scaffolding for a new feature/task inside this repo:
 
@@ -56,7 +56,7 @@ From the repo root, run:
 
 After running:
 
-- Confirm the created folder path under `.project-workflow/tasks/…`
+- Confirm the created folder path under `.project-workflow/tasks/...`
 - Confirm the assigned task ID (`TASK-###`)
 - Confirm tracker updated
 - If branch created, confirm the new branch name
