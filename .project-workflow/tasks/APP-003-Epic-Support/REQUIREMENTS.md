@@ -31,11 +31,11 @@ List requirements as outcomes/expectations, not implementation details.
 
 ### Functional Requirements
 
-- Users can scaffold an epic with an ID and title.
+- Users can scaffold an epic with a title and receive an auto-generated sequential epic ID.
 - Epic workflow support is delivered in both development artifacts in this repository and packaged install artifacts used by end users.
-- Epic scaffolding creates a stable folder path at tasks/epics/<EPIC-ID>-<Suffix>/ and creates epic REQUIREMENTS.md and epic TRACKER.md suitable for downstream requirements, clarify, planner, and implement steps.
+- Epic scaffolding creates a stable folder path at tasks/<EPIC-ID>-<Suffix>/ and creates epic REQUIREMENTS.md and epic TRACKER.md suitable for downstream requirements, clarify, planner, and implement steps.
 - Users can scaffold child tasks/stories under an epic folder, each with its own IMPLEMENTATION.md and REQUIREMENTS.md docs.
-- Users can still scaffold standalone one-off tasks/stories at tasks/<ID>-<Suffix> without an epic parent.
+- Users can still scaffold standalone one-off tasks/stories at tasks/<ID>-<Suffix> without an epic parent, with IDs auto-generated sequentially by the CLI.
 - Child tasks/stories under epics use the same globally unique flat ID strategy as standalone tasks/stories.
 - Global tracker entries represent epic summary rows for epic-managed work only, while epic TRACKER.md is the source of truth for epic child task/story rows at all stages (Proposed through Complete).
 - Epic TRACKER.md uses status lifecycle Proposed -> Approved -> In Progress -> Testing -> Complete, and only Approved items are eligible for scaffold.
@@ -63,11 +63,11 @@ List requirements as outcomes/expectations, not implementation details.
 
 ## Acceptance Criteria
 
-- AC1: A user can scaffold an epic with ID and title, and the command creates tasks/epics/<EPIC-ID>-<Suffix>/ with epic REQUIREMENTS.md and epic TRACKER.md.
+- AC1: A user can scaffold an epic with title input only, the command auto-generates the next sequential EPIC ID, and creates tasks/<EPIC-ID>-<Suffix>/ with epic REQUIREMENTS.md and epic TRACKER.md.
 - AC2: A user can run epic requirements iteration with the agent and keep epic REQUIREMENTS.md updated without creating child task/story scaffolds yet.
 - AC3: A user can run epic decomposition to generate proposed child tasks/stories, and proposals are written into epic TRACKER.md before scaffold confirmation.
 - AC4: A user can confirm selected proposals and scaffold one or more child tasks/stories under the epic, each with required docs.
-- AC5: A user can scaffold a standalone one-off task/story at tasks/<ID>-<Suffix> outside any epic using the existing explicit workflow path.
+- AC5: A user can scaffold a standalone one-off task/story at tasks/<ID>-<Suffix> outside any epic using the existing explicit workflow path with an auto-generated sequential task ID.
 - AC6: Tracker status and linkage clearly show epic records in global tracker and child records in epic tracker while requirements are captured as Analysing.
 - AC7: Epic branch creation and child branch-from-epic behavior are supported and reported to the user.
 - AC8: Existing task-only scaffold flow continues to work for repos not using epics.
@@ -105,9 +105,9 @@ List requirements as outcomes/expectations, not implementation details.
 
 - Decision:
   - Context: Epic folder layout.
-  - Options considered: tasks/epics/<EPIC-ID>-<Suffix> vs tasks/<EPIC-ID>-<Suffix> plus marker.
-  - Chosen: tasks/epics/<EPIC-ID>-<Suffix>.
-  - Why: Explicit folder typing improves discoverability and reduces ambiguity.
+  - Options considered: tasks/epics/<EPIC-ID>-<Suffix> vs tasks/<EPIC-ID>-<Suffix> with epic type encoded in identifier.
+  - Chosen: tasks/<EPIC-ID>-<Suffix> with epic identity conveyed by the epic ID naming convention.
+  - Why: Reduces unnecessary nesting and keeps global work ordering easier to reason about while preserving distinguishability.
 
 - Decision:
   - Context: Epic decomposition and scaffold timing.
@@ -126,6 +126,12 @@ List requirements as outcomes/expectations, not implementation details.
   - Options considered: Global flat IDs vs epic-scoped IDs vs mixed mode.
   - Chosen: Keep globally unique flat IDs for child tasks (same pattern as standalone tasks).
   - Why: Simplifies CLI validation, branch naming, cross-epic movement, and audit traceability.
+
+- Decision:
+  - Context: Task and epic ID entry ergonomics during scaffold.
+  - Options considered: User-provided IDs vs auto-generated sequential IDs.
+  - Chosen: Auto-generate sequential IDs in CLI for both task and epic scaffold commands.
+  - Why: Reduces user decision overhead and keeps IDs consistent and ordered.
 
 - Decision:
   - Context: Epic tracker lifecycle before scaffolding proposed child tasks.
@@ -172,11 +178,11 @@ List requirements as outcomes/expectations, not implementation details.
 ## Validation Plan (User-Facing)
 
 - How the user will verify done:
-  - AC1 -> Run epic scaffold command with ID/title and verify tasks/epics/<EPIC-ID>-<Suffix>/ exists with epic REQUIREMENTS.md and epic TRACKER.md.
+  - AC1 -> Run epic scaffold command with title only and verify the next EPIC-### ID is assigned and tasks/<EPIC-ID>-<Suffix>/ exists with epic REQUIREMENTS.md and epic TRACKER.md.
   - AC2 -> Execute at least one epic requirements pass and confirm epic REQUIREMENTS.md updates without child scaffold side effects.
   - AC3 -> Run epic decomposition and verify proposed child rows are written to epic TRACKER.md in Proposed state before any child scaffold.
   - AC4 -> Confirm selected proposed rows and verify only selected child folders/docs are scaffolded under the epic.
-  - AC5 -> Run standalone task/story scaffold command and verify tasks/<ID>-<Suffix> location and docs are created correctly.
+  - AC5 -> Run standalone task/story scaffold command with title only and verify next TASK-### ID is assigned and tasks/<ID>-<Suffix> location and docs are created correctly.
   - AC6 -> Open global and epic trackers and verify global shows epic rows while epic tracker shows child rows, with Analysing status behavior during requirements capture.
   - AC7 -> Run epic branch creation then child branch creation; verify child branch starts from epic branch and names are reported.
   - AC8 -> Re-run existing task-only scaffold examples and verify no regression.

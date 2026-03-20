@@ -1,7 +1,7 @@
 ---
 name: project.implement
 description: Implement a change with tracker status updates and an explicit validation plan.
-argument-hint: taskId=APP-330-Superuser workItem="#2" scope="..."
+argument-hint: taskId=TASK-330-Superuser workItem="#2" scope="..."
 agent: agent
 ---
 
@@ -17,13 +17,13 @@ Reference docs:
 
 Inputs:
 
-- Task: `${input:taskId:APP-000-Example}`
+- Task: `${input:taskId:TASK-000-Example}`
 - Work item: `${input:workItem:#}`
 - Scope: `${input:scope:What are we changing?}`
 
 Defaults and inference:
 
-- If `taskId` is omitted, infer it from the current branch name when possible (e.g., `feature/APP-482-...` -> `APP-482`).
+- If `taskId` is omitted, infer it from the current branch name when possible (e.g., `feature/TASK-482-...` -> `TASK-482`).
 - If `workItem` is omitted, infer the next work item with status `To do` in `/.project-workflow/TRACKER.md`; if none exist, default to `1`.
 - If `scope` is omitted, default to: `Implement work item ${input:workItem} per REQUIREMENTS.md`.
 - Only ask the user for missing inputs when inference is not possible.
@@ -39,7 +39,7 @@ Required workflow:
 
 Sequence enforcement:
 
-- Do NOT ask whether to "move on" or start the next work item until you have completed the Validation step for the current work item.
+- Do NOT ask whether to “move on” or start the next work item until you have completed the Validation step for the current work item.
 - The next step after implementation is always Validation: run the most relevant automated checks (tests/typecheck/lint) and perform any required manual verification steps.
 - Only after you have (1) executed validation, (2) summarized results, and (3) set the work item/story to `Testing`, may you ask for next-step instructions.
 
@@ -60,7 +60,7 @@ User story tracker workflow:
 
 Implementation doc structure:
 
-- Ensure `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md` begins with a `## User Story` section at the very top (with acceptance criteria). If it's missing, add it.
+- Ensure `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md` begins with a `## User Story` section at the very top (with acceptance criteria). If it’s missing, add it.
 
 Output expectations:
 

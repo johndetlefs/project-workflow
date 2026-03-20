@@ -11,6 +11,11 @@ from datetime import date
 from pathlib import Path
 
 
+TASK_ID_PREFIX = "TASK"
+EPIC_ID_PREFIX = "EPIC"
+ID_PADDING = 3
+
+
 def _words(value: str) -> list[str]:
     return [w for w in re.split(r"[^A-Za-z0-9]+", value.strip()) if w]
 
@@ -104,16 +109,23 @@ def _requirements_template(task_id: str, title: str) -> str:
     )
 
 
-def _update_tracker(tracker_path: Path, *, spec: TaskSpec, status: str, docs_rel_path: str) -> None:
+def _tracker_template() -> str:
+    return (
+        "# Stories\n\n"
+        "| ID | Title | Status | Docs |\n"
+        "|---|---|---|---|\n"
+    )
+
+
+def _update_tracker(
+    tracker_path: Path,
+    *,
+    spec: TaskSpec,
+    status: str,
+    docs_rel_path: str,
+    on_duplicate: str = "error",
+) -> bool:
     tracker = tracker_path.read_text(encoding="utf-8")
-
-    # Basic duplicate detection: if ID already exists as a table cell, refuse.
-    if re.search(rf"^\|\s*{re.escape(spec.task_id)}\s*\|", tracker, flags=re.MULTILINE):
-        raise SystemExit(
-            f"Tracker already contains ID {spec.task_id}. "
-            "Update it manually or use a different task ID."
-        )
-
     row = f"| {spec.task_id} | {spec.title} | {status} | `{docs_rel_path}` |\n"
 
     lines = tracker.splitlines(keepends=True)
@@ -132,6 +144,21 @@ def _update_tracker(tracker_path: Path, *, spec: TaskSpec, status: str, docs_rel
             "Expected a line: '| ID | Title | Status | Docs |'"
         )
 
+    existing_row_idx: int | None = None
+    id_row_re = re.compile(rf"^\|\s*{re.escape(spec.task_id)}\s*\|")
+    for idx, line in enumerate(lines):
+        if id_row_re.match(line.strip()):
+            existing_row_idx = idx
+            break
+
+    if existing_row_idx is not None:
+        if lines[existing_row_idx].strip() == row.strip() and on_duplicate == "skip":
+            return False
+        raise SystemExit(
+            f"Tracker already contains ID {spec.task_id}. "
+            "Update it manually or use a different task ID."
+        )
+
     # Insert after the table divider row and any existing rows.
     insert_at = table_header_idx + 1
     while insert_at < len(lines) and lines[insert_at].lstrip().startswith("|"):
@@ -139,6 +166,49 @@ def _update_tracker(tracker_path: Path, *, spec: TaskSpec, status: str, docs_rel
 
     lines.insert(insert_at, row)
     tracker_path.write_text("".join(lines), encoding="utf-8")
+    return True
+
+
+def _next_sequential_id(tasks_dir: Path, tracker_path: Path, *, prefix: str) -> str:
+    max_value = 0
+
+    dir_re = re.compile(rf"^{re.escape(prefix)}-(\d+)-")
+    for path in tasks_dir.iterdir():
+        if not path.is_dir():
+            continue
+        match = dir_re.match(path.name)
+        if match:
+            max_value = max(max_value, int(match.group(1)))
+
+    tracker = tracker_path.read_text(encoding="utf-8")
+    row_re = re.compile(rf"^\|\s*{re.escape(prefix)}-(\d+)\s*\|", flags=re.MULTILINE)
+    for match in row_re.finditer(tracker):
+        max_value = max(max_value, int(match.group(1)))
+
+    return f"{prefix}-{max_value + 1:0{ID_PADDING}d}"
+
+
+def _resolve_epic_id(tasks_dir: Path, tracker_path: Path, *, title: str) -> str:
+    suffix = slug_titlecase_dashes(title)
+    match_re = re.compile(rf"^{re.escape(EPIC_ID_PREFIX)}-(\d+)-{re.escape(suffix)}$")
+
+    matches: list[str] = []
+    for path in tasks_dir.iterdir():
+        if not path.is_dir():
+            continue
+        match = match_re.match(path.name)
+        if match:
+            matches.append(f"{EPIC_ID_PREFIX}-{int(match.group(1)):0{ID_PADDING}d}")
+
+    if len(matches) > 1:
+        raise SystemExit(
+            "Multiple existing epic folders match this title. "
+            "Use --folder-suffix to disambiguate title-to-folder mapping."
+        )
+    if len(matches) == 1:
+        return matches[0]
+
+    return _next_sequential_id(tasks_dir, tracker_path, prefix=EPIC_ID_PREFIX)
 
 
 def cmd_task_init(args: argparse.Namespace) -> None:
@@ -152,20 +222,21 @@ def cmd_task_init(args: argparse.Namespace) -> None:
     if not tracker_path.exists():
         raise SystemExit(f"Missing tracker file: {tracker_path}")
 
-    existing_task_dirs = [p for p in tasks_dir.glob(f"{args.id}-*") if p.is_dir()]
+    task_id = _next_sequential_id(tasks_dir, tracker_path, prefix=TASK_ID_PREFIX)
+    existing_task_dirs = [p for p in tasks_dir.glob(f"{task_id}-*") if p.is_dir()]
     if args.folder_suffix:
         folder_suffix = args.folder_suffix
     elif existing_task_dirs:
         if len(existing_task_dirs) > 1:
             raise SystemExit(
-                f"Multiple existing task folders found for {args.id}: "
+                f"Multiple existing task folders found for {task_id}: "
                 + ", ".join(p.name for p in existing_task_dirs)
                 + ". Use --folder-suffix to disambiguate."
             )
-        folder_suffix = existing_task_dirs[0].name[len(args.id) + 1 :]
+        folder_suffix = existing_task_dirs[0].name[len(task_id) + 1 :]
     else:
         folder_suffix = slug_titlecase_dashes(args.title)
-    spec = TaskSpec(task_id=args.id, title=args.title, folder_suffix=folder_suffix)
+    spec = TaskSpec(task_id=task_id, title=args.title, folder_suffix=folder_suffix)
     branch_name: str | None = None
 
     if args.create_branch:
@@ -201,6 +272,61 @@ def cmd_task_init(args: argparse.Namespace) -> None:
 
     if branch_name is not None:
         print(f"Created branch: {branch_name}")
+    print(f"Assigned ID: {spec.task_id}")
+
+
+def cmd_epic_init(args: argparse.Namespace) -> None:
+    here = Path(__file__)
+    repo_root = here.resolve().parents[2]
+
+    workflow_dir = repo_root / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    tracker_path = workflow_dir / "TRACKER.md"
+
+    if not tracker_path.exists():
+        raise SystemExit(f"Missing tracker file: {tracker_path}")
+
+    epic_id = _resolve_epic_id(tasks_dir, tracker_path, title=args.title)
+    existing_epic_dirs = [p for p in tasks_dir.glob(f"{epic_id}-*") if p.is_dir()]
+    if args.folder_suffix:
+        folder_suffix = args.folder_suffix
+    elif existing_epic_dirs:
+        if len(existing_epic_dirs) > 1:
+            raise SystemExit(
+                f"Multiple existing epic folders found for {epic_id}: "
+                + ", ".join(p.name for p in existing_epic_dirs)
+                + ". Use --folder-suffix to disambiguate."
+            )
+        folder_suffix = existing_epic_dirs[0].name[len(epic_id) + 1 :]
+    else:
+        folder_suffix = slug_titlecase_dashes(args.title)
+    spec = TaskSpec(task_id=epic_id, title=args.title, folder_suffix=folder_suffix)
+
+    epic_dir = tasks_dir / spec.task_folder_name
+    reqs_path = epic_dir / "REQUIREMENTS.md"
+    epic_tracker_path = epic_dir / "TRACKER.md"
+
+    epic_dir.mkdir(parents=True, exist_ok=True)
+    if args.overwrite or not reqs_path.exists():
+        _write_file(reqs_path, _requirements_template(spec.task_id, spec.title), overwrite=True)
+    if args.overwrite or not epic_tracker_path.exists():
+        _write_file(epic_tracker_path, _tracker_template(), overwrite=True)
+
+    docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
+    row_written = _update_tracker(
+        tracker_path,
+        spec=spec,
+        status=args.status,
+        docs_rel_path=docs_rel,
+        on_duplicate="skip",
+    )
+
+    print(f"Created epic: {epic_dir}")
+    if row_written:
+        print(f"Updated tracker: {tracker_path}")
+    else:
+        print(f"Tracker already had row for ID {spec.task_id}; no duplicate added.")
+    print(f"Assigned ID: {spec.task_id}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -215,7 +341,6 @@ def build_parser() -> argparse.ArgumentParser:
     task_sub = task_parser.add_subparsers(dest="task_command", required=True)
 
     init_parser = task_sub.add_parser("init", help="Scaffold a new task folder + docs")
-    init_parser.add_argument("--id", required=True, help="Task ID (e.g. APP-331)")
     init_parser.add_argument("--title", required=True, help="Human title (e.g. Super Admin Access)")
     init_parser.add_argument(
         "--folder-suffix",
@@ -257,6 +382,33 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     init_parser.set_defaults(func=cmd_task_init)
+
+    epic_parser = subparsers.add_parser("epic", help="Epic-related commands")
+    epic_sub = epic_parser.add_subparsers(dest="epic_command", required=True)
+
+    epic_init_parser = epic_sub.add_parser(
+        "init",
+        help="Scaffold a new epic folder + REQUIREMENTS/TRACKER docs",
+    )
+    epic_init_parser.add_argument("--title", required=True, help="Epic title")
+    epic_init_parser.add_argument(
+        "--folder-suffix",
+        help=(
+            "Overrides the epic folder suffix after the ID. "
+            "Default: Title converted to Title-Case-With-Dashes"
+        ),
+    )
+    epic_init_parser.add_argument(
+        "--status",
+        default="To Do",
+        help="Initial global tracker status (default: To Do)",
+    )
+    epic_init_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing epic docs if epic folder already exists",
+    )
+    epic_init_parser.set_defaults(func=cmd_epic_init)
 
     return parser
 

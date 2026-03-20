@@ -1,7 +1,7 @@
 ---
 name: project.requirements
 description: Capture and confirm what we are building (problem, scope, acceptance criteria).
-argument-hint: taskId=APP-330-Superuser goal="..." context="..."
+argument-hint: taskId=TASK-330-Superuser goal="..." context="..."
 agent: agent
 ---
 
@@ -26,7 +26,7 @@ Canonical task docs:
 
 Inputs:
 
-- Task: `${input:taskId:APP-000-Example}`
+- Task: `${input:taskId:TASK-000-Example}`
 - Goal: `${input:goal:Describe the user outcome}`
 - Optional context: `${input:context:Links, routes, screenshots, logs, constraints}`
 

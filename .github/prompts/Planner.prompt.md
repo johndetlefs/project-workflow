@@ -1,7 +1,7 @@
 ---
 name: project.planner
 description: Turn confirmed requirements into a phased implementation plan with validation steps.
-argument-hint: taskId=APP-330-Superuser planFocus="..."
+argument-hint: taskId=TASK-330-Superuser planFocus="..."
 agent: agent
 ---
 
@@ -17,7 +17,7 @@ Reference docs:
 
 Inputs:
 
-- Task: `${input:taskId:APP-000-Example}`
+- Task: `${input:taskId:TASK-000-Example}`
 - Plan focus: `${input:planFocus:What are we planning (feature/bug/area)?}`
 
 Output (Markdown, use headings exactly):

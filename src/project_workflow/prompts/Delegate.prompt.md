@@ -1,7 +1,7 @@
 ---
 name: project.delegate
 description: Coordinate delegated work items by routing each item through project.implement.
-argument-hint: taskId=APP-330-Superuser workItems="1,2,3" mode=sequential dependencies="{}"
+argument-hint: taskId=TASK-330-Superuser workItems="1,2,3" mode=sequential dependencies="{}"
 agent: agent
 ---
 
@@ -9,7 +9,7 @@ Use this prompt to coordinate delegated execution for task work items.
 
 Inputs:
 
-- Task: `${input:taskId:APP-000-Example}`
+- Task: `${input:taskId:TASK-000-Example}`
 - Work items: `${input:workItems:1,2,3}`
 - Mode: `${input:mode:sequential|parallel}`
 - Dependencies: `${input:dependencies:{"2":["1"]}}`
