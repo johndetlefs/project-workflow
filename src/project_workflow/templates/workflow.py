@@ -222,6 +222,58 @@ def _resolve_epic_dir(tasks_dir: Path, epic_id: str) -> Path:
     return matches[0]
 
 
+def _next_task_id_from_used(used_ids: set[str]) -> str:
+    max_value = 0
+    row_re = re.compile(rf"^{re.escape(TASK_ID_PREFIX)}-(\d+)$")
+    for used_id in used_ids:
+        match = row_re.match(used_id)
+        if match:
+            max_value = max(max_value, int(match.group(1)))
+    return f"{TASK_ID_PREFIX}-{max_value + 1:0{ID_PADDING}d}"
+
+
+def _decompose_epic_requirements_to_titles(requirements_text: str, *, limit: int) -> list[str]:
+    lines = requirements_text.splitlines()
+    bullets: list[str] = []
+    in_section = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            in_section = stripped in {"## Acceptance Criteria", "## Requirements"}
+            continue
+        if not in_section:
+            continue
+        if not stripped.startswith("-"):
+            continue
+        bullet = stripped.lstrip("-").strip()
+        if not bullet or bullet == "____":
+            continue
+        bullet = re.sub(r"^AC\d+\s*:\s*", "", bullet, flags=re.IGNORECASE)
+        bullet = re.sub(r"^A user can\s+", "", bullet, flags=re.IGNORECASE)
+        bullet = re.sub(r"^Users can\s+", "", bullet, flags=re.IGNORECASE)
+        bullet = bullet[:1].upper() + bullet[1:] if bullet else bullet
+        bullets.append(bullet.rstrip("."))
+        if len(bullets) >= limit:
+            break
+    return bullets
+
+
+def _append_epic_tracker_rows(epic_tracker_path: Path, rows_to_add: list[dict[str, str]]) -> None:
+    lines, header_idx, rows = _epic_tracker_rows(epic_tracker_path)
+    existing_ids = {row["ID"] for row in rows}
+    duplicate_ids = [row["ID"] for row in rows_to_add if row["ID"] in existing_ids]
+    if duplicate_ids:
+        raise SystemExit(
+            "Cannot append decomposition proposals; epic tracker already contains IDs: "
+            + ", ".join(sorted(set(duplicate_ids)))
+        )
+
+    insert_at = header_idx + 2 + len(rows)
+    formatted = [_format_epic_tracker_row(row) for row in rows_to_add]
+    lines[insert_at:insert_at] = formatted
+    epic_tracker_path.write_text("".join(lines), encoding="utf-8")
+
+
 def _update_tracker(
     tracker_path: Path,
     *,
@@ -455,6 +507,76 @@ def cmd_epic_approve(args: argparse.Namespace) -> None:
     print(f"Approved epic row {args.id} in {epic_tracker_path}")
 
 
+def cmd_epic_decompose(args: argparse.Namespace) -> None:
+    """Generate Proposed child rows from epic REQUIREMENTS.md without scaffolding child folders."""
+    here = Path(__file__)
+    repo_root = here.resolve().parents[2]
+    workflow_dir = repo_root / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    tracker_path = workflow_dir / "TRACKER.md"
+
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    epic_tracker_path = epic_dir / "TRACKER.md"
+
+    if not requirements_path.exists():
+        raise SystemExit(f"Missing epic requirements file: {requirements_path}")
+    if not epic_tracker_path.exists():
+        raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
+    if not tracker_path.exists():
+        raise SystemExit(f"Missing global tracker file: {tracker_path}")
+
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    titles = _decompose_epic_requirements_to_titles(requirements_text, limit=args.limit)
+    if not titles:
+        raise SystemExit(
+            "No decomposition candidates found in epic REQUIREMENTS.md. "
+            "Add bullet points under '## Acceptance Criteria' or '## Requirements' first."
+        )
+
+    occupied_ids: set[str] = set()
+    task_re = re.compile(rf"^{re.escape(TASK_ID_PREFIX)}-\d+$")
+
+    for path in tasks_dir.iterdir():
+        if not path.is_dir():
+            continue
+        match = re.match(rf"^{re.escape(TASK_ID_PREFIX)}-(\d+)-", path.name)
+        if match:
+            occupied_ids.add(f"{TASK_ID_PREFIX}-{int(match.group(1)):0{ID_PADDING}d}")
+
+    tracker_text = tracker_path.read_text(encoding="utf-8")
+    for match in re.finditer(rf"\|\s*({re.escape(TASK_ID_PREFIX)}-\d+)\s*\|", tracker_text):
+        candidate = match.group(1)
+        if task_re.match(candidate):
+            occupied_ids.add(candidate)
+
+    _lines, _header_idx, epic_rows = _epic_tracker_rows(epic_tracker_path)
+    for row in epic_rows:
+        candidate = row["ID"].strip()
+        if task_re.match(candidate):
+            occupied_ids.add(candidate)
+
+    rows_to_add: list[dict[str, str]] = []
+    for title in titles:
+        next_id = _next_task_id_from_used(occupied_ids)
+        occupied_ids.add(next_id)
+        rows_to_add.append(
+            {
+                "ID": next_id,
+                "Title": title,
+                "Status": "Proposed",
+                "Type": args.item_type,
+                "Docs": "",
+                "Branch": "",
+                "Notes": f"Generated from {requirements_path.name}",
+            }
+        )
+
+    _append_epic_tracker_rows(epic_tracker_path, rows_to_add)
+    print(f"Added {len(rows_to_add)} Proposed row(s) to {epic_tracker_path}")
+    print("No child task folders were created in this decomposition step.")
+
+
 def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
     """Scaffold one approved child row from an epic tracker."""
     here = Path(__file__)
@@ -603,6 +725,27 @@ def build_parser() -> argparse.ArgumentParser:
     epic_approve_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
     epic_approve_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
     epic_approve_parser.set_defaults(func=cmd_epic_approve)
+
+    epic_decompose_parser = epic_sub.add_parser(
+        "decompose",
+        help="Generate Proposed child rows from an epic REQUIREMENTS.md",
+    )
+    epic_decompose_parser.add_argument(
+        "--epic-id", required=True, help="Epic ID (e.g. EPIC-001)"
+    )
+    epic_decompose_parser.add_argument(
+        "--limit",
+        type=int,
+        default=5,
+        help="Maximum number of proposed rows to generate (default: 5)",
+    )
+    epic_decompose_parser.add_argument(
+        "--type",
+        dest="item_type",
+        default="Task",
+        help="Tracker Type column value for proposed rows (default: Task)",
+    )
+    epic_decompose_parser.set_defaults(func=cmd_epic_decompose)
 
     epic_scaffold_child_parser = epic_sub.add_parser(
         "scaffold-child",
