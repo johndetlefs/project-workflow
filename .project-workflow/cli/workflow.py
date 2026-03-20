@@ -81,6 +81,63 @@ def _write_file(path: Path, content: str, *, overwrite: bool) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def _rollback_file_changes(
+    *,
+    created_files: list[Path],
+    overwritten_files: dict[Path, str],
+    created_dirs: list[Path],
+) -> list[str]:
+    errors: list[str] = []
+
+    for path, original_content in overwritten_files.items():
+        try:
+            path.write_text(original_content, encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"restore {path}: {exc}")
+
+    for path in reversed(created_files):
+        try:
+            if path.exists():
+                path.unlink()
+        except OSError as exc:
+            errors.append(f"remove {path}: {exc}")
+
+    for path in sorted(created_dirs, key=lambda p: len(p.parts), reverse=True):
+        try:
+            if path.exists() and not any(path.iterdir()):
+                path.rmdir()
+        except OSError as exc:
+            errors.append(f"remove dir {path}: {exc}")
+
+    return errors
+
+
+def _rollback_git_state(
+    cwd: Path,
+    *,
+    original_branch: str | None,
+    created_branch: str | None,
+) -> list[str]:
+    errors: list[str] = []
+
+    if original_branch:
+        try:
+            current_branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=cwd)
+            if current_branch != original_branch:
+                _run_git(["checkout", original_branch], cwd=cwd)
+        except (subprocess.CalledProcessError, OSError) as exc:
+            errors.append(f"restore branch {original_branch}: {exc}")
+
+    if created_branch:
+        try:
+            if _branch_exists(cwd, created_branch):
+                _run_git(["branch", "-D", created_branch], cwd=cwd)
+        except (subprocess.CalledProcessError, OSError) as exc:
+            errors.append(f"delete branch {created_branch}: {exc}")
+
+    return errors
+
+
 def _implementation_template(task_id: str, title: str) -> str:
     return (
         f"## User Story\n\n"
@@ -520,20 +577,59 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
     reqs_path = epic_dir / "REQUIREMENTS.md"
     epic_tracker_path = epic_dir / "TRACKER.md"
 
-    epic_dir.mkdir(parents=True, exist_ok=True)
-    if args.overwrite or not reqs_path.exists():
-        _write_file(reqs_path, _requirements_template(spec.task_id, spec.title), overwrite=True)
-    if args.overwrite or not epic_tracker_path.exists():
-        _write_file(epic_tracker_path, _epic_tracker_template(), overwrite=True)
+    created_files: list[Path] = []
+    overwritten_files: dict[Path, str] = {}
+    created_dirs: list[Path] = []
 
-    docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
-    row_written = _update_tracker(
-        tracker_path,
-        spec=spec,
-        status=args.status,
-        docs_rel_path=docs_rel,
-        on_duplicate="skip",
-    )
+    try:
+        if not epic_dir.exists():
+            epic_dir.mkdir(parents=True, exist_ok=True)
+            created_dirs.append(epic_dir)
+
+        if args.overwrite or not reqs_path.exists():
+            if reqs_path.exists():
+                overwritten_files[reqs_path] = reqs_path.read_text(encoding="utf-8")
+            _write_file(reqs_path, _requirements_template(spec.task_id, spec.title), overwrite=True)
+            if reqs_path not in overwritten_files:
+                created_files.append(reqs_path)
+
+        if args.overwrite or not epic_tracker_path.exists():
+            if epic_tracker_path.exists():
+                overwritten_files[epic_tracker_path] = epic_tracker_path.read_text(encoding="utf-8")
+            _write_file(epic_tracker_path, _epic_tracker_template(), overwrite=True)
+            if epic_tracker_path not in overwritten_files:
+                created_files.append(epic_tracker_path)
+
+        docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
+        row_written = _update_tracker(
+            tracker_path,
+            spec=spec,
+            status=args.status,
+            docs_rel_path=docs_rel,
+            on_duplicate="skip",
+        )
+    except (OSError, SystemExit) as exc:
+        rollback_errors = _rollback_file_changes(
+            created_files=created_files,
+            overwritten_files=overwritten_files,
+            created_dirs=created_dirs,
+        )
+        message = (
+            "Epic scaffold failed before completion. "
+            f"Cause: {exc}. "
+            "State was rolled back for files/directories touched in this run."
+        )
+        if rollback_errors:
+            raise SystemExit(
+                message
+                + " Manual cleanup may be required for: "
+                + "; ".join(rollback_errors)
+            )
+        raise SystemExit(
+            message
+            + " Resolve the error and re-run the same command; no manual cleanup should be "
+            "required."
+        )
 
     print(f"Created epic: {epic_dir}")
     if row_written:
@@ -690,58 +786,110 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
         folder_suffix=slug_titlecase_dashes(target["Title"]),
     )
     branch_name: str | None = None
-
-    if args.create_branch:
-        _ensure_clean_git(repo_root)
-        epic_branch = args.epic_branch
-        branch_name = f"{args.branch_prefix}{child_spec.task_id}-{slug_kebab_lower(child_spec.title)}"
-
-        if not _branch_exists(repo_root, epic_branch):
-            raise SystemExit(
-                f"Epic branch '{epic_branch}' was not found. "
-                "Child branches for epic-managed tasks must branch from the epic branch "
-                "and never fall back to a base branch. "
-                "Create or checkout the epic branch first, for example: "
-                f"git checkout -b {epic_branch} develop"
-            )
-
-        _run_git(["checkout", epic_branch], cwd=repo_root)
-        if _branch_exists(repo_root, branch_name):
-            _run_git(["checkout", branch_name], cwd=repo_root)
-        else:
-            _run_git(["checkout", "-b", branch_name], cwd=repo_root)
     child_dir = epic_dir / child_spec.task_folder_name
     impl_path = child_dir / "IMPLEMENTATION.md"
     reqs_path = child_dir / "REQUIREMENTS.md"
 
-    child_dir.mkdir(parents=True, exist_ok=True)
-    if args.overwrite or not impl_path.exists():
-        _write_file(
-            impl_path,
-            _implementation_template(child_spec.task_id, child_spec.title),
-            overwrite=True,
-        )
-    if args.overwrite or not reqs_path.exists():
-        _write_file(
-            reqs_path,
-            _requirements_template(child_spec.task_id, child_spec.title),
-            overwrite=True,
-        )
+    created_files: list[Path] = []
+    overwritten_files: dict[Path, str] = {}
+    created_dirs: list[Path] = []
+    original_branch: str | None = None
+    created_branch: str | None = None
 
-    if target["ID"] != assigned_id:
-        prior_id = target["ID"]
-        target["ID"] = assigned_id
-        note = target["Notes"].strip()
-        collision_note = f"Reassigned from {prior_id} due to ID collision"
-        target["Notes"] = f"{note}; {collision_note}" if note else collision_note
+    try:
+        if args.create_branch:
+            _ensure_clean_git(repo_root)
+            original_branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_root)
+            epic_branch = args.epic_branch
+            branch_name = (
+                f"{args.branch_prefix}{child_spec.task_id}-{slug_kebab_lower(child_spec.title)}"
+            )
 
-    target["Docs"] = f"tasks/{epic_dir.name}/{child_spec.task_folder_name}/IMPLEMENTATION.md"
-    if branch_name is not None:
-        target["Branch"] = branch_name
-    target["Status"] = "In Progress"
-    line_idx = int(target["_line_idx"])
-    lines[line_idx] = _format_epic_tracker_row(target)
-    epic_tracker_path.write_text("".join(lines), encoding="utf-8")
+            if not _branch_exists(repo_root, epic_branch):
+                raise SystemExit(
+                    f"Epic branch '{epic_branch}' was not found. "
+                    "Child branches for epic-managed tasks must branch from the epic branch "
+                    "and never fall back to a base branch. "
+                    "Create or checkout the epic branch first, for example: "
+                    f"git checkout -b {epic_branch} develop"
+                )
+
+            _run_git(["checkout", epic_branch], cwd=repo_root)
+            if _branch_exists(repo_root, branch_name):
+                _run_git(["checkout", branch_name], cwd=repo_root)
+            else:
+                _run_git(["checkout", "-b", branch_name], cwd=repo_root)
+                created_branch = branch_name
+
+        if not child_dir.exists():
+            child_dir.mkdir(parents=True, exist_ok=True)
+            created_dirs.append(child_dir)
+
+        if args.overwrite or not impl_path.exists():
+            if impl_path.exists():
+                overwritten_files[impl_path] = impl_path.read_text(encoding="utf-8")
+            _write_file(
+                impl_path,
+                _implementation_template(child_spec.task_id, child_spec.title),
+                overwrite=True,
+            )
+            if impl_path not in overwritten_files:
+                created_files.append(impl_path)
+
+        if args.overwrite or not reqs_path.exists():
+            if reqs_path.exists():
+                overwritten_files[reqs_path] = reqs_path.read_text(encoding="utf-8")
+            _write_file(
+                reqs_path,
+                _requirements_template(child_spec.task_id, child_spec.title),
+                overwrite=True,
+            )
+            if reqs_path not in overwritten_files:
+                created_files.append(reqs_path)
+
+        if target["ID"] != assigned_id:
+            prior_id = target["ID"]
+            target["ID"] = assigned_id
+            note = target["Notes"].strip()
+            collision_note = f"Reassigned from {prior_id} due to ID collision"
+            target["Notes"] = f"{note}; {collision_note}" if note else collision_note
+
+        target["Docs"] = f"tasks/{epic_dir.name}/{child_spec.task_folder_name}/IMPLEMENTATION.md"
+        if branch_name is not None:
+            target["Branch"] = branch_name
+        target["Status"] = "In Progress"
+        line_idx = int(target["_line_idx"])
+        lines[line_idx] = _format_epic_tracker_row(target)
+        epic_tracker_path.write_text("".join(lines), encoding="utf-8")
+    except (subprocess.CalledProcessError, OSError, SystemExit) as exc:
+        rollback_errors = _rollback_file_changes(
+            created_files=created_files,
+            overwritten_files=overwritten_files,
+            created_dirs=created_dirs,
+        )
+        rollback_errors.extend(
+            _rollback_git_state(
+                repo_root,
+                original_branch=original_branch,
+                created_branch=created_branch,
+            )
+        )
+        message = (
+            "Epic child scaffold failed before completion. "
+            f"Cause: {exc}. "
+            "State was rolled back for files/directories and branch changes from this run."
+        )
+        if rollback_errors:
+            raise SystemExit(
+                message
+                + " Manual cleanup may be required for: "
+                + "; ".join(rollback_errors)
+            )
+        raise SystemExit(
+            message
+            + " Resolve the error and re-run the same command; no manual cleanup should be "
+            "required."
+        )
 
     print(f"Scaffolded epic child: {child_dir}")
     print(f"Updated epic tracker: {epic_tracker_path}")
