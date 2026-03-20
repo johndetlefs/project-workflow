@@ -304,6 +304,20 @@ When `/project.requirements` or `/project.planner` finishes:
 - Edit directly if something is wrong
 - Copilot will respect your edits on next use
 
+### 🧪 Keep Validation Terminal-Safe
+
+When running local validation or failure-path simulations, use commands that are resilient in interactive shells:
+
+- Prefer explicit virtual-environment binaries on every command (`.venv/bin/python`, `.venv/bin/project`) instead of relying on shell activation state.
+- In initialized repos, run generated workflow commands via Python for consistency:
+
+```bash
+.venv/bin/python .project-workflow/cli/workflow.py task init --help
+```
+
+- For expected-failure checks, avoid very long chained shell commands; use stepwise commands or a short script file.
+- Capture and assert non-zero exit codes explicitly so expected failures are treated as test outcomes rather than terminal crashes.
+
 ### 🚀 One Feature = One Task ID
 
 Don't mix multiple features under one task. It makes the tracker useless.

@@ -60,6 +60,14 @@ Validation preflight (required for Python/CLI checks in this repo):
 - Do not rely on system-managed Python/pip for local validation in this repo.
 - If `.venv` is missing, create it first, then continue with the sequence below.
 
+Terminal robustness (required for validation/failure-path tests):
+
+- Prefer explicit venv binaries in every command invocation (`.venv/bin/python`, `.venv/bin/project`) rather than relying on shell activation state.
+- In initialized repos, run generated workflow commands through Python for consistency:
+  - `.venv/bin/python .project-workflow/cli/workflow.py ...`
+- Avoid very long chained shell commands for failure-path simulation; use stepwise commands or a short script file.
+- When intentionally testing failing scenarios, capture and assert non-zero exit codes explicitly instead of allowing strict shell mode to terminate the terminal process.
+
 Recommended local validation sequence:
 
 1. `python3 -m venv .venv && source .venv/bin/activate`
