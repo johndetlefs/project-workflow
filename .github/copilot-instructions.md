@@ -68,6 +68,24 @@ Terminal robustness (required for validation/failure-path tests):
 - Avoid very long chained shell commands for failure-path simulation; use stepwise commands or a short script file.
 - When intentionally testing failing scenarios, capture and assert non-zero exit codes explicitly instead of allowing strict shell mode to terminate the terminal process.
 
+Validation command protocol (mandatory):
+
+- Treat these rules as hard constraints, not preferences.
+- Run one logical action per terminal command.
+- Do not use inline heredocs in long chained commands.
+- If multi-line input is required, either:
+  - write a short temporary script/file first, then run it in a separate command, or
+  - use separate stepwise commands to build the file content.
+- Do not combine setup + content-writing + execution + assertions in one command.
+- If terminal output appears malformed, interactive, or truncated unexpectedly, stop and re-run using smaller stepwise commands.
+
+Pre-execution checklist for validation commands:
+
+- Confirm command uses explicit repo venv binaries (`.venv/bin/project` or `.venv/bin/python`).
+- Confirm command performs exactly one logical step.
+- Confirm no chained heredoc pattern is used.
+- If any check fails, rewrite the command before execution.
+
 Recommended local validation sequence:
 
 1. `python3 -m venv .venv && source .venv/bin/activate`
