@@ -10,7 +10,7 @@ Use this prompt to run epic workflow operations through the local workflow CLI.
 Inputs:
 
 - Action: `${input:action:init|decompose|approve|scaffold-child}`
-- Epic title (required for `init`): `${input:title:Checkout Reliability}`
+- Epic title (required for `init`): `${input:title:}`
 - Epic ID (required for all non-init actions): `${input:epicId:EPIC-001}`
 - Row ID (required for `approve` and `scaffold-child`): `${input:id:TASK-014}`
 - Decompose limit (optional, default 5): `${input:limit:5}`
@@ -27,6 +27,12 @@ Defaults and inference:
   - `epicId` + `id` + intent to approve -> `approve`
   - `epicId` + `id` + intent to scaffold -> `scaffold-child`
 - If inference is unclear, ask one clarifying question and stop.
+
+Required preflight for `init`:
+
+- Never run `init` with an implicit/default title.
+- If `title` is missing, empty, or still a placeholder/example value, ask exactly one clarifying question for the epic title and stop.
+- If action is `init` and title is provided, echo the exact title back before executing.
 
 Execution:
 
