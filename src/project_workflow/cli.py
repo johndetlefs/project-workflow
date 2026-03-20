@@ -345,15 +345,30 @@ def _decompose_epic_requirements_to_titles(requirements_text: str, *, limit: int
     for line in lines:
         stripped = line.strip()
         if stripped.startswith("## "):
-            in_section = stripped in {"## Acceptance Criteria", "## Requirements"}
+            heading = stripped[3:].strip().lower()
+            in_section = heading.startswith("acceptance criteria") or heading.startswith(
+                "requirements"
+            )
             continue
         if not in_section:
             continue
-        if not stripped.startswith("-"):
+
+        bullet: Optional[str] = None
+        if stripped.startswith(("-", "*")):
+            bullet = stripped[1:].strip()
+        else:
+            numbered_match = re.match(r"^\d+[.)]\s+(.*)$", stripped)
+            if numbered_match:
+                bullet = numbered_match.group(1).strip()
+            elif re.match(r"^(as a|as an)\b", stripped, flags=re.IGNORECASE):
+                bullet = stripped
+
+        if bullet is None:
             continue
-        bullet = stripped.lstrip("-").strip()
         if not bullet or bullet == "____":
             continue
+
+        bullet = re.sub(r"\s+", " ", bullet)
         bullet = re.sub(r"^AC\d+\s*:\s*", "", bullet, flags=re.IGNORECASE)
         bullet = re.sub(r"^A user can\s+", "", bullet, flags=re.IGNORECASE)
         bullet = re.sub(r"^Users can\s+", "", bullet, flags=re.IGNORECASE)
@@ -817,7 +832,8 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
     if not titles:
         raise SystemExit(
             "No decomposition candidates found in epic REQUIREMENTS.md. "
-            "Add bullet points under '## Acceptance Criteria' or '## Requirements' first."
+            "Add list items under '## Requirements (Outcome-Focused)' or "
+            "'## Acceptance Criteria (Verifiable)' first."
         )
 
     occupied_ids: set[str] = set()
