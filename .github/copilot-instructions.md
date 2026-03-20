@@ -50,6 +50,16 @@ Product outcomes and mission belong in `.project-workflow/CONSTITUTION.md`.
 
 Run the narrowest checks first, then broader checks if needed.
 
+Validation preflight (required for Python/CLI checks in this repo):
+
+- Always run validation commands from the repository virtual environment (`.venv`).
+- Prefer explicit binary paths to avoid interpreter drift:
+  - `.venv/bin/python`
+  - `.venv/bin/pip`
+  - `.venv/bin/project`
+- Do not rely on system-managed Python/pip for local validation in this repo.
+- If `.venv` is missing, create it first, then continue with the sequence below.
+
 Recommended local validation sequence:
 
 1. `python3 -m venv .venv && source .venv/bin/activate`
