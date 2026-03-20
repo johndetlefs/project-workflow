@@ -52,6 +52,17 @@ def _ensure_clean_git(cwd: Path) -> None:
         )
 
 
+def _branch_exists(cwd: Path, branch: str) -> bool:
+    completed = subprocess.run(
+        ["git", "show-ref", "--verify", "--quiet", f"refs/heads/{branch}"],
+        cwd=str(cwd),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return completed.returncode == 0
+
+
 @dataclass(frozen=True)
 class TaskSpec:
     task_id: str
@@ -678,6 +689,27 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
         title=target["Title"],
         folder_suffix=slug_titlecase_dashes(target["Title"]),
     )
+    branch_name: str | None = None
+
+    if args.create_branch:
+        _ensure_clean_git(repo_root)
+        epic_branch = args.epic_branch
+        branch_name = f"{args.branch_prefix}{child_spec.task_id}-{slug_kebab_lower(child_spec.title)}"
+
+        if not _branch_exists(repo_root, epic_branch):
+            raise SystemExit(
+                f"Epic branch '{epic_branch}' was not found. "
+                "Child branches for epic-managed tasks must branch from the epic branch "
+                "and never fall back to a base branch. "
+                "Create or checkout the epic branch first, for example: "
+                f"git checkout -b {epic_branch} develop"
+            )
+
+        _run_git(["checkout", epic_branch], cwd=repo_root)
+        if _branch_exists(repo_root, branch_name):
+            _run_git(["checkout", branch_name], cwd=repo_root)
+        else:
+            _run_git(["checkout", "-b", branch_name], cwd=repo_root)
     child_dir = epic_dir / child_spec.task_folder_name
     impl_path = child_dir / "IMPLEMENTATION.md"
     reqs_path = child_dir / "REQUIREMENTS.md"
@@ -704,6 +736,8 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
         target["Notes"] = f"{note}; {collision_note}" if note else collision_note
 
     target["Docs"] = f"tasks/{epic_dir.name}/{child_spec.task_folder_name}/IMPLEMENTATION.md"
+    if branch_name is not None:
+        target["Branch"] = branch_name
     target["Status"] = "In Progress"
     line_idx = int(target["_line_idx"])
     lines[line_idx] = _format_epic_tracker_row(target)
@@ -711,6 +745,8 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
 
     print(f"Scaffolded epic child: {child_dir}")
     print(f"Updated epic tracker: {epic_tracker_path}")
+    if branch_name is not None:
+        print(f"Child branch active from epic branch {args.epic_branch}: {branch_name}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -835,6 +871,24 @@ def build_parser() -> argparse.ArgumentParser:
         "--overwrite",
         action="store_true",
         help="Overwrite existing child docs if child folder already exists",
+    )
+    epic_scaffold_child_parser.add_argument(
+        "--create-branch",
+        action="store_true",
+        help="Create and checkout a child branch from the epic branch",
+    )
+    epic_scaffold_child_parser.add_argument(
+        "--epic-branch",
+        default="epic/main",
+        help=(
+            "Existing epic branch to derive child branches from "
+            "(default: epic/main)"
+        ),
+    )
+    epic_scaffold_child_parser.add_argument(
+        "--branch-prefix",
+        default="feature/",
+        help="Child branch prefix (default: feature/)",
     )
     epic_scaffold_child_parser.set_defaults(func=cmd_epic_scaffold_child)
 
