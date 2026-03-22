@@ -1,7 +1,7 @@
 ---
 name: project.clarify
 description: Ask the minimum set of questions needed to remove ambiguity before planning/implementing.
-argument-hint: topic="..." taskId=APP-330-Superuser
+argument-hint: topic="..." taskId=TASK-330-Superuser
 agent: agent
 ---
 
@@ -18,7 +18,7 @@ Reference docs:
 
 Inputs:
 
-- Task (optional): `${input:taskId:APP-000-Example}`
+- Task (optional): `${input:taskId:TASK-000-Example}`
 - Topic: `${input:topic:What needs clarifying?}`
 
 Output (Markdown):

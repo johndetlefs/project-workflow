@@ -1,7 +1,7 @@
 ---
 name: project.clarify
 description: Ask the minimum set of questions needed to remove ambiguity before planning/implementing.
-argument-hint: topic="..." taskId=APP-330-Superuser
+argument-hint: topic="..." taskId=TASK-330-Superuser
 agent: agent
 ---
 
@@ -18,7 +18,7 @@ Reference docs:
 
 Inputs:
 
-- Task (optional): `${input:taskId:APP-000-Example}`
+- Task (optional): `${input:taskId:TASK-000-Example}`
 - Topic: `${input:topic:What needs clarifying?}`
 
 Output (Markdown):
@@ -28,7 +28,7 @@ Workflow (must follow):
 1. Read context first
 
 - Read the `## User Story` section from `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md`.
-- Read `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` (if it exists) and treat it as the source of truth for what's already been agreed.
+- Read `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` (if it exists) and treat it as the source of truth for what’s already been agreed.
 - Cross-check against repo constraints in `../copilot-instructions.md` and project outcomes in `../../.project-workflow/CONSTITUTION.md`.
 
 Guardrail:
@@ -39,7 +39,7 @@ Guardrail:
 
 - Identify every ambiguity/conflict that would change scope, safety, security, billing attribution, data correctness, or user-visible behavior.
 - For each ambiguity, write it into `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` as a numbered open question (e.g. `Q1`, `Q2`, …) with 2–4 options labeled `A/B/C/...`.
-- Each question must be explicitly anchored to the current user story and include a short "why it matters".
+- Each question must be explicitly anchored to the current user story and include a short “why it matters”.
 
 3. Work through questions item-by-item until resolved
 
@@ -49,8 +49,8 @@ Guardrail:
   - Update `REQUIREMENTS.md` immediately: record the decision in a decisions log, mark the question resolved, and remove/strike it from open questions.
   - Keep `IMPLEMENTATION.md` in sync with the confirmed decisions.
   - Keep the `IMPLEMENTATION.md` task list in sync:
-    - If `IMPLEMENTATION.md` has a `## Tasks` section, update it to reflect the confirmed decisions (add/update/remove tasks as needed; mark "clarification-only" tasks complete as questions are resolved).
-    - If `IMPLEMENTATION.md` does NOT yet have a `## Tasks` section, you MAY add a minimal `## Tasks` section limited to tracking clarification work (e.g., "Resolve Q1…Qn"). Do NOT invent a full implementation plan here — the `project.planner` prompt owns full task planning.
+    - If `IMPLEMENTATION.md` has a `## Tasks` section, update it to reflect the confirmed decisions (add/update/remove tasks as needed; mark “clarification-only” tasks complete as questions are resolved).
+    - If `IMPLEMENTATION.md` does NOT yet have a `## Tasks` section, you MAY add a minimal `## Tasks` section limited to tracking clarification work (e.g., “Resolve Q1…Qn”). Do NOT invent a full implementation plan here — the `project.planner` prompt owns full task planning.
 - Repeat until `REQUIREMENTS.md` has no unresolved open questions (or the user explicitly accepts remaining items as risks and that acceptance is recorded).
 
 ## User Story (from IMPLEMENTATION.md)
@@ -103,9 +103,9 @@ Example format:
 
 Always ensure the questions exist in `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` BEFORE you ask them.
 
-If the user's answers are present in the conversation context, document the decisions and chosen options immediately in `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` (including rationale/tradeoffs where relevant), and do not ask again.
+If the user’s answers are present in the conversation context, document the decisions and chosen options immediately in `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` (including rationale/tradeoffs where relevant), and do not ask again.
 
-If the user's answers are not present yet:
+If the user’s answers are not present yet:
 
 - First, write/update `REQUIREMENTS.md` with the open questions (Q1/Q2/…) and their A/B/C options.
 - Then ask the user the next single unanswered question.
@@ -115,12 +115,12 @@ Also keep the implementation tracker up to date:
 - After recording each decision in `REQUIREMENTS.md`, update `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md` to keep BOTH:
   - `## User Story` (and any decision-dependent notes) consistent with `REQUIREMENTS.md`, and
   - `## Tasks` consistent with the confirmed decisions.
-- Clarify may update an existing task list (or add a minimal "clarification tracking" task list), but must not generate a full multi-phase implementation plan — Planner owns full task planning.
+- Clarify may update an existing task list (or add a minimal “clarification tracking” task list), but must not generate a full multi-phase implementation plan — Planner owns full task planning.
 
 -
 
-## Suggested Defaults (if the user doesn't care)
+## Suggested Defaults (if the user doesn’t care)
 
 -
 
-Guardrail: don't start implementation until unresolved questions are cleared (or explicitly accepted as risks) and decisions are recorded in `REQUIREMENTS.md`.
+Guardrail: don’t start implementation until unresolved questions are cleared (or explicitly accepted as risks) and decisions are recorded in `REQUIREMENTS.md`.

@@ -90,10 +90,9 @@ If `.github/copilot-instructions.md` is missing, it will offer to create one for
 
 ### 1. **Create a Task** (5 min)
 
-In **Copilot chat**, type `/project.scaffold` and answer the quick questions:
+In **Copilot chat**, type `/project.task` and answer the quick questions:
 
 ```
-Task ID: APP-001
 Task title: User Account Export
 Create a git branch: yes
 ```
@@ -105,7 +104,7 @@ Copilot will generate a task folder under `.project-workflow/tasks/` and update 
 In **Copilot chat**, run `/project.requirements` and provide your task details:
 
 ```
-Task: APP-001
+Task: TASK-001
 Goal: Allow users to export their account data as PDF
 Context: [any relevant links, design docs, constraints]
 ```
@@ -118,7 +117,7 @@ Copilot will:
 - Ensure acceptance criteria are explicitly mappable to validation steps
 - Flag ambiguities as open questions
 
-Answer each question iteratively. Copilot updates `.project-workflow/tasks/APP-001-*/REQUIREMENTS.md` as you go.
+Answer each question iteratively. Copilot updates `.project-workflow/tasks/TASK-001-*/REQUIREMENTS.md` as you go.
 
 **Stop when:** REQUIREMENTS.md is drafted (even if it has open questions).
 
@@ -127,7 +126,7 @@ Answer each question iteratively. Copilot updates `.project-workflow/tasks/APP-0
 In **Copilot chat**, run `/project.planner`:
 
 ```
-Task: APP-001
+Task: TASK-001
 Plan focus: API + UI for account export
 ```
 
@@ -137,7 +136,7 @@ Copilot generates:
 - Implementation task list
 - Validation steps for each phase, mapped to acceptance criteria
 
-It updates `.project-workflow/tasks/APP-001-*/IMPLEMENTATION.md` with a task table.
+It updates `.project-workflow/tasks/TASK-001-*/IMPLEMENTATION.md` with a task table.
 
 **Output:** You now have a clear roadmap to code against.
 
@@ -146,7 +145,7 @@ It updates `.project-workflow/tasks/APP-001-*/IMPLEMENTATION.md` with a task tab
 After planning, run `/project.clarify` to make sure REQUIREMENTS.md and IMPLEMENTATION.md are internally consistent:
 
 ```
-Task: APP-001
+Task: TASK-001
 Topic: Validate consistency between requirements and plan
 ```
 
@@ -164,7 +163,7 @@ Run Clarify until there are no unresolved questions or conflicts.
 For each work item in the task list, run `/project.implement`:
 
 ```
-Task: APP-001
+Task: TASK-001
 Work item: 1
 ```
 
@@ -181,7 +180,7 @@ You review changes, iterate, and validate. Copilot keeps everything in sync.
 For multi-item orchestration, run `/project.delegate`:
 
 ```
-Task: APP-001
+Task: TASK-001
 Work items: 1,2,3
 Mode: parallel
 Dependencies: {"2":["1"],"3":["1"]}
@@ -195,6 +194,37 @@ Delegate behavior:
 - Validates dependency maps strictly (unknown IDs, self-dependencies, cycles)
 - Uses fail-fast launch behavior while allowing in-flight items to finish
 - Routes each delegated item through `project.implement`
+
+### Epic Workflow (Proposal-First)
+
+Use this when work spans multiple child tasks under a single epic.
+
+Installed CLI path:
+
+```bash
+project epic init --title "Checkout Reliability"
+project epic decompose --epic-id EPIC-001 --limit 5 --type Task
+project epic approve --epic-id EPIC-001 --id TASK-014
+project epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
+```
+
+Local workflow script path (inside an initialized repo):
+
+```bash
+.venv/bin/python .project-workflow/cli/workflow.py epic init --title "Checkout Reliability"
+.venv/bin/python .project-workflow/cli/workflow.py epic decompose --epic-id EPIC-001 --limit 5 --type Task
+.venv/bin/python .project-workflow/cli/workflow.py epic approve --epic-id EPIC-001 --id TASK-014
+.venv/bin/python .project-workflow/cli/workflow.py epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
+```
+
+Epic workflow rules:
+
+- `epic init` auto-assigns the next sequential epic ID and writes an epic `REQUIREMENTS.md` plus epic `TRACKER.md`.
+- `epic decompose` writes Proposed child rows only. It does not scaffold child folders/docs.
+- `epic approve` moves a row from Proposed to Approved (same semantics as manually editing status in epic tracker).
+- `epic scaffold-child` only accepts Approved rows and moves the row to In Progress after scaffold.
+- Child IDs remain globally unique task IDs (`TASK-###`) across standalone and epic-managed work.
+- If `--create-branch` is used for epic child scaffold, `--epic-branch` must already exist; the command fails fast and never falls back to a base branch.
 
 ---
 
@@ -211,15 +241,16 @@ your-project/
 │   │   ├── workflow                  # Advanced: manual task scaffolding
 │   │   └── workflow.py
 │   └── tasks/
-│       ├── APP-001-User-Export/
+│       ├── TASK-001-User-Export/
 │       │   ├── IMPLEMENTATION.md      # ← User story + task list (auto-updated)
 │       │   └── REQUIREMENTS.md        # ← Goals, specs, decisions (auto-updated)
-│       └── APP-002-*/
+│       └── TASK-002-*/
 │           └── ...
 ├── .github/
 │   └── prompts/                      # ← Agent definitions used by Copilot
 │       ├── Constitution.prompt.md    # /project.constitution
-│       ├── Scaffold.prompt.md        # /project.scaffold
+│       ├── Task.prompt.md            # /project.task
+│       ├── Epic.prompt.md            # /project.epic
 │       ├── Requirements.prompt.md    # /project.requirements
 │       ├── Clarify.prompt.md         # /project.clarify
 │       ├── Planner.prompt.md         # /project.planner
@@ -243,7 +274,8 @@ your-project/
 ├── .claude/
 │   └── agents/
 │       ├── project-constitution.md
-│       ├── project-scaffold.md
+│       ├── project-task.md
+│       ├── project-epic.md
 │       ├── project-requirements.md
 │       ├── project-clarify.md
 │       ├── project-planner.md
@@ -267,7 +299,8 @@ your-project/
 ├── .cursor/
 │   └── agents/
 │       ├── project-constitution.md
-│       ├── project-scaffold.md
+│       ├── project-task.md
+│       ├── project-epic.md
 │       ├── project-requirements.md
 │       ├── project-clarify.md
 │       ├── project-planner.md
@@ -284,7 +317,7 @@ your-project/
 
 The agents are designed to be used **in order**. Skipping steps = ambiguous code and rework.
 
-1. **Constitution (once)** → 2. **Scaffold** → 3. **Requirements** → 4. **Planner** → 5. **Clarify** → 6. **Implement**
+1. **Constitution (once)** → 2. **Task** → 3. **Requirements** → 4. **Planner** → 5. **Clarify** → 6. **Implement**
 
 Always run Clarify after Planner to verify internal consistency before implementation.
 Use **Delegate** as an execution option when a task has multiple work items with dependencies.
@@ -305,23 +338,37 @@ When `/project.requirements` or `/project.planner` finishes:
 - Edit directly if something is wrong
 - Copilot will respect your edits on next use
 
+### 🧪 Keep Validation Terminal-Safe
+
+When running local validation or failure-path simulations, use commands that are resilient in interactive shells:
+
+- Prefer explicit virtual-environment binaries on every command (`.venv/bin/python`, `.venv/bin/project`) instead of relying on shell activation state.
+- In initialized repos, run generated workflow commands via Python for consistency:
+
+```bash
+.venv/bin/python .project-workflow/cli/workflow.py task init --help
+```
+
+- For expected-failure checks, avoid very long chained shell commands; use stepwise commands or a short script file.
+- Capture and assert non-zero exit codes explicitly so expected failures are treated as test outcomes rather than terminal crashes.
+
 ### 🚀 One Feature = One Task ID
 
 Don't mix multiple features under one task. It makes the tracker useless.
 
-Good: `APP-001: User Account Export`  
-Bad: `APP-001: Export + Billing View + Email Notifications`
+Good: `TASK-001: User Account Export`  
+Bad: `TASK-001: Export + Billing View + Email Notifications`
 
 ### ⚡ Use the TRACKER as Your Source of Truth
 
 `.project-workflow/TRACKER.md` is visible to everyone. Use it to communicate status to your team.
 
 ```markdown
-| ID      | Title                  | Status      | Docs                                              |
-| ------- | ---------------------- | ----------- | ------------------------------------------------- |
-| APP-001 | User Account Export    | Complete    | `tasks/APP-001-User-Export/IMPLEMENTATION.md`     |
-| APP-002 | Fix login timeout      | In Progress | `tasks/APP-002-Login-Timeout/IMPLEMENTATION.md`   |
-| APP-003 | Email retention policy | To Do       | `tasks/APP-003-Email-Retention/IMPLEMENTATION.md` |
+| ID       | Title                  | Status      | Docs                                               |
+| -------- | ---------------------- | ----------- | -------------------------------------------------- |
+| TASK-001 | User Account Export    | Complete    | `tasks/TASK-001-User-Export/IMPLEMENTATION.md`     |
+| TASK-002 | Fix login timeout      | In Progress | `tasks/TASK-002-Login-Timeout/IMPLEMENTATION.md`   |
+| TASK-003 | Email retention policy | To Do       | `tasks/TASK-003-Email-Retention/IMPLEMENTATION.md` |
 ```
 
 ### Commit Early, Commit Often
@@ -346,14 +393,14 @@ $ uvx --from git+https://github.com/johndetlefs/project-workflow.git project ini
 # 3. Provide a project brief; Copilot scans repo and updates CONSTITUTION.md
 # 4. Commit: "docs: establish project constitution"
 
-# 5. In Copilot chat: /project.scaffold
-# 6. Answer: ID=APP-001, Title="Dark Mode Support", Branch=yes
+# 5. In Copilot chat: /project.task
+# 6. Answer: Title="Dark Mode Support", Branch=yes
 # 7. Copilot runs: ./.project-workflow/cli/workflow task init ...
-# 8. Commit: "scaffold: APP-001 Dark Mode Support"
+# 8. Commit: "scaffold: TASK-001 Dark Mode Support"
 
 # 9. In Copilot chat: /project.requirements
 # 10. Answer discovery questions → Copilot updates REQUIREMENTS.md
-# 11. Commit: "requirements: APP-001 dark mode draft"
+# 11. Commit: "requirements: TASK-001 dark mode draft"
 
 # 12. In Copilot chat: /project.planner
 # 13. Copilot generates implementation plan → Updates IMPLEMENTATION.md with task table
@@ -361,14 +408,14 @@ $ uvx --from git+https://github.com/johndetlefs/project-workflow.git project ini
 # 14. In Copilot chat: /project.clarify
 # 15. Resolve any conflicts/open questions between requirements and plan
 # 16. Repeat /project.clarify until consistent
-# 17. Commit: "plan+clarify: APP-001 dark mode aligned requirements and plan"
+# 17. Commit: "plan+clarify: TASK-001 dark mode aligned requirements and plan"
 
 # 18. In Copilot chat: /project.implement
 # 19. Copilot implements Phase 1, runs tests, updates TRACKER
 # 20. You review changes, commit
 # 21. Repeat for Phase 2, 3, ... (each time running /project.implement with same task ID)
 
-# 22. TRACKER shows APP-001 as Complete
+# 22. TRACKER shows TASK-001 as Complete
 ```
 
 ---
@@ -409,7 +456,7 @@ Everything is **plain text**—you can edit, version control, and code-review it
 → Use the local CLI:
 
 ```bash
-./.project-workflow/cli/workflow task init --id APP-009 --title "Manual Task" --update-tracker
+./.project-workflow/cli/workflow task init --title "Manual Task" --update-tracker
 ```
 
 ---

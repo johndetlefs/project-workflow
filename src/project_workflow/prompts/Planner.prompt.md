@@ -1,7 +1,7 @@
 ---
 name: project.planner
 description: Turn confirmed requirements into a phased implementation plan with validation steps.
-argument-hint: taskId=APP-330-Superuser planFocus="..."
+argument-hint: taskId=TASK-330-Superuser planFocus="..."
 agent: agent
 ---
 
@@ -17,7 +17,7 @@ Reference docs:
 
 Inputs:
 
-- Task: `${input:taskId:APP-000-Example}`
+- Task: `${input:taskId:TASK-000-Example}`
 - Plan focus: `${input:planFocus:What are we planning (feature/bug/area)?}`
 
 Output (Markdown, use headings exactly):
@@ -50,12 +50,12 @@ Produce (or update) an agile task list in `/.project-workflow/tasks/${input:task
 
 Task quality rules (must follow):
 
-- Each task must be independently _testable_ and have a clear "done" outcome.
+- Each task must be independently _testable_ and have a clear “done” outcome.
 - Tasks must be **outcome-based** (deliverable behavior or user-visible capability), not a checklist of implementation steps.
 - Each task must include explicit **Acceptance Criteria (AC)**.
-- Each task must include a **User Verification** step that a non-developer user can perform (or a precise dev command if it's inherently technical).
-- Avoid vague tasks like "ensure X works" or "verify Y" without stating what to check and how.
-- Prefer vertical slices when possible (deliver value incrementally), but don't mix unrelated concerns in one task.
+- Each task must include a **User Verification** step that a non-developer user can perform (or a precise dev command if it’s inherently technical).
+- Avoid vague tasks like “ensure X works” or “verify Y” without stating what to check and how.
+- Prefer vertical slices when possible (deliver value incrementally), but don’t mix unrelated concerns in one task.
 
 If the repo uses a task table, include at least: `Title`, `Description`, `Acceptance Criteria`, `User Verification`, `Status`.
 
@@ -82,7 +82,7 @@ Good example (multi-line content in a cell, but still one row):
 | 1 | Example | Short description | - AC 1<br>- AC 2<br>- AC 3 | - Step 1<br>- Step 2 | To Do |
 ```
 
-Example (good outcome-based tasks; replace with your task's domain):
+Example (good outcome-based tasks; replace with your task’s domain):
 
 ```md
 |  ID | Title                                    | Description                                                                                                                     | Acceptance Criteria                                                       | User Verification | Status |
@@ -95,10 +95,10 @@ Example (good outcome-based tasks; replace with your task's domain):
 
 Anti-examples (do NOT write tasks like this):
 
-- "Find where call creation happens"
-- "Add helper function to compute team id"
-- "Refactor X" (without a user-visible or measurable outcome)
-- "Verify billing works" (without specifying the scenario and what to check)
+- “Find where call creation happens”
+- “Add helper function to compute team id”
+- “Refactor X” (without a user-visible or measurable outcome)
+- “Verify billing works” (without specifying the scenario and what to check)
 
 ## Files / Areas Likely to Change
 
