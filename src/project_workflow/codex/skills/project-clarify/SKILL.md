@@ -1,0 +1,37 @@
+---
+name: project-clarify
+description: Use when project-workflow requirements, implementation plan, repo constraints, or user intent conflict or need clarification.
+---
+
+# Project Clarify
+
+Resolve ambiguity before planning or implementation continues.
+
+## Invocation Rules
+
+- Use this skill whenever the user asks to clarify, resolve ambiguity, reconcile conflicting requirements, or decide between unclear options for a project-workflow task, even if they ask in natural language.
+- Read `AGENTS.md` first and follow its Workflow Skill Map and CLI Requirements.
+- If the task folder does not exist, use `project-task` first when a tracked task is needed.
+- Clarification is a document workflow unless the CLI adds an explicit clarify command.
+
+## Required Files
+
+- `.project-workflow/tasks/<TASK>/REQUIREMENTS.md`
+- `.project-workflow/tasks/<TASK>/IMPLEMENTATION.md`
+- `.project-workflow/CONSTITUTION.md` if present
+- Repo instruction files such as `AGENTS.md` or `.github/copilot-instructions.md`
+
+## Workflow
+
+1. Read the `## User Story` section from `IMPLEMENTATION.md`.
+2. Read `REQUIREMENTS.md` and treat it as the source of truth for agreed outcomes and decisions.
+3. Cross-check for ambiguities or conflicts that affect scope, safety, security, billing, data correctness, validation, or user-visible behavior.
+4. If the user story is missing or unusable, stop and direct the user to run requirements capture first.
+5. Record each ambiguity in `REQUIREMENTS.md` as a numbered open question with:
+   - the conflict or missing decision
+   - why it matters
+   - 2 to 4 actionable options
+6. Ask one unresolved question at a time unless the user explicitly wants batching.
+7. After the user answers, immediately update `REQUIREMENTS.md` decisions and open questions.
+8. Keep `IMPLEMENTATION.md` aligned with confirmed decisions.
+9. Repeat until no unresolved blocking questions remain or the user explicitly accepts remaining risks.

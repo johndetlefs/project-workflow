@@ -1,0 +1,42 @@
+---
+description: Project Workflow spec-driven development process for task scaffolding, requirements, planning, clarification, implementation, QA review, retro, and validation.
+globs:
+alwaysApply: true
+---
+
+# Project Workflow
+
+This repository uses project-workflow for spec-driven development. Keep workflow artifacts in `.project-workflow/` as the shared source of truth.
+
+## Workflow Order
+
+1. Constitution: establish or update `.project-workflow/CONSTITUTION.md` for product outcomes.
+2. Scaffold: create one task folder under `.project-workflow/tasks/<ID>-<Suffix>/`, with `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and a tracker row.
+3. Requirements: capture the user story, scope, acceptance criteria, open questions, decisions, and validation plan in `REQUIREMENTS.md`.
+4. Planner: turn confirmed requirements into testable work items in `IMPLEMENTATION.md`.
+5. Clarify: resolve inconsistencies between requirements, plan, repo constraints, and product outcomes before implementation.
+6. Implement: make the smallest scoped code change for one work item, validate it, and move it to testing.
+7. QA & Code Review: independently verify acceptance criteria and review code before completion.
+8. Retro: after completion, update durable conventions, agent guidance, and follow-up tasks.
+
+## Cursor Usage
+
+- If a task folder does not exist, run `./.project-workflow/cli/workflow task init --id <ID> --title "<TITLE>" --update-tracker` from the repo root.
+- Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
+- Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.
+- Keep `.project-workflow/TRACKER.md` status aligned with the current workflow state.
+- Do not mark a task or work item `Complete` unless implementation validation and QA/code review have passed and the user explicitly asks for completion.
+
+## Status Rules
+
+- New scaffolded tasks start as `To Do`.
+- Set the tracker row to `In Progress` before implementation work begins.
+- Set the tracker row to `Testing` after implementation and validation have been run.
+- Set the tracker row to `Review` while QA/code review is running.
+- Set the tracker row to `Complete` only after QA/code review passes and the user explicitly requests it.
+- Leave the tracker row as `Complete` during retro unless the user explicitly asks to reopen the task.
+
+## Validation
+
+- Run the most relevant available tests, type checks, linters, or manual verification steps for the changed work.
+- If broad validation fails for unrelated pre-existing reasons, run the narrowest meaningful checks and report the limitation.

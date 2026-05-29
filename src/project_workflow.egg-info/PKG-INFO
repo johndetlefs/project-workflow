@@ -1,13 +1,13 @@
 Metadata-Version: 2.4
 Name: project-workflow
 Version: 0.1.1
-Summary: Spec-driven development with GitHub Copilot: workflow scaffolding and task management CLI
+Summary: Spec-driven development with GitHub Copilot, Claude Code, OpenAI Codex, and Cursor: workflow scaffolding, QA review, retro, and task management CLI
 Author-email: John Detlefs <john@example.com>
 License: MIT
 Project-URL: Homepage, https://github.com/johndetlefs/project-workflow
 Project-URL: Repository, https://github.com/johndetlefs/project-workflow.git
 Project-URL: Issues, https://github.com/johndetlefs/project-workflow/issues
-Keywords: workflow,spec-driven,ai,github-copilot,task-management
+Keywords: workflow,spec-driven,ai,github-copilot,claude-code,codex,cursor,task-management
 Classifier: Development Status :: 3 - Alpha
 Classifier: Intended Audience :: Developers
 Classifier: License :: OSI Approved :: MIT License
@@ -24,9 +24,9 @@ Dynamic: license-file
 
 # project-workflow
 
-Spec-driven development with GitHub Copilot, Claude Code, and Cursor.
+Spec-driven development with GitHub Copilot, Claude Code, OpenAI Codex, and Cursor.
 
-A lightweight workflow framework for guiding feature development from requirements through implementation. Works entirely in Markdown—no complex tools or dashboards.
+A lightweight workflow framework for guiding feature development from requirements through implementation, QA review, and retro. Works entirely in Markdown—no complex tools or dashboards.
 
 ## For the Impatient
 
@@ -40,6 +40,7 @@ Or select an explicit agent mode:
 
 ```bash
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent claude-code
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent codex
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor
 ```
 
@@ -56,6 +57,7 @@ Then use your selected agent ecosystem to run the project workflow prompts/subag
 - One supported agent environment:
   - GitHub Copilot (VSCode / github.com/copilot)
   - Claude Code
+  - OpenAI Codex
   - Cursor
 - UV or Python with pip
 
@@ -72,6 +74,7 @@ Optional: select agent mode explicitly:
 ```bash
 project init --agent github-copilot   # default
 project init --agent claude-code
+project init --agent codex
 project init --agent cursor
 ```
 
@@ -81,6 +84,7 @@ This creates:
 - Agent definitions in one mode-specific location:
   - `.github/prompts/` for GitHub Copilot
   - `.claude/agents/` for Claude Code
+  - `AGENTS.md` and `.agents/skills/` for OpenAI Codex
   - `.cursor/agents/` for Cursor
 - `.project-workflow/TRACKER.md` — Centralized task status tracking
 
@@ -90,42 +94,43 @@ Re-running is **idempotent** and safe. If local scaffold files were modified, in
 
 ## Agent Modes
 
-`project init` supports three modes:
+`project init` supports four modes:
 
 - `github-copilot` (default)
 - `claude-code`
+- `codex`
 - `cursor`
 
-Aliases are also accepted for convenience (`copilot`, `claude`, `cursor`).
+Aliases are also accepted for convenience (`copilot`, `claude`, `codex`, `cursor`).
 
 ---
 
 ## How to Use (The Typical Workflow)
 
-You'll work in a cycle with Copilot. Here's the pattern for building a new feature:
+You'll work in a cycle with your selected agent. Here's the pattern for building a new feature:
 
 ### 0. **Set Project Outcomes** (recommended once per repo)
 
-In **Copilot chat**, run `/project.constitution` with a brief description of your project.
+Run `project.constitution` with a brief description of your project.
 
 This agent scans your repo and creates/updates `.project-workflow/CONSTITUTION.md` as the source of truth for product outcomes (non-technical).
 
-If `.github/copilot-instructions.md` is missing, it will offer to create one for technical guidance.
+If technical guidance is missing, the agent should offer to create or update the relevant agent guidance file for the selected mode.
 
 ### 1. **Create a Task** (5 min)
 
-In **Copilot chat**, type `/project.scaffold` and answer the quick questions:
+Run `project.task` and answer the quick questions:
 
 ```
 Task title: User Account Export
 Create a git branch: yes
 ```
 
-Copilot will generate a task folder under `.project-workflow/tasks/` and update your tracker. Commit this scaffold.
+The agent will generate a task folder under `.project-workflow/tasks/` and update your tracker. Commit this scaffold.
 
 ### 2. **Write Requirements** (15–30 min)
 
-In **Copilot chat**, run `/project.requirements` and provide your task details:
+Run `project.requirements` and provide your task details:
 
 ```
 Task: TASK-001
@@ -133,7 +138,7 @@ Goal: Allow users to export their account data as PDF
 Context: [any relevant links, design docs, constraints]
 ```
 
-Copilot will:
+The agent will:
 
 - Ask discovery questions ("What format? Who sees this?")
 - Draft a user story
@@ -141,20 +146,20 @@ Copilot will:
 - Ensure acceptance criteria are explicitly mappable to validation steps
 - Flag ambiguities as open questions
 
-Answer each question iteratively. Copilot updates `.project-workflow/tasks/TASK-001-*/REQUIREMENTS.md` as you go.
+Answer each question iteratively. The agent updates `.project-workflow/tasks/TASK-001-*/REQUIREMENTS.md` as you go.
 
 **Stop when:** REQUIREMENTS.md is drafted (even if it has open questions).
 
 ### 3. **Create a Plan** (15 min)
 
-In **Copilot chat**, run `/project.planner`:
+Run `project.planner`:
 
 ```
 Task: TASK-001
 Plan focus: API + UI for account export
 ```
 
-Copilot generates:
+The agent generates:
 
 - A phased approach (e.g., Phase 1: Backend API, Phase 2: UI)
 - Implementation task list
@@ -166,14 +171,14 @@ It updates `.project-workflow/tasks/TASK-001-*/IMPLEMENTATION.md` with a task ta
 
 ### 4. **Clarify for Internal Consistency** (10–20 min, always)
 
-After planning, run `/project.clarify` to make sure REQUIREMENTS.md and IMPLEMENTATION.md are internally consistent:
+After planning, run `project.clarify` to make sure REQUIREMENTS.md and IMPLEMENTATION.md are internally consistent:
 
 ```
 Task: TASK-001
 Topic: Validate consistency between requirements and plan
 ```
 
-Copilot will:
+The agent will:
 
 - Surface conflicts or ambiguous decisions
 - Propose options (A/B/C)
@@ -184,22 +189,54 @@ Run Clarify until there are no unresolved questions or conflicts.
 
 ### 5. **Implement & Validate** (varies)
 
-For each work item in the task list, run `/project.implement`:
+For each work item in the task list, run `project.implement`:
 
 ```
 Task: TASK-001
 Work item: 1
 ```
 
-Copilot will:
+The agent will:
 
 - Read your requirements and plan
 - Make code changes incrementally
 - Run validation (tests, type checks, manual verification)
 - Report validation evidence in acceptance-criteria order for the current work item
-- Update `.project-workflow/TRACKER.md` with status (`In Progress` → `Testing` → `Complete`)
+- Update `.project-workflow/TRACKER.md` with status (`In Progress` -> `Testing`)
 
-You review changes, iterate, and validate. Copilot keeps everything in sync.
+### 6. **QA & Code Review** (10-30 min)
+
+After implementation reaches `Testing`, run `project.qa-review`:
+
+```
+Task: TASK-001
+Scope: Review the implemented export flow
+```
+
+The agent will:
+
+- Map acceptance criteria to validation evidence
+- Review changed code for correctness, security, maintainability, and scope control
+- Record findings in `.project-workflow/tasks/TASK-001-*/IMPLEMENTATION.md`
+- Move the tracker to `Review`, then to `Complete` only after review passes and you explicitly approve completion
+
+### 7. **Retro & Update Conventions** (5-15 min)
+
+After the task is `Complete`, run `project.retro`:
+
+```
+Task: TASK-001
+Focus: Conventions, agent guidance, and follow-up tasks
+```
+
+The agent will:
+
+- Capture reusable lessons from the completed task
+- Update durable conventions, prompts, skills, agent files, or `AGENTS.md` when the task exposed a repeatable gap
+- Record the retro in `IMPLEMENTATION.md`
+- Propose separate follow-up tasks instead of reopening completed scope
+
+The full loop is: implement, validate, review, complete, and capture durable lessons.
 
 For multi-item orchestration, run `/project.delegate`:
 
@@ -217,7 +254,38 @@ Delegate behavior:
 - Uses a default worker limit of `4` in `parallel` mode when not provided
 - Validates dependency maps strictly (unknown IDs, self-dependencies, cycles)
 - Uses fail-fast launch behavior while allowing in-flight items to finish
-- Routes each delegated item through `project.implement`
+- Routes each delegated item through `project.implement`; the completed set still goes through QA/code review and retro
+
+### Epic Workflow (Proposal-First)
+
+Use this when work spans multiple child tasks under a single epic.
+
+Installed CLI path:
+
+```bash
+project epic init --title "Checkout Reliability"
+project epic decompose --epic-id EPIC-001 --limit 5 --type Task
+project epic approve --epic-id EPIC-001 --id TASK-014
+project epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
+```
+
+Local workflow script path (inside an initialized repo):
+
+```bash
+.venv/bin/python .project-workflow/cli/workflow.py epic init --title "Checkout Reliability"
+.venv/bin/python .project-workflow/cli/workflow.py epic decompose --epic-id EPIC-001 --limit 5 --type Task
+.venv/bin/python .project-workflow/cli/workflow.py epic approve --epic-id EPIC-001 --id TASK-014
+.venv/bin/python .project-workflow/cli/workflow.py epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
+```
+
+Epic workflow rules:
+
+- `epic init` auto-assigns the next sequential epic ID and writes an epic `REQUIREMENTS.md` plus epic `TRACKER.md`.
+- `epic decompose` writes Proposed child rows only. It does not scaffold child folders/docs.
+- `epic approve` moves a row from Proposed to Approved (same semantics as manually editing status in epic tracker).
+- `epic scaffold-child` only accepts Approved rows and moves the row to In Progress after scaffold.
+- Child IDs remain globally unique task IDs (`TASK-###`) across standalone and epic-managed work.
+- If `--create-branch` is used for epic child scaffold, `--epic-branch` must already exist; the command fails fast and never falls back to a base branch.
 
 ---
 
@@ -235,19 +303,22 @@ your-project/
 │   │   └── workflow.py
 │   └── tasks/
 │       ├── TASK-001-User-Export/
-│       │   ├── IMPLEMENTATION.md      # ← User story + task list (auto-updated)
+│       │   ├── IMPLEMENTATION.md      # ← User story, tasks, QA, retro
 │       │   └── REQUIREMENTS.md        # ← Goals, specs, decisions (auto-updated)
 │       └── TASK-002-*/
 │           └── ...
 ├── .github/
 │   └── prompts/                      # ← Agent definitions used by Copilot
 │       ├── Constitution.prompt.md    # /project.constitution
-│       ├── Scaffold.prompt.md        # /project.scaffold
+│       ├── Task.prompt.md            # /project.task
+│       ├── Epic.prompt.md            # /project.epic
 │       ├── Requirements.prompt.md    # /project.requirements
 │       ├── Clarify.prompt.md         # /project.clarify
 │       ├── Planner.prompt.md         # /project.planner
 │       ├── Delegate.prompt.md        # /project.delegate
-│       └── Implement.prompt.md       # /project.implement
+│       ├── Implement.prompt.md       # /project.implement
+│       ├── QAReview.prompt.md        # /project.qa-review
+│       └── Retro.prompt.md           # /project.retro
 └── [your code]
 ```
 
@@ -266,12 +337,44 @@ your-project/
 ├── .claude/
 │   └── agents/
 │       ├── project-constitution.md
-│       ├── project-scaffold.md
+│       ├── project-task.md
+│       ├── project-epic.md
 │       ├── project-requirements.md
 │       ├── project-clarify.md
 │       ├── project-planner.md
 │       ├── project-delegate.md
-│       └── project-implement.md
+│       ├── project-implement.md
+│       ├── project-qa-review.md
+│       └── project-retro.md
+└── [your code]
+```
+
+### OpenAI Codex mode (`project init --agent codex`)
+
+```
+your-project/
+├── .project-workflow/
+│   ├── TRACKER.md
+│   ├── CONSTITUTION.md
+│   ├── cli/
+│   │   ├── workflow
+│   │   └── workflow.py
+│   └── tasks/
+│       └── ...
+├── AGENTS.md
+├── .agents/
+│   └── skills/
+│       ├── project-constitution/
+│       ├── project-task/
+│       ├── project-scaffold/          # legacy alias for project-task
+│       ├── project-epic/
+│       ├── project-requirements/
+│       ├── project-clarify/
+│       ├── project-planner/
+│       ├── project-delegate/
+│       ├── project-implement/
+│       ├── project-qa-review/
+│       └── project-retro/
 └── [your code]
 ```
 
@@ -290,12 +393,15 @@ your-project/
 ├── .cursor/
 │   └── agents/
 │       ├── project-constitution.md
-│       ├── project-scaffold.md
+│       ├── project-task.md
+│       ├── project-epic.md
 │       ├── project-requirements.md
 │       ├── project-clarify.md
 │       ├── project-planner.md
 │       ├── project-delegate.md
-│       └── project-implement.md
+│       ├── project-implement.md
+│       ├── project-qa-review.md
+│       └── project-retro.md
 └── [your code]
 ```
 
@@ -307,10 +413,11 @@ your-project/
 
 The agents are designed to be used **in order**. Skipping steps = ambiguous code and rework.
 
-1. **Constitution (once)** → 2. **Scaffold** → 3. **Requirements** → 4. **Planner** → 5. **Clarify** → 6. **Implement**
+1. **Constitution (once)** → 2. **Task** → 3. **Requirements** → 4. **Planner** → 5. **Clarify** → 6. **Implement** → 7. **QA & Code Review** → 8. **Retro**
 
 Always run Clarify after Planner to verify internal consistency before implementation.
 Use **Delegate** as an execution option when a task has multiple work items with dependencies.
+Always run QA & Code Review before marking work complete, then run Retro after completion to keep conventions and agent guidance current.
 
 ### 📝 Keep Agent Definitions in the Repo
 
@@ -318,6 +425,7 @@ Commit your mode-specific agent definitions so the whole team uses the same work
 
 - `.github/prompts/` (Copilot)
 - `.claude/agents/` (Claude Code)
+- `AGENTS.md` and `.agents/skills/` (Codex)
 - `.cursor/agents/` (Cursor)
 
 ### 🔍 Review Generated Docs Before Coding
@@ -326,7 +434,21 @@ When `/project.requirements` or `/project.planner` finishes:
 
 - Read the generated REQUIREMENTS.md and IMPLEMENTATION.md
 - Edit directly if something is wrong
-- Copilot will respect your edits on next use
+- Your agent will respect your edits on next use
+
+### 🧪 Keep Validation Terminal-Safe
+
+When running local validation or failure-path simulations, use commands that are resilient in interactive shells:
+
+- Prefer explicit virtual-environment binaries on every command (`.venv/bin/python`, `.venv/bin/project`) instead of relying on shell activation state.
+- In initialized repos, run generated workflow commands via Python for consistency:
+
+```bash
+.venv/bin/python .project-workflow/cli/workflow.py task init --help
+```
+
+- For expected-failure checks, avoid very long chained shell commands; use stepwise commands or a short script file.
+- Capture and assert non-zero exit codes explicitly so expected failures are treated as test outcomes rather than terminal crashes.
 
 ### 🚀 One Feature = One Task ID
 
@@ -349,10 +471,12 @@ Bad: `TASK-001: Export + Billing View + Email Notifications`
 
 ### Commit Early, Commit Often
 
-After Scaffold → Commit  
-After Requirements → Commit  
-After Planner + Clarify alignment → Commit  
-After each work item → Commit
+- After Task scaffold -> Commit
+- After Requirements -> Commit
+- After Planner + Clarify alignment -> Commit
+- After each work item -> Commit
+- After QA & Code Review -> Commit
+- After Retro updates -> Commit
 
 This keeps your history clean and lets teammates review requirements before coding starts.
 
@@ -365,53 +489,58 @@ This keeps your history clean and lets teammates review requirements before codi
 $ uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
 ✅ Project workflow initialized
 
-# 2. In Copilot chat: /project.constitution (once per repo)
-# 3. Provide a project brief; Copilot scans repo and updates CONSTITUTION.md
+# 2. Run project.constitution once per repo
+# 3. Provide a project brief; the agent scans repo and updates CONSTITUTION.md
 # 4. Commit: "docs: establish project constitution"
 
-# 5. In Copilot chat: /project.scaffold
+# 5. Run project.task
 # 6. Answer: Title="Dark Mode Support", Branch=yes
-# 7. Copilot runs: ./.project-workflow/cli/workflow task init ...
+# 7. The agent runs: ./.project-workflow/cli/workflow task init ...
 # 8. Commit: "scaffold: TASK-001 Dark Mode Support"
 
-# 9. In Copilot chat: /project.requirements
-# 10. Answer discovery questions → Copilot updates REQUIREMENTS.md
+# 9. Run project.requirements
+# 10. Answer discovery questions; the agent updates REQUIREMENTS.md
 # 11. Commit: "requirements: TASK-001 dark mode draft"
 
-# 12. In Copilot chat: /project.planner
-# 13. Copilot generates implementation plan → Updates IMPLEMENTATION.md with task table
+# 12. Run project.planner
+# 13. The agent generates implementation plan and updates IMPLEMENTATION.md with task table
 
-# 14. In Copilot chat: /project.clarify
+# 14. Run project.clarify
 # 15. Resolve any conflicts/open questions between requirements and plan
-# 16. Repeat /project.clarify until consistent
+# 16. Repeat project.clarify until consistent
 # 17. Commit: "plan+clarify: TASK-001 dark mode aligned requirements and plan"
 
-# 18. In Copilot chat: /project.implement
-# 19. Copilot implements Phase 1, runs tests, updates TRACKER
+# 18. Run project.implement
+# 19. The agent implements Phase 1, runs tests, updates TRACKER to Testing
 # 20. You review changes, commit
-# 21. Repeat for Phase 2, 3, ... (each time running /project.implement with same task ID)
+# 21. Repeat for Phase 2, 3, ... with the same task ID
 
-# 22. TRACKER shows TASK-001 as Complete
+# 22. Run project.qa-review
+# 23. The agent records findings/evidence and completes only after approval
+
+# 24. Run project.retro
+# 25. The agent updates durable conventions or agent guidance when needed
 ```
 
 ---
 
-## What Happens Inside Copilot Chat?
+## What Happens Inside the Agent?
 
-When you run an agent command (for example `/project.requirements`) and provide inputs (task ID, goal, etc.), Copilot:
+When you run an agent command or skill (for example `project.requirements`) and provide inputs (task ID, goal, etc.), the agent:
 
 1. **Reads** your existing task files (REQUIREMENTS.md, IMPLEMENTATION.md)
 2. **Asks** clarifying questions (discovers gaps)
 3. **Generates** structured Markdown (requirements, plans, code)
 4. **Updates** your local files (you can review before accepting)
-5. **Syncs** TRACKER.md with status (To Do → In Progress → Testing → Complete)
+5. **Syncs** TRACKER.md with status (To Do -> In Progress -> Testing -> Review -> Complete)
+6. **Keeps conventions current** with a retro after completion
 
-When you run `/project.delegate`, Copilot also:
+When you run `project.delegate`, the agent also:
 
 1. Validates dependency-map input before any item starts
 2. Runs work items in `sequential` or dependency-aware `parallel` mode
 3. Applies fail-fast launch behavior and reports failed/halted outcomes clearly
-4. Routes each delegated work item through `/project.implement`
+4. Routes each delegated work item through `project.implement`
 
 Everything is **plain text**—you can edit, version control, and code-review it like any other file.
 
@@ -419,16 +548,20 @@ Everything is **plain text**—you can edit, version control, and code-review it
 
 ## When Things Go Wrong
 
-**"Copilot's plan doesn't match my codebase"**  
-→ Edit REQUIREMENTS.md to clarify constraints, re-run `/project.planner`, then run `/project.clarify` to ensure consistency before implementation.
+**"The agent's plan doesn't match my codebase"**
 
-**"I want to change the requirements mid-way"**  
-→ Prefer running `/project.requirements` again so the agent updates REQUIREMENTS.md, then run `/project.planner`, then `/project.clarify`, and only then continue with `/project.implement`. In a pinch, you can edit REQUIREMENTS.md manually first, but still run Planner + Clarify before implementation.
+→ Edit REQUIREMENTS.md to clarify constraints, re-run `project.planner`, then run `project.clarify` to ensure consistency before implementation.
 
-**"My agents keep generating the same output"**  
-→ Review your mode-specific agent definitions (`.github/prompts/`, `.claude/agents/`, or `.cursor/agents/`). You can edit them directly; add repo-specific constraints, design patterns, and tooling notes.
+**"I want to change the requirements mid-way"**
 
-**"I want to scaffold a task without using Copilot"**  
+→ Prefer running `project.requirements` again so the agent updates REQUIREMENTS.md, then run `project.planner`, then `project.clarify`, and only then continue with `project.implement`. In a pinch, you can edit REQUIREMENTS.md manually first, but still run Planner + Clarify before implementation.
+
+**"My agents keep generating the same output"**
+
+→ Review your mode-specific agent definitions (`.github/prompts/`, `.claude/agents/`, `.agents/skills/`, `AGENTS.md`, or `.cursor/agents/`). You can edit them directly; add repo-specific constraints, design patterns, and tooling notes.
+
+**"I want to scaffold a task without using an agent"**
+
 → Use the local CLI:
 
 ```bash
@@ -442,10 +575,11 @@ Everything is **plain text**—you can edit, version control, and code-review it
 - **Agents** (mode-specific definitions)
   - Copilot: `/project.*` via `.github/prompts/*.prompt.md`
   - Claude Code: `.claude/agents/*.md`
+  - Codex: `AGENTS.md` plus `.agents/skills/project-*/SKILL.md`
   - Cursor: `.cursor/agents/*.md`
 - **Tracker** (`.project-workflow/TRACKER.md`) — Single source of truth for project status
 - **Constitution** (`.project-workflow/CONSTITUTION.md`) — Product outcome source of truth (non-technical)
-- **Task docs** (`.project-workflow/tasks/*/`) — REQUIREMENTS.md (goals) + IMPLEMENTATION.md (plan + user story)
+- **Task docs** (`.project-workflow/tasks/*/`) — REQUIREMENTS.md (goals) + IMPLEMENTATION.md (plan + user story + QA + retro)
 - **Local CLI** (`.project-workflow/cli/`) — Scaffolds new tasks, manages git branches (optional, can be automated via agents)
 
 No database, no external service, no vendor lock-in—just Markdown and git.
@@ -461,5 +595,5 @@ MIT
 ## Questions?
 
 - 💬 Check [GitHub Issues](https://github.com/johndetlefs/project-workflow/issues)
-- 🔧 Customize `.github/prompts/` to fit your team's needs
+- 🔧 Customize mode-specific agent definitions to fit your team's needs
 - 📚 Read the [Local CLI docs](.project-workflow/cli/README.md) for advanced task scaffolding

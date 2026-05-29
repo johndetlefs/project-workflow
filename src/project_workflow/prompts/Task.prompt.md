@@ -15,7 +15,7 @@ Purpose: create the minimal workflow scaffolding for a new feature/task inside t
 - A new row in `.project-workflow/TRACKER.md`
 - Optionally: create and checkout a git branch named from the assigned task id + title
 
-This is the **only** step that creates folders/files for a new story. Requirements/Clarify/Planner/Implement assume the task folder already exists.
+This is the **only** step that creates folders/files for a new story. Requirements/Clarify/Planner/Implement/QA Review/Retro assume the task folder already exists.
 
 ## Inputs (ask the user)
 
@@ -63,4 +63,4 @@ After running:
 
 ## Next step
 
-Immediately proceed to `.github/prompts/Requirements.prompt.md` (prompt name: `project.requirements`) for the new task (iteratively), then use `project.clarify` / `project.planner` / `project.implement` as needed.
+Immediately proceed to `.github/prompts/Requirements.prompt.md` (prompt name: `project.requirements`) for the new task (iteratively), then use `project.clarify` / `project.planner` / `project.implement` / `project.qa-review` / `project.retro` as needed.

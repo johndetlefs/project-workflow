@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "project-workflow"
 version = "0.1.1"
-description = "Spec-driven development with GitHub Copilot: workflow scaffolding and task management CLI"
+description = "Spec-driven development with GitHub Copilot, Claude Code, OpenAI Codex, and Cursor: workflow scaffolding, QA review, retro, and task management CLI"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
     {name = "John Detlefs", email = "john@example.com"}
 ]
 requires-python = ">=3.10"
-keywords = ["workflow", "spec-driven", "ai", "github-copilot", "task-management"]
+keywords = ["workflow", "spec-driven", "ai", "github-copilot", "claude-code", "codex", "cursor", "task-management"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -44,6 +44,9 @@ package-dir = {"" = "src"}
 project_workflow = [
     "templates/*",
     "prompts/*.md",
+    "codex/AGENTS.md",
+    "codex/skills/*/SKILL.md",
+    "cursor/rules/*.mdc",
 ]
 
 [tool.black]

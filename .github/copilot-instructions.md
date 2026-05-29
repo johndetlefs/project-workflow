@@ -25,12 +25,16 @@ Product outcomes and mission belong in `.project-workflow/CONSTITUTION.md`.
   - `.project-workflow/cli/workflow`
   - `.project-workflow/cli/workflow.py`
   - `.github/prompts/*.prompt.md`
+  - `AGENTS.md` and `.agents/skills/project-*` when Codex mode is selected
+  - `.claude/agents/*.md` when Claude Code mode is selected
+  - `.cursor/agents/*.md` when Cursor mode is selected
 - `project task init` must continue scaffolding task docs and optional tracker updates/branch creation.
 - Prefer extending behavior with additive flags/options; avoid changing defaults without explicit task scope.
 
 ## Prompt/Agent Sync Rules
 
 - If you change any file in `.github/prompts/`, mirror the same change in `src/project_workflow/prompts/`.
+- If you add, remove, or rename a workflow step, update all matching assets: packaged prompts, generated Claude/Cursor agent output, Codex skills, Codex AGENTS template, README, and the `project init` install lists.
 - Keep agent names stable (`name: project.*`) unless explicitly requested.
 - README should describe usage via `/project.*` agent commands, not copy/paste prompt workflows.
 
@@ -121,3 +125,7 @@ Use this sequence unless user direction overrides it:
 4. `/project.planner`
 5. `/project.clarify`
 6. `/project.implement`
+7. `/project.qa-review`
+8. `/project.retro`
+
+Do not mark work `Complete` from implementation alone. Implementation moves work to `Testing`; QA/code review moves it to `Review` and may complete only after passing review and explicit user approval. Retro runs after completion and updates durable conventions or agent guidance only when there is a reusable lesson.

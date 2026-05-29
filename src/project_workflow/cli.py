@@ -17,6 +17,7 @@ from typing import Optional
 AGENT_CHOICES = {
     "github-copilot": "GitHub Copilot",
     "claude-code": "Claude Code",
+    "codex": "OpenAI Codex",
     "cursor": "Cursor",
 }
 
@@ -27,8 +28,24 @@ PROMPT_FILES = [
     "Epic.prompt.md",
     "Implement.prompt.md",
     "Planner.prompt.md",
+    "QAReview.prompt.md",
     "Requirements.prompt.md",
+    "Retro.prompt.md",
     "Task.prompt.md",
+]
+
+CODEX_SKILL_NAMES = [
+    "project-constitution",
+    "project-task",
+    "project-scaffold",
+    "project-epic",
+    "project-requirements",
+    "project-planner",
+    "project-clarify",
+    "project-delegate",
+    "project-implement",
+    "project-qa-review",
+    "project-retro",
 ]
 
 TASK_ID_PREFIX = "TASK"
@@ -184,6 +201,14 @@ def _implementation_template(task_id: str, title: str) -> str:
         f"- [ ] ____\n\n"
         f"## Validation\n\n"
         f"- ____\n\n"
+        f"## QA & Code Review\n\n"
+        f"- Verdict: ____\n"
+        f"- Evidence: ____\n"
+        f"- Findings: ____\n\n"
+        f"## Retro\n\n"
+        f"- Reusable lessons: ____\n"
+        f"- Conventions or agent assets updated: ____\n"
+        f"- Follow-up tasks: ____\n\n"
         f"## Notes\n\n"
         f"- Task: {task_id}\n"
         f"- Title: {title}\n"
@@ -403,6 +428,9 @@ def _normalize_agent(value: str) -> str:
         "github-copilot": "github-copilot",
         "claude": "claude-code",
         "claude-code": "claude-code",
+        "codex": "codex",
+        "openai": "codex",
+        "openai-codex": "codex",
         "cursor": "cursor",
     }
     if normalized not in aliases:
@@ -429,14 +457,20 @@ def _extract_frontmatter_value(frontmatter: str, key: str) -> Optional[str]:
     return match.group(1).strip().strip('"').strip("'")
 
 
-def _prompt_filename_to_claude_agent_name(prompt_file: str) -> str:
+def _prompt_filename_to_agent_name(prompt_file: str) -> str:
     base_name = prompt_file.replace(".prompt.md", "")
-    return f"project-{slug_kebab_lower(base_name)}"
+    canonical_slugs = {
+        "QAReview": "qa-review",
+    }
+    return f"project-{canonical_slugs.get(base_name, slug_kebab_lower(base_name))}"
+
+
+def _prompt_filename_to_claude_agent_name(prompt_file: str) -> str:
+    return _prompt_filename_to_agent_name(prompt_file)
 
 
 def _prompt_filename_to_cursor_agent_name(prompt_file: str) -> str:
-    base_name = prompt_file.replace(".prompt.md", "")
-    return f"project-{slug_kebab_lower(base_name)}"
+    return _prompt_filename_to_agent_name(prompt_file)
 
 
 def _to_claude_agent_markdown(prompt_content: str, agent_name: str) -> str:
@@ -621,6 +655,19 @@ def cmd_project_init(args: argparse.Namespace) -> None:
         )
 
         customize_path_hint = ".claude/agents/* files"
+    elif selected_agent == "codex":
+        agents_path = cwd / "AGENTS.md"
+        agents_content = _get_package_resource("codex/AGENTS.md")
+        _ensure_file(agents_path, agents_content, allow_conflicts=True)
+        print(f"✓ Created/updated: {agents_path}")
+
+        for skill_name in CODEX_SKILL_NAMES:
+            skill_path = cwd / ".agents" / "skills" / skill_name / "SKILL.md"
+            skill_content = _get_package_resource(f"codex/skills/{skill_name}/SKILL.md")
+            _ensure_file(skill_path, skill_content, allow_conflicts=True)
+            print(f"✓ Created/updated: {skill_path}")
+
+        customize_path_hint = "AGENTS.md and .agents/skills/project-*"
     elif selected_agent == "cursor":
         # Create canonical Cursor project subagent layout at .cursor/agents/*.md
         cursor_agents_dir = cwd / ".cursor" / "agents"
@@ -966,7 +1013,10 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="project",
-        description="Project workflow: Spec-driven development for GitHub Copilot, Claude Code, and Cursor.",
+        description=(
+            "Project workflow: Spec-driven development for GitHub Copilot, "
+            "Claude Code, OpenAI Codex, and Cursor."
+        ),
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -982,8 +1032,8 @@ def build_parser() -> argparse.ArgumentParser:
         default="github-copilot",
         metavar="AGENT",
         help=(
-            "Target agent ecosystem: github-copilot (default), claude-code, or cursor. "
-            "Aliases accepted: copilot, claude, cursor."
+            "Target agent ecosystem: github-copilot (default), claude-code, codex, or cursor. "
+            "Aliases accepted: copilot, claude, codex, cursor."
         ),
     )
     init_parser.set_defaults(func=cmd_project_init)

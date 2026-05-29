@@ -23,6 +23,7 @@ Defaults:
 Execution contract:
 
 - For each delegated work item, invoke `project.implement` as the execution path.
+- After delegated implementation reaches `Testing`, route the completed set through `project.qa-review`; after completion, route through `project.retro`.
 - Accept the provided work-item list and selected mode as the execution plan input.
 - In `sequential` mode, execute exactly one work item at a time, in listed order.
 - In `sequential` mode, initialize each item as `not started`, set current item to `in progress`, then mark it `completed` or `failed` before starting the next item.

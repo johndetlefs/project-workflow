@@ -1,4 +1,4 @@
-# AI Workflow CLI (local)
+# Project Workflow CLI (local)
 
 This folder contains a small helper CLI for the repo’s AI workflow.
 
@@ -12,19 +12,28 @@ Goals:
 From the repo root:
 
 ```bash
-./.project-workflow/cli/workflow task init --id APP-331 --title "Super Admin Access" --update-tracker
+./.project-workflow/cli/workflow task init --title "Super Admin Access" --update-tracker
 ```
 
 Create a git branch (requires a clean working tree):
 
 ```bash
-./.project-workflow/cli/workflow task init --id APP-331 --title "Super Admin Access" --update-tracker --create-branch
+./.project-workflow/cli/workflow task init --title "Super Admin Access" --update-tracker --create-branch --base-branch develop
 ```
 
 Customize folder name suffix:
 
 ```bash
-./.project-workflow/cli/workflow task init --id APP-331 --title "Super Admin Access" --folder-suffix Superuser --update-tracker
+./.project-workflow/cli/workflow task init --title "Super Admin Access" --folder-suffix Superuser --update-tracker
+```
+
+Create and manage proposal-first epics:
+
+```bash
+./.project-workflow/cli/workflow epic init --title "Checkout Reliability"
+./.project-workflow/cli/workflow epic decompose --epic-id EPIC-001 --limit 5 --type Task
+./.project-workflow/cli/workflow epic approve --epic-id EPIC-001 --id TASK-014
+./.project-workflow/cli/workflow epic scaffold-child --epic-id EPIC-001 --id TASK-014
 ```
 
 ## Branch naming
@@ -35,10 +44,14 @@ Default branch format:
 
 Example:
 
-- `feature/APP-331-super-admin-access`
+- `feature/TASK-001-super-admin-access`
 
-## uvx (future)
+## Packaged CLI
 
-When you move this workflow into its own repo and publish it as a Python package, you can expose the same CLI as a console script entrypoint so teams can run it via `uvx`.
+This repo also exposes the packaged console script:
 
-Until then, this in-repo script is intentionally dependency-free (stdlib only).
+```bash
+project task init --title "Super Admin Access" --update-tracker
+```
+
+The in-repo script is intentionally dependency-free (stdlib only) so initialized projects can keep using the local workflow helper without installing the package.
