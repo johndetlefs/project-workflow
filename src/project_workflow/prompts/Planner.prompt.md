@@ -128,8 +128,8 @@ Task list guardrails:
 
 Tracker rules:
 
-- Use statuses: `To Do`, `Analysing`, `Plan Confirmed`, `In Progress`, `Blocked`, `Testing`, `Complete`, `N/A`.
-- Only mark `Complete` after validation is confirmed AND the user explicitly instructs you to mark it `Complete`.
+- Use statuses: `To Do`, `Analysing`, `Plan Confirmed`, `In Progress`, `Blocked`, `Testing`, `Review`, `Complete`, `N/A`.
+- Only mark `Complete` after implementation validation and QA/code review have passed AND the user explicitly instructs you to mark it `Complete`.
 
 User story tracker rules:
 
@@ -137,4 +137,4 @@ User story tracker rules:
 - Use the same status vocabulary as above.
 - During planning, set story `Status` to `Analysing`.
 - Only set story `Status` to `Plan Confirmed` after the user explicitly confirms the plan.
-- Do not set story `Status` to `Complete` unless validation is confirmed AND the user explicitly instructs you to mark it `Complete`.
+- Do not set story `Status` to `Complete` unless QA/code review has passed AND the user explicitly instructs you to mark it `Complete`.

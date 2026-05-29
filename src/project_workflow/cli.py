@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from datetime import date
 from importlib.resources import files
 from pathlib import Path
-from typing import Optional
+
+SUPPORTED_AGENTS = ("cursor", "codex", "copilot")
 
 
 def _words(value: str) -> list[str]:
@@ -107,6 +108,87 @@ def _ensure_file(
     path.write_text(content, encoding="utf-8")
 
 
+def _install_copilot_prompts(cwd: Path) -> None:
+    """Install GitHub Copilot prompt files."""
+    prompts_dir = cwd / ".github" / "prompts"
+    prompts_dir.mkdir(parents=True, exist_ok=True)
+
+    prompt_files = [
+        "Constitution.prompt.md",
+        "Clarify.prompt.md",
+        "Implement.prompt.md",
+        "Planner.prompt.md",
+        "QAReview.prompt.md",
+        "Requirements.prompt.md",
+        "Retro.prompt.md",
+        "Scaffold.prompt.md",
+    ]
+
+    for prompt_file in prompt_files:
+        prompt_path = prompts_dir / prompt_file
+        prompt_content = _get_package_resource(f"prompts/{prompt_file}")
+        _ensure_file(prompt_path, prompt_content, allow_conflicts=True)
+        print(f"✓ Created/updated: {prompt_path}")
+
+
+def _install_codex_assets(cwd: Path) -> None:
+    """Install Codex AGENTS.md guidance and repo-scoped skills."""
+    agents_path = cwd / "AGENTS.md"
+    agents_content = _get_package_resource("codex/AGENTS.md")
+    _ensure_file(agents_path, agents_content, allow_conflicts=True)
+    print(f"✓ Created/updated: {agents_path}")
+
+    skill_names = [
+        "project-constitution",
+        "project-scaffold",
+        "project-requirements",
+        "project-planner",
+        "project-clarify",
+        "project-implement",
+        "project-qa-review",
+        "project-retro",
+    ]
+
+    for skill_name in skill_names:
+        skill_path = cwd / ".agents" / "skills" / skill_name / "SKILL.md"
+        skill_content = _get_package_resource(f"codex/skills/{skill_name}/SKILL.md")
+        _ensure_file(skill_path, skill_content, allow_conflicts=True)
+        print(f"✓ Created/updated: {skill_path}")
+
+
+def _install_cursor_assets(cwd: Path) -> None:
+    """Install Cursor project rules."""
+    rule_path = cwd / ".cursor" / "rules" / "project-workflow.mdc"
+    rule_content = _get_package_resource("cursor/rules/project-workflow.mdc")
+    _ensure_file(rule_path, rule_content, allow_conflicts=True)
+    print(f"✓ Created/updated: {rule_path}")
+
+
+def _dedupe_agents(agents: list[str]) -> list[str]:
+    selected = []
+    seen = set()
+    for agent in agents:
+        if agent not in seen:
+            selected.append(agent)
+            seen.add(agent)
+    return selected
+
+
+def _selected_agents(args: argparse.Namespace) -> list[str]:
+    if args.agents and args.agent:
+        raise SystemExit("Use either --agents or the legacy --agent option, not both.")
+
+    if args.agents:
+        return _dedupe_agents(args.agents)
+
+    if args.agent:
+        if args.agent == "both":
+            return ["codex", "copilot"]
+        return [args.agent]
+
+    return list(SUPPORTED_AGENTS)
+
+
 @dataclass(frozen=True)
 class TaskSpec:
     task_id: str
@@ -133,6 +215,14 @@ def _implementation_template(task_id: str, title: str) -> str:
         f"- [ ] ____\n\n"
         f"## Validation\n\n"
         f"- ____\n\n"
+        f"## QA & Code Review\n\n"
+        f"- Verdict: ____\n"
+        f"- Evidence: ____\n"
+        f"- Findings: ____\n\n"
+        f"## Retro\n\n"
+        f"- Reusable lessons: ____\n"
+        f"- Conventions or agent assets updated: ____\n"
+        f"- Follow-up tasks: ____\n\n"
         f"## Notes\n\n"
         f"- Task: {task_id}\n"
         f"- Title: {title}\n"
@@ -214,6 +304,7 @@ def _update_tracker(tracker_path: Path, *, spec: TaskSpec, status: str, docs_rel
 def cmd_project_init(args: argparse.Namespace) -> None:
     """Bootstrap project-workflow in the current directory."""
     cwd = Path.cwd()
+    selected_agents = _selected_agents(args)
 
     # Create .project-workflow structure
     project_workflow_dir = cwd / ".project-workflow"
@@ -247,30 +338,24 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     workflow_sh_path.chmod(0o755)  # Make executable
     print(f"✓ Created/updated: {workflow_sh_path}")
 
-    # Create .github/prompts structure and copy prompts
-    github_dir = cwd / ".github"
-    prompts_dir = github_dir / "prompts"
-    prompts_dir.mkdir(parents=True, exist_ok=True)
+    if "cursor" in selected_agents:
+        _install_cursor_assets(cwd)
 
-    prompt_files = [
-        "Constitution.prompt.md",
-        "Clarify.prompt.md",
-        "Implement.prompt.md",
-        "Planner.prompt.md",
-        "Requirements.prompt.md",
-        "Scaffold.prompt.md",
-    ]
+    if "copilot" in selected_agents:
+        _install_copilot_prompts(cwd)
 
-    for prompt_file in prompt_files:
-        prompt_path = prompts_dir / prompt_file
-        prompt_content = _get_package_resource(f"prompts/{prompt_file}")
-        _ensure_file(prompt_path, prompt_content, allow_conflicts=True)
-        print(f"✓ Created/updated: {prompt_path}")
+    if "codex" in selected_agents:
+        _install_codex_assets(cwd)
 
     print(f"\n✅ Project workflow initialized in {cwd}")
     print(f"\nNext steps:")
     print(f"  • Review: .project-workflow/TRACKER.md")
-    print(f"  • Customize: .github/prompts/* files")
+    if "cursor" in selected_agents:
+        print(f"  • Customize Cursor rules: .cursor/rules/project-workflow.mdc")
+    if "copilot" in selected_agents:
+        print(f"  • Customize Copilot prompts: .github/prompts/* files")
+    if "codex" in selected_agents:
+        print(f"  • Customize Codex guidance: AGENTS.md and .agents/skills/project-*")
     print(f"  • Create tasks: ./.project-workflow/cli/workflow task init --help")
 
 
@@ -341,7 +426,7 @@ def cmd_task_init(args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="project",
-        description="Project workflow: Spec-driven development with GitHub Copilot.",
+        description="Project workflow: Spec-driven development with AI coding agents.",
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -351,6 +436,24 @@ def build_parser() -> argparse.ArgumentParser:
         "init",
         help="Bootstrap project-workflow in current directory (idempotent)",
     )
+    init_parser.add_argument(
+        "--agents",
+        nargs="+",
+        choices=SUPPORTED_AGENTS,
+        metavar="AGENT",
+        help=(
+            "Agent integrations to install. Choose one or more from: "
+            "cursor, codex, copilot. Default: all."
+        ),
+    )
+    init_parser.add_argument(
+        "--agent",
+        choices=("copilot", "codex", "both"),
+        default=None,
+        help=(
+            "Legacy alias for --agents. Use --agents for new projects."
+        ),
+    )
     init_parser.set_defaults(func=cmd_project_init)
 
     # ===== project task ... =====
@@ -359,7 +462,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     task_init_parser = task_sub.add_parser("init", help="Scaffold a new task folder + docs")
     task_init_parser.add_argument("--id", required=True, help="Task ID (e.g. APP-331)")
-    task_init_parser.add_argument("--title", required=True, help="Human title (e.g. Super Admin Access)")
+    task_init_parser.add_argument(
+        "--title",
+        required=True,
+        help="Human title (e.g. Super Admin Access)",
+    )
     task_init_parser.add_argument(
         "--folder-suffix",
         help=(

@@ -35,13 +35,14 @@ Required workflow:
 
 - Before coding, set the specific tracker row to `In Progress`.
 - After implementation, set it to `Testing`.
-- Only set it to `Complete` after validation is confirmed AND the user explicitly instructs you to mark it `Complete`.
+- Do not set it to `Complete`; completion is owned by `project.qa-review` after QA/code review passes and the user explicitly approves completion.
 
 Sequence enforcement:
 
 - Do NOT ask whether to “move on” or start the next work item until you have completed the Validation step for the current work item.
 - The next step after implementation is always Validation: run the most relevant automated checks (tests/typecheck/lint) and perform any required manual verification steps.
 - Only after you have (1) executed validation, (2) summarized results, and (3) set the work item/story to `Testing`, may you ask for next-step instructions.
+- The next lifecycle step after `Testing` is `project.qa-review`.
 
 Requirements guardrails:
 
@@ -55,7 +56,7 @@ User story tracker workflow:
 - `/.project-workflow/TRACKER.md` is part of the process and must be kept up-to-date.
 - Before coding, ensure there is a story row for `${input:taskId}` and set story `Status` to `In Progress`.
 - After implementation (when the work item is set to `Testing`), set story `Status` to `Testing`.
-- Only set story `Status` to `Complete` after validation is confirmed AND the user explicitly instructs you to mark it `Complete`.
+- Do not set story `Status` to `Complete` from this prompt. Route to `project.qa-review` for completion approval.
 
 Implementation doc structure:
 
@@ -66,6 +67,7 @@ Output expectations:
 - Make the smallest safe change that satisfies the requirement.
 - Add or update tests when appropriate.
 - Provide a short validation checklist (commands + manual steps) and call out any risks.
+- Tell the user that QA/code review is the next required step before completion.
 
 Validation execution requirement:
 

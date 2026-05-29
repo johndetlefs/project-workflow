@@ -7,7 +7,7 @@
 ## Target Users
 
 - Primary users:
-  - Individual developers and small teams using GitHub Copilot in VSCode.
+  - Individual developers and small teams using Cursor, OpenAI Codex, GitHub Copilot, or a mix of coding agents.
 - Secondary users:
   - Engineering leads and collaborators who need visibility into scope, status, and delivery confidence through repository-native artifacts.
 
@@ -17,6 +17,8 @@
 - Teams maintain a shared, auditable path from idea → requirements → plan → implementation using standardized task artifacts.
 - Ambiguities are surfaced and resolved deliberately before coding proceeds, reducing rework and conflicting assumptions.
 - Delivery status is transparent via a lightweight tracker that reflects real progress and validation state.
+- Quality and maintainability are protected by an explicit QA/code review gate before completion.
+- Completed tasks feed reusable lessons back into conventions and agent guidance so future work stays internally consistent.
 - The workflow remains easy to adopt: repository-native, low-overhead, and compatible with existing git-based collaboration.
 
 ## Non-Goals
@@ -39,7 +41,8 @@
 - New work consistently includes task scaffolding, requirements, and implementation artifacts linked by task ID.
 - Teams report fewer mid-implementation scope reversals caused by unclear requirements.
 - Clarification and planning happen before implementation in the majority of completed tasks.
-- Tracker status changes reflect real lifecycle movement (e.g., To Do → In Progress → Testing → Complete).
+- Tracker status changes reflect real lifecycle movement (e.g., To Do → In Progress → Testing → Review → Complete).
+- Completed tasks regularly produce useful retro notes or explicit "no durable updates needed" records.
 - Adoption remains strong because setup and day-to-day usage stay simple and fast.
 
 ## Decision Filters
@@ -53,7 +56,7 @@
 ## Assumptions & Risks
 
 - Assumption: Teams are willing to maintain Markdown artifacts as part of normal development flow.
-- Assumption: Users have access to GitHub Copilot chat workflows in their environment.
+- Assumption: Users have access to at least one supported coding-agent workflow in their environment.
 - Risk: Teams may skip clarification/planning steps under time pressure, reducing quality.
 - Risk: Overly prescriptive prompts could reduce fit for diverse projects.
 - Risk: If technical guidance is missing or weak, teams may confuse outcome guidance with implementation policy.
@@ -61,3 +64,4 @@
 ## Change Log
 
 - 2026-02-13: Initial constitution created from repository context; defined mission, outcomes, principles, and governance boundaries.
+- 2026-05-29: Updated outcomes for multi-agent support, QA/code review before completion, and post-completion retros.
