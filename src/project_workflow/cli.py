@@ -686,7 +686,12 @@ def cmd_project_init(args: argparse.Namespace) -> None:
             replacement_path=cursor_agents_dir / "project-task.md",
         )
 
-        customize_path_hint = ".cursor/agents/* files"
+        cursor_rule_path = cwd / ".cursor" / "rules" / "project-workflow.mdc"
+        cursor_rule_content = _get_package_resource("cursor/rules/project-workflow.mdc")
+        _ensure_file(cursor_rule_path, cursor_rule_content, allow_conflicts=True)
+        print(f"✓ Created/updated: {cursor_rule_path}")
+
+        customize_path_hint = ".cursor/agents/* files and .cursor/rules/project-workflow.mdc"
     else:
         # Keep existing GitHub Copilot scaffold contract for default mode.
         github_dir = cwd / ".github"

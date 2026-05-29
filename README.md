@@ -61,7 +61,7 @@ This creates:
   - `.github/prompts/` for GitHub Copilot
   - `.claude/agents/` for Claude Code
   - `AGENTS.md` and `.agents/skills/` for OpenAI Codex
-  - `.cursor/agents/` for Cursor
+  - `.cursor/agents/` and `.cursor/rules/project-workflow.mdc` for Cursor
 - `.project-workflow/TRACKER.md` — Centralized task status tracking
 
 Re-running is **idempotent** and safe. If local scaffold files were modified, init preserves conflict prompts instead of silently overwriting. Running init in a different mode is additive and keeps existing layouts.
@@ -367,17 +367,19 @@ your-project/
 │   └── tasks/
 │       └── ...
 ├── .cursor/
-│   └── agents/
-│       ├── project-constitution.md
-│       ├── project-task.md
-│       ├── project-epic.md
-│       ├── project-requirements.md
-│       ├── project-clarify.md
-│       ├── project-planner.md
-│       ├── project-delegate.md
-│       ├── project-implement.md
-│       ├── project-qa-review.md
-│       └── project-retro.md
+│   ├── agents/
+│   │   ├── project-constitution.md
+│   │   ├── project-task.md
+│   │   ├── project-epic.md
+│   │   ├── project-requirements.md
+│   │   ├── project-clarify.md
+│   │   ├── project-planner.md
+│   │   ├── project-delegate.md
+│   │   ├── project-implement.md
+│   │   ├── project-qa-review.md
+│   │   └── project-retro.md
+│   └── rules/
+│       └── project-workflow.mdc
 └── [your code]
 ```
 
@@ -402,7 +404,7 @@ Commit your mode-specific agent definitions so the whole team uses the same work
 - `.github/prompts/` (Copilot)
 - `.claude/agents/` (Claude Code)
 - `AGENTS.md` and `.agents/skills/` (Codex)
-- `.cursor/agents/` (Cursor)
+- `.cursor/agents/` and `.cursor/rules/project-workflow.mdc` (Cursor)
 
 ### 🔍 Review Generated Docs Before Coding
 
@@ -534,7 +536,7 @@ Everything is **plain text**—you can edit, version control, and code-review it
 
 **"My agents keep generating the same output"**
 
-→ Review your mode-specific agent definitions (`.github/prompts/`, `.claude/agents/`, `.agents/skills/`, `AGENTS.md`, or `.cursor/agents/`). You can edit them directly; add repo-specific constraints, design patterns, and tooling notes.
+→ Review your mode-specific agent definitions (`.github/prompts/`, `.claude/agents/`, `.agents/skills/`, `AGENTS.md`, `.cursor/agents/`, or `.cursor/rules/project-workflow.mdc`). You can edit them directly; add repo-specific constraints, design patterns, and tooling notes.
 
 **"I want to scaffold a task without using an agent"**
 
@@ -552,7 +554,7 @@ Everything is **plain text**—you can edit, version control, and code-review it
   - Copilot: `/project.*` via `.github/prompts/*.prompt.md`
   - Claude Code: `.claude/agents/*.md`
   - Codex: `AGENTS.md` plus `.agents/skills/project-*/SKILL.md`
-  - Cursor: `.cursor/agents/*.md`
+  - Cursor: `.cursor/agents/*.md` plus `.cursor/rules/project-workflow.mdc`
 - **Tracker** (`.project-workflow/TRACKER.md`) — Single source of truth for project status
 - **Constitution** (`.project-workflow/CONSTITUTION.md`) — Product outcome source of truth (non-technical)
 - **Task docs** (`.project-workflow/tasks/*/`) — REQUIREMENTS.md (goals) + IMPLEMENTATION.md (plan + user story + QA + retro)

@@ -11,7 +11,7 @@ This repository uses project-workflow for spec-driven development. Keep workflow
 ## Workflow Order
 
 1. Constitution: establish or update `.project-workflow/CONSTITUTION.md` for product outcomes.
-2. Scaffold: create one task folder under `.project-workflow/tasks/<ID>-<Suffix>/`, with `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and a tracker row.
+2. Task: create one task folder under `.project-workflow/tasks/TASK-<NNN>-<Suffix>/`, with `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and a tracker row.
 3. Requirements: capture the user story, scope, acceptance criteria, open questions, decisions, and validation plan in `REQUIREMENTS.md`.
 4. Planner: turn confirmed requirements into testable work items in `IMPLEMENTATION.md`.
 5. Clarify: resolve inconsistencies between requirements, plan, repo constraints, and product outcomes before implementation.
@@ -21,7 +21,7 @@ This repository uses project-workflow for spec-driven development. Keep workflow
 
 ## Cursor Usage
 
-- If a task folder does not exist, run `./.project-workflow/cli/workflow task init --id <ID> --title "<TITLE>" --update-tracker` from the repo root.
+- If a task folder does not exist, run `./.project-workflow/cli/workflow task init --title "<TITLE>" --update-tracker` from the repo root and let the CLI assign the next `TASK-###` ID.
 - Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.
 - Keep `.project-workflow/TRACKER.md` status aligned with the current workflow state.
