@@ -10,7 +10,7 @@ Create the minimal workflow artifacts for one new task.
 ## Invocation Rules
 
 - Use this skill whenever the user asks to create a project-workflow task, story, feature folder, tracker row, or new tracked work item, even if they ask in natural language.
-- Read `AGENTS.md` first and follow its Workflow Skill Map and CLI Requirements.
+- Read `AGENTS.md` and `.project-workflow/guidance.md` if present, then follow the project-workflow managed block and CLI requirements.
 - The local workflow CLI is mandatory for supported task scaffold operations. Do not manually create task folders, starter files, or tracker rows when the CLI command is available.
 - If another project-workflow skill needs a task folder that does not exist, route through this skill first.
 
@@ -40,5 +40,6 @@ With branch:
 ./.project-workflow/cli/workflow task init --title "<TITLE>" --update-tracker --create-branch --base-branch <BASE> --branch-prefix <PREFIX>
 ```
 
-4. Report the created task folder, assigned task ID, tracker update, and branch name if one was created.
-5. Continue to requirements capture when the user is ready, then proceed through planning, clarification, implementation, QA/code review, and retro.
+4. Run `./.project-workflow/cli/workflow doctor` and report any workflow-state warnings or errors.
+5. Report the created task folder, assigned task ID, tracker update, and branch name if one was created.
+6. Continue to requirements capture when the user is ready, then proceed through planning, clarification, implementation, QA/code review, and retro.

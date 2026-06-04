@@ -16,6 +16,7 @@ Purpose:
 Reference docs:
 
 - Technical constraints/instructions: [../copilot-instructions.md](../copilot-instructions.md)
+- Repo-specific workflow guidance: [../../.project-workflow/guidance.md](../../.project-workflow/guidance.md)
 - User story tracker: [../../.project-workflow/TRACKER.md](../../.project-workflow/TRACKER.md)
 - Canonical task tracker: `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md`
 - Requirements source of truth: `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md`
@@ -39,7 +40,7 @@ Required workflow:
    - follow-up work that should become a separate task
 4. Decide where each durable update belongs:
    - product outcomes: `.project-workflow/CONSTITUTION.md`
-   - technical conventions: `AGENTS.md`, `.github/copilot-instructions.md`, or equivalent repo guidance
+   - technical conventions: `.project-workflow/guidance.md`, `AGENTS.md`, `.github/copilot-instructions.md`, or equivalent repo guidance
    - Copilot workflow behavior: `.github/prompts/*.prompt.md`
    - Codex workflow behavior: `.agents/skills/project-*/SKILL.md`
    - Cursor workflow behavior: `.cursor/rules/project-workflow.mdc`

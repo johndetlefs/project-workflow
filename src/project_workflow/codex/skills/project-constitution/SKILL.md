@@ -10,9 +10,9 @@ Create or update the product outcome guide for the repository.
 ## Invocation Rules
 
 - Use this skill whenever the user asks for project-workflow constitution work, even if they ask in natural language.
-- Read `AGENTS.md` first and follow its Workflow Skill Map and CLI Requirements.
+- Read `AGENTS.md` and `.project-workflow/guidance.md` if present, then follow the project-workflow managed block and CLI requirements.
 - Do not use the CLI for constitution work unless `.project-workflow/cli/workflow` adds an explicit constitution command.
-- If the user asks for implementation rules while discussing the constitution, put those rules in `AGENTS.md` rather than `.project-workflow/CONSTITUTION.md`.
+- If the user asks for implementation or workflow rules while discussing the constitution, put those rules in `.project-workflow/guidance.md` rather than `.project-workflow/CONSTITUTION.md`.
 
 ## Required Context
 
@@ -20,6 +20,7 @@ Read these when present:
 
 - `README.md`
 - `.project-workflow/TRACKER.md`
+- `.project-workflow/guidance.md`
 - `.project-workflow/CONSTITUTION.md`
 - `AGENTS.md`
 - `.github/copilot-instructions.md`
@@ -58,4 +59,4 @@ Read these when present:
 - <What this project should not optimize for>
 ```
 
-7. If technical guidance is missing, offer to add it to `AGENTS.md` rather than the constitution.
+7. If technical workflow guidance is missing, offer to add it to `.project-workflow/guidance.md` rather than the constitution.

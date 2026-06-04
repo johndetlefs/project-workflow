@@ -10,7 +10,7 @@ Coordinate multiple work items from an existing project-workflow implementation 
 ## Invocation Rules
 
 - Use this skill whenever the user asks to delegate, coordinate, batch, parallelize, or run multiple planned work items.
-- Read `AGENTS.md` first and follow its Workflow Skill Map and CLI Requirements.
+- Read `AGENTS.md` and `.project-workflow/guidance.md` if present, then follow the project-workflow managed block and CLI requirements.
 - Requirements, clarification, and planning must already be complete before delegation.
 - Delegation routes each eligible work item through `project-implement`; it does not bypass validation, QA/code review, or retro.
 

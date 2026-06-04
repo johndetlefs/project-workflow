@@ -20,12 +20,16 @@ Product outcomes and mission belong in `.project-workflow/CONSTITUTION.md`.
 
 - Console command is `project` (configured in `pyproject.toml`).
 - `project init` must remain idempotent and safe on re-run.
+- `project init` must never overwrite unmarked existing files. Project-workflow generated files must carry a `project-workflow:generated` marker before init may refresh them in place.
+- Host-owned files such as `AGENTS.md` and `.github/copilot-instructions.md` must be created or updated only through the `<!-- project-workflow:start -->` / `<!-- project-workflow:end -->` managed block.
+- If a generated target path exists without the generated marker, init must leave it untouched and write the new generated content beside it as `*.new`.
 - `project init` must scaffold:
   - `.project-workflow/TRACKER.md`
+  - `.project-workflow/guidance.md`
   - `.project-workflow/cli/workflow`
   - `.project-workflow/cli/workflow.py`
   - `.github/prompts/*.prompt.md`
-  - `AGENTS.md` and `.agents/skills/project-*` when Codex mode is selected
+  - a managed block in `AGENTS.md` and generated `.agents/skills/project-*` when Codex mode is selected
   - `.claude/agents/*.md` when Claude Code mode is selected
   - `.cursor/agents/*.md` and `.cursor/rules/project-workflow.mdc` when Cursor mode is selected
 - `project task init` must continue scaffolding task docs and optional tracker updates/branch creation.
@@ -37,11 +41,12 @@ Product outcomes and mission belong in `.project-workflow/CONSTITUTION.md`.
 - If you add, remove, or rename a workflow step, update all matching assets: packaged prompts, generated Claude/Cursor agent output, Cursor rules, Codex skills, Codex AGENTS template, README, and the `project init` install lists.
 - Keep agent names stable (`name: project.*`) unless explicitly requested.
 - README should describe usage via `/project.*` agent commands, not copy/paste prompt workflows.
+- Repo-specific workflow customization belongs in `.project-workflow/guidance.md`; generated prompts/skills should reference it rather than asking users to edit generated files by default.
 
 ## Constitution Boundary
 
 - `CONSTITUTION.md` is outcome-focused and non-technical.
-- Technical constraints, coding conventions, validation rules, and architecture notes belong here in `copilot-instructions.md`.
+- Technical constraints, coding conventions, validation rules, and architecture notes for this source repo belong here in `copilot-instructions.md`. Installed repositories should put repo-specific workflow guidance in `.project-workflow/guidance.md`.
 
 ## Python Implementation Standards
 
@@ -96,12 +101,14 @@ Recommended local validation sequence:
 2. `pip install -e .`
 3. `project --help`
 4. `project init` in a temp directory and verify scaffolded files
-5. `./.project-workflow/cli/workflow task init --help` (inside initialized temp repo)
+5. `project doctor` in the initialized temp directory
+6. `./.project-workflow/cli/workflow task init --help` (inside initialized temp repo)
+7. `./.project-workflow/cli/workflow doctor --help` (inside initialized temp repo)
 
 When behavior changes:
 
 - Validate idempotency by running `project init` twice.
-- Validate conflict prompts are preserved for user-modified files.
+- Validate unmarked existing files are preserved and generated updates are written as `*.new`.
 
 ## Git Hygiene
 

@@ -1,6 +1,6 @@
 # Project Workflow
 
-This repository uses project-workflow for spec-driven development. Keep workflow artifacts in `.project-workflow/` as the shared source of truth.
+This repository uses project-workflow for spec-driven development. Keep workflow artifacts in `.project-workflow/` as the shared source of truth, and read `.project-workflow/guidance.md` for repo-specific workflow guidance when present.
 
 ## Workflow Order
 
@@ -42,6 +42,7 @@ For multi-item orchestration, use `project-delegate` after planning. For large b
 ## Codex Usage
 
 - Use the repo-scoped skills in `.agents/skills/project-*` when the user asks for project workflow steps, even when the user asks in natural language rather than naming the skill.
+- Read `.project-workflow/guidance.md` before changing workflow state when the file exists.
 - If a task folder does not exist, run `./.project-workflow/cli/workflow task init --title "<TITLE>" --update-tracker` from the repo root and let the CLI assign the next `TASK-###` ID.
 - Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.
@@ -59,5 +60,7 @@ For multi-item orchestration, use `project-delegate` after planning. For large b
 
 ## Validation
 
+- Run `.project-workflow/cli/workflow doctor` when workflow state is uncertain or before continuing after tracker/task doc edits.
+- Use `.project-workflow/cli/workflow doctor --strict` when safety warnings should block autonomous work.
 - Run the most relevant available tests, type checks, linters, or manual verification steps for the changed work.
 - If broad validation fails for unrelated pre-existing reasons, run the narrowest meaningful checks and report the limitation.

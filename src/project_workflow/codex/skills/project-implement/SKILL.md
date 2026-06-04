@@ -10,7 +10,7 @@ Implement one scoped work item from a project-workflow task and move it to testi
 ## Invocation Rules
 
 - Use this skill whenever the user asks to implement a project-workflow task or planned work item, even if they ask in natural language.
-- Read `AGENTS.md` first and follow its Workflow Skill Map and CLI Requirements.
+- Read `AGENTS.md` and `.project-workflow/guidance.md` if present, then follow the project-workflow managed block and CLI requirements.
 - If the task folder does not exist, use `project-task` first so the CLI creates the required files and tracker row.
 - If requirements or implementation tasks are missing, use `project-requirements` and `project-planner` before coding.
 - Use the CLI for any supported tracker-safe operation before editing Markdown manually.
@@ -34,7 +34,8 @@ Implement one scoped work item from a project-workflow task and move it to testi
 8. Add or update tests when appropriate.
 9. Run relevant automated checks and any required manual verification steps.
 10. Set the tracker row to `Testing` after implementation and validation have run.
-11. Do not set status to `Complete`; completion is owned by `project-qa-review` after QA/code review passes and the user explicitly asks.
-12. Report changed files, validation results, remaining risks, and that `project-qa-review` is the next required lifecycle step.
+11. Run `./.project-workflow/cli/workflow doctor` and report workflow-state warnings or errors.
+12. Do not set status to `Complete`; completion is owned by `project-qa-review` after QA/code review passes and the user explicitly asks.
+13. Report changed files, validation results, remaining risks, and that `project-qa-review` is the next required lifecycle step.
 
 If requirements conflict with repo constraints or validation is not testable, stop and use `project-clarify`.

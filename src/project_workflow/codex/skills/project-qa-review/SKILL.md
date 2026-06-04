@@ -10,7 +10,7 @@ Run the post-implementation quality gate for a project-workflow task.
 ## Invocation Rules
 
 - Use this skill whenever the user asks for QA, review, code review, verification, release readiness, or completion approval for a project-workflow task.
-- Read `AGENTS.md` first and follow its Workflow Skill Map and CLI Requirements.
+- Read `AGENTS.md` and `.project-workflow/guidance.md` if present, then follow the project-workflow managed block and CLI requirements.
 - If implementation has not reached `Testing`, use `project-implement` first.
 - QA/code review is a document and validation workflow unless the CLI adds an explicit review command.
 
@@ -31,9 +31,10 @@ Run the post-implementation quality gate for a project-workflow task.
 6. Run any missing narrow validation needed to support the review.
 7. Review the changed code for correctness, scope control, maintainability, edge cases, tests, docs, security, permissions, privacy, data integrity, and operational risk.
 8. Record results in `IMPLEMENTATION.md` under `## QA & Code Review` with date, reviewed areas, validation evidence, findings, and verdict.
-9. If findings exist, report them first with severity and file references. Keep status as `Review` or set `Blocked` for release-blocking issues.
-10. If review passes, say so. Set status to `Complete` only when the user explicitly asks to complete the task after review.
-11. After completion, route to `project-retro`.
+9. Run `./.project-workflow/cli/workflow doctor` and include any workflow-state warnings or errors in the review output.
+10. If findings exist, report them first with severity and file references. Keep status as `Review` or set `Blocked` for release-blocking issues.
+11. If review passes, say so. Set status to `Complete` only when the user explicitly asks to complete the task after review.
+12. After completion, route to `project-retro`.
 
 ## Verdicts
 

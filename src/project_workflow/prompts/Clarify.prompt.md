@@ -10,6 +10,7 @@ Use this prompt when requirements or constraints are unclear.
 Reference docs:
 
 - Technical constraints/instructions: [../copilot-instructions.md](../copilot-instructions.md)
+- Repo-specific workflow guidance: [../../.project-workflow/guidance.md](../../.project-workflow/guidance.md)
 - Project outcomes: [../../.project-workflow/CONSTITUTION.md](../../.project-workflow/CONSTITUTION.md)
 - User story tracker: [../../.project-workflow/TRACKER.md](../../.project-workflow/TRACKER.md)
 - Canonical task docs:
@@ -29,7 +30,7 @@ Workflow (must follow):
 
 - Read the `## User Story` section from `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md`.
 - Read `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` (if it exists) and treat it as the source of truth for what’s already been agreed.
-- Cross-check against repo constraints in `../copilot-instructions.md` and project outcomes in `../../.project-workflow/CONSTITUTION.md`.
+- Cross-check against repo constraints in `../copilot-instructions.md`, repo-specific workflow guidance in `../../.project-workflow/guidance.md`, and project outcomes in `../../.project-workflow/CONSTITUTION.md`.
 
 Guardrail:
 

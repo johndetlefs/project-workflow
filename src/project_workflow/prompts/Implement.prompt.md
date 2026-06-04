@@ -10,6 +10,7 @@ Use this prompt to make code changes.
 Reference docs:
 
 - Technical constraints/instructions: [../copilot-instructions.md](../copilot-instructions.md)
+- Repo-specific workflow guidance: [../../.project-workflow/guidance.md](../../.project-workflow/guidance.md)
 - User story tracker: [../../.project-workflow/TRACKER.md](../../.project-workflow/TRACKER.md)
 - Canonical tracker: `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md`
 - Requirements source of truth: `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md`
@@ -74,6 +75,7 @@ Validation execution requirement:
 
 - Do not merely propose validation commands—run them using available repo tools (e.g. `run_task`, `runTests`, terminal) and report the results.
 - If a broad check (e.g. whole-app typecheck) fails due to pre-existing issues unrelated to your change, do not stop early: still validate what you changed with the narrowest meaningful checks available (package-level typecheck, targeted tests, file-level checks) and clearly state the limitation.
+- After tracker or task-doc updates, run `./.project-workflow/cli/workflow doctor` when available and report any workflow-state warnings or errors.
 
 Validation alignment guardrail:
 

@@ -17,6 +17,8 @@ Purpose: create the minimal workflow scaffolding for a new feature/task inside t
 
 This is the **only** step that creates folders/files for a new story. Requirements/Clarify/Planner/Implement/QA Review/Retro assume the task folder already exists.
 
+Read `/.project-workflow/guidance.md` if present before changing workflow state.
+
 ## Inputs (ask the user)
 
 Ask the user these questions and wait for answers:
@@ -60,6 +62,7 @@ After running:
 - Confirm the assigned task ID (`TASK-###`)
 - Confirm tracker updated
 - If branch created, confirm the new branch name
+- Run `./.project-workflow/cli/workflow doctor` and report any warnings or errors.
 
 ## Next step
 

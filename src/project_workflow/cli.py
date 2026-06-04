@@ -4,8 +4,8 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import re
+import shutil
 import subprocess
 from dataclasses import dataclass
 from datetime import date
@@ -37,7 +37,6 @@ PROMPT_FILES = [
 CODEX_SKILL_NAMES = [
     "project-constitution",
     "project-task",
-    "project-scaffold",
     "project-epic",
     "project-requirements",
     "project-planner",
@@ -51,8 +50,25 @@ CODEX_SKILL_NAMES = [
 TASK_ID_PREFIX = "TASK"
 EPIC_ID_PREFIX = "EPIC"
 ID_PADDING = 3
+GLOBAL_TRACKER_COLUMNS = ("ID", "Title", "Status", "Docs")
+TRACKER_STATUSES = (
+    "To Do",
+    "Analysing",
+    "Plan Confirmed",
+    "In Progress",
+    "Blocked",
+    "Testing",
+    "Review",
+    "Complete",
+    "N/A",
+)
 EPIC_TRACKER_COLUMNS = ("ID", "Title", "Status", "Type", "Docs", "Branch", "Notes")
 EPIC_TRACKER_STATUSES = ("Proposed", "Approved", "In Progress", "Testing", "Complete")
+GENERATED_MARKER = "project-workflow:generated"
+GENERATED_MARKER_HTML = f"<!-- {GENERATED_MARKER} -->"
+GENERATED_MARKER_COMMENT = f"# {GENERATED_MARKER}"
+MANAGED_BLOCK_START = "<!-- project-workflow:start -->"
+MANAGED_BLOCK_END = "<!-- project-workflow:end -->"
 
 
 def _words(value: str) -> list[str]:
@@ -100,30 +116,6 @@ def _branch_exists(cwd: Path, branch: str) -> bool:
     return completed.returncode == 0
 
 
-def _file_hash(content: str) -> str:
-    """Compute SHA256 hash of file content for conflict detection."""
-    return hashlib.sha256(content.encode("utf-8")).hexdigest()
-
-
-def _prompt_overwrite(file_path: Path, package_content: str) -> bool:
-    """Ask user whether to keep local version or update to package version."""
-    local_content = file_path.read_text(encoding="utf-8")
-    local_hash = _file_hash(local_content)
-    package_hash = _file_hash(package_content)
-
-    if local_hash == package_hash:
-        # Identical, silently succeed
-        return False
-
-    print(f"\n⚠️  Conflict detected: {file_path}")
-    print(f"   Local version differs from package version.")
-    while True:
-        choice = input(f"   Keep your local version? [y/n]: ").strip().lower()
-        if choice in ("y", "n"):
-            return choice == "n"  # True = overwrite (n), False = keep local (y)
-        print("   Please enter 'y' or 'n'.")
-
-
 def _get_package_resource(resource_path: str) -> str:
     """Load a resource file from the package data."""
     try:
@@ -138,41 +130,153 @@ def _get_package_resource(resource_path: str) -> str:
         raise SystemExit(f"Failed to load package resource {resource_path}: {e}")
 
 
-def _ensure_file(
-    path: Path,
-    content: str,
-    *,
-    allow_conflicts: bool = True,
-) -> None:
-    """Write file, with optional conflict detection."""
+def _is_generated_content(content: str) -> bool:
+    return GENERATED_MARKER in content
+
+
+def _markdown_has_frontmatter(content: str) -> re.Match[str] | None:
+    return re.match(r"^(---\n.*?\n---\n)(.*)$", content, flags=re.DOTALL)
+
+
+def _generated_marker_for_path(path: Path) -> str:
+    if path.suffix in {".md", ".mdc"}:
+        return GENERATED_MARKER_HTML
+    return GENERATED_MARKER_COMMENT
+
+
+def _with_generated_marker(path: Path, content: str) -> str:
+    if _is_generated_content(content):
+        return content
+
+    marker = _generated_marker_for_path(path)
+    if path.suffix in {".md", ".mdc"}:
+        frontmatter_match = _markdown_has_frontmatter(content)
+        if frontmatter_match:
+            frontmatter, body = frontmatter_match.groups()
+            return f"{frontmatter}{marker}\n\n{body.lstrip()}"
+        return f"{marker}\n\n{content.lstrip()}"
+
+    if content.startswith("#!"):
+        first_line, sep, rest = content.partition("\n")
+        if sep:
+            return f"{first_line}\n{marker}\n{rest}"
+    return f"{marker}\n{content.lstrip()}"
+
+
+def _collision_path(path: Path) -> Path:
+    candidate = path.with_name(f"{path.name}.new")
+    if not candidate.exists():
+        return candidate
+    try:
+        if _is_generated_content(candidate.read_text(encoding="utf-8")):
+            return candidate
+    except OSError:
+        pass
+
+    counter = 2
+    while True:
+        numbered = path.with_name(f"{path.name}.new.{counter}")
+        if not numbered.exists():
+            return numbered
+        counter += 1
+
+
+def _ensure_generated_file(path: Path, content: str, *, executable: bool = False) -> str:
+    """Create or refresh a project-workflow-owned generated file without overwriting users."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    generated_content = _with_generated_marker(path, content)
 
-    if path.exists():
-        if allow_conflicts:
-            should_overwrite = _prompt_overwrite(path, content)
-            if not should_overwrite:
-                return
+    if not path.exists():
+        path.write_text(generated_content, encoding="utf-8")
+        if executable:
+            path.chmod(0o755)
+        return f"Created: {path}"
+
+    existing_content = path.read_text(encoding="utf-8")
+    if _is_generated_content(existing_content):
+        if existing_content != generated_content:
+            path.write_text(generated_content, encoding="utf-8")
+            action = "Refreshed"
         else:
-            # Silent overwrite (for idempotent updates)
-            return
+            action = "Exists"
+        if executable:
+            path.chmod(0o755)
+        return f"{action}: {path}"
 
-    path.write_text(content, encoding="utf-8")
+    new_path = _collision_path(path)
+    new_path.write_text(generated_content, encoding="utf-8")
+    if executable:
+        new_path.chmod(0o755)
+    return f"Kept existing unmarked file and wrote: {new_path}"
 
 
-def _migrate_legacy_scaffold_file(*, legacy_path: Path, replacement_path: Path) -> None:
-    """Remove legacy scaffold file during init to keep prompt/agent names canonical."""
-    if not legacy_path.exists():
+def _ensure_user_guidance_file(path: Path) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        return f"Exists: {path}"
+
+    path.write_text(
+        "# Project Workflow Guidance\n\n"
+        "Use this file for repo-specific workflow guidance that should survive "
+        "project-workflow init refreshes.\n\n"
+        "Add local conventions, validation commands, safety constraints, handoff "
+        "rules, and agent notes here.\n",
+        encoding="utf-8",
+    )
+    return f"Created: {path}"
+
+
+def _managed_project_workflow_block() -> str:
+    return (
+        f"{MANAGED_BLOCK_START}\n"
+        "## Project Workflow\n\n"
+        "This repository uses project-workflow. Keep workflow state in "
+        "`.project-workflow/TRACKER.md` and `.project-workflow/tasks/`.\n\n"
+        "- Read repo-specific workflow guidance from `.project-workflow/guidance.md`.\n"
+        "- Use `./.project-workflow/cli/workflow` for supported task and validation commands.\n"
+        "- Run `./.project-workflow/cli/workflow doctor` after tracker or task-doc changes.\n"
+        f"{MANAGED_BLOCK_END}"
+    )
+
+
+def _ensure_managed_block(path: Path, block: str) -> str:
+    """Append or refresh only the project-workflow managed block in a host-owned file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists():
+        path.write_text(f"{block}\n", encoding="utf-8")
+        return f"Created managed block: {path}"
+
+    content = path.read_text(encoding="utf-8")
+    pattern = re.compile(
+        rf"{re.escape(MANAGED_BLOCK_START)}.*?{re.escape(MANAGED_BLOCK_END)}",
+        flags=re.DOTALL,
+    )
+    if pattern.search(content):
+        updated = pattern.sub(block, content)
+        if updated != content:
+            path.write_text(updated, encoding="utf-8")
+            return f"Refreshed managed block: {path}"
+        return f"Exists managed block: {path}"
+
+    separator = "\n\n"
+    if content.endswith("\n\n"):
+        separator = ""
+    elif content.endswith("\n"):
+        separator = "\n"
+    path.write_text(f"{content}{separator}{block}\n", encoding="utf-8")
+    return f"Appended managed block: {path}"
+
+
+def _remove_retired_project_workflow_path(path: Path) -> None:
+    """Remove known retired project-workflow assets during init."""
+    if not path.exists():
         return
 
-    # If replacement is absent, preserve local customizations by renaming.
-    if not replacement_path.exists():
-        legacy_path.rename(replacement_path)
-        print(f"✓ Migrated legacy scaffold file: {legacy_path} -> {replacement_path}")
-        return
-
-    # Replacement exists, so remove the legacy alias to avoid duplicate commands.
-    legacy_path.unlink()
-    print(f"✓ Removed legacy scaffold file: {legacy_path}")
+    if path.is_dir():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
+    print(f"✓ Removed retired project-workflow asset: {path}")
 
 
 @dataclass(frozen=True)
@@ -184,6 +288,13 @@ class TaskSpec:
     @property
     def task_folder_name(self) -> str:
         return f"{self.task_id}-{self.folder_suffix}"
+
+
+@dataclass(frozen=True)
+class DoctorIssue:
+    severity: str
+    path: str
+    message: str
 
 
 def _write_file(path: Path, content: str, *, overwrite: bool) -> None:
@@ -263,6 +374,90 @@ def _parse_markdown_table_cells(line: str) -> list[str] | None:
     if not stripped.startswith("|"):
         return None
     return [cell.strip() for cell in stripped.strip("|").split("|")]
+
+
+def _clean_markdown_cell_path(value: str) -> str:
+    return value.strip().strip("`").strip()
+
+
+def _markdown_section(text: str, heading: str) -> str:
+    target = f"## {heading}".lower()
+    collecting = False
+    lines: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            if collecting:
+                break
+            collecting = stripped.lower() == target
+            continue
+        if collecting:
+            lines.append(line)
+    return "\n".join(lines).strip()
+
+
+def _has_qa_review_evidence(text: str) -> bool:
+    section = _markdown_section(text, "QA & Code Review")
+    if not section or "____" in section:
+        return False
+    lowered = section.lower()
+    return "verdict" in lowered and "evidence" in lowered
+
+
+def _add_issue(issues: list[DoctorIssue], severity: str, path: Path | str, message: str) -> None:
+    issues.append(DoctorIssue(severity=severity, path=str(path), message=message))
+
+
+def _parse_markdown_table(
+    table_path: Path,
+    *,
+    expected_columns: tuple[str, ...],
+    issues: list[DoctorIssue],
+    label: str,
+) -> list[dict[str, str]]:
+    try:
+        lines = table_path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        _add_issue(issues, "error", table_path, f"Could not read {label}: {exc}")
+        return []
+
+    header_idx: int | None = None
+    for idx, line in enumerate(lines):
+        cells = _parse_markdown_table_cells(line)
+        if cells == list(expected_columns):
+            header_idx = idx
+            break
+
+    if header_idx is None:
+        expected = " | ".join(expected_columns)
+        _add_issue(
+            issues,
+            "error",
+            table_path,
+            f"{label} schema mismatch. Expected header: '| {expected} |'.",
+        )
+        return []
+
+    rows: list[dict[str, str]] = []
+    row_idx = header_idx + 2
+    while row_idx < len(lines):
+        cells = _parse_markdown_table_cells(lines[row_idx])
+        if cells is None:
+            break
+        if len(cells) != len(expected_columns):
+            _add_issue(
+                issues,
+                "error",
+                table_path,
+                f"{label} row has {len(cells)} columns; expected {len(expected_columns)}.",
+            )
+            row_idx += 1
+            continue
+        row = dict(zip(expected_columns, cells))
+        row["_line_idx"] = str(row_idx + 1)
+        rows.append(row)
+        row_idx += 1
+    return rows
 
 
 def _epic_tracker_rows(epic_tracker_path: Path) -> tuple[list[str], int, list[dict[str, str]]]:
@@ -594,11 +789,225 @@ def _resolve_epic_id(tasks_dir: Path, tracker_path: Path, *, title: str) -> str:
     return _next_sequential_id(tasks_dir, tracker_path, prefix=EPIC_ID_PREFIX)
 
 
+def _doctor_check_source_mirrors(root: Path, issues: list[DoctorIssue]) -> None:
+    def matches_packaged(local_path: Path, packaged_path: Path) -> bool:
+        local_content = local_path.read_text(encoding="utf-8")
+        packaged_content = packaged_path.read_text(encoding="utf-8")
+        return local_content in {
+            packaged_content,
+            _with_generated_marker(local_path, packaged_content),
+        }
+
+    dev_prompts_dir = root / ".github" / "prompts"
+    packaged_prompts_dir = root / "src" / "project_workflow" / "prompts"
+    if dev_prompts_dir.exists() and packaged_prompts_dir.exists():
+        for prompt_file in PROMPT_FILES:
+            dev_path = dev_prompts_dir / prompt_file
+            packaged_path = packaged_prompts_dir / prompt_file
+            if not dev_path.exists():
+                _add_issue(issues, "error", dev_path, "Development prompt is missing.")
+                continue
+            if not packaged_path.exists():
+                _add_issue(issues, "error", packaged_path, "Packaged prompt is missing.")
+                continue
+            if not matches_packaged(dev_path, packaged_path):
+                _add_issue(
+                    issues,
+                    "error",
+                    dev_path,
+                    f"Prompt differs from packaged mirror: {packaged_path}",
+                )
+
+    local_cli_dir = root / ".project-workflow" / "cli"
+    packaged_template_dir = root / "src" / "project_workflow" / "templates"
+    mirror_pairs = (
+        (local_cli_dir / "workflow.py", packaged_template_dir / "workflow.py"),
+        (local_cli_dir / "workflow", packaged_template_dir / "workflow"),
+    )
+    for local_path, packaged_path in mirror_pairs:
+        if not local_path.exists() or not packaged_path.exists():
+            continue
+        if not matches_packaged(local_path, packaged_path):
+            _add_issue(
+                issues,
+                "error",
+                local_path,
+                f"Local workflow CLI differs from packaged template: {packaged_path}",
+            )
+
+
+def _doctor_check_pending_generated_updates(root: Path, issues: list[DoctorIssue]) -> None:
+    checked_roots = (
+        root / ".project-workflow" / "cli",
+        root / ".github" / "prompts",
+        root / ".claude" / "agents",
+        root / ".agents" / "skills",
+        root / ".cursor" / "agents",
+        root / ".cursor" / "rules",
+    )
+    for checked_root in checked_roots:
+        if not checked_root.exists():
+            continue
+        for path in sorted(checked_root.rglob("*")):
+            if ".new" not in path.name:
+                continue
+            _add_issue(
+                issues,
+                "warning",
+                path,
+                "Generated project-workflow update is pending because init preserved an unmarked existing file.",
+            )
+
+
+def _doctor_check_task_doc(
+    *,
+    root: Path,
+    docs_rel: str,
+    status: str,
+    row_id: str,
+    issues: list[DoctorIssue],
+) -> None:
+    if not docs_rel:
+        _add_issue(issues, "warning", ".project-workflow/TRACKER.md", f"{row_id} has no docs path.")
+        return
+
+    docs_path = root / ".project-workflow" / docs_rel
+    if not docs_path.exists():
+        _add_issue(issues, "error", docs_path, f"{row_id} docs path does not exist.")
+        return
+
+    try:
+        docs_text = docs_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        _add_issue(issues, "error", docs_path, f"Could not read docs for {row_id}: {exc}")
+        return
+
+    if status == "Complete" and not _has_qa_review_evidence(docs_text):
+        _add_issue(
+            issues,
+            "warning",
+            docs_path,
+            f"{row_id} is Complete but lacks non-placeholder QA/code-review evidence.",
+        )
+
+    requirements_path = docs_path.parent / "REQUIREMENTS.md"
+    if status not in ("To Do", "N/A") and requirements_path.exists():
+        requirements_text = requirements_path.read_text(encoding="utf-8")
+        if "____" in requirements_text:
+            _add_issue(
+                issues,
+                "warning",
+                requirements_path,
+                f"{row_id} has active status '{status}' but requirements still contain placeholders.",
+            )
+
+
+def _doctor_check_global_tracker(root: Path, issues: list[DoctorIssue]) -> None:
+    workflow_dir = root / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+    if not tracker_path.exists():
+        _add_issue(issues, "error", tracker_path, "Global tracker is missing.")
+        return
+
+    rows = _parse_markdown_table(
+        tracker_path,
+        expected_columns=GLOBAL_TRACKER_COLUMNS,
+        issues=issues,
+        label="Global tracker",
+    )
+    for row in rows:
+        row_id = row["ID"]
+        status = row["Status"]
+        if status not in TRACKER_STATUSES:
+            _add_issue(
+                issues,
+                "error",
+                tracker_path,
+                f"{row_id} has invalid status '{status}'.",
+            )
+        docs_rel = _clean_markdown_cell_path(row["Docs"])
+        _doctor_check_task_doc(
+            root=root,
+            docs_rel=docs_rel,
+            status=status,
+            row_id=row_id,
+            issues=issues,
+        )
+
+
+def _doctor_check_epic_trackers(root: Path, issues: list[DoctorIssue]) -> None:
+    tasks_dir = root / ".project-workflow" / "tasks"
+    if not tasks_dir.exists():
+        return
+
+    for epic_tracker_path in sorted(tasks_dir.glob(f"{EPIC_ID_PREFIX}-*/TRACKER.md")):
+        rows = _parse_markdown_table(
+            epic_tracker_path,
+            expected_columns=EPIC_TRACKER_COLUMNS,
+            issues=issues,
+            label="Epic tracker",
+        )
+        for row in rows:
+            row_id = row["ID"]
+            status = row["Status"]
+            if status not in EPIC_TRACKER_STATUSES:
+                _add_issue(
+                    issues,
+                    "error",
+                    epic_tracker_path,
+                    f"{row_id} has invalid epic status '{status}'.",
+                )
+            docs_rel = _clean_markdown_cell_path(row["Docs"])
+            if docs_rel:
+                _doctor_check_task_doc(
+                    root=root,
+                    docs_rel=docs_rel,
+                    status=status,
+                    row_id=row_id,
+                    issues=issues,
+                )
+
+
+def run_doctor(root: Path) -> list[DoctorIssue]:
+    issues: list[DoctorIssue] = []
+    _doctor_check_source_mirrors(root, issues)
+    _doctor_check_pending_generated_updates(root, issues)
+    _doctor_check_global_tracker(root, issues)
+    _doctor_check_epic_trackers(root, issues)
+    return issues
+
+
+def _doctor_issue_is_blocking(issue: DoctorIssue, *, strict: bool) -> bool:
+    return issue.severity == "error" or (strict and issue.severity == "warning")
+
+
+def cmd_doctor(args: argparse.Namespace) -> None:
+    root = Path(args.root).resolve() if args.root else Path.cwd()
+    issues = run_doctor(root)
+    blocking = [issue for issue in issues if _doctor_issue_is_blocking(issue, strict=args.strict)]
+
+    if not issues:
+        print(f"project doctor: no issues found in {root}")
+        return
+
+    print(f"project doctor: checked {root}")
+    for issue in issues:
+        severity = "error" if args.strict and issue.severity == "warning" else issue.severity
+        print(f"{severity.upper()}: {issue.path}: {issue.message}")
+
+    if blocking:
+        print(f"project doctor: failed with {len(blocking)} blocking issue(s).")
+        raise SystemExit(1)
+
+    print("project doctor: passed with warnings")
+
+
 def cmd_project_init(args: argparse.Namespace) -> None:
     """Bootstrap project-workflow in the current directory."""
     cwd = Path.cwd()
     selected_agent = args.agent
     selected_agent_label = AGENT_CHOICES[selected_agent]
+    managed_block = _managed_project_workflow_block()
 
     print(f"Selected agent mode: {selected_agent_label} ({selected_agent})")
 
@@ -607,6 +1016,7 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     tasks_dir = project_workflow_dir / "tasks"
     cli_dir = project_workflow_dir / "cli"
     tracker_path = project_workflow_dir / "TRACKER.md"
+    guidance_path = project_workflow_dir / "guidance.md"
 
     # Create directories
     tasks_dir.mkdir(parents=True, exist_ok=True)
@@ -619,20 +1029,19 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     else:
         print(f"✓ Exists: {tracker_path}")
 
+    print(f"✓ {_ensure_user_guidance_file(guidance_path)}")
+
     # Create/update the workflow CLI files in .project-workflow/cli/
     workflow_py_path = cli_dir / "workflow.py"
     workflow_sh_path = cli_dir / "workflow"
 
     # Copy the workflow.py to the initialized project
     workflow_py_content = _get_package_resource("templates/workflow.py")
-    _ensure_file(workflow_py_path, workflow_py_content, allow_conflicts=True)
-    print(f"✓ Created/updated: {workflow_py_path}")
+    print(f"✓ {_ensure_generated_file(workflow_py_path, workflow_py_content)}")
 
     # Copy the workflow shell wrapper
     workflow_sh_content = _get_package_resource("templates/workflow")
-    _ensure_file(workflow_sh_path, workflow_sh_content, allow_conflicts=False)
-    workflow_sh_path.chmod(0o755)  # Make executable
-    print(f"✓ Created/updated: {workflow_sh_path}")
+    print(f"✓ {_ensure_generated_file(workflow_sh_path, workflow_sh_content, executable=True)}")
 
     customize_path_hint = ".github/prompts/* files"
 
@@ -646,26 +1055,20 @@ def cmd_project_init(args: argparse.Namespace) -> None:
             agent_name = _prompt_filename_to_claude_agent_name(prompt_file)
             agent_path = claude_agents_dir / f"{agent_name}.md"
             agent_content = _to_claude_agent_markdown(prompt_content, agent_name)
-            _ensure_file(agent_path, agent_content, allow_conflicts=True)
-            print(f"✓ Created/updated: {agent_path}")
+            print(f"✓ {_ensure_generated_file(agent_path, agent_content)}")
 
-        _migrate_legacy_scaffold_file(
-            legacy_path=claude_agents_dir / "project-scaffold.md",
-            replacement_path=claude_agents_dir / "project-task.md",
-        )
+        _remove_retired_project_workflow_path(claude_agents_dir / "project-scaffold.md")
 
         customize_path_hint = ".claude/agents/* files"
     elif selected_agent == "codex":
         agents_path = cwd / "AGENTS.md"
-        agents_content = _get_package_resource("codex/AGENTS.md")
-        _ensure_file(agents_path, agents_content, allow_conflicts=True)
-        print(f"✓ Created/updated: {agents_path}")
+        print(f"✓ {_ensure_managed_block(agents_path, managed_block)}")
 
         for skill_name in CODEX_SKILL_NAMES:
             skill_path = cwd / ".agents" / "skills" / skill_name / "SKILL.md"
             skill_content = _get_package_resource(f"codex/skills/{skill_name}/SKILL.md")
-            _ensure_file(skill_path, skill_content, allow_conflicts=True)
-            print(f"✓ Created/updated: {skill_path}")
+            print(f"✓ {_ensure_generated_file(skill_path, skill_content)}")
+        _remove_retired_project_workflow_path(cwd / ".agents" / "skills" / "project-scaffold")
 
         customize_path_hint = "AGENTS.md and .agents/skills/project-*"
     elif selected_agent == "cursor":
@@ -678,43 +1081,39 @@ def cmd_project_init(args: argparse.Namespace) -> None:
             agent_name = _prompt_filename_to_cursor_agent_name(prompt_file)
             agent_path = cursor_agents_dir / f"{agent_name}.md"
             agent_content = _to_cursor_agent_markdown(prompt_content, agent_name)
-            _ensure_file(agent_path, agent_content, allow_conflicts=True)
-            print(f"✓ Created/updated: {agent_path}")
+            print(f"✓ {_ensure_generated_file(agent_path, agent_content)}")
 
-        _migrate_legacy_scaffold_file(
-            legacy_path=cursor_agents_dir / "project-scaffold.md",
-            replacement_path=cursor_agents_dir / "project-task.md",
-        )
+        _remove_retired_project_workflow_path(cursor_agents_dir / "project-scaffold.md")
 
         cursor_rule_path = cwd / ".cursor" / "rules" / "project-workflow.mdc"
         cursor_rule_content = _get_package_resource("cursor/rules/project-workflow.mdc")
-        _ensure_file(cursor_rule_path, cursor_rule_content, allow_conflicts=True)
-        print(f"✓ Created/updated: {cursor_rule_path}")
+        print(f"✓ {_ensure_generated_file(cursor_rule_path, cursor_rule_content)}")
 
         customize_path_hint = ".cursor/agents/* files and .cursor/rules/project-workflow.mdc"
     else:
-        # Keep existing GitHub Copilot scaffold contract for default mode.
+        # GitHub Copilot uses generated prompts plus a managed host-file block.
         github_dir = cwd / ".github"
         prompts_dir = github_dir / "prompts"
         prompts_dir.mkdir(parents=True, exist_ok=True)
 
+        copilot_instructions_path = github_dir / "copilot-instructions.md"
+        print(f"✓ {_ensure_managed_block(copilot_instructions_path, managed_block)}")
+
         for prompt_file in PROMPT_FILES:
             prompt_path = prompts_dir / prompt_file
             prompt_content = _get_package_resource(f"prompts/{prompt_file}")
-            _ensure_file(prompt_path, prompt_content, allow_conflicts=True)
-            print(f"✓ Created/updated: {prompt_path}")
+            print(f"✓ {_ensure_generated_file(prompt_path, prompt_content)}")
 
-        _migrate_legacy_scaffold_file(
-            legacy_path=prompts_dir / "Scaffold.prompt.md",
-            replacement_path=prompts_dir / "Task.prompt.md",
-        )
+        _remove_retired_project_workflow_path(prompts_dir / "Scaffold.prompt.md")
 
     print(f"\n✅ Project workflow initialized in {cwd}")
     print(f"   Agent mode applied: {selected_agent_label}")
     print(f"\nNext steps:")
     print(f"  • Review: .project-workflow/TRACKER.md")
-    print(f"  • Customize: {customize_path_hint}")
+    print(f"  • Customize user guidance: .project-workflow/guidance.md")
+    print(f"  • Review generated agent assets: {customize_path_hint}")
     print(f"  • Create tasks: ./.project-workflow/cli/workflow task init --help")
+    print("  • Validate workflow state: ./.project-workflow/cli/workflow doctor")
 
 
 def cmd_task_init(args: argparse.Namespace) -> None:
@@ -1042,6 +1441,23 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     init_parser.set_defaults(func=cmd_project_init)
+
+    for command_name in ("doctor", "validate"):
+        doctor_parser = subparsers.add_parser(
+            command_name,
+            help="Validate workflow tracker state and source-repo asset mirrors",
+            description="Validate workflow tracker state and source-repo asset mirrors.",
+        )
+        doctor_parser.add_argument(
+            "--root",
+            help="Repository root to validate (default: current directory)",
+        )
+        doctor_parser.add_argument(
+            "--strict",
+            action="store_true",
+            help="Treat safety warnings, such as missing completion evidence, as failures",
+        )
+        doctor_parser.set_defaults(func=cmd_doctor)
 
     # ===== project task ... =====
     task_parser = subparsers.add_parser("task", help="Task-related commands")

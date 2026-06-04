@@ -16,6 +16,7 @@ Purpose:
 Reference docs:
 
 - Technical constraints/instructions: [../copilot-instructions.md](../copilot-instructions.md)
+- Repo-specific workflow guidance: [../../.project-workflow/guidance.md](../../.project-workflow/guidance.md)
 - User story tracker: [../../.project-workflow/TRACKER.md](../../.project-workflow/TRACKER.md)
 - Canonical task tracker: `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md`
 - Requirements source of truth: `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md`
@@ -56,11 +57,12 @@ Required workflow:
    - validation evidence
    - findings, if any
    - verdict: `Pass`, `Pass with follow-ups`, or `Changes requested`
-8. If issues are found:
+8. Run `./.project-workflow/cli/workflow doctor` when available and include any workflow-state warnings or errors in the review output.
+9. If issues are found:
    - keep tracker status as `Review` or set it to `Blocked` if the issue prevents safe release
    - list findings first, ordered by severity, with file references where possible
    - do not mark anything `Complete`
-9. If review passes:
+10. If review passes:
    - say that QA/code review passed
    - only set the tracker row to `Complete` if the user explicitly asked you to complete the task after review
    - otherwise leave status as `Review` and ask for explicit completion approval

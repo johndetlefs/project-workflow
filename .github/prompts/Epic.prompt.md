@@ -7,6 +7,8 @@ agent: agent
 
 Use this prompt to run epic workflow operations through the local workflow CLI.
 
+Read `/.project-workflow/guidance.md` if present before changing workflow state.
+
 Inputs:
 
 - Action: `${input:action:setup|init|decompose|approve|scaffold-child}`
@@ -131,5 +133,6 @@ Output to user:
 
 - Report the exact command run (for setup mode, report each command in order).
 - Summarize resulting epic/task ID, files/folders created, tracker updates, and branch result (if any).
+- Run `./.project-workflow/cli/workflow doctor` after epic tracker or child scaffold changes and report any warnings or errors.
 - If command fails, return the error and the next remediation step from the error message.
 - In setup mode, also include a short checklist of completed steps and the single next recommended action.

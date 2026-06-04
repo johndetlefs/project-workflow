@@ -10,6 +10,7 @@ Use this prompt to propose a safe, incremental plan.
 Reference docs:
 
 - Technical constraints/instructions: [../copilot-instructions.md](../copilot-instructions.md)
+- Repo-specific workflow guidance: [../../.project-workflow/guidance.md](../../.project-workflow/guidance.md)
 - User story tracker: [../../.project-workflow/TRACKER.md](../../.project-workflow/TRACKER.md)
 - Canonical task tracker location: `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md`
 - Requirements source of truth: `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md`

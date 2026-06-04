@@ -7,6 +7,8 @@ agent: agent
 
 Use this prompt to coordinate delegated execution for task work items.
 
+Read `/.project-workflow/guidance.md` if present before changing workflow state.
+
 Inputs:
 
 - Task: `${input:taskId:TASK-000-Example}`

@@ -10,7 +10,7 @@ Capture what is being built before planning or coding.
 ## Invocation Rules
 
 - Use this skill whenever the user asks for requirements, scope, acceptance criteria, open questions, decisions, or a validation plan, even if they ask in natural language.
-- Read `AGENTS.md` first and follow its Workflow Skill Map and CLI Requirements.
+- Read `AGENTS.md` and `.project-workflow/guidance.md` if present, then follow the project-workflow managed block and CLI requirements.
 - If the task folder does not exist, use `project-task` first so the CLI creates the required files and tracker row.
 - After the task exists, requirements capture is a document workflow unless the CLI adds an explicit requirements command.
 

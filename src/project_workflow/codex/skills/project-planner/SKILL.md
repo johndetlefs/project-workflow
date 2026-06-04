@@ -10,7 +10,7 @@ Turn confirmed requirements into a safe, incremental implementation plan.
 ## Invocation Rules
 
 - Use this skill whenever the user asks for an implementation plan, phases, or testable work items for a project-workflow task, even if they ask in natural language.
-- Read `AGENTS.md` first and follow its Workflow Skill Map and CLI Requirements.
+- Read `AGENTS.md` and `.project-workflow/guidance.md` if present, then follow the project-workflow managed block and CLI requirements.
 - If the task folder does not exist, use `project-task` first so the CLI creates the required files and tracker row.
 - If requirements are missing or unclear, use `project-requirements` or `project-clarify` before planning.
 - Planning is a document workflow unless the CLI adds an explicit planner command.

@@ -15,8 +15,35 @@ from typing import Optional
 TASK_ID_PREFIX = "TASK"
 EPIC_ID_PREFIX = "EPIC"
 ID_PADDING = 3
+GLOBAL_TRACKER_COLUMNS = ("ID", "Title", "Status", "Docs")
+TRACKER_STATUSES = (
+    "To Do",
+    "Analysing",
+    "Plan Confirmed",
+    "In Progress",
+    "Blocked",
+    "Testing",
+    "Review",
+    "Complete",
+    "N/A",
+)
 EPIC_TRACKER_COLUMNS = ("ID", "Title", "Status", "Type", "Docs", "Branch", "Notes")
 EPIC_TRACKER_STATUSES = ("Proposed", "Approved", "In Progress", "Testing", "Complete")
+GENERATED_MARKER = "project-workflow:generated"
+GENERATED_MARKER_HTML = f"<!-- {GENERATED_MARKER} -->"
+GENERATED_MARKER_COMMENT = f"# {GENERATED_MARKER}"
+PROMPT_FILES = [
+    "Constitution.prompt.md",
+    "Clarify.prompt.md",
+    "Delegate.prompt.md",
+    "Epic.prompt.md",
+    "Implement.prompt.md",
+    "Planner.prompt.md",
+    "QAReview.prompt.md",
+    "Requirements.prompt.md",
+    "Retro.prompt.md",
+    "Task.prompt.md",
+]
 
 
 def _words(value: str) -> list[str]:
@@ -64,6 +91,39 @@ def _branch_exists(cwd: Path, branch: str) -> bool:
     return completed.returncode == 0
 
 
+def _is_generated_content(content: str) -> bool:
+    return GENERATED_MARKER in content
+
+
+def _markdown_has_frontmatter(content: str) -> re.Match[str] | None:
+    return re.match(r"^(---\n.*?\n---\n)(.*)$", content, flags=re.DOTALL)
+
+
+def _generated_marker_for_path(path: Path) -> str:
+    if path.suffix in {".md", ".mdc"}:
+        return GENERATED_MARKER_HTML
+    return GENERATED_MARKER_COMMENT
+
+
+def _with_generated_marker(path: Path, content: str) -> str:
+    if _is_generated_content(content):
+        return content
+
+    marker = _generated_marker_for_path(path)
+    if path.suffix in {".md", ".mdc"}:
+        frontmatter_match = _markdown_has_frontmatter(content)
+        if frontmatter_match:
+            frontmatter, body = frontmatter_match.groups()
+            return f"{frontmatter}{marker}\n\n{body.lstrip()}"
+        return f"{marker}\n\n{content.lstrip()}"
+
+    if content.startswith("#!"):
+        first_line, sep, rest = content.partition("\n")
+        if sep:
+            return f"{first_line}\n{marker}\n{rest}"
+    return f"{marker}\n{content.lstrip()}"
+
+
 @dataclass(frozen=True)
 class TaskSpec:
     task_id: str
@@ -73,6 +133,13 @@ class TaskSpec:
     @property
     def task_folder_name(self) -> str:
         return f"{self.task_id}-{self.folder_suffix}"
+
+
+@dataclass(frozen=True)
+class DoctorIssue:
+    severity: str
+    path: str
+    message: str
 
 
 def _write_file(path: Path, content: str, *, overwrite: bool) -> None:
@@ -209,6 +276,90 @@ def _parse_markdown_table_cells(line: str) -> list[str] | None:
     if not stripped.startswith("|"):
         return None
     return [cell.strip() for cell in stripped.strip("|").split("|")]
+
+
+def _clean_markdown_cell_path(value: str) -> str:
+    return value.strip().strip("`").strip()
+
+
+def _markdown_section(text: str, heading: str) -> str:
+    target = f"## {heading}".lower()
+    collecting = False
+    lines: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            if collecting:
+                break
+            collecting = stripped.lower() == target
+            continue
+        if collecting:
+            lines.append(line)
+    return "\n".join(lines).strip()
+
+
+def _has_qa_review_evidence(text: str) -> bool:
+    section = _markdown_section(text, "QA & Code Review")
+    if not section or "____" in section:
+        return False
+    lowered = section.lower()
+    return "verdict" in lowered and "evidence" in lowered
+
+
+def _add_issue(issues: list[DoctorIssue], severity: str, path: Path | str, message: str) -> None:
+    issues.append(DoctorIssue(severity=severity, path=str(path), message=message))
+
+
+def _parse_markdown_table(
+    table_path: Path,
+    *,
+    expected_columns: tuple[str, ...],
+    issues: list[DoctorIssue],
+    label: str,
+) -> list[dict[str, str]]:
+    try:
+        lines = table_path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        _add_issue(issues, "error", table_path, f"Could not read {label}: {exc}")
+        return []
+
+    header_idx: int | None = None
+    for idx, line in enumerate(lines):
+        cells = _parse_markdown_table_cells(line)
+        if cells == list(expected_columns):
+            header_idx = idx
+            break
+
+    if header_idx is None:
+        expected = " | ".join(expected_columns)
+        _add_issue(
+            issues,
+            "error",
+            table_path,
+            f"{label} schema mismatch. Expected header: '| {expected} |'.",
+        )
+        return []
+
+    rows: list[dict[str, str]] = []
+    row_idx = header_idx + 2
+    while row_idx < len(lines):
+        cells = _parse_markdown_table_cells(lines[row_idx])
+        if cells is None:
+            break
+        if len(cells) != len(expected_columns):
+            _add_issue(
+                issues,
+                "error",
+                table_path,
+                f"{label} row has {len(cells)} columns; expected {len(expected_columns)}.",
+            )
+            row_idx += 1
+            continue
+        row = dict(zip(expected_columns, cells))
+        row["_line_idx"] = str(row_idx + 1)
+        rows.append(row)
+        row_idx += 1
+    return rows
 
 
 def _epic_tracker_rows(epic_tracker_path: Path) -> tuple[list[str], int, list[dict[str, str]]]:
@@ -506,9 +657,226 @@ def _resolve_epic_id(tasks_dir: Path, tracker_path: Path, *, title: str) -> str:
     return _next_sequential_id(tasks_dir, tracker_path, prefix=EPIC_ID_PREFIX)
 
 
-def cmd_task_init(args: argparse.Namespace) -> None:
+def _default_repo_root() -> Path:
     here = Path(__file__)
-    repo_root = here.resolve().parents[2]
+    return here.resolve().parents[2]
+
+
+def _doctor_check_source_mirrors(root: Path, issues: list[DoctorIssue]) -> None:
+    def matches_packaged(local_path: Path, packaged_path: Path) -> bool:
+        local_content = local_path.read_text(encoding="utf-8")
+        packaged_content = packaged_path.read_text(encoding="utf-8")
+        return local_content in {
+            packaged_content,
+            _with_generated_marker(local_path, packaged_content),
+        }
+
+    dev_prompts_dir = root / ".github" / "prompts"
+    packaged_prompts_dir = root / "src" / "project_workflow" / "prompts"
+    if dev_prompts_dir.exists() and packaged_prompts_dir.exists():
+        for prompt_file in PROMPT_FILES:
+            dev_path = dev_prompts_dir / prompt_file
+            packaged_path = packaged_prompts_dir / prompt_file
+            if not dev_path.exists():
+                _add_issue(issues, "error", dev_path, "Development prompt is missing.")
+                continue
+            if not packaged_path.exists():
+                _add_issue(issues, "error", packaged_path, "Packaged prompt is missing.")
+                continue
+            if not matches_packaged(dev_path, packaged_path):
+                _add_issue(
+                    issues,
+                    "error",
+                    dev_path,
+                    f"Prompt differs from packaged mirror: {packaged_path}",
+                )
+
+    local_cli_dir = root / ".project-workflow" / "cli"
+    packaged_template_dir = root / "src" / "project_workflow" / "templates"
+    mirror_pairs = (
+        (local_cli_dir / "workflow.py", packaged_template_dir / "workflow.py"),
+        (local_cli_dir / "workflow", packaged_template_dir / "workflow"),
+    )
+    for local_path, packaged_path in mirror_pairs:
+        if not local_path.exists() or not packaged_path.exists():
+            continue
+        if not matches_packaged(local_path, packaged_path):
+            _add_issue(
+                issues,
+                "error",
+                local_path,
+                f"Local workflow CLI differs from packaged template: {packaged_path}",
+            )
+
+
+def _doctor_check_pending_generated_updates(root: Path, issues: list[DoctorIssue]) -> None:
+    checked_roots = (
+        root / ".project-workflow" / "cli",
+        root / ".github" / "prompts",
+        root / ".claude" / "agents",
+        root / ".agents" / "skills",
+        root / ".cursor" / "agents",
+        root / ".cursor" / "rules",
+    )
+    for checked_root in checked_roots:
+        if not checked_root.exists():
+            continue
+        for path in sorted(checked_root.rglob("*")):
+            if ".new" not in path.name:
+                continue
+            _add_issue(
+                issues,
+                "warning",
+                path,
+                "Generated project-workflow update is pending because init preserved an unmarked existing file.",
+            )
+
+
+def _doctor_check_task_doc(
+    *,
+    root: Path,
+    docs_rel: str,
+    status: str,
+    row_id: str,
+    issues: list[DoctorIssue],
+) -> None:
+    if not docs_rel:
+        _add_issue(issues, "warning", ".project-workflow/TRACKER.md", f"{row_id} has no docs path.")
+        return
+
+    docs_path = root / ".project-workflow" / docs_rel
+    if not docs_path.exists():
+        _add_issue(issues, "error", docs_path, f"{row_id} docs path does not exist.")
+        return
+
+    try:
+        docs_text = docs_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        _add_issue(issues, "error", docs_path, f"Could not read docs for {row_id}: {exc}")
+        return
+
+    if status == "Complete" and not _has_qa_review_evidence(docs_text):
+        _add_issue(
+            issues,
+            "warning",
+            docs_path,
+            f"{row_id} is Complete but lacks non-placeholder QA/code-review evidence.",
+        )
+
+    requirements_path = docs_path.parent / "REQUIREMENTS.md"
+    if status not in ("To Do", "N/A") and requirements_path.exists():
+        requirements_text = requirements_path.read_text(encoding="utf-8")
+        if "____" in requirements_text:
+            _add_issue(
+                issues,
+                "warning",
+                requirements_path,
+                f"{row_id} has active status '{status}' but requirements still contain placeholders.",
+            )
+
+
+def _doctor_check_global_tracker(root: Path, issues: list[DoctorIssue]) -> None:
+    workflow_dir = root / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+    if not tracker_path.exists():
+        _add_issue(issues, "error", tracker_path, "Global tracker is missing.")
+        return
+
+    rows = _parse_markdown_table(
+        tracker_path,
+        expected_columns=GLOBAL_TRACKER_COLUMNS,
+        issues=issues,
+        label="Global tracker",
+    )
+    for row in rows:
+        row_id = row["ID"]
+        status = row["Status"]
+        if status not in TRACKER_STATUSES:
+            _add_issue(
+                issues,
+                "error",
+                tracker_path,
+                f"{row_id} has invalid status '{status}'.",
+            )
+        docs_rel = _clean_markdown_cell_path(row["Docs"])
+        _doctor_check_task_doc(
+            root=root,
+            docs_rel=docs_rel,
+            status=status,
+            row_id=row_id,
+            issues=issues,
+        )
+
+
+def _doctor_check_epic_trackers(root: Path, issues: list[DoctorIssue]) -> None:
+    tasks_dir = root / ".project-workflow" / "tasks"
+    if not tasks_dir.exists():
+        return
+
+    for epic_tracker_path in sorted(tasks_dir.glob(f"{EPIC_ID_PREFIX}-*/TRACKER.md")):
+        rows = _parse_markdown_table(
+            epic_tracker_path,
+            expected_columns=EPIC_TRACKER_COLUMNS,
+            issues=issues,
+            label="Epic tracker",
+        )
+        for row in rows:
+            row_id = row["ID"]
+            status = row["Status"]
+            if status not in EPIC_TRACKER_STATUSES:
+                _add_issue(
+                    issues,
+                    "error",
+                    epic_tracker_path,
+                    f"{row_id} has invalid epic status '{status}'.",
+                )
+            docs_rel = _clean_markdown_cell_path(row["Docs"])
+            if docs_rel:
+                _doctor_check_task_doc(
+                    root=root,
+                    docs_rel=docs_rel,
+                    status=status,
+                    row_id=row_id,
+                    issues=issues,
+                )
+
+
+def run_doctor(root: Path) -> list[DoctorIssue]:
+    issues: list[DoctorIssue] = []
+    _doctor_check_source_mirrors(root, issues)
+    _doctor_check_pending_generated_updates(root, issues)
+    _doctor_check_global_tracker(root, issues)
+    _doctor_check_epic_trackers(root, issues)
+    return issues
+
+
+def _doctor_issue_is_blocking(issue: DoctorIssue, *, strict: bool) -> bool:
+    return issue.severity == "error" or (strict and issue.severity == "warning")
+
+
+def cmd_doctor(args: argparse.Namespace) -> None:
+    root = Path(args.root).resolve() if args.root else _default_repo_root()
+    issues = run_doctor(root)
+    blocking = [issue for issue in issues if _doctor_issue_is_blocking(issue, strict=args.strict)]
+
+    if not issues:
+        print(f"workflow doctor: no issues found in {root}")
+        return
+
+    print(f"workflow doctor: checked {root}")
+    for issue in issues:
+        severity = "error" if args.strict and issue.severity == "warning" else issue.severity
+        print(f"{severity.upper()}: {issue.path}: {issue.message}")
+
+    if blocking:
+        print(f"workflow doctor: failed with {len(blocking)} blocking issue(s).")
+        raise SystemExit(1)
+
+    print("workflow doctor: passed with warnings")
+
+
+def cmd_task_init(args: argparse.Namespace) -> None:
+    repo_root = _default_repo_root()
 
     workflow_dir = repo_root / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
@@ -571,8 +939,7 @@ def cmd_task_init(args: argparse.Namespace) -> None:
 
 
 def cmd_epic_init(args: argparse.Namespace) -> None:
-    here = Path(__file__)
-    repo_root = here.resolve().parents[2]
+    repo_root = _default_repo_root()
 
     workflow_dir = repo_root / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
@@ -665,8 +1032,7 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
 
 def cmd_epic_approve(args: argparse.Namespace) -> None:
     """Approve a proposed epic child row by updating Status to Approved."""
-    here = Path(__file__)
-    repo_root = here.resolve().parents[2]
+    repo_root = _default_repo_root()
     workflow_dir = repo_root / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
 
@@ -686,8 +1052,7 @@ def cmd_epic_approve(args: argparse.Namespace) -> None:
 
 def cmd_epic_decompose(args: argparse.Namespace) -> None:
     """Generate Proposed child rows from epic REQUIREMENTS.md without scaffolding child folders."""
-    here = Path(__file__)
-    repo_root = here.resolve().parents[2]
+    repo_root = _default_repo_root()
     workflow_dir = repo_root / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
     tracker_path = workflow_dir / "TRACKER.md"
@@ -757,8 +1122,7 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
 
 def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
     """Scaffold one approved child row from an epic tracker."""
-    here = Path(__file__)
-    repo_root = here.resolve().parents[2]
+    repo_root = _default_repo_root()
     workflow_dir = repo_root / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
     tracker_path = workflow_dir / "TRACKER.md"
@@ -929,6 +1293,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    for command_name in ("doctor", "validate"):
+        doctor_parser = subparsers.add_parser(
+            command_name,
+            help="Validate workflow tracker state and source-repo asset mirrors",
+            description="Validate workflow tracker state and source-repo asset mirrors.",
+        )
+        doctor_parser.add_argument(
+            "--root",
+            help="Repository root to validate (default: repository containing this workflow script)",
+        )
+        doctor_parser.add_argument(
+            "--strict",
+            action="store_true",
+            help="Treat safety warnings, such as missing completion evidence, as failures",
+        )
+        doctor_parser.set_defaults(func=cmd_doctor)
 
     task_parser = subparsers.add_parser("task", help="Task-related commands")
     task_sub = task_parser.add_subparsers(dest="task_command", required=True)

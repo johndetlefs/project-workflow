@@ -15,6 +15,7 @@ This is an iterative prompt. Expect to run it multiple times:
 Context sources (reference, don’t duplicate):
 
 - Technical constraints/instructions: [../copilot-instructions.md](../copilot-instructions.md)
+- Repo-specific workflow guidance: [../../.project-workflow/guidance.md](../../.project-workflow/guidance.md)
 - Project outcomes (north stars): [../../.project-workflow/CONSTITUTION.md](../../.project-workflow/CONSTITUTION.md)
 - User story tracker: [../../.project-workflow/TRACKER.md](../../.project-workflow/TRACKER.md)
 - E2E exception rules (only if editing `front-end/apps/e2e/**`): [../instructions/e2e.instructions.md](../instructions/e2e.instructions.md)

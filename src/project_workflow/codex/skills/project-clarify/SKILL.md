@@ -10,7 +10,7 @@ Resolve ambiguity before planning or implementation continues.
 ## Invocation Rules
 
 - Use this skill whenever the user asks to clarify, resolve ambiguity, reconcile conflicting requirements, or decide between unclear options for a project-workflow task, even if they ask in natural language.
-- Read `AGENTS.md` first and follow its Workflow Skill Map and CLI Requirements.
+- Read `AGENTS.md` and `.project-workflow/guidance.md` if present, then follow the project-workflow managed block and CLI requirements.
 - If the task folder does not exist, use `project-task` first when a tracked task is needed.
 - Clarification is a document workflow unless the CLI adds an explicit clarify command.
 

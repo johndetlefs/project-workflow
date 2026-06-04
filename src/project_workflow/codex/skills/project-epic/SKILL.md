@@ -10,7 +10,7 @@ Manage proposal-first epic work under `.project-workflow/tasks/`.
 ## Invocation Rules
 
 - Use this skill whenever the user asks for an epic, epic decomposition, proposed child work, approval of epic rows, or scaffolding an approved epic child task.
-- Read `AGENTS.md` first and follow its Workflow Skill Map and CLI Requirements.
+- Read `AGENTS.md` and `.project-workflow/guidance.md` if present, then follow the project-workflow managed block and CLI requirements.
 - Use the local workflow CLI for every supported epic operation.
 - Do not scaffold child task folders until the relevant epic tracker row is `Approved`.
 
@@ -54,3 +54,4 @@ Scaffold one approved child row with a branch from an existing epic branch:
 - `epic scaffold-child` only accepts `Approved` child rows and moves them to `In Progress` after scaffold.
 - Child IDs remain globally unique `TASK-###` IDs across standalone and epic-managed work.
 - When `--create-branch` is used, the epic branch must already exist; do not fall back to a base branch.
+- After any epic tracker or child scaffold change, run `./.project-workflow/cli/workflow doctor` and report workflow-state warnings or errors.

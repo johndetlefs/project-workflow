@@ -10,7 +10,7 @@ Run the post-completion retro for a project-workflow task.
 ## Invocation Rules
 
 - Use this skill whenever the user asks for a retro, retrospective, lessons learned, convention updates, agent updates, prompt updates, or post-completion cleanup for a project-workflow task.
-- Read `AGENTS.md` first and follow its Workflow Skill Map and CLI Requirements.
+- Read `AGENTS.md` and `.project-workflow/guidance.md` if present, then follow the project-workflow managed block and CLI requirements.
 - Only run after QA/code review has passed and the task is marked `Complete`.
 - Retro is a maintenance workflow unless the CLI adds an explicit retro command.
 
@@ -38,7 +38,7 @@ Run the post-completion retro for a project-workflow task.
 ## Placement Rules
 
 - Product outcome changes belong in `.project-workflow/CONSTITUTION.md`.
-- Technical conventions belong in `AGENTS.md`, `.github/copilot-instructions.md`, or equivalent repo guidance.
+- Technical workflow conventions belong in `.project-workflow/guidance.md`, or the narrowest equivalent repo guidance file.
 - Copilot workflow behavior belongs in `.github/prompts/*.prompt.md`.
 - Codex workflow behavior belongs in `.agents/skills/project-*/SKILL.md`.
 - Cursor workflow behavior belongs in `.cursor/rules/project-workflow.mdc`.

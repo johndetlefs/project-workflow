@@ -11,7 +11,7 @@ Purpose:
 
 - Define **what success means** for this project in user/business terms.
 - Keep outcome guidance separate from implementation guidance.
-- Ensure technical constraints live in `/.github/copilot-instructions.md` (or repo equivalent), not in the constitution.
+- Ensure technical workflow constraints live in `/.project-workflow/guidance.md` (or repo equivalent), not in the constitution.
 
 Inputs:
 
@@ -22,6 +22,7 @@ Reference docs to read first (if present):
 
 - `README.md`
 - `/.project-workflow/TRACKER.md`
+- `/.project-workflow/guidance.md`
 - Existing `/.project-workflow/CONSTITUTION.md`
 - `/.github/copilot-instructions.md`
 - Common product docs in repo root (`docs/**`, `specs/**`, `product/**`, `roadmap/**`)
@@ -52,7 +53,7 @@ Workflow (must follow):
 
 4. Copilot instructions fallback
 
-- If `/.github/copilot-instructions.md` does not exist, explicitly offer to create it.
+- If `/.project-workflow/guidance.md` does not exist, explicitly offer to create it.
 - If the user accepts, create a minimal technical guidance file with repo conventions/tooling constraints.
 - If the user declines, continue and note that technical guidance is currently missing.
 
@@ -111,4 +112,4 @@ Final response requirements:
 
 - Summarize what changed in `CONSTITUTION.md`.
 - Call out any unresolved product questions.
-- If copilot instructions are missing, include: “I can create `/.github/copilot-instructions.md` now — proceed?”
+- If workflow guidance is missing, include: “I can create `/.project-workflow/guidance.md` now — proceed?”

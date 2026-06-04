@@ -36,6 +36,15 @@ Create and manage proposal-first epics:
 ./.project-workflow/cli/workflow epic scaffold-child --epic-id EPIC-001 --id TASK-014
 ```
 
+Validate workflow state:
+
+```bash
+./.project-workflow/cli/workflow doctor
+./.project-workflow/cli/workflow validate --strict
+```
+
+`doctor` and `validate` are equivalent. Use `--strict` when safety warnings should fail automation.
+
 ## Branch naming
 
 Default branch format:
@@ -52,6 +61,9 @@ This repo also exposes the packaged console script:
 
 ```bash
 project task init --title "Super Admin Access" --update-tracker
+project doctor
 ```
+
+Re-run `project init` from the latest package to refresh marked generated workflow assets and managed host-file blocks. Unmarked existing files are preserved; project-workflow writes the new generated content beside them as `*.new` for review.
 
 The in-repo script is intentionally dependency-free (stdlib only) so initialized projects can keep using the local workflow helper without installing the package.

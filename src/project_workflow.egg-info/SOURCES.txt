@@ -43,7 +43,6 @@ src/project_workflow/codex/skills/project-planner/SKILL.md
 src/project_workflow/codex/skills/project-qa-review/SKILL.md
 src/project_workflow/codex/skills/project-requirements/SKILL.md
 src/project_workflow/codex/skills/project-retro/SKILL.md
-src/project_workflow/codex/skills/project-scaffold/SKILL.md
 src/project_workflow/codex/skills/project-task/SKILL.md
 src/project_workflow/cursor/rules/project-workflow.mdc
 src/project_workflow/prompts/Clarify.prompt.md
@@ -58,3 +57,4 @@ src/project_workflow/prompts/Retro.prompt.md
 src/project_workflow/prompts/Task.prompt.md
 src/project_workflow/templates/workflow
 src/project_workflow/templates/workflow.py
+tests/test_doctor.py

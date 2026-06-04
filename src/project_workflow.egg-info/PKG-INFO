@@ -84,11 +84,52 @@ This creates:
 - Agent definitions in one mode-specific location:
   - `.github/prompts/` for GitHub Copilot
   - `.claude/agents/` for Claude Code
-  - `AGENTS.md` and `.agents/skills/` for OpenAI Codex
+  - `AGENTS.md` managed block and `.agents/skills/` for OpenAI Codex
   - `.cursor/agents/` and `.cursor/rules/project-workflow.mdc` for Cursor
 - `.project-workflow/TRACKER.md` — Centralized task status tracking
+- `.project-workflow/guidance.md` — User-owned repo-specific workflow guidance
+- `.github/copilot-instructions.md` — A managed Project Workflow block for GitHub Copilot mode
 
-Re-running is **idempotent** and safe. If local scaffold files were modified, init preserves conflict prompts instead of silently overwriting. Running init in a different mode is additive and keeps existing layouts.
+Re-running is **idempotent** and safe. `project init` refreshes files that carry the `project-workflow:generated` marker, appends or refreshes only the managed block in host-owned files such as `AGENTS.md` and `.github/copilot-instructions.md`, and preserves unmarked existing files by writing the new generated content beside them as `*.new`.
+
+### Refresh an Existing Install
+
+To refresh an initialized repository to the latest workflow assets, run the same command again from the latest package:
+
+```bash
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+```
+
+For an explicitly selected agent mode:
+
+```bash
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent codex
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor
+```
+
+If your repository was initialized before `doctor` or `validate` existed, the local helper at `./.project-workflow/cli/workflow` will not know about those commands until you run `project init` again from the latest package version. If init writes any `*.new` files, review and merge them manually; your original unmarked files were intentionally left untouched.
+
+### Validate Workflow State
+
+Run a workflow health check from any initialized repository:
+
+```bash
+project doctor
+project validate
+```
+
+Use strict mode when you want safety warnings, such as completed tasks without QA/code-review evidence, to fail automation:
+
+```bash
+project doctor --strict
+```
+
+In repositories initialized with project-workflow, the local dependency-free helper exposes the same command surface:
+
+```bash
+./.project-workflow/cli/workflow doctor
+./.project-workflow/cli/workflow validate --strict
+```
 
 ---
 
@@ -232,7 +273,7 @@ Focus: Conventions, agent guidance, and follow-up tasks
 The agent will:
 
 - Capture reusable lessons from the completed task
-- Update durable conventions, prompts, skills, agent files, or `AGENTS.md` when the task exposed a repeatable gap
+- Update `.project-workflow/guidance.md` or the narrowest generated prompt/skill/agent asset when the task exposed a repeatable gap
 - Record the retro in `IMPLEMENTATION.md`
 - Propose separate follow-up tasks instead of reopening completed scope
 
@@ -297,6 +338,7 @@ Epic workflow rules:
 your-project/
 ├── .project-workflow/
 │   ├── TRACKER.md                    # ← Check this to see project status
+│   ├── guidance.md                   # ← User-owned workflow guidance
 │   ├── CONSTITUTION.md               # ← Product outcomes (non-technical)
 │   ├── cli/
 │   │   ├── workflow                  # Advanced: manual task scaffolding
@@ -308,6 +350,7 @@ your-project/
 │       └── TASK-002-*/
 │           └── ...
 ├── .github/
+│   ├── copilot-instructions.md       # ← Host-owned file with Project Workflow managed block
 │   └── prompts/                      # ← Agent definitions used by Copilot
 │       ├── Constitution.prompt.md    # /project.constitution
 │       ├── Task.prompt.md            # /project.task
@@ -366,7 +409,6 @@ your-project/
 │   └── skills/
 │       ├── project-constitution/
 │       ├── project-task/
-│       ├── project-scaffold/          # legacy alias for project-task
 │       ├── project-epic/
 │       ├── project-requirements/
 │       ├── project-clarify/
@@ -427,8 +469,9 @@ Commit your mode-specific agent definitions so the whole team uses the same work
 
 - `.github/prompts/` (Copilot)
 - `.claude/agents/` (Claude Code)
-- `AGENTS.md` and `.agents/skills/` (Codex)
+- `AGENTS.md` managed block and `.agents/skills/` (Codex)
 - `.cursor/agents/` and `.cursor/rules/project-workflow.mdc` (Cursor)
+- `.project-workflow/guidance.md` for repo-specific workflow guidance that should survive init refreshes
 
 ### 🔍 Review Generated Docs Before Coding
 
@@ -546,6 +589,8 @@ When you run `project.delegate`, the agent also:
 
 Everything is **plain text**—you can edit, version control, and code-review it like any other file.
 
+When the workflow state feels uncertain, run `project doctor` before continuing. It validates tracker structure, linked task docs, epic tracker schemas, completion evidence warnings, and source-repository prompt/template mirror parity when applicable.
+
 ---
 
 ## When Things Go Wrong
@@ -560,7 +605,7 @@ Everything is **plain text**—you can edit, version control, and code-review it
 
 **"My agents keep generating the same output"**
 
-→ Review your mode-specific agent definitions (`.github/prompts/`, `.claude/agents/`, `.agents/skills/`, `AGENTS.md`, `.cursor/agents/`, or `.cursor/rules/project-workflow.mdc`). You can edit them directly; add repo-specific constraints, design patterns, and tooling notes.
+→ Put repo-specific workflow constraints, validation commands, and local handoff notes in `.project-workflow/guidance.md`. Review generated definitions (`.github/prompts/`, `.claude/agents/`, `.agents/skills/`, `.cursor/agents/`, or `.cursor/rules/project-workflow.mdc`) only when the reusable workflow itself needs to change.
 
 **"I want to scaffold a task without using an agent"**
 
@@ -577,12 +622,13 @@ Everything is **plain text**—you can edit, version control, and code-review it
 - **Agents** (mode-specific definitions)
   - Copilot: `/project.*` via `.github/prompts/*.prompt.md`
   - Claude Code: `.claude/agents/*.md`
-  - Codex: `AGENTS.md` plus `.agents/skills/project-*/SKILL.md`
+  - Codex: `AGENTS.md` managed block plus `.agents/skills/project-*/SKILL.md`
   - Cursor: `.cursor/agents/*.md` plus `.cursor/rules/project-workflow.mdc`
 - **Tracker** (`.project-workflow/TRACKER.md`) — Single source of truth for project status
+- **Guidance** (`.project-workflow/guidance.md`) — User-owned repo-specific workflow guidance
 - **Constitution** (`.project-workflow/CONSTITUTION.md`) — Product outcome source of truth (non-technical)
 - **Task docs** (`.project-workflow/tasks/*/`) — REQUIREMENTS.md (goals) + IMPLEMENTATION.md (plan + user story + QA + retro)
-- **Local CLI** (`.project-workflow/cli/`) — Scaffolds new tasks, manages git branches (optional, can be automated via agents)
+- **Local CLI** (`.project-workflow/cli/`) — Scaffolds new tasks, validates workflow state, and manages git branches (optional, can be automated via agents)
 
 No database, no external service, no vendor lock-in—just Markdown and git.
 
