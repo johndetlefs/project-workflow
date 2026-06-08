@@ -38,7 +38,7 @@ Required workflow:
 1. Read `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and the tracker row for the task.
 2. Confirm implementation has reached `Testing`. If it has not, stop and direct the user to run `project.implement` first.
 3. Set the tracker row to `Review` before starting QA/code review.
-4. Inspect the changed files and map each acceptance criterion to evidence:
+4. Inspect the changed files and map each acceptance criterion ID to evidence:
    - automated test, typecheck, lint, build, or script result
    - manual verification result
    - code inspection finding
@@ -70,7 +70,7 @@ Required workflow:
 Output expectations:
 
 - Findings first when any exist.
-- Validation evidence with exact commands or manual checks.
+- Validation evidence with exact commands or manual checks, reported by AC ID.
 - A concise verdict.
 - The next step is `project.retro` only after the task is marked `Complete`.
 

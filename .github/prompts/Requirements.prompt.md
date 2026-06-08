@@ -112,7 +112,8 @@ List requirements as outcomes/expectations, not implementation details.
 
 ## Acceptance Criteria
 
--
+- AC1:
+- AC2:
 
 ## Assumptions
 
@@ -168,8 +169,9 @@ Also:
 Guardrails:
 
 - The requirements must be internally consistent (no contradictions across sections).
-- Every item in `## Acceptance Criteria` must be verifiable in `## Validation Plan (User-Facing)`.
-- In `## Validation Plan (User-Facing)`, include an explicit AC-by-AC mapping (`AC -> verification step`).
+- Every item in `## Acceptance Criteria` must have a stable ID (`AC1`, `AC2`, etc.) and be verifiable in `## Validation Plan (User-Facing)`.
+- In `## Validation Plan (User-Facing)`, include an explicit AC-by-AC mapping (`AC1 -> verification step`, `AC2 -> verification step`, etc.).
+- Preserve existing AC IDs when revising requirements. Do not renumber existing ACs unless the user explicitly approves the requirements change.
 - If this story includes delegated execution (`project.delegate`), ensure requirements, acceptance criteria, and decisions explicitly cover: execution modes, default `sequential` behavior, dependency-map input + strict validation (unknown IDs, self-dependencies, cycles), default parallel worker limit (`4`), fail-fast semantics (stop new launches, allow in-flight completion), and final status reporting (including halted items).
 - If delegated-execution decisions evolve, update both `## Acceptance Criteria` and `## Decisions Log` in the same pass so downstream planning/implementation stay aligned.
 - Do not create or update implementation task lists in `IMPLEMENTATION.md` from this prompt; the `project.planner` prompt owns tasks.

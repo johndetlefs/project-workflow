@@ -49,9 +49,12 @@ Scaffold one approved child row with a branch from an existing epic branch:
 ## Rules
 
 - `epic init` creates an epic `REQUIREMENTS.md` and epic `TRACKER.md`.
+- Epic acceptance criteria should use stable IDs (`AC1`, `AC2`, etc.).
 - `epic decompose` writes Proposed child rows only and does not create child task folders.
+- Proposed child rows should preserve the source AC ID in the epic tracker `Notes` field when they come from a numbered acceptance criterion.
 - `epic approve` moves a child row from `Proposed` to `Approved`.
 - `epic scaffold-child` only accepts `Approved` child rows and moves them to `In Progress` after scaffold.
+- Scaffolded child task implementation plans must map every task row to one or more stable AC IDs.
 - Child IDs remain globally unique `TASK-###` IDs across standalone and epic-managed work.
 - When `--create-branch` is used, the epic branch must already exist; do not fall back to a base branch.
 - After any epic tracker or child scaffold change, run `./.project-workflow/cli/workflow doctor` and report workflow-state warnings or errors.

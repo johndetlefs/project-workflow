@@ -33,5 +33,9 @@ Resolve ambiguity before planning or implementation continues.
    - 2 to 4 actionable options
 6. Ask one unresolved question at a time unless the user explicitly wants batching.
 7. After the user answers, immediately update `REQUIREMENTS.md` decisions and open questions.
-8. Keep `IMPLEMENTATION.md` aligned with confirmed decisions.
-9. Repeat until no unresolved blocking questions remain or the user explicitly accepts remaining risks.
+8. Preserve existing acceptance criteria IDs (`AC1`, `AC2`, etc.) when updating
+   requirements. Do not renumber ACs unless the user explicitly approves that
+   requirements change.
+9. Keep `IMPLEMENTATION.md` aligned with confirmed decisions, including any
+   AC-to-task mapping affected by the decision.
+10. Repeat until no unresolved blocking questions remain or the user explicitly accepts remaining risks.

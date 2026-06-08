@@ -53,8 +53,10 @@ Task quality rules (must follow):
 
 - Each task must be independently _testable_ and have a clear “done” outcome.
 - Tasks must be **outcome-based** (deliverable behavior or user-visible capability), not a checklist of implementation steps.
-- Each task must include explicit **Acceptance Criteria (AC)**.
+- Each task must map to explicit **Acceptance Criteria IDs** from `REQUIREMENTS.md` or the `## Acceptance Criteria` section in `IMPLEMENTATION.md` (`AC1`, `AC2`, etc.).
 - Each task must include a **User Verification** step that a non-developer user can perform (or a precise dev command if it’s inherently technical).
+- Every acceptance criterion must be covered by at least one task row.
+- A task row may map to multiple ACs, for example `AC1, AC3: <criteria summary>`.
 - Avoid vague tasks like “ensure X works” or “verify Y” without stating what to check and how.
 - Prefer vertical slices when possible (deliver value incrementally), but don’t mix unrelated concerns in one task.
 
@@ -65,7 +67,7 @@ Use this exact table format in `IMPLEMENTATION.md` (copy/paste):
 ```md
 |  ID | Title     | Description                         | Acceptance Criteria               | User Verification            | Status |
 | --: | --------- | ----------------------------------- | --------------------------------- | ---------------------------- | ------ |
-|   1 | <Outcome> | <What changes for the user/system?> | - <observable pass/fail criteria> | - <steps a user can perform> | To Do  |
+|   1 | <Outcome> | <What changes for the user/system?> | AC1: <observable pass/fail criteria> | <steps a user can perform> | To Do  |
 ```
 
 ### Table formatting rules (critical)
@@ -80,18 +82,16 @@ Markdown tables break if you put literal newlines inside a cell.
 Good example (multi-line content in a cell, but still one row):
 
 ```md
-| 1 | Example | Short description | - AC 1<br>- AC 2<br>- AC 3 | - Step 1<br>- Step 2 | To Do |
+| 1 | Example | Short description | AC1, AC2: First observable criterion.<br>AC3: Second observable criterion. | Step 1<br>Step 2 | To Do |
 ```
 
 Example (good outcome-based tasks; replace with your task’s domain):
 
 ```md
-|  ID | Title                                    | Description                                                                                                                     | Acceptance Criteria                                                       | User Verification | Status |
-| --: | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------- | ------ |
-|   1 | Enforce server-side allocation on create | When creating an entity, server assigns allocation based on trusted server context, ignoring client-supplied allocation fields. | - Create succeeds and persisted `team_id` equals the server-derived team. |
-
-- Passing a different `team_id` in the request body has no effect.<br>- Unauthorized users cannot create entities for other teams. | - In the app UI, create an entity under Team A; confirm it appears under Team A only.<br>- (Dev) Attempt to POST with a mismatched `team_id`; confirm response still allocates to Team A. | To Do |
-  | 2 | Fail fast on required config missing | If a required env/config value is missing, the request fails with a stable error contract. | - API responds with HTTP 500.
+|  ID | Title                                    | Description                                                                                                                     | Acceptance Criteria                                                                                                                    | User Verification                                                                                                                                                                            | Status |
+| --: | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+|   1 | Enforce server-side allocation on create | When creating an entity, server assigns allocation based on trusted server context, ignoring client-supplied allocation fields. | AC1: Create succeeds and persisted `team_id` equals the server-derived team.<br>AC2: Passing a different `team_id` has no effect. | In the app UI, create an entity under Team A and confirm it appears under Team A only.<br>(Dev) POST with a mismatched `team_id`; confirm response still allocates to Team A. | To Do |
+|   2 | Fail fast on required config missing | If a required env/config value is missing, the request fails with a stable error contract. | AC3: API responds with HTTP 500 and a stable error body when config is missing. | Temporarily remove the config in a test environment and confirm the API returns the documented error contract. | To Do |
 ```
 
 Anti-examples (do NOT write tasks like this):
@@ -124,9 +124,10 @@ Planning guardrails:
 Task list guardrails:
 
 - The `project.planner` prompt owns the implementation task list in `IMPLEMENTATION.md`.
-- Do not treat AC as optional; missing AC means the task is not ready.
+- Do not treat AC mapping as optional; a task row without an `AC#` reference is not ready for implementation.
 - The user should be able to verify each task without reading code (unless explicitly unavoidable).
-- Ensure every acceptance criterion in `REQUIREMENTS.md` is mapped to at least one concrete validation step in the task list (`User Verification` or explicit validation notes).
+- Ensure every acceptance criterion in `REQUIREMENTS.md` is mapped to at least one concrete task row and validation step in the task list (`Acceptance Criteria`, `User Verification`, or explicit validation notes).
+- Keep AC IDs stable. Do not renumber existing ACs unless the user explicitly approves the requirements change.
 - If any requirement/acceptance criterion is not covered by the plan, stop and route to `project.clarify` to resolve and record the decision in `REQUIREMENTS.md` before planning continues.
 - For delegate-execution stories (`project.delegate`), explicitly cover mode defaults, dependency-map validation, worker-limit behavior, and fail-fast/halted reporting in planned outcomes and validation steps.
 

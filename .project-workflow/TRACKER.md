@@ -6,3 +6,4 @@
 | APP-002 | Delegate Agent  | Complete | `tasks/APP-002-Delegate-Agent/IMPLEMENTATION.md` |
 | APP-003 | Epic Support    | Complete | `tasks/APP-003-Epic-Support/IMPLEMENTATION.md`   |
 | TASK-001 | Executable Workflow Validation Harness | Complete | `tasks/TASK-001-Executable-Workflow-Validation-Harness/IMPLEMENTATION.md` |
+| TASK-002 | Tracker-Safe Lifecycle Commands | In Progress | `tasks/TASK-002-Tracker-Safe-Lifecycle-Commands/IMPLEMENTATION.md` |

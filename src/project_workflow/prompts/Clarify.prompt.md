@@ -48,9 +48,10 @@ Guardrail:
   - If there are many low-risk questions and the user explicitly asks for batching, you may ask up to 2–3 at a time.
 - After the user answers:
   - Update `REQUIREMENTS.md` immediately: record the decision in a decisions log, mark the question resolved, and remove/strike it from open questions.
+  - Preserve existing acceptance criteria IDs (`AC1`, `AC2`, etc.). Do not renumber ACs unless the user explicitly approves that requirements change.
   - Keep `IMPLEMENTATION.md` in sync with the confirmed decisions.
   - Keep the `IMPLEMENTATION.md` task list in sync:
-    - If `IMPLEMENTATION.md` has a `## Tasks` section, update it to reflect the confirmed decisions (add/update/remove tasks as needed; mark “clarification-only” tasks complete as questions are resolved).
+    - If `IMPLEMENTATION.md` has a `## Tasks` or `## Task List` section, update it to reflect the confirmed decisions and preserve AC-to-task mappings.
     - If `IMPLEMENTATION.md` does NOT yet have a `## Tasks` section, you MAY add a minimal `## Tasks` section limited to tracking clarification work (e.g., “Resolve Q1…Qn”). Do NOT invent a full implementation plan here — the `project.planner` prompt owns full task planning.
 - Repeat until `REQUIREMENTS.md` has no unresolved open questions (or the user explicitly accepts remaining items as risks and that acceptance is recorded).
 
@@ -115,7 +116,7 @@ Also keep the implementation tracker up to date:
 
 - After recording each decision in `REQUIREMENTS.md`, update `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md` to keep BOTH:
   - `## User Story` (and any decision-dependent notes) consistent with `REQUIREMENTS.md`, and
-  - `## Tasks` consistent with the confirmed decisions.
+  - `## Tasks` / `## Task List` consistent with the confirmed decisions, including AC-to-task mappings where a plan already exists.
 - Clarify may update an existing task list (or add a minimal “clarification tracking” task list), but must not generate a full multi-phase implementation plan — Planner owns full task planning.
 
 -

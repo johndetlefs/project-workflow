@@ -51,6 +51,7 @@ Guided setup mode (`action=setup`):
 Requirements readiness gate (before `decompose`):
 
 - Do not run `decompose` until epic `REQUIREMENTS.md` contains concrete, non-placeholder bullets under `## Requirements` and/or `## Acceptance Criteria`.
+- Acceptance criteria should use stable IDs (`AC1`, `AC2`, etc.). Preserve existing IDs; do not renumber them unless the user explicitly approves the requirements change.
 - If requirements are missing/skeletal, lead the user through filling them:
   - Ask focused questions to capture intended outcomes and verifiable criteria.
   - Update epic `REQUIREMENTS.md` with the provided answers.
@@ -69,6 +70,7 @@ Requirements interview flow (when requirements are missing/skeletal):
   4. Acceptance bullets: "List 3-7 verifiable acceptance criteria as bullets."
   5. Open questions: "What unknowns still need decisions?"
 - Normalize answers into concise bullet points and replace placeholder lines like `- ____` in matching sections.
+- Prefix acceptance criteria with stable IDs when writing them, for example `- AC1: <verifiable outcome>`.
 - For pasted blocks, extract and map content into sections:
   - Product outcome/business goal -> `## Goal`
   - Platform/UX behavior statements -> `## Requirements (Outcome-Focused)`
@@ -124,6 +126,8 @@ Execution:
 Constraints to enforce in responses:
 
 - Decomposition is proposal-first: it writes Proposed rows and does not scaffold child folders.
+- Proposed child rows should preserve the source AC ID in the epic tracker `Notes` field when they come from a numbered acceptance criterion.
+- Scaffolded child tasks must carry AC mapping forward in their `IMPLEMENTATION.md` planning table.
 - Approval gate: only Approved rows may be scaffolded.
 - Child task IDs remain globally unique and are managed by workflow behavior.
 - If branch creation is requested for `scaffold-child`, the epic branch must already exist; no fallback branch is allowed.

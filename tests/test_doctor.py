@@ -61,6 +61,25 @@ def test_generated_local_workflow_exposes_doctor(tmp_path: Path) -> None:
     assert "Validate workflow tracker state" in completed.stdout
 
 
+def test_task_scaffold_uses_ac_mapped_implementation_shape(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(
+        ["task", "init", "--title", "Mapped Implementation Shape", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    requirements_text = (task_dir / "REQUIREMENTS.md").read_text(encoding="utf-8")
+    implementation_text = (task_dir / "IMPLEMENTATION.md").read_text(encoding="utf-8")
+
+    assert "- AC1: ____" in requirements_text
+    assert "- [ ] AC1: ____" in implementation_text
+    assert "| 1 | ____ | ____ | AC1: ____ | ____ | To Do |" in implementation_text
+
+
 def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     codex_root = tmp_path / "codex"
     codex_root.mkdir()
@@ -121,6 +140,29 @@ def test_init_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path
     assert "# Local Copilot Notes" in instructions_text
     assert "old managed block" not in instructions_text
     assert ".project-workflow/guidance.md" in instructions_text
+
+
+def test_init_does_not_treat_inline_marker_mentions_as_managed_blocks(tmp_path: Path) -> None:
+    instructions = tmp_path / ".github" / "copilot-instructions.md"
+    instructions.parent.mkdir(parents=True)
+    instructions.write_text(
+        "# Local Copilot Notes\n\n"
+        "Document the `<!-- project-workflow:start -->` / "
+        "`<!-- project-workflow:end -->` markers, but do not treat this sentence as a block.\n",
+        encoding="utf-8",
+    )
+
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+
+    instructions_text = instructions.read_text(encoding="utf-8")
+    assert (
+        "Document the `<!-- project-workflow:start -->` / "
+        "`<!-- project-workflow:end -->` markers"
+    ) in instructions_text
+    assert instructions_text.count("<!-- project-workflow:start -->") == 2
+    assert instructions_text.count("<!-- project-workflow:end -->") == 2
+    assert "\n<!-- project-workflow:start -->\n## Project Workflow" in instructions_text
 
 
 def test_init_preserves_unmarked_generated_collision_and_writes_new(tmp_path: Path) -> None:
@@ -204,3 +246,93 @@ def test_doctor_strict_fails_complete_task_without_qa_evidence(tmp_path: Path) -
     assert strict_doctor.returncode != 0
     assert "ERROR" in strict_doctor.stdout
     assert "lacks non-placeholder QA/code-review evidence" in strict_doctor.stdout
+
+
+def test_doctor_warns_when_active_task_row_lacks_ac_mapping(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(
+        ["task", "init", "--title", "AC Mapping Warning", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    (task_dir / "REQUIREMENTS.md").write_text(
+        "# Requirements\n\n"
+        "## Summary\n\n"
+        "- Task: TASK-001\n"
+        "- Title: AC Mapping Warning\n\n"
+        "## Requirements (Outcome-Focused)\n\n"
+        "- Export behavior is controlled by the workflow.\n\n"
+        "## Acceptance Criteria (Verifiable)\n\n"
+        "- AC1: Export succeeds for an authorized user.\n"
+        "- AC2: Export fails with a clear error for an unauthorized user.\n",
+        encoding="utf-8",
+    )
+    (task_dir / "IMPLEMENTATION.md").write_text(
+        "## User Story\n\n"
+        "As a maintainer, I want mapped task rows, so QA can trace work.\n\n"
+        "## Acceptance Criteria\n\n"
+        "- [ ] AC1: Export succeeds for an authorized user.\n"
+        "- [ ] AC2: Export fails with a clear error for an unauthorized user.\n\n"
+        "## Validation\n\n"
+        "- AC1: Run export success test.\n"
+        "- AC2: Run export authorization failure test.\n\n"
+        "## Task List\n\n"
+        "| ID | Title | Description | Acceptance Criteria | User Verification | Status |\n"
+        "| --: | ----- | ----------- | ------------------- | ----------------- | ------ |\n"
+        "| 1 | Success path | Export works for authorized users. | Export succeeds. | Run success test. | To Do |\n"
+        "| 2 | Failure path | Export rejects unauthorized users. | AC2: Clear failure. | Run failure test. | To Do |\n\n"
+        "## QA & Code Review\n\n"
+        "- Verdict: Pending.\n"
+        "- Evidence: Pending.\n"
+        "- Findings: Pending.\n",
+        encoding="utf-8",
+    )
+
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace(" | To Do | ", " | In Progress | "),
+        encoding="utf-8",
+    )
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    assert "implementation task row(s) lack AC ID mapping: 1" in doctor.stdout
+    assert "acceptance criteria are not mapped to implementation tasks: AC1" in doctor.stdout
+
+    strict_doctor = run_project(["doctor", "--strict"], cwd=tmp_path)
+    assert strict_doctor.returncode != 0
+    assert "ERROR" in strict_doctor.stdout
+
+
+def test_epic_decompose_preserves_source_ac_ids_in_notes(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Mapped Epic"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        "# Requirements\n\n"
+        "## Summary\n\n"
+        "- Task: EPIC-001\n"
+        "- Title: Mapped Epic\n\n"
+        "## Acceptance Criteria (Verifiable)\n\n"
+        "- AC1: First epic outcome is delivered.\n"
+        "- AC2: Second epic outcome is delivered.\n",
+        encoding="utf-8",
+    )
+
+    decompose = run_project(
+        ["epic", "decompose", "--epic-id", "EPIC-001", "--limit", "2"],
+        cwd=tmp_path,
+    )
+    assert decompose.returncode == 0, decompose.stdout + decompose.stderr
+
+    epic_tracker = (epic_dir / "TRACKER.md").read_text(encoding="utf-8")
+    assert "Covers AC1; Generated from REQUIREMENTS.md" in epic_tracker
+    assert "Covers AC2; Generated from REQUIREMENTS.md" in epic_tracker

@@ -51,6 +51,14 @@ TASK_ID_PREFIX = "TASK"
 EPIC_ID_PREFIX = "EPIC"
 ID_PADDING = 3
 GLOBAL_TRACKER_COLUMNS = ("ID", "Title", "Status", "Docs")
+IMPLEMENTATION_TASK_COLUMNS = (
+    "ID",
+    "Title",
+    "Description",
+    "Acceptance Criteria",
+    "User Verification",
+    "Status",
+)
 TRACKER_STATUSES = (
     "To Do",
     "Analysing",
@@ -64,6 +72,14 @@ TRACKER_STATUSES = (
 )
 EPIC_TRACKER_COLUMNS = ("ID", "Title", "Status", "Type", "Docs", "Branch", "Notes")
 EPIC_TRACKER_STATUSES = ("Proposed", "Approved", "In Progress", "Testing", "Complete")
+AC_MAPPED_IMPLEMENTATION_STATUSES = (
+    "Plan Confirmed",
+    "In Progress",
+    "Blocked",
+    "Testing",
+    "Review",
+    "Complete",
+)
 GENERATED_MARKER = "project-workflow:generated"
 GENERATED_MARKER_HTML = f"<!-- {GENERATED_MARKER} -->"
 GENERATED_MARKER_COMMENT = f"# {GENERATED_MARKER}"
@@ -248,8 +264,8 @@ def _ensure_managed_block(path: Path, block: str) -> str:
 
     content = path.read_text(encoding="utf-8")
     pattern = re.compile(
-        rf"{re.escape(MANAGED_BLOCK_START)}.*?{re.escape(MANAGED_BLOCK_END)}",
-        flags=re.DOTALL,
+        rf"^{re.escape(MANAGED_BLOCK_START)}\n.*?^{re.escape(MANAGED_BLOCK_END)}$",
+        flags=re.DOTALL | re.MULTILINE,
     )
     if pattern.search(content):
         updated = pattern.sub(block, content)
@@ -309,9 +325,13 @@ def _implementation_template(task_id: str, title: str) -> str:
         f"## User Story\n\n"
         f"As a ____, I want ____, so that ____.\n\n"
         f"## Acceptance Criteria\n\n"
-        f"- [ ] ____\n\n"
+        f"- [ ] AC1: ____\n\n"
         f"## Validation\n\n"
-        f"- ____\n\n"
+        f"- AC1: ____\n\n"
+        f"## Task List\n\n"
+        f"| ID | Title | Description | Acceptance Criteria | User Verification | Status |\n"
+        f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ |\n"
+        f"| 1 | ____ | ____ | AC1: ____ | ____ | To Do |\n\n"
         f"## QA & Code Review\n\n"
         f"- Verdict: ____\n"
         f"- Evidence: ____\n"
@@ -343,7 +363,7 @@ def _requirements_template(task_id: str, title: str) -> str:
         f"## Requirements (Outcome-Focused)\n\n"
         f"- ____\n\n"
         f"## Acceptance Criteria (Verifiable)\n\n"
-        f"- ____\n\n"
+        f"- AC1: ____\n\n"
         f"## Open Questions (Answer Needed)\n\n"
         f"- ____\n\n"
         f"## Decisions (Resolved)\n\n"
@@ -396,12 +416,129 @@ def _markdown_section(text: str, heading: str) -> str:
     return "\n".join(lines).strip()
 
 
+def _extract_ac_ids(text: str) -> set[str]:
+    return {
+        f"AC{match.group(1)}"
+        for match in re.finditer(r"\bAC\s*(\d+)\b", text, flags=re.IGNORECASE)
+    }
+
+
+def _implementation_task_table_rows(
+    docs_text: str,
+) -> tuple[bool, list[dict[str, str]], list[int]]:
+    lines = docs_text.splitlines()
+    header_idx: int | None = None
+    for idx, line in enumerate(lines):
+        cells = _parse_markdown_table_cells(line)
+        if cells == list(IMPLEMENTATION_TASK_COLUMNS):
+            header_idx = idx
+            break
+
+    if header_idx is None:
+        return False, [], []
+
+    rows: list[dict[str, str]] = []
+    malformed_rows: list[int] = []
+    row_idx = header_idx + 2
+    while row_idx < len(lines):
+        cells = _parse_markdown_table_cells(lines[row_idx])
+        if cells is None:
+            break
+        if len(cells) != len(IMPLEMENTATION_TASK_COLUMNS):
+            malformed_rows.append(row_idx + 1)
+            row_idx += 1
+            continue
+        row = dict(zip(IMPLEMENTATION_TASK_COLUMNS, cells))
+        row["_line_idx"] = str(row_idx + 1)
+        rows.append(row)
+        row_idx += 1
+
+    return True, rows, malformed_rows
+
+
 def _has_qa_review_evidence(text: str) -> bool:
     section = _markdown_section(text, "QA & Code Review")
     if not section or "____" in section:
         return False
     lowered = section.lower()
     return "verdict" in lowered and "evidence" in lowered
+
+
+def _doctor_check_implementation_ac_mapping(
+    *,
+    docs_path: Path,
+    docs_text: str,
+    status: str,
+    row_id: str,
+    issues: list[DoctorIssue],
+) -> None:
+    if docs_path.name != "IMPLEMENTATION.md":
+        return
+    if status not in AC_MAPPED_IMPLEMENTATION_STATUSES:
+        return
+
+    criteria_ac_ids = _extract_ac_ids(_markdown_section(docs_text, "Acceptance Criteria"))
+
+    table_found, rows, malformed_rows = _implementation_task_table_rows(docs_text)
+    if not table_found:
+        if criteria_ac_ids:
+            _add_issue(
+                issues,
+                "warning",
+                docs_path,
+                f"{row_id} has status '{status}' but no implementation task table maps work to AC IDs.",
+            )
+        return
+
+    row_ac_ids: dict[str, set[str]] = {}
+    for row in rows:
+        row_label = row.get("ID") or f"line {row.get('_line_idx', '?')}"
+        row_ac_ids[row_label] = _extract_ac_ids(row.get("Acceptance Criteria", ""))
+
+    # Avoid adding warnings for historical plans that predate the AC-ID convention.
+    if not criteria_ac_ids and not any(row_ac_ids.values()):
+        return
+
+    if malformed_rows:
+        _add_issue(
+            issues,
+            "warning",
+            docs_path,
+            f"{row_id} has malformed implementation task table row(s): "
+            + ", ".join(str(line) for line in malformed_rows),
+        )
+
+    missing_row_mappings = [row_label for row_label, ids in row_ac_ids.items() if not ids]
+    if missing_row_mappings:
+        _add_issue(
+            issues,
+            "warning",
+            docs_path,
+            f"{row_id} implementation task row(s) lack AC ID mapping: "
+            + ", ".join(missing_row_mappings),
+        )
+
+    mapped_ids = {ac_id for ids in row_ac_ids.values() for ac_id in ids}
+    if criteria_ac_ids:
+        uncovered = sorted(criteria_ac_ids - mapped_ids)
+        if uncovered:
+            _add_issue(
+                issues,
+                "warning",
+                docs_path,
+                f"{row_id} acceptance criteria are not mapped to implementation tasks: "
+                + ", ".join(uncovered),
+            )
+
+        unknown = sorted(mapped_ids - criteria_ac_ids)
+        if unknown:
+            _add_issue(
+                issues,
+                "warning",
+                docs_path,
+                f"{row_id} implementation task rows reference unknown AC IDs: "
+                + ", ".join(unknown),
+            )
 
 
 def _add_issue(issues: list[DoctorIssue], severity: str, path: Path | str, message: str) -> None:
@@ -558,9 +695,11 @@ def _next_task_id_from_used(used_ids: set[str]) -> str:
     return f"{TASK_ID_PREFIX}-{max_value + 1:0{ID_PADDING}d}"
 
 
-def _decompose_epic_requirements_to_titles(requirements_text: str, *, limit: int) -> list[str]:
+def _decompose_epic_requirements_to_titles(
+    requirements_text: str, *, limit: int
+) -> list[tuple[str, str | None]]:
     lines = requirements_text.splitlines()
-    bullets: list[str] = []
+    bullets: list[tuple[str, str | None]] = []
     in_section = False
     for line in lines:
         stripped = line.strip()
@@ -589,11 +728,15 @@ def _decompose_epic_requirements_to_titles(requirements_text: str, *, limit: int
             continue
 
         bullet = re.sub(r"\s+", " ", bullet)
-        bullet = re.sub(r"^AC\d+\s*:\s*", "", bullet, flags=re.IGNORECASE)
+        ac_id: str | None = None
+        ac_match = re.match(r"^AC\s*(\d+)\s*:\s*(.+)$", bullet, flags=re.IGNORECASE)
+        if ac_match:
+            ac_id = f"AC{ac_match.group(1)}"
+            bullet = ac_match.group(2).strip()
         bullet = re.sub(r"^A user can\s+", "", bullet, flags=re.IGNORECASE)
         bullet = re.sub(r"^Users can\s+", "", bullet, flags=re.IGNORECASE)
         bullet = bullet[:1].upper() + bullet[1:] if bullet else bullet
-        bullets.append(bullet.rstrip("."))
+        bullets.append((bullet.rstrip("."), ac_id))
         if len(bullets) >= limit:
             break
     return bullets
@@ -891,8 +1034,10 @@ def _doctor_check_task_doc(
         )
 
     requirements_path = docs_path.parent / "REQUIREMENTS.md"
-    if status not in ("To Do", "N/A") and requirements_path.exists():
+    requirements_text: str | None = None
+    if requirements_path.exists():
         requirements_text = requirements_path.read_text(encoding="utf-8")
+    if status not in ("To Do", "N/A") and requirements_text is not None:
         if "____" in requirements_text:
             _add_issue(
                 issues,
@@ -900,6 +1045,14 @@ def _doctor_check_task_doc(
                 requirements_path,
                 f"{row_id} has active status '{status}' but requirements still contain placeholders.",
             )
+
+    _doctor_check_implementation_ac_mapping(
+        docs_path=docs_path,
+        docs_text=docs_text,
+        status=status,
+        row_id=row_id,
+        issues=issues,
+    )
 
 
 def _doctor_check_global_tracker(root: Path, issues: list[DoctorIssue]) -> None:
@@ -1279,8 +1432,8 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
         raise SystemExit(f"Missing global tracker file: {tracker_path}")
 
     requirements_text = requirements_path.read_text(encoding="utf-8")
-    titles = _decompose_epic_requirements_to_titles(requirements_text, limit=args.limit)
-    if not titles:
+    candidates = _decompose_epic_requirements_to_titles(requirements_text, limit=args.limit)
+    if not candidates:
         raise SystemExit(
             "No decomposition candidates found in epic REQUIREMENTS.md. "
             "Add list items under '## Requirements (Outcome-Focused)' or "
@@ -1310,9 +1463,12 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
             occupied_ids.add(candidate)
 
     rows_to_add: list[dict[str, str]] = []
-    for title in titles:
+    for title, ac_id in candidates:
         next_id = _next_task_id_from_used(occupied_ids)
         occupied_ids.add(next_id)
+        notes = f"Generated from {requirements_path.name}"
+        if ac_id:
+            notes = f"Covers {ac_id}; {notes}"
         rows_to_add.append(
             {
                 "ID": next_id,
@@ -1321,7 +1477,7 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
                 "Type": args.item_type,
                 "Docs": "",
                 "Branch": "",
-                "Notes": f"Generated from {requirements_path.name}",
+                "Notes": notes,
             }
         )
 

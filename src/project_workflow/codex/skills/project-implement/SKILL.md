@@ -28,7 +28,8 @@ Implement one scoped work item from a project-workflow task and move it to testi
 2. Infer the work item from the user prompt or the next `To Do` task in `IMPLEMENTATION.md`. Ask only if ambiguous.
 3. Read `REQUIREMENTS.md` and `IMPLEMENTATION.md` before editing code.
 4. Restate the selected work item and scope boundary.
-5. Map each planned change to the relevant acceptance criteria. If a change does not map, stop and ask for direction.
+5. Map each planned change to the relevant AC IDs. If a change does not map,
+   stop and ask for direction.
 6. Set the tracker row for the task to `In Progress` before coding.
 7. Make the smallest safe code change that satisfies the selected work item.
 8. Add or update tests when appropriate.

@@ -33,16 +33,23 @@ Turn confirmed requirements into a safe, incremental implementation plan.
    - `## Approach`
    - `## Phases`
    - `## Tasks`
-4. Make every task independently testable and outcome-based.
-5. Use this table shape for tasks:
+4. Assign or preserve stable acceptance criteria IDs (`AC1`, `AC2`, etc.) from
+   `REQUIREMENTS.md` and the `## Acceptance Criteria` section in
+   `IMPLEMENTATION.md`.
+5. Make every task independently testable and outcome-based.
+6. Map every task row to one or more AC IDs, and ensure every AC ID is covered
+   by at least one task row.
+7. Use this table shape for tasks:
 
 ```md
 |  ID | Title | Description | Acceptance Criteria | User Verification | Status |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ |
-|   1 | <Outcome> | <What changes for the user/system?> | - <observable pass/fail criteria> | - <steps or command> | To Do |
+|   1 | <Outcome> | <What changes for the user/system?> | AC1: <observable pass/fail criteria> | <steps or command> | To Do |
 ```
 
-6. Keep each table row on one physical line. Use `<br>` for multiple items inside a cell and escape literal `|` characters.
-7. Include validation steps for each phase.
-8. Include QA/code review as the required gate after implementation validation and before completion.
-9. Do not implement code during planning.
+8. Keep each table row on one physical line. Use `<br>` for multiple items
+   inside a cell and escape literal `|` characters.
+9. Include validation steps for each phase.
+10. Include QA/code review as the required gate after implementation validation
+    and before completion.
+11. Do not implement code during planning.

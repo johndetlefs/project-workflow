@@ -159,7 +159,7 @@ The agent will:
 
 - Ask discovery questions ("What format? Who sees this?")
 - Draft a user story
-- List acceptance criteria
+- List acceptance criteria with stable IDs (`AC1`, `AC2`, etc.)
 - Ensure acceptance criteria are explicitly mappable to validation steps
 - Flag ambiguities as open questions
 
@@ -180,9 +180,9 @@ The agent generates:
 
 - A phased approach (e.g., Phase 1: Backend API, Phase 2: UI)
 - Implementation task list
-- Validation steps for each phase, mapped to acceptance criteria
+- Validation steps for each phase, mapped to acceptance criteria IDs
 
-It updates `.project-workflow/tasks/TASK-001-*/IMPLEMENTATION.md` with a task table.
+It updates `.project-workflow/tasks/TASK-001-*/IMPLEMENTATION.md` with a task table. Every implementation task row should reference one or more AC IDs, so QA can verify requirement coverage directly from the plan.
 
 **Output:** You now have a clear roadmap to code against.
 
@@ -218,7 +218,7 @@ The agent will:
 - Read your requirements and plan
 - Make code changes incrementally
 - Run validation (tests, type checks, manual verification)
-- Report validation evidence in acceptance-criteria order for the current work item
+- Report validation evidence by AC ID for the current work item
 - Update `.project-workflow/TRACKER.md` with status (`In Progress` -> `Testing`)
 
 ### 6. **QA & Code Review** (10-30 min)
@@ -232,7 +232,7 @@ Scope: Review the implemented export flow
 
 The agent will:
 
-- Map acceptance criteria to validation evidence
+- Map acceptance criteria IDs to validation evidence
 - Review changed code for correctness, security, maintainability, and scope control
 - Record findings in `.project-workflow/tasks/TASK-001-*/IMPLEMENTATION.md`
 - Move the tracker to `Review`, then to `Complete` only after review passes and you explicitly approve completion
@@ -551,10 +551,12 @@ When you run an agent command or skill (for example `project.requirements`) and 
 
 1. **Reads** your existing task files (REQUIREMENTS.md, IMPLEMENTATION.md)
 2. **Asks** clarifying questions (discovers gaps)
-3. **Generates** structured Markdown (requirements, plans, code)
+3. **Generates** structured Markdown (requirements, plans, code), preserving AC IDs from requirements through implementation tasks
 4. **Updates** your local files (you can review before accepting)
 5. **Syncs** TRACKER.md with status (To Do -> In Progress -> Testing -> Review -> Complete)
 6. **Keeps conventions current** with a retro after completion
+
+When you run `project.epic`, decomposition keeps source AC IDs in proposed child rows when possible, and scaffolded child tasks follow the same AC-mapped implementation planning rules.
 
 When you run `project.delegate`, the agent also:
 
@@ -565,7 +567,7 @@ When you run `project.delegate`, the agent also:
 
 Everything is **plain text**—you can edit, version control, and code-review it like any other file.
 
-When the workflow state feels uncertain, run `project doctor` before continuing. It validates tracker structure, linked task docs, epic tracker schemas, completion evidence warnings, and source-repository prompt/template mirror parity when applicable.
+When the workflow state feels uncertain, run `project doctor` before continuing. It validates tracker structure, linked task docs, epic tracker schemas, active AC-to-task mapping, completion evidence warnings, and source-repository prompt/template mirror parity when applicable.
 
 ---
 

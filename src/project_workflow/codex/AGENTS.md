@@ -46,6 +46,7 @@ For multi-item orchestration, use `project-delegate` after planning. For large b
 - If a task folder does not exist, run `./.project-workflow/cli/workflow task init --title "<TITLE>" --update-tracker` from the repo root and let the CLI assign the next `TASK-###` ID.
 - Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.
+- When planning, make every implementation task row map to one or more stable acceptance criteria IDs (`AC1`, `AC2`, etc.) from the task requirements or implementation acceptance criteria section.
 - Keep `.project-workflow/TRACKER.md` status aligned with the current workflow state.
 - Do not mark a task or work item `Complete` unless implementation validation and QA/code review have passed and the user explicitly asks for completion.
 

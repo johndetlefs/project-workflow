@@ -33,10 +33,12 @@ Capture what is being built before planning or coding.
    - Non-Goals
    - Users & Context
    - Outcome-focused requirements
-   - Verifiable acceptance criteria
+   - Verifiable acceptance criteria with stable IDs (`AC1`, `AC2`, etc.)
    - Open questions
    - Resolved decisions
    - Validation plan
-5. Keep only the `## User Story` section in `IMPLEMENTATION.md` synced with `REQUIREMENTS.md`. Do not add implementation tasks here.
-6. If critical requirements are ambiguous, record them as open questions in `REQUIREMENTS.md`, then ask the user the minimum questions needed.
-7. Do not proceed to planning or implementation until open questions are resolved or explicitly accepted as risks and recorded.
+5. Preserve existing AC IDs when requirements change. Do not renumber existing
+   ACs unless the user explicitly approves the requirements change.
+6. Keep only the `## User Story` section in `IMPLEMENTATION.md` synced with `REQUIREMENTS.md`. Do not add implementation tasks here.
+7. If critical requirements are ambiguous, record them as open questions in `REQUIREMENTS.md`, then ask the user the minimum questions needed.
+8. Do not proceed to planning or implementation until open questions are resolved or explicitly accepted as risks and recorded.
