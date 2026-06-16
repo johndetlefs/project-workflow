@@ -39,6 +39,8 @@ Product outcomes and mission belong in `.project-workflow/CONSTITUTION.md`.
 
 - If you change any file in `.github/prompts/`, mirror the same change in `src/project_workflow/prompts/`.
 - If you add, remove, or rename a workflow step, update all matching assets: packaged prompts, generated Claude/Cursor agent output, Cursor rules, Codex skills, Codex AGENTS template, README, and the `project init` install lists.
+- If you add a workflow CLI command, update both the packaged CLI and generated local helper template, document the command in user-facing docs, refresh managed host guidance if agents need to know about it, and add init-refresh coverage that proves older generated helpers receive the new command.
+- For agent-facing CLI commands, add or update help smoke coverage so `--help` shows a clear command description and options.
 - Keep agent names stable (`name: project.*`) unless explicitly requested.
 - README should describe usage via `/project.*` agent commands, not copy/paste prompt workflows.
 - Repo-specific workflow customization belongs in `.project-workflow/guidance.md`; generated prompts/skills should reference it rather than asking users to edit generated files by default.
@@ -135,4 +137,4 @@ Use this sequence unless user direction overrides it:
 7. `/project.qa-review`
 8. `/project.retro`
 
-Do not mark work `Complete` from implementation alone. Implementation moves work to `Testing`; QA/code review moves it to `Review` and may complete only after passing review and explicit user approval. Retro runs after completion and updates durable conventions or agent guidance only when there is a reusable lesson.
+Do not mark work `Complete` from implementation alone. Use `./.project-workflow/cli/workflow task status ...` for tracker lifecycle moves: implementation moves work to `Testing`; QA/code review moves it to `Review` and may complete only after passing review and explicit user approval. Retro runs after completion and updates durable conventions or agent guidance only when there is a reusable lesson.

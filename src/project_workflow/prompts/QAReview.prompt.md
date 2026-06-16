@@ -37,7 +37,7 @@ Required workflow:
 
 1. Read `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and the tracker row for the task.
 2. Confirm implementation has reached `Testing`. If it has not, stop and direct the user to run `project.implement` first.
-3. Set the tracker row to `Review` before starting QA/code review.
+3. Run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to Review` before starting QA/code review.
 4. Inspect the changed files and map each acceptance criterion ID to evidence:
    - automated test, typecheck, lint, build, or script result
    - manual verification result
@@ -64,7 +64,7 @@ Required workflow:
    - do not mark anything `Complete`
 10. If review passes:
    - say that QA/code review passed
-   - only set the tracker row to `Complete` if the user explicitly asked you to complete the task after review
+   - only run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to Complete` if the user explicitly asked you to complete the task after review
    - otherwise leave status as `Review` and ask for explicit completion approval
 
 Output expectations:

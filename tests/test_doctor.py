@@ -80,6 +80,168 @@ def test_task_scaffold_uses_ac_mapped_implementation_shape(tmp_path: Path) -> No
     assert "| 1 | ____ | ____ | AC1: ____ | ____ | To Do |" in implementation_text
 
 
+def test_task_status_updates_packaged_and_local_workflow(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(
+        ["task", "init", "--title", "Lifecycle Status", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+
+    packaged_status = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Analysing"],
+        cwd=tmp_path,
+    )
+    assert packaged_status.returncode == 0, packaged_status.stdout + packaged_status.stderr
+    assert "Updated TASK-001: To Do -> Analysing" in packaged_status.stdout
+
+    local_workflow = tmp_path / ".project-workflow" / "cli" / "workflow.py"
+    local_status = subprocess.run(
+        [
+            sys.executable,
+            str(local_workflow),
+            "task",
+            "status",
+            "--id",
+            "TASK-001-Lifecycle-Status",
+            "--to",
+            "Plan Confirmed",
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert local_status.returncode == 0, local_status.stdout + local_status.stderr
+    assert "Updated TASK-001: Analysing -> Plan Confirmed" in local_status.stdout
+
+    tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(encoding="utf-8")
+    assert "| TASK-001 | Lifecycle Status | Plan Confirmed |" in tracker_text
+
+
+def test_task_status_rejects_illegal_transition_without_force(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(
+        ["task", "init", "--title", "Illegal Lifecycle Jump", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+
+    illegal = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Testing"],
+        cwd=tmp_path,
+    )
+    assert illegal.returncode != 0
+    assert "Illegal status transition for TASK-001: To Do -> Testing" in illegal.stderr
+
+    missing_reason = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Testing", "--force"],
+        cwd=tmp_path,
+    )
+    assert missing_reason.returncode != 0
+    assert "--force requires --reason" in missing_reason.stderr
+
+    forced = run_project(
+        [
+            "task",
+            "status",
+            "--id",
+            "TASK-001",
+            "--to",
+            "Testing",
+            "--force",
+            "--reason",
+            "Recovering imported tracker state",
+        ],
+        cwd=tmp_path,
+    )
+    assert forced.returncode == 0, forced.stdout + forced.stderr
+    assert "Updated TASK-001: To Do -> Testing" in forced.stdout
+    assert "Forced transition reason: Recovering imported tracker state" in forced.stdout
+
+
+def test_task_status_blocks_complete_without_qa_evidence(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(
+        ["task", "init", "--title", "Completion Gate", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+
+    for status in ("Analysing", "Plan Confirmed", "In Progress", "Testing", "Review"):
+        status_result = run_project(
+            ["task", "status", "--id", "TASK-001", "--to", status],
+            cwd=tmp_path,
+        )
+        assert status_result.returncode == 0, status_result.stdout + status_result.stderr
+
+    blocked = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Complete"],
+        cwd=tmp_path,
+    )
+    assert blocked.returncode != 0
+    assert "cannot move to Complete without non-placeholder QA/code-review evidence" in blocked.stderr
+
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    implementation_path = task_dir / "IMPLEMENTATION.md"
+    implementation_text = implementation_path.read_text(encoding="utf-8")
+    implementation_path.write_text(
+        implementation_text.replace(
+            "- Verdict: ____\n- Evidence: ____\n- Findings: ____",
+            "- Verdict: Pass\n- Evidence: Targeted lifecycle validation passed.\n- Findings: None.",
+        ),
+        encoding="utf-8",
+    )
+
+    completed = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Complete"],
+        cwd=tmp_path,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "Updated TASK-001: Review -> Complete" in completed.stdout
+
+
+def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(
+        ["task", "init", "--title", "Missing Docs", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+
+    invalid_id = run_project(
+        ["task", "status", "--id", "APP-001", "--to", "Analysing"],
+        cwd=tmp_path,
+    )
+    assert invalid_id.returncode != 0
+    assert "Task status only supports TASK-### IDs" in invalid_id.stderr
+
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    tracker_text = tracker_path.read_text(encoding="utf-8")
+    tracker_path.write_text(
+        tracker_text.replace(
+            "`tasks/TASK-001-Missing-Docs/IMPLEMENTATION.md`",
+            "`tasks/TASK-001-Missing-Docs/NOPE.md`",
+        ),
+        encoding="utf-8",
+    )
+
+    missing_docs = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Analysing"],
+        cwd=tmp_path,
+    )
+    assert missing_docs.returncode != 0
+    assert "docs path does not exist" in missing_docs.stderr
+
+
 def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     codex_root = tmp_path / "codex"
     codex_root.mkdir()
@@ -90,7 +252,11 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "# Existing Agent Notes" in codex_agents
     assert "<!-- project-workflow:start -->" in codex_agents
     assert "workflow doctor" in codex_agents
+    assert "task status" in codex_agents
     assert "workflow doctor" in (
+        codex_root / ".agents" / "skills" / "project-implement" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    assert "task status" in (
         codex_root / ".agents" / "skills" / "project-implement" / "SKILL.md"
     ).read_text(encoding="utf-8")
     assert ".project-workflow/guidance.md" in (
@@ -102,6 +268,9 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     cursor_init = run_project(["init", "--agent", "cursor"], cwd=cursor_root)
     assert cursor_init.returncode == 0, cursor_init.stderr
     assert "workflow doctor" in (
+        cursor_root / ".cursor" / "rules" / "project-workflow.mdc"
+    ).read_text(encoding="utf-8")
+    assert "task status" in (
         cursor_root / ".cursor" / "rules" / "project-workflow.mdc"
     ).read_text(encoding="utf-8")
     assert "workflow doctor" in (
@@ -136,10 +305,20 @@ def test_init_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path
     )
     assert help_result.returncode == 0, help_result.stdout + help_result.stderr
     assert "Validate workflow tracker state" in help_result.stdout
+    status_help = subprocess.run(
+        [sys.executable, str(local_workflow), "task", "status", "--help"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert status_help.returncode == 0, status_help.stdout + status_help.stderr
+    assert "Safely update one global tracker task status" in status_help.stdout
     instructions_text = instructions.read_text(encoding="utf-8")
     assert "# Local Copilot Notes" in instructions_text
     assert "old managed block" not in instructions_text
     assert ".project-workflow/guidance.md" in instructions_text
+    assert "task status" in instructions_text
 
 
 def test_init_does_not_treat_inline_marker_mentions_as_managed_blocks(tmp_path: Path) -> None:

@@ -83,7 +83,7 @@ uvx --from git+https://github.com/johndetlefs/project-workflow.git project init 
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor
 ```
 
-If your repository was initialized before `doctor` or `validate` existed, the local helper at `./.project-workflow/cli/workflow` will not know about those commands until you run `project init` again from the latest package version. If init writes any `*.new` files, review and merge them manually; your original unmarked files were intentionally left untouched.
+If your repository was initialized before `doctor`, `validate`, or `task status` existed, the local helper at `./.project-workflow/cli/workflow` will not know about those commands until you run `project init` again from the latest package version. If init writes any `*.new` files, review and merge them manually; your original unmarked files were intentionally left untouched.
 
 ### Validate Workflow State
 
@@ -219,7 +219,7 @@ The agent will:
 - Make code changes incrementally
 - Run validation (tests, type checks, manual verification)
 - Report validation evidence by AC ID for the current work item
-- Update `.project-workflow/TRACKER.md` with status (`In Progress` -> `Testing`)
+- Run `./.project-workflow/cli/workflow task status --id TASK-001 --to "In Progress"` before coding and `./.project-workflow/cli/workflow task status --id TASK-001 --to Testing` after validation
 
 ### 6. **QA & Code Review** (10-30 min)
 
@@ -235,7 +235,7 @@ The agent will:
 - Map acceptance criteria IDs to validation evidence
 - Review changed code for correctness, security, maintainability, and scope control
 - Record findings in `.project-workflow/tasks/TASK-001-*/IMPLEMENTATION.md`
-- Move the tracker to `Review`, then to `Complete` only after review passes and you explicitly approve completion
+- Move the tracker through `Review`, then `Complete` with `task status` only after review passes and you explicitly approve completion
 
 ### 7. **Retro & Update Conventions** (5-15 min)
 
@@ -532,7 +532,7 @@ $ uvx --from git+https://github.com/johndetlefs/project-workflow.git project ini
 # 17. Commit: "plan+clarify: TASK-001 dark mode aligned requirements and plan"
 
 # 18. Run project.implement
-# 19. The agent implements Phase 1, runs tests, updates TRACKER to Testing
+# 19. The agent implements Phase 1, runs tests, and uses task status to move TRACKER to Testing
 # 20. You review changes, commit
 # 21. Repeat for Phase 2, 3, ... with the same task ID
 
@@ -553,7 +553,7 @@ When you run an agent command or skill (for example `project.requirements`) and 
 2. **Asks** clarifying questions (discovers gaps)
 3. **Generates** structured Markdown (requirements, plans, code), preserving AC IDs from requirements through implementation tasks
 4. **Updates** your local files (you can review before accepting)
-5. **Syncs** TRACKER.md with status (To Do -> In Progress -> Testing -> Review -> Complete)
+5. **Syncs** TRACKER.md with `task status` (To Do -> In Progress -> Testing -> Review -> Complete)
 6. **Keeps conventions current** with a retro after completion
 
 When you run `project.epic`, decomposition keeps source AC IDs in proposed child rows when possible, and scaffolded child tasks follow the same AC-mapped implementation planning rules.

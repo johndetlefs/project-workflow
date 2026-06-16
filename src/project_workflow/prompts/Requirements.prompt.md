@@ -160,7 +160,7 @@ Rules:
 
 Also:
 
-- Ensure `/.project-workflow/TRACKER.md` has a row for `${input:taskId}` and set story `Status` to `Analysing` while requirements are being captured.
+- Ensure `/.project-workflow/TRACKER.md` has a row for `${input:taskId}` and run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to Analysing` while requirements are being captured.
 - Ensure `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md` exists and begins with a `## User Story` section at the very top.
   - If you need to create the file, keep it minimal (user story only, plus placeholders if required by repo convention).
   - Do not generate or populate any task list here.

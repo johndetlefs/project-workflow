@@ -138,8 +138,8 @@ Tracker rules:
 
 User story tracker rules:
 
-- `/.project-workflow/TRACKER.md` is part of the process. When moving into planning for a story/task, ensure there is a row for `${input:taskId}` and update its `Status`.
+- `/.project-workflow/TRACKER.md` is part of the process. When moving into planning for a story/task, ensure there is a row for `${input:taskId}` and use the lifecycle command to update its `Status`.
 - Use the same status vocabulary as above.
-- During planning, set story `Status` to `Analysing`.
-- Only set story `Status` to `Plan Confirmed` after the user explicitly confirms the plan.
+- During planning, run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to Analysing`.
+- Only run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to "Plan Confirmed"` after the user explicitly confirms the plan.
 - Do not set story `Status` to `Complete` unless QA/code review has passed AND the user explicitly instructs you to mark it `Complete`.

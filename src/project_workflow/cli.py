@@ -80,6 +80,17 @@ AC_MAPPED_IMPLEMENTATION_STATUSES = (
     "Review",
     "Complete",
 )
+TASK_STATUS_TRANSITIONS = {
+    "To Do": {"Analysing", "Blocked", "N/A"},
+    "Analysing": {"Plan Confirmed", "Blocked"},
+    "Plan Confirmed": {"In Progress", "Blocked"},
+    "In Progress": {"Testing", "Blocked"},
+    "Testing": {"Review", "In Progress", "Blocked"},
+    "Review": {"Complete", "In Progress", "Blocked"},
+    "Blocked": {"In Progress", "Analysing", "Plan Confirmed", "Testing", "Review"},
+    "Complete": set(),
+    "N/A": set(),
+}
 GENERATED_MARKER = "project-workflow:generated"
 GENERATED_MARKER_HTML = f"<!-- {GENERATED_MARKER} -->"
 GENERATED_MARKER_COMMENT = f"# {GENERATED_MARKER}"
@@ -250,6 +261,8 @@ def _managed_project_workflow_block() -> str:
         "`.project-workflow/TRACKER.md` and `.project-workflow/tasks/`.\n\n"
         "- Read repo-specific workflow guidance from `.project-workflow/guidance.md`.\n"
         "- Use `./.project-workflow/cli/workflow` for supported task and validation commands.\n"
+        "- Use `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` "
+        "for tracker lifecycle changes.\n"
         "- Run `./.project-workflow/cli/workflow doctor` after tracker or task-doc changes.\n"
         f"{MANAGED_BLOCK_END}"
     )
@@ -595,6 +608,138 @@ def _parse_markdown_table(
         rows.append(row)
         row_idx += 1
     return rows
+
+
+def _global_tracker_rows(tracker_path: Path) -> tuple[list[str], int, list[dict[str, str]]]:
+    lines = tracker_path.read_text(encoding="utf-8").splitlines(keepends=True)
+    header_idx: int | None = None
+    for idx, line in enumerate(lines):
+        cells = _parse_markdown_table_cells(line)
+        if cells == list(GLOBAL_TRACKER_COLUMNS):
+            header_idx = idx
+            break
+
+    if header_idx is None:
+        expected = " | ".join(GLOBAL_TRACKER_COLUMNS)
+        raise SystemExit(
+            "Global tracker schema mismatch. Expected header: "
+            f"'| {expected} |' in {tracker_path}."
+        )
+
+    rows: list[dict[str, str]] = []
+    row_idx = header_idx + 2
+    while row_idx < len(lines):
+        cells = _parse_markdown_table_cells(lines[row_idx])
+        if cells is None:
+            break
+        if len(cells) != len(GLOBAL_TRACKER_COLUMNS):
+            raise SystemExit(
+                "Global tracker row has wrong number of columns. "
+                f"Expected {len(GLOBAL_TRACKER_COLUMNS)} columns in {tracker_path}: "
+                f"{lines[row_idx].strip()}"
+            )
+        row = dict(zip(GLOBAL_TRACKER_COLUMNS, cells))
+        row["_line_idx"] = str(row_idx)
+        rows.append(row)
+        row_idx += 1
+
+    return lines, header_idx, rows
+
+
+def _format_global_tracker_row(row: dict[str, str]) -> str:
+    return "| " + " | ".join(row[col] for col in GLOBAL_TRACKER_COLUMNS) + " |\n"
+
+
+def _status_transition_allowed(current_status: str, new_status: str) -> bool:
+    if current_status == new_status:
+        return True
+    return new_status in TASK_STATUS_TRANSITIONS.get(current_status, set())
+
+
+def _validate_status_force_args(*, new_status: str, force: bool, reason: str | None) -> None:
+    if reason and not force:
+        raise SystemExit("--reason can only be used with --force.")
+    if force and not (reason or "").strip():
+        raise SystemExit("--force requires --reason with a short audit note.")
+    if force and new_status == "Complete":
+        raise SystemExit("--force is not supported for Complete transitions.")
+
+
+def _normalize_task_status_id(row_id: str) -> str:
+    match = re.match(rf"^({re.escape(TASK_ID_PREFIX)}-\d+)(?:-.+)?$", row_id)
+    if not match:
+        raise SystemExit(f"Task status only supports {TASK_ID_PREFIX}-### IDs; got '{row_id}'.")
+    return match.group(1)
+
+
+def _update_global_tracker_row_status(
+    *,
+    root: Path,
+    tracker_path: Path,
+    row_id: str,
+    new_status: str,
+    force: bool,
+    reason: str | None,
+) -> tuple[str, str]:
+    normalized_row_id = _normalize_task_status_id(row_id)
+
+    if new_status not in TRACKER_STATUSES:
+        raise SystemExit(
+            f"Invalid target status '{new_status}'. Allowed: {', '.join(TRACKER_STATUSES)}."
+        )
+
+    _validate_status_force_args(new_status=new_status, force=force, reason=reason)
+
+    lines, _header_idx, rows = _global_tracker_rows(tracker_path)
+    for row in rows:
+        if row["ID"] != normalized_row_id:
+            continue
+
+        current_status = row["Status"]
+        if current_status not in TRACKER_STATUSES:
+            raise SystemExit(
+                f"{row_id} has unknown current status '{current_status}'. "
+                f"Allowed: {', '.join(TRACKER_STATUSES)}."
+            )
+
+        docs_rel = _clean_markdown_cell_path(row["Docs"])
+        if not docs_rel:
+            raise SystemExit(f"{row_id} has no docs path in {tracker_path}.")
+        docs_path = root / ".project-workflow" / docs_rel
+        if not docs_path.exists():
+            raise SystemExit(f"{row_id} docs path does not exist: {docs_path}")
+
+        docs_text = docs_path.read_text(encoding="utf-8")
+        if new_status == "Complete":
+            if current_status != "Review":
+                raise SystemExit(
+                    f"{row_id} can only move to Complete from Review; "
+                    f"current status is '{current_status}'."
+                )
+            if not _has_qa_review_evidence(docs_text):
+                raise SystemExit(
+                    f"{row_id} cannot move to Complete without non-placeholder "
+                    "QA/code-review evidence."
+                )
+
+        if not _status_transition_allowed(current_status, new_status):
+            if not force:
+                raise SystemExit(
+                    f"Illegal status transition for {row_id}: "
+                    f"{current_status} -> {new_status}. "
+                    "Use --force --reason for audited non-Complete exceptions."
+                )
+
+        if current_status == new_status:
+            return current_status, new_status
+
+        row["Status"] = new_status
+        line_idx = int(row["_line_idx"])
+        lines[line_idx] = _format_global_tracker_row(row)
+        tracker_path.write_text("".join(lines), encoding="utf-8")
+        return current_status, new_status
+
+    raise SystemExit(f"No global tracker row found for ID '{row_id}' in {tracker_path}.")
 
 
 def _epic_tracker_rows(epic_tracker_path: Path) -> tuple[list[str], int, list[dict[str, str]]]:
@@ -1336,6 +1481,36 @@ def cmd_task_init(args: argparse.Namespace) -> None:
     print(f"Assigned ID: {spec.task_id}")
 
 
+def cmd_task_status(args: argparse.Namespace) -> None:
+    """Safely update one global tracker task status."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+
+    if not tracker_path.exists():
+        raise SystemExit(
+            f"Missing tracker file: {tracker_path}\n"
+            f"Run 'project init' first to bootstrap the project workflow."
+        )
+
+    task_id = _normalize_task_status_id(args.id)
+    previous, current = _update_global_tracker_row_status(
+        root=cwd,
+        tracker_path=tracker_path,
+        row_id=task_id,
+        new_status=args.to,
+        force=args.force,
+        reason=args.reason,
+    )
+
+    if previous == current:
+        print(f"{task_id} already has status '{current}' in {tracker_path}")
+    else:
+        print(f"Updated {task_id}: {previous} -> {current} in {tracker_path}")
+        if args.force:
+            print(f"Forced transition reason: {args.reason.strip()}")
+
+
 def cmd_epic_init(args: argparse.Namespace) -> None:
     """Scaffold a new epic in .project-workflow/tasks/."""
     cwd = Path.cwd()
@@ -1661,6 +1836,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     task_init_parser.set_defaults(func=cmd_task_init)
+
+    task_status_parser = task_sub.add_parser(
+        "status",
+        help="Safely update one global tracker task status",
+        description="Safely update one global tracker task status",
+    )
+    task_status_parser.add_argument("--id", required=True, help="Task ID (e.g. TASK-001)")
+    task_status_parser.add_argument(
+        "--to",
+        required=True,
+        choices=TRACKER_STATUSES,
+        help="Target global tracker status",
+    )
+    task_status_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow audited non-Complete lifecycle exceptions",
+    )
+    task_status_parser.add_argument(
+        "--reason",
+        help="Required with --force; short audit reason for the exception",
+    )
+    task_status_parser.set_defaults(func=cmd_task_status)
 
     # ===== project epic ... =====
     epic_parser = subparsers.add_parser("epic", help="Epic-related commands")

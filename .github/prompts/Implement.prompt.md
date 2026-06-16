@@ -34,8 +34,8 @@ Defaults and inference:
 
 Required workflow:
 
-- Before coding, set the specific tracker row to `In Progress`.
-- After implementation, set it to `Testing`.
+- Before coding, run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to "In Progress"`.
+- After implementation, run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to Testing`.
 - Do not set it to `Complete`; completion is owned by `project.qa-review` after QA/code review passes and the user explicitly approves completion.
 
 Sequence enforcement:
@@ -56,8 +56,8 @@ Requirements guardrails:
 User story tracker workflow:
 
 - `/.project-workflow/TRACKER.md` is part of the process and must be kept up-to-date.
-- Before coding, ensure there is a story row for `${input:taskId}` and set story `Status` to `In Progress`.
-- After implementation (when the work item is set to `Testing`), set story `Status` to `Testing`.
+- Before coding, ensure there is a story row for `${input:taskId}` and move story `Status` to `In Progress` with the lifecycle command.
+- After implementation (when the work item is set to `Testing`), move story `Status` to `Testing` with the lifecycle command.
 - Do not set story `Status` to `Complete` from this prompt. Route to `project.qa-review` for completion approval.
 
 Implementation doc structure:

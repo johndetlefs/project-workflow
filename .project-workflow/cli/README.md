@@ -27,6 +27,23 @@ Customize folder name suffix:
 ./.project-workflow/cli/workflow task init --title "Super Admin Access" --folder-suffix Superuser --update-tracker
 ```
 
+Move a task through the lifecycle:
+
+```bash
+./.project-workflow/cli/workflow task status --id TASK-001 --to "In Progress"
+./.project-workflow/cli/workflow task status --id TASK-001 --to Testing
+./.project-workflow/cli/workflow task status --id TASK-001 --to Review
+./.project-workflow/cli/workflow task status --id TASK-001 --to Complete
+```
+
+Illegal non-complete transitions require an audit reason:
+
+```bash
+./.project-workflow/cli/workflow task status --id TASK-001 --to Testing --force --reason "Recovering imported tracker state"
+```
+
+`Complete` is only allowed from `Review` and requires non-placeholder `## QA & Code Review` evidence.
+
 Create and manage proposal-first epics:
 
 ```bash
@@ -61,6 +78,7 @@ This repo also exposes the packaged console script:
 
 ```bash
 project task init --title "Super Admin Access" --update-tracker
+project task status --id TASK-001 --to "In Progress"
 project doctor
 ```
 
