@@ -46,15 +46,39 @@ Scaffold one approved child row with a branch from an existing epic branch:
 ./.project-workflow/cli/workflow epic scaffold-child --epic-id <EPIC-ID> --id <TASK-ID> --create-branch --epic-branch <EPIC-BRANCH>
 ```
 
+Move one epic tracker row through lifecycle statuses:
+
+```bash
+./.project-workflow/cli/workflow epic status --epic-id <EPIC-ID> --id <TASK-ID> --to Testing
+./.project-workflow/cli/workflow epic status --epic-id <EPIC-ID> --id <TASK-ID> --to Review
+./.project-workflow/cli/workflow epic status --epic-id <EPIC-ID> --id <TASK-ID> --to Complete
+```
+
+Generate an epic acceptance audit:
+
+```bash
+./.project-workflow/cli/workflow epic audit --epic-id <EPIC-ID>
+```
+
+Validate epic closeout, optionally completing the global epic row when gates pass:
+
+```bash
+./.project-workflow/cli/workflow epic closeout --epic-id <EPIC-ID> [--complete]
+```
+
 ## Rules
 
 - `epic init` creates an epic `REQUIREMENTS.md` and epic `TRACKER.md`.
 - Epic acceptance criteria should use stable IDs (`AC1`, `AC2`, etc.).
 - `epic decompose` writes Proposed child rows only and does not create child task folders.
-- Proposed child rows should preserve the source AC ID in the epic tracker `Notes` field when they come from a numbered acceptance criterion.
+- Proposed child rows should preserve source AC IDs in the epic tracker `Parent ACs` field when they come from numbered acceptance criteria. Legacy trackers may still carry coverage in `Notes` as `Covers AC1, AC3`.
 - `epic approve` moves a child row from `Proposed` to `Approved`.
 - `epic scaffold-child` only accepts `Approved` child rows and moves them to `In Progress` after scaffold.
-- Scaffolded child task implementation plans must map every task row to one or more stable AC IDs.
+- `epic status` moves child rows through `Testing`, `Review`, and `Complete`; `Complete` requires QA/code-review evidence and parent AC evidence.
+- Scaffolded epic child task docs must include parent AC coverage and parent AC evidence sections. Their implementation plans must map every task row to one or more stable child AC IDs and keep the parent AC mapping visible.
+- The global tracker summarizes epic rows; the epic tracker owns child rows. Proposed child rows must stay in the epic tracker and must not be added to the global tracker.
+- `epic audit` writes `ACCEPTANCE-AUDIT.md` with parent AC coverage, child evidence, deferrals, and verdicts.
+- `epic closeout` must block if any parent AC is unmapped, lacks evidence, lacks a QA pass verdict, or lacks an approved deferral with follow-up.
 - Child IDs remain globally unique `TASK-###` IDs across standalone and epic-managed work.
 - When `--create-branch` is used, the epic branch must already exist; do not fall back to a base branch.
 - After any epic tracker or child scaffold change, run `./.project-workflow/cli/workflow doctor` and report workflow-state warnings or errors.

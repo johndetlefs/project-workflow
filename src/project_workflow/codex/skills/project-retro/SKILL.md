@@ -31,8 +31,9 @@ Run the post-completion retro for a project-workflow task.
    - validation or QA checks that should become standard
    - agent prompt, skill, or rule gaps that caused drift or rework
    - follow-up work that should become a separate task
+   - missed in-scope work that should have blocked completion unless explicitly deferred
 5. Update the narrowest durable guidance file that owns each lesson. Do not add one-off task details to global instructions.
-6. Record the retro in `IMPLEMENTATION.md` under `## Retro` with date, lessons, updated assets, and follow-up suggestions.
+6. Record the retro in `IMPLEMENTATION.md` under `## Retro` with date, lessons, updated assets, follow-up suggestions, and a separate note for any missed in-scope work.
 7. Leave tracker status as `Complete` unless the user explicitly asks to reopen the task.
 
 ## Placement Rules
