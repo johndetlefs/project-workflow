@@ -1,16 +1,51 @@
 #!/usr/bin/env python3
-"""Local task scaffolding CLI for project-workflow."""
+"""project-workflow CLI: Bootstrap and task scaffolding for spec-driven development."""
 
 from __future__ import annotations
 
 import argparse
 import re
+import shutil
 import subprocess
 from dataclasses import dataclass
 from datetime import date
+from importlib.resources import files
 from pathlib import Path
 from typing import Optional
 
+
+AGENT_CHOICES = {
+    "github-copilot": "GitHub Copilot",
+    "claude-code": "Claude Code",
+    "codex": "OpenAI Codex",
+    "cursor": "Cursor",
+}
+
+PROMPT_FILES = [
+    "Constitution.prompt.md",
+    "Clarify.prompt.md",
+    "Delegate.prompt.md",
+    "Epic.prompt.md",
+    "Implement.prompt.md",
+    "Planner.prompt.md",
+    "QAReview.prompt.md",
+    "Requirements.prompt.md",
+    "Retro.prompt.md",
+    "Task.prompt.md",
+]
+
+CODEX_SKILL_NAMES = [
+    "project-constitution",
+    "project-task",
+    "project-epic",
+    "project-requirements",
+    "project-planner",
+    "project-clarify",
+    "project-delegate",
+    "project-implement",
+    "project-qa-review",
+    "project-retro",
+]
 
 TASK_ID_PREFIX = "TASK"
 EPIC_ID_PREFIX = "EPIC"
@@ -87,18 +122,9 @@ TASK_STATUS_TRANSITIONS = {
 GENERATED_MARKER = "project-workflow:generated"
 GENERATED_MARKER_HTML = f"<!-- {GENERATED_MARKER} -->"
 GENERATED_MARKER_COMMENT = f"# {GENERATED_MARKER}"
-PROMPT_FILES = [
-    "Constitution.prompt.md",
-    "Clarify.prompt.md",
-    "Delegate.prompt.md",
-    "Epic.prompt.md",
-    "Implement.prompt.md",
-    "Planner.prompt.md",
-    "QAReview.prompt.md",
-    "Requirements.prompt.md",
-    "Retro.prompt.md",
-    "Task.prompt.md",
-]
+MANAGED_BLOCK_START = "<!-- project-workflow:start -->"
+MANAGED_BLOCK_END = "<!-- project-workflow:end -->"
+CANONICAL_INIT_COMMAND = "uvx --from git+https://github.com/johndetlefs/project-workflow.git project init"
 
 
 def _words(value: str) -> list[str]:
@@ -146,6 +172,20 @@ def _branch_exists(cwd: Path, branch: str) -> bool:
     return completed.returncode == 0
 
 
+def _get_package_resource(resource_path: str) -> str:
+    """Load a resource file from the package data."""
+    try:
+        # Try using importlib.resources for Python 3.9+
+        files_ref = files("project_workflow").joinpath(resource_path)
+        if hasattr(files_ref, "read_text"):
+            return files_ref.read_text(encoding="utf-8")
+        else:
+            # Fallback for older API
+            return files_ref.read_bytes().decode("utf-8")
+    except Exception as e:
+        raise SystemExit(f"Failed to load package resource {resource_path}: {e}")
+
+
 def _is_generated_content(content: str) -> bool:
     return GENERATED_MARKER in content
 
@@ -179,6 +219,129 @@ def _with_generated_marker(path: Path, content: str) -> str:
     return f"{marker}\n{content.lstrip()}"
 
 
+def _collision_path(path: Path) -> Path:
+    candidate = path.with_name(f"{path.name}.new")
+    if not candidate.exists():
+        return candidate
+    try:
+        if _is_generated_content(candidate.read_text(encoding="utf-8")):
+            return candidate
+    except OSError:
+        pass
+
+    counter = 2
+    while True:
+        numbered = path.with_name(f"{path.name}.new.{counter}")
+        if not numbered.exists():
+            return numbered
+        counter += 1
+
+
+def _ensure_generated_file(path: Path, content: str, *, executable: bool = False) -> str:
+    """Create or refresh a project-workflow-owned generated file without overwriting users."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    generated_content = _with_generated_marker(path, content)
+
+    if not path.exists():
+        path.write_text(generated_content, encoding="utf-8")
+        if executable:
+            path.chmod(0o755)
+        return f"Created: {path}"
+
+    existing_content = path.read_text(encoding="utf-8")
+    if _is_generated_content(existing_content):
+        if existing_content != generated_content:
+            path.write_text(generated_content, encoding="utf-8")
+            action = "Refreshed"
+        else:
+            action = "Exists"
+        if executable:
+            path.chmod(0o755)
+        return f"{action}: {path}"
+
+    new_path = _collision_path(path)
+    new_path.write_text(generated_content, encoding="utf-8")
+    if executable:
+        new_path.chmod(0o755)
+    return f"Kept existing unmarked file and wrote: {new_path}"
+
+
+def _ensure_user_guidance_file(path: Path) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        return f"Exists: {path}"
+
+    path.write_text(
+        "# Project Workflow Guidance\n\n"
+        "Use this file for repo-specific workflow guidance that should survive "
+        "project-workflow init refreshes.\n\n"
+        "Add local conventions, validation commands, safety constraints, handoff "
+        "rules, and agent notes here.\n",
+        encoding="utf-8",
+    )
+    return f"Created: {path}"
+
+
+def _managed_project_workflow_block() -> str:
+    return (
+        f"{MANAGED_BLOCK_START}\n"
+        "## Project Workflow\n\n"
+        "This repository uses project-workflow. Keep workflow state in "
+        "`.project-workflow/TRACKER.md` and `.project-workflow/tasks/`.\n\n"
+        "- Read repo-specific workflow guidance from `.project-workflow/guidance.md`.\n"
+        f"- To install or refresh project-workflow itself, run `{CANONICAL_INIT_COMMAND}` "
+        "from the repository root; add `--agent codex`, `--agent cursor`, "
+        "`--agent claude-code`, or `--agent github-copilot` when selecting a mode. "
+        "Do not use bare `project init` unless the package is intentionally installed "
+        "and known to be current.\n"
+        "- Use `./.project-workflow/cli/workflow` for supported task and validation commands.\n"
+        "- Use `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` "
+        "for tracker lifecycle changes.\n"
+        "- Run `./.project-workflow/cli/workflow doctor` after tracker or task-doc changes.\n"
+        f"{MANAGED_BLOCK_END}"
+    )
+
+
+def _ensure_managed_block(path: Path, block: str) -> str:
+    """Append or refresh only the project-workflow managed block in a host-owned file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists():
+        path.write_text(f"{block}\n", encoding="utf-8")
+        return f"Created managed block: {path}"
+
+    content = path.read_text(encoding="utf-8")
+    pattern = re.compile(
+        rf"^{re.escape(MANAGED_BLOCK_START)}\n.*?^{re.escape(MANAGED_BLOCK_END)}$",
+        flags=re.DOTALL | re.MULTILINE,
+    )
+    if pattern.search(content):
+        updated = pattern.sub(block, content)
+        if updated != content:
+            path.write_text(updated, encoding="utf-8")
+            return f"Refreshed managed block: {path}"
+        return f"Exists managed block: {path}"
+
+    separator = "\n\n"
+    if content.endswith("\n\n"):
+        separator = ""
+    elif content.endswith("\n"):
+        separator = "\n"
+    path.write_text(f"{content}{separator}{block}\n", encoding="utf-8")
+    return f"Appended managed block: {path}"
+
+
+def _remove_retired_project_workflow_path(path: Path) -> None:
+    """Remove known retired project-workflow assets during init."""
+    if not path.exists():
+        return
+
+    if path.is_dir():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
+    print(f"✓ Removed retired project-workflow asset: {path}")
+
+
 @dataclass(frozen=True)
 class TaskSpec:
     task_id: str
@@ -202,63 +365,6 @@ def _write_file(path: Path, content: str, *, overwrite: bool) -> None:
         raise SystemExit(f"Refusing to overwrite existing file: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
-
-
-def _rollback_file_changes(
-    *,
-    created_files: list[Path],
-    overwritten_files: dict[Path, str],
-    created_dirs: list[Path],
-) -> list[str]:
-    errors: list[str] = []
-
-    for path, original_content in overwritten_files.items():
-        try:
-            path.write_text(original_content, encoding="utf-8")
-        except OSError as exc:
-            errors.append(f"restore {path}: {exc}")
-
-    for path in reversed(created_files):
-        try:
-            if path.exists():
-                path.unlink()
-        except OSError as exc:
-            errors.append(f"remove {path}: {exc}")
-
-    for path in sorted(created_dirs, key=lambda p: len(p.parts), reverse=True):
-        try:
-            if path.exists() and not any(path.iterdir()):
-                path.rmdir()
-        except OSError as exc:
-            errors.append(f"remove dir {path}: {exc}")
-
-    return errors
-
-
-def _rollback_git_state(
-    cwd: Path,
-    *,
-    original_branch: str | None,
-    created_branch: str | None,
-) -> list[str]:
-    errors: list[str] = []
-
-    if original_branch:
-        try:
-            current_branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=cwd)
-            if current_branch != original_branch:
-                _run_git(["checkout", original_branch], cwd=cwd)
-        except (subprocess.CalledProcessError, OSError) as exc:
-            errors.append(f"restore branch {original_branch}: {exc}")
-
-    if created_branch:
-        try:
-            if _branch_exists(cwd, created_branch):
-                _run_git(["branch", "-D", created_branch], cwd=cwd)
-        except (subprocess.CalledProcessError, OSError) as exc:
-            errors.append(f"delete branch {created_branch}: {exc}")
-
-    return errors
 
 
 def _implementation_template(task_id: str, title: str) -> str:
@@ -370,6 +476,19 @@ def _extract_ac_ids(text: str) -> set[str]:
         f"AC{match.group(1)}"
         for match in re.finditer(r"\bAC\s*(\d+)\b", text, flags=re.IGNORECASE)
     }
+
+
+def _extract_declared_ac_ids(text: str) -> set[str]:
+    declared: set[str] = set()
+    for line in text.splitlines():
+        match = re.match(
+            r"^\s*[-*]\s*(?:\[[ xX]\]\s*)?(AC\s*\d+)\s*:",
+            line,
+            flags=re.IGNORECASE,
+        )
+        if match:
+            declared.update(_extract_ac_ids(match.group(1)))
+    return declared
 
 
 def _extract_parent_ac_coverage(row: dict[str, str]) -> str:
@@ -737,7 +856,7 @@ def _doctor_check_implementation_ac_mapping(
     if status not in AC_MAPPED_IMPLEMENTATION_STATUSES:
         return
 
-    criteria_ac_ids = _extract_ac_ids(_markdown_section(docs_text, "Acceptance Criteria"))
+    criteria_ac_ids = _extract_declared_ac_ids(_markdown_section(docs_text, "Acceptance Criteria"))
 
     table_found, rows, malformed_rows = _implementation_task_table_rows(docs_text)
     if not table_found:
@@ -919,6 +1038,255 @@ def _normalize_task_status_id(row_id: str) -> str:
     return match.group(1)
 
 
+READINESS_REQUIRED_SECTIONS = (
+    "Goal",
+    "Non-Goals",
+    "Users & Context",
+    "Requirements (Outcome-Focused)",
+    "Acceptance Criteria (Verifiable)",
+    "Open Questions (Answer Needed)",
+    "Decisions (Resolved)",
+    "Validation Plan",
+)
+
+
+def _section_has_placeholder(section: str) -> bool:
+    lowered = section.lower()
+    placeholder_phrases = (
+        "____",
+        "describe the user outcome",
+        "list what is explicitly out-of-scope",
+        "who is affected and in what situation",
+        "how we will verify",
+        "as a ____",
+    )
+    return any(phrase in lowered for phrase in placeholder_phrases)
+
+
+def _section_has_substantive_text(section: str) -> bool:
+    cleaned_lines = [
+        line.strip(" -\t")
+        for line in section.splitlines()
+        if line.strip() and not set(line.strip()) <= {"-", "|", " "}
+    ]
+    return any(line and not _section_has_placeholder(line) for line in cleaned_lines)
+
+
+def _is_discovery_work(requirements_text: str, implementation_text: str = "") -> bool:
+    combined = f"{requirements_text}\n{implementation_text}".lower()
+    return "type: discovery" in combined or "discovery: true" in combined
+
+
+def _open_questions_resolved(section: str) -> bool:
+    if _section_has_placeholder(section):
+        return False
+    lowered = section.lower()
+    if "none" in lowered or "no blocking" in lowered:
+        return True
+    if "accepted risk" in lowered or "owner accepted" in lowered:
+        return True
+    return "?" not in section
+
+
+def _requirements_readiness_issues(requirements_text: str) -> list[str]:
+    issues: list[str] = []
+    for heading in READINESS_REQUIRED_SECTIONS:
+        section = _markdown_section(requirements_text, heading)
+        if not section:
+            issues.append(
+                f"owner input required: add `## {heading}` to REQUIREMENTS.md."
+            )
+            continue
+        if heading == "Open Questions (Answer Needed)":
+            if not _open_questions_resolved(section):
+                issues.append(
+                    "owner input required: resolve open questions or record accepted risks "
+                    "under `## Open Questions (Answer Needed)`."
+                )
+            continue
+        if not _section_has_substantive_text(section):
+            issues.append(
+                f"owner input required: replace placeholder content under `## {heading}`."
+            )
+
+    if not _extract_ac_ids(_markdown_section(requirements_text, "Acceptance Criteria (Verifiable)")):
+        issues.append(
+            "owner input required: add stable acceptance criteria IDs under "
+            "`## Acceptance Criteria (Verifiable)`."
+        )
+    return issues
+
+
+def _implementation_readiness_issues(
+    implementation_text: str, *, parent_ac_ids: set[str] | None = None
+) -> list[str]:
+    issues: list[str] = []
+    required_sections = ("User Story", "Acceptance Criteria", "Validation", "Task List")
+    for heading in required_sections:
+        section = _markdown_section(implementation_text, heading)
+        if not section:
+            issues.append(f"agent action required: add `## {heading}` to IMPLEMENTATION.md.")
+            continue
+        if not _section_has_substantive_text(section):
+            issues.append(
+                f"agent action required: replace placeholder content under `## {heading}`."
+            )
+
+    criteria_ac_ids = _extract_declared_ac_ids(
+        _markdown_section(implementation_text, "Acceptance Criteria")
+    )
+    if not criteria_ac_ids:
+        issues.append("agent action required: add child AC IDs under `## Acceptance Criteria`.")
+
+    table_found, rows, malformed_rows = _implementation_task_table_rows(implementation_text)
+    if not table_found:
+        issues.append("agent action required: add an AC-mapped implementation task table.")
+    for line_number in malformed_rows:
+        issues.append(
+            f"agent action required: fix malformed implementation task table row at line {line_number}."
+        )
+    for row in rows:
+        row_id = row.get("ID", "?")
+        row_text = " ".join(row.get(col, "") for col in IMPLEMENTATION_TASK_COLUMNS)
+        if _section_has_placeholder(row_text):
+            issues.append(
+                f"agent action required: replace placeholder content in implementation row {row_id}."
+            )
+        row_ac_ids = _extract_ac_ids(row.get("Acceptance Criteria", ""))
+        if criteria_ac_ids and not row_ac_ids:
+            issues.append(
+                f"agent action required: map implementation row {row_id} to one or more child AC IDs."
+            )
+
+    if parent_ac_ids:
+        parent_section = _markdown_section(implementation_text, "Parent AC Coverage")
+        present_parent_ids = _extract_ac_ids(parent_section)
+        missing_parent_ids = sorted(parent_ac_ids - present_parent_ids)
+        if missing_parent_ids:
+            issues.append(
+                "agent action required: add parent AC coverage for "
+                + ", ".join(missing_parent_ids)
+                + " under `## Parent AC Coverage`."
+            )
+    return issues
+
+
+def _discovery_readiness_issues(requirements_text: str, implementation_text: str = "") -> list[str]:
+    combined = f"{requirements_text}\n{implementation_text}"
+    issues: list[str] = []
+    required_terms = {
+        "question": "owner input required: record the discovery question to answer.",
+        "decision": "owner input required: record the decision this discovery enables.",
+        "boundary": "owner input required: record the discovery scope or time boundary.",
+        "output": "owner input required: record the expected discovery output artifact.",
+        "validation": "owner input required: record how the discovery output will be validated.",
+    }
+    lowered = combined.lower()
+    for term, message in required_terms.items():
+        if term not in lowered:
+            issues.append(message)
+    if _section_has_placeholder(combined):
+        issues.append("agent action required: replace placeholders in the discovery artifact.")
+    return issues
+
+
+def _task_readiness_issues(
+    *,
+    requirements_text: str,
+    implementation_text: str,
+    parent_ac_ids: set[str] | None = None,
+) -> list[str]:
+    if _is_discovery_work(requirements_text, implementation_text):
+        return _discovery_readiness_issues(requirements_text, implementation_text)
+    return [
+        *_requirements_readiness_issues(requirements_text),
+        *_implementation_readiness_issues(implementation_text, parent_ac_ids=parent_ac_ids),
+    ]
+
+
+def _epic_requirements_readiness_issues(requirements_text: str) -> list[str]:
+    if _is_discovery_work(requirements_text):
+        return _discovery_readiness_issues(requirements_text)
+    issues = _requirements_readiness_issues(requirements_text)
+    parent_ac_ids = _extract_parent_ac_ids_from_requirements(requirements_text)
+    if len(parent_ac_ids) < 1:
+        issues.append(
+            "owner input required: add stable parent AC IDs before epic decomposition."
+        )
+    return issues
+
+
+def _format_readiness_block(label: str, issues: list[str]) -> str:
+    lines = [f"{label} is not ready:"]
+    lines.extend(f"- {issue}" for issue in issues)
+    return "\n".join(lines)
+
+
+def _status_requires_task_readiness(new_status: str) -> bool:
+    return new_status in {"Plan Confirmed", "In Progress", "Testing", "Review", "Complete"}
+
+
+def _status_requires_epic_child_readiness(new_status: str) -> bool:
+    return new_status in {"Testing", "Review", "Complete"}
+
+
+def _resolve_global_task_docs(
+    *, root: Path, tracker_path: Path, task_id: str
+) -> tuple[Path, Path, dict[str, str]]:
+    normalized_task_id = _normalize_task_status_id(task_id)
+    _lines, _header_idx, rows = _global_tracker_rows(tracker_path)
+    for row in rows:
+        if row["ID"] != normalized_task_id:
+            continue
+        docs_rel = _clean_markdown_cell_path(row["Docs"])
+        if not docs_rel:
+            raise SystemExit(f"{task_id} has no docs path in {tracker_path}.")
+        implementation_path = root / ".project-workflow" / docs_rel
+        requirements_path = implementation_path.parent / "REQUIREMENTS.md"
+        if not implementation_path.exists():
+            raise SystemExit(f"{task_id} docs path does not exist: {implementation_path}")
+        if not requirements_path.exists():
+            raise SystemExit(f"{task_id} requirements path does not exist: {requirements_path}")
+        return requirements_path, implementation_path, row
+    raise SystemExit(f"No global tracker row found for ID '{task_id}' in {tracker_path}.")
+
+
+def _resolve_epic_child_docs(
+    *, root: Path, epic_tracker_path: Path, row_id: str
+) -> tuple[Path, Path, dict[str, str]]:
+    _lines, _header_idx, rows = _epic_tracker_rows(epic_tracker_path)
+    for row in rows:
+        if row["ID"] != row_id:
+            continue
+        docs_rel = _clean_markdown_cell_path(row.get("Docs", ""))
+        if not docs_rel:
+            raise SystemExit(f"{row_id} has no docs path in {epic_tracker_path}.")
+        implementation_path = root / ".project-workflow" / docs_rel
+        requirements_path = implementation_path.parent / "REQUIREMENTS.md"
+        if not implementation_path.exists():
+            raise SystemExit(f"{row_id} docs path does not exist: {implementation_path}")
+        if not requirements_path.exists():
+            raise SystemExit(f"{row_id} requirements path does not exist: {requirements_path}")
+        return requirements_path, implementation_path, row
+    raise SystemExit(f"No epic tracker row found for ID '{row_id}' in {epic_tracker_path}.")
+
+
+def _task_ready_issues_for_paths(
+    *, requirements_path: Path, implementation_path: Path, parent_ac_ids: set[str] | None = None
+) -> list[str]:
+    if not requirements_path.exists():
+        return [f"agent action required: create requirements file `{requirements_path.name}`."]
+    if not implementation_path.exists():
+        return [f"agent action required: create implementation file `{implementation_path.name}`."]
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    implementation_text = implementation_path.read_text(encoding="utf-8")
+    return _task_readiness_issues(
+        requirements_text=requirements_text,
+        implementation_text=implementation_text,
+        parent_ac_ids=parent_ac_ids,
+    )
+
+
 def _update_global_tracker_row_status(
     *,
     root: Path,
@@ -977,6 +1345,19 @@ def _update_global_tracker_row_status(
                     "Use --force --reason for audited non-Complete exceptions."
                 )
 
+        if (
+            _status_requires_task_readiness(new_status)
+            and not force
+            and normalized_row_id.startswith(f"{TASK_ID_PREFIX}-")
+        ):
+            requirements_path = docs_path.parent / "REQUIREMENTS.md"
+            readiness_issues = _task_ready_issues_for_paths(
+                requirements_path=requirements_path,
+                implementation_path=docs_path,
+            )
+            if readiness_issues:
+                raise SystemExit(_format_readiness_block(row_id, readiness_issues))
+
         if current_status == new_status:
             return current_status, new_status
 
@@ -999,7 +1380,7 @@ def _epic_tracker_header_columns(cells: list[str] | None) -> tuple[str, ...] | N
 
 def _epic_tracker_rows(epic_tracker_path: Path) -> tuple[list[str], int, list[dict[str, str]]]:
     lines = epic_tracker_path.read_text(encoding="utf-8").splitlines(keepends=True)
-    header_idx: int | None = None
+    header_idx: Optional[int] = None
     header_columns: tuple[str, ...] | None = None
     for idx, line in enumerate(lines):
         cells = _parse_markdown_table_cells(line)
@@ -1133,12 +1514,21 @@ def _update_epic_child_status(
             if not docs_path.exists():
                 raise SystemExit(f"{row_id} docs path does not exist: {docs_path}")
             docs_text = docs_path.read_text(encoding="utf-8")
+            parent_ac_ids = _extract_ac_ids(_extract_parent_ac_coverage(row))
+            requirements_path = docs_path.parent / "REQUIREMENTS.md"
+            if requirements_path.exists():
+                readiness_issues = _task_ready_issues_for_paths(
+                    requirements_path=requirements_path,
+                    implementation_path=docs_path,
+                    parent_ac_ids=parent_ac_ids,
+                )
+                if readiness_issues:
+                    raise SystemExit(_format_readiness_block(row_id, readiness_issues))
             if not _has_qa_review_evidence(docs_text):
                 raise SystemExit(
                     f"{row_id} cannot move to Complete without non-placeholder "
                     "QA/code-review evidence."
                 )
-            parent_ac_ids = _extract_ac_ids(_extract_parent_ac_coverage(row))
             missing_parent_evidence = [
                 ac_id
                 for ac_id in sorted(parent_ac_ids)
@@ -1151,6 +1541,24 @@ def _update_epic_child_status(
                 )
         if current_status == new_status:
             return current_status, new_status
+        if (
+            _status_requires_epic_child_readiness(new_status)
+            and not force
+            and new_status != "Complete"
+        ):
+            docs_rel = _clean_markdown_cell_path(row.get("Docs", ""))
+            if not docs_rel:
+                raise SystemExit(f"{row_id} cannot move to {new_status} without a docs path.")
+            docs_path = root / ".project-workflow" / docs_rel
+            requirements_path = docs_path.parent / "REQUIREMENTS.md"
+            parent_ac_ids = _extract_ac_ids(_extract_parent_ac_coverage(row))
+            readiness_issues = _task_ready_issues_for_paths(
+                requirements_path=requirements_path,
+                implementation_path=docs_path,
+                parent_ac_ids=parent_ac_ids,
+            )
+            if readiness_issues:
+                raise SystemExit(_format_readiness_block(row_id, readiness_issues))
         row["Status"] = new_status
         lines[int(row["_line_idx"])] = _format_epic_tracker_row(row)
         epic_tracker_path.write_text("".join(lines), encoding="utf-8")
@@ -1184,47 +1592,34 @@ def _next_task_id_from_used(used_ids: set[str]) -> str:
     return f"{TASK_ID_PREFIX}-{max_value + 1:0{ID_PADDING}d}"
 
 
-def _collect_used_task_ids(
-    *,
-    tasks_dir: Path,
-    global_tracker_path: Path,
-    exclude_epic_tracker_path: Path | None = None,
-    exclude_epic_tracker_line_idx: int | None = None,
-) -> set[str]:
+def _used_ids_for_prefix(tasks_dir: Path, tracker_path: Path, *, prefix: str) -> set[str]:
     used_ids: set[str] = set()
-    task_re = re.compile(rf"^{re.escape(TASK_ID_PREFIX)}-\d+$")
+    id_re = re.compile(rf"^{re.escape(prefix)}-(\d+)$")
+    dir_re = re.compile(rf"^{re.escape(prefix)}-(\d+)-")
+    row_re = re.compile(rf"\|\s*({re.escape(prefix)}-\d+)\s*\|")
 
-    for path in tasks_dir.iterdir():
-        if not path.is_dir():
-            continue
-        match = re.match(rf"^{re.escape(TASK_ID_PREFIX)}-(\d+)-", path.name)
-        if match:
-            used_ids.add(f"{TASK_ID_PREFIX}-{int(match.group(1)):0{ID_PADDING}d}")
-
-    if global_tracker_path.exists():
-        tracker_text = global_tracker_path.read_text(encoding="utf-8")
-        for match in re.finditer(rf"\|\s*({re.escape(TASK_ID_PREFIX)}-\d+)\s*\|", tracker_text):
-            candidate = match.group(1)
-            if task_re.match(candidate):
-                used_ids.add(candidate)
-
-    for epic_dir in tasks_dir.iterdir():
-        if not epic_dir.is_dir():
-            continue
-        epic_tracker_path = epic_dir / "TRACKER.md"
-        if not epic_tracker_path.exists():
-            continue
-        _lines, _header_idx, epic_rows = _epic_tracker_rows(epic_tracker_path)
-        for row in epic_rows:
-            if (
-                exclude_epic_tracker_path is not None
-                and epic_tracker_path == exclude_epic_tracker_path
-                and exclude_epic_tracker_line_idx is not None
-                and int(row["_line_idx"]) == exclude_epic_tracker_line_idx
-            ):
+    if tasks_dir.exists():
+        for path in tasks_dir.rglob("*"):
+            if not path.is_dir():
                 continue
-            candidate = row["ID"].strip()
-            if task_re.match(candidate):
+            match = dir_re.match(path.name)
+            if match:
+                used_ids.add(f"{prefix}-{int(match.group(1)):0{ID_PADDING}d}")
+
+    tracker_paths = [tracker_path]
+    if tasks_dir.exists():
+        tracker_paths.extend(sorted(tasks_dir.rglob("TRACKER.md")))
+
+    for candidate_tracker in tracker_paths:
+        if not candidate_tracker.exists():
+            continue
+        try:
+            tracker_text = candidate_tracker.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        for match in row_re.finditer(tracker_text):
+            candidate = match.group(1)
+            if id_re.match(candidate):
                 used_ids.add(candidate)
 
     return used_ids
@@ -1234,17 +1629,21 @@ def _decompose_epic_requirements_to_titles(
     requirements_text: str, *, limit: int
 ) -> list[tuple[str, str | None]]:
     lines = requirements_text.splitlines()
-    bullets: list[tuple[str, str | None]] = []
-    in_section = False
+    ac_bullets: list[tuple[str, str | None]] = []
+    requirement_bullets: list[tuple[str, str | None]] = []
+    active_section: str | None = None
     for line in lines:
         stripped = line.strip()
         if stripped.startswith("## "):
             heading = stripped[3:].strip().lower()
-            in_section = heading.startswith("acceptance criteria") or heading.startswith(
-                "requirements"
-            )
+            if heading.startswith("acceptance criteria"):
+                active_section = "acceptance"
+            elif heading.startswith("requirements"):
+                active_section = "requirements"
+            else:
+                active_section = None
             continue
-        if not in_section:
+        if active_section is None:
             continue
 
         bullet: Optional[str] = None
@@ -1271,10 +1670,13 @@ def _decompose_epic_requirements_to_titles(
         bullet = re.sub(r"^A user can\s+", "", bullet, flags=re.IGNORECASE)
         bullet = re.sub(r"^Users can\s+", "", bullet, flags=re.IGNORECASE)
         bullet = bullet[:1].upper() + bullet[1:] if bullet else bullet
-        bullets.append((bullet.rstrip("."), ac_id))
-        if len(bullets) >= limit:
-            break
-    return bullets
+        if active_section == "acceptance":
+            ac_bullets.append((bullet.rstrip("."), ac_id))
+        else:
+            requirement_bullets.append((bullet.rstrip("."), ac_id))
+
+    candidates = ac_bullets or requirement_bullets
+    return candidates[:limit]
 
 
 def _append_epic_tracker_rows(epic_tracker_path: Path, rows_to_add: list[dict[str, str]]) -> None:
@@ -1297,6 +1699,87 @@ def _append_epic_tracker_rows(epic_tracker_path: Path, rows_to_add: list[dict[st
     epic_tracker_path.write_text("".join(lines), encoding="utf-8")
 
 
+def _normalize_agent(value: str) -> str:
+    normalized = value.strip().lower().replace("_", "-")
+    aliases = {
+        "copilot": "github-copilot",
+        "github": "github-copilot",
+        "github-copilot": "github-copilot",
+        "claude": "claude-code",
+        "claude-code": "claude-code",
+        "codex": "codex",
+        "openai": "codex",
+        "openai-codex": "codex",
+        "cursor": "cursor",
+    }
+    if normalized not in aliases:
+        allowed = ", ".join(sorted(AGENT_CHOICES))
+        raise argparse.ArgumentTypeError(
+            f"Unsupported agent '{value}'. Choose one of: {allowed}."
+        )
+    return aliases[normalized]
+
+
+def _split_frontmatter(content: str) -> tuple[str, str]:
+    """Return (frontmatter, body) from markdown content with YAML frontmatter."""
+    match = re.match(r"^---\n(.*?)\n---\n(.*)$", content, flags=re.DOTALL)
+    if not match:
+        return "", content
+    return match.group(1), match.group(2)
+
+
+def _extract_frontmatter_value(frontmatter: str, key: str) -> Optional[str]:
+    pattern = rf"^{re.escape(key)}:\s*(.+)$"
+    match = re.search(pattern, frontmatter, flags=re.MULTILINE)
+    if not match:
+        return None
+    return match.group(1).strip().strip('"').strip("'")
+
+
+def _prompt_filename_to_agent_name(prompt_file: str) -> str:
+    base_name = prompt_file.replace(".prompt.md", "")
+    canonical_slugs = {
+        "QAReview": "qa-review",
+    }
+    return f"project-{canonical_slugs.get(base_name, slug_kebab_lower(base_name))}"
+
+
+def _prompt_filename_to_claude_agent_name(prompt_file: str) -> str:
+    return _prompt_filename_to_agent_name(prompt_file)
+
+
+def _prompt_filename_to_cursor_agent_name(prompt_file: str) -> str:
+    return _prompt_filename_to_agent_name(prompt_file)
+
+
+def _to_claude_agent_markdown(prompt_content: str, agent_name: str) -> str:
+    """Convert packaged prompt markdown into Claude subagent markdown format."""
+    frontmatter, body = _split_frontmatter(prompt_content)
+    description = _extract_frontmatter_value(frontmatter, "description") or agent_name
+    escaped_description = description.replace('"', r'\"')
+    return (
+        "---\n"
+        f"name: {agent_name}\n"
+        f"description: \"{escaped_description}\"\n"
+        "---\n\n"
+        f"{body.lstrip()}"
+    )
+
+
+def _to_cursor_agent_markdown(prompt_content: str, agent_name: str) -> str:
+    """Convert packaged prompt markdown into Cursor subagent markdown format."""
+    frontmatter, body = _split_frontmatter(prompt_content)
+    description = _extract_frontmatter_value(frontmatter, "description") or agent_name
+    escaped_description = description.replace('"', r'\"')
+    return (
+        "---\n"
+        f"name: {agent_name}\n"
+        f"description: \"{escaped_description}\"\n"
+        "---\n\n"
+        f"{body.lstrip()}"
+    )
+
+
 def _update_tracker(
     tracker_path: Path,
     *,
@@ -1307,7 +1790,6 @@ def _update_tracker(
 ) -> bool:
     tracker = tracker_path.read_text(encoding="utf-8")
     row = f"| {spec.task_id} | {spec.title} | {status} | `{docs_rel_path}` |\n"
-
     lines = tracker.splitlines(keepends=True)
 
     # Find the stories table: insert after the last row in the table.
@@ -1324,7 +1806,7 @@ def _update_tracker(
             "Expected a line: '| ID | Title | Status | Docs |'"
         )
 
-    existing_row_idx: int | None = None
+    existing_row_idx: Optional[int] = None
     id_row_re = re.compile(rf"^\|\s*{re.escape(spec.task_id)}\s*\|")
     for idx, line in enumerate(lines):
         if id_row_re.match(line.strip()):
@@ -1351,19 +1833,9 @@ def _update_tracker(
 
 def _next_sequential_id(tasks_dir: Path, tracker_path: Path, *, prefix: str) -> str:
     max_value = 0
-
-    dir_re = re.compile(rf"^{re.escape(prefix)}-(\d+)-")
-    for path in tasks_dir.iterdir():
-        if not path.is_dir():
-            continue
-        match = dir_re.match(path.name)
-        if match:
-            max_value = max(max_value, int(match.group(1)))
-
-    tracker = tracker_path.read_text(encoding="utf-8")
-    row_re = re.compile(rf"^\|\s*{re.escape(prefix)}-(\d+)\s*\|", flags=re.MULTILINE)
-    for match in row_re.finditer(tracker):
-        max_value = max(max_value, int(match.group(1)))
+    for used_id in _used_ids_for_prefix(tasks_dir, tracker_path, prefix=prefix):
+        _, _, numeric = used_id.partition("-")
+        max_value = max(max_value, int(numeric))
 
     return f"{prefix}-{max_value + 1:0{ID_PADDING}d}"
 
@@ -1389,11 +1861,6 @@ def _resolve_epic_id(tasks_dir: Path, tracker_path: Path, *, title: str) -> str:
         return matches[0]
 
     return _next_sequential_id(tasks_dir, tracker_path, prefix=EPIC_ID_PREFIX)
-
-
-def _default_repo_root() -> Path:
-    here = Path(__file__)
-    return here.resolve().parents[2]
 
 
 def _doctor_check_source_mirrors(root: Path, issues: list[DoctorIssue]) -> None:
@@ -1512,6 +1979,31 @@ def _doctor_check_task_doc(
                 requirements_path,
                 f"{row_id} has active status '{status}' but requirements still contain placeholders.",
             )
+    if (
+        docs_path.name == "IMPLEMENTATION.md"
+        and status != "Complete"
+        and _status_requires_task_readiness(status)
+    ):
+        if requirements_text is not None:
+            for readiness_issue in _task_readiness_issues(
+                requirements_text=requirements_text,
+                implementation_text=docs_text,
+            ):
+                _add_issue(
+                    issues,
+                    "warning",
+                    docs_path,
+                    f"{row_id} readiness gate: {readiness_issue}",
+                )
+    if docs_path.name == "REQUIREMENTS.md" and row_id.startswith(f"{EPIC_ID_PREFIX}-"):
+        if status not in ("To Do", "N/A"):
+            for readiness_issue in _epic_requirements_readiness_issues(docs_text):
+                _add_issue(
+                    issues,
+                    "warning",
+                    docs_path,
+                    f"{row_id} epic readiness gate: {readiness_issue}",
+                )
 
     _doctor_check_implementation_ac_mapping(
         docs_path=docs_path,
@@ -1601,35 +2093,154 @@ def _doctor_issue_is_blocking(issue: DoctorIssue, *, strict: bool) -> bool:
 
 
 def cmd_doctor(args: argparse.Namespace) -> None:
-    root = Path(args.root).resolve() if args.root else _default_repo_root()
+    root = Path(args.root).resolve() if args.root else Path.cwd()
     issues = run_doctor(root)
     blocking = [issue for issue in issues if _doctor_issue_is_blocking(issue, strict=args.strict)]
 
     if not issues:
-        print(f"workflow doctor: no issues found in {root}")
+        print(f"project doctor: no issues found in {root}")
         return
 
-    print(f"workflow doctor: checked {root}")
+    print(f"project doctor: checked {root}")
     for issue in issues:
         severity = "error" if args.strict and issue.severity == "warning" else issue.severity
         print(f"{severity.upper()}: {issue.path}: {issue.message}")
 
     if blocking:
-        print(f"workflow doctor: failed with {len(blocking)} blocking issue(s).")
+        print(f"project doctor: failed with {len(blocking)} blocking issue(s).")
         raise SystemExit(1)
 
-    print("workflow doctor: passed with warnings")
+    print("project doctor: passed with warnings")
+
+
+def cmd_project_init(args: argparse.Namespace) -> None:
+    """Bootstrap project-workflow in the current directory."""
+    cwd = Path.cwd()
+    selected_agent = args.agent
+    selected_agent_label = AGENT_CHOICES[selected_agent]
+    managed_block = _managed_project_workflow_block()
+
+    print(f"Selected agent mode: {selected_agent_label} ({selected_agent})")
+
+    # Create .project-workflow structure
+    project_workflow_dir = cwd / ".project-workflow"
+    tasks_dir = project_workflow_dir / "tasks"
+    cli_dir = project_workflow_dir / "cli"
+    tracker_path = project_workflow_dir / "TRACKER.md"
+    guidance_path = project_workflow_dir / "guidance.md"
+
+    # Create directories
+    tasks_dir.mkdir(parents=True, exist_ok=True)
+    cli_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create initial TRACKER.md if missing
+    if not tracker_path.exists():
+        tracker_path.write_text(_tracker_template(), encoding="utf-8")
+        print(f"✓ Created: {tracker_path}")
+    else:
+        print(f"✓ Exists: {tracker_path}")
+
+    print(f"✓ {_ensure_user_guidance_file(guidance_path)}")
+
+    # Create/update the workflow CLI files in .project-workflow/cli/
+    workflow_py_path = cli_dir / "workflow.py"
+    workflow_sh_path = cli_dir / "workflow"
+
+    # Copy the workflow.py to the initialized project
+    workflow_py_content = _get_package_resource("templates/workflow.py")
+    print(f"✓ {_ensure_generated_file(workflow_py_path, workflow_py_content)}")
+
+    # Copy the workflow shell wrapper
+    workflow_sh_content = _get_package_resource("templates/workflow")
+    print(f"✓ {_ensure_generated_file(workflow_sh_path, workflow_sh_content, executable=True)}")
+
+    customize_path_hint = ".github/prompts/* files"
+
+    if selected_agent == "claude-code":
+        # Create canonical Claude project subagent layout at .claude/agents/*.md
+        claude_agents_dir = cwd / ".claude" / "agents"
+        claude_agents_dir.mkdir(parents=True, exist_ok=True)
+
+        for prompt_file in PROMPT_FILES:
+            prompt_content = _get_package_resource(f"prompts/{prompt_file}")
+            agent_name = _prompt_filename_to_claude_agent_name(prompt_file)
+            agent_path = claude_agents_dir / f"{agent_name}.md"
+            agent_content = _to_claude_agent_markdown(prompt_content, agent_name)
+            print(f"✓ {_ensure_generated_file(agent_path, agent_content)}")
+
+        _remove_retired_project_workflow_path(claude_agents_dir / "project-scaffold.md")
+
+        customize_path_hint = ".claude/agents/* files"
+    elif selected_agent == "codex":
+        agents_path = cwd / "AGENTS.md"
+        print(f"✓ {_ensure_managed_block(agents_path, managed_block)}")
+
+        for skill_name in CODEX_SKILL_NAMES:
+            skill_path = cwd / ".agents" / "skills" / skill_name / "SKILL.md"
+            skill_content = _get_package_resource(f"codex/skills/{skill_name}/SKILL.md")
+            print(f"✓ {_ensure_generated_file(skill_path, skill_content)}")
+        _remove_retired_project_workflow_path(cwd / ".agents" / "skills" / "project-scaffold")
+
+        customize_path_hint = "AGENTS.md and .agents/skills/project-*"
+    elif selected_agent == "cursor":
+        # Create canonical Cursor project subagent layout at .cursor/agents/*.md
+        cursor_agents_dir = cwd / ".cursor" / "agents"
+        cursor_agents_dir.mkdir(parents=True, exist_ok=True)
+
+        for prompt_file in PROMPT_FILES:
+            prompt_content = _get_package_resource(f"prompts/{prompt_file}")
+            agent_name = _prompt_filename_to_cursor_agent_name(prompt_file)
+            agent_path = cursor_agents_dir / f"{agent_name}.md"
+            agent_content = _to_cursor_agent_markdown(prompt_content, agent_name)
+            print(f"✓ {_ensure_generated_file(agent_path, agent_content)}")
+
+        _remove_retired_project_workflow_path(cursor_agents_dir / "project-scaffold.md")
+
+        cursor_rule_path = cwd / ".cursor" / "rules" / "project-workflow.mdc"
+        cursor_rule_content = _get_package_resource("cursor/rules/project-workflow.mdc")
+        print(f"✓ {_ensure_generated_file(cursor_rule_path, cursor_rule_content)}")
+
+        customize_path_hint = ".cursor/agents/* files and .cursor/rules/project-workflow.mdc"
+    else:
+        # GitHub Copilot uses generated prompts plus a managed host-file block.
+        github_dir = cwd / ".github"
+        prompts_dir = github_dir / "prompts"
+        prompts_dir.mkdir(parents=True, exist_ok=True)
+
+        copilot_instructions_path = github_dir / "copilot-instructions.md"
+        print(f"✓ {_ensure_managed_block(copilot_instructions_path, managed_block)}")
+
+        for prompt_file in PROMPT_FILES:
+            prompt_path = prompts_dir / prompt_file
+            prompt_content = _get_package_resource(f"prompts/{prompt_file}")
+            print(f"✓ {_ensure_generated_file(prompt_path, prompt_content)}")
+
+        _remove_retired_project_workflow_path(prompts_dir / "Scaffold.prompt.md")
+
+    print(f"\n✅ Project workflow initialized in {cwd}")
+    print(f"   Agent mode applied: {selected_agent_label}")
+    print(f"\nNext steps:")
+    print(f"  • Review: .project-workflow/TRACKER.md")
+    print(f"  • Customize user guidance: .project-workflow/guidance.md")
+    print(f"  • Review generated agent assets: {customize_path_hint}")
+    print(f"  • Create tasks: ./.project-workflow/cli/workflow task init --help")
+    print("  • Validate workflow state: ./.project-workflow/cli/workflow doctor")
 
 
 def cmd_task_init(args: argparse.Namespace) -> None:
-    repo_root = _default_repo_root()
+    """Scaffold a new task in .project-workflow/tasks/"""
+    cwd = Path.cwd()
 
-    workflow_dir = repo_root / ".project-workflow"
+    workflow_dir = cwd / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
     tracker_path = workflow_dir / "TRACKER.md"
 
     if not tracker_path.exists():
-        raise SystemExit(f"Missing tracker file: {tracker_path}")
+        raise SystemExit(
+            f"Missing tracker file: {tracker_path}\n"
+            f"Run `{CANONICAL_INIT_COMMAND}` from the repository root first to bootstrap "
+            f"the project workflow."
+        )
 
     task_id = _next_sequential_id(tasks_dir, tracker_path, prefix=TASK_ID_PREFIX)
     existing_task_dirs = [p for p in tasks_dir.glob(f"{task_id}-*") if p.is_dir()]
@@ -1646,20 +2257,20 @@ def cmd_task_init(args: argparse.Namespace) -> None:
     else:
         folder_suffix = slug_titlecase_dashes(args.title)
     spec = TaskSpec(task_id=task_id, title=args.title, folder_suffix=folder_suffix)
-    branch_name: str | None = None
+    branch_name: Optional[str] = None
 
     if args.create_branch:
-        _ensure_clean_git(repo_root)
+        _ensure_clean_git(cwd)
 
         base_branch = args.base_branch
         branch_name = f"{args.branch_prefix}{spec.task_id}-{slug_kebab_lower(spec.title)}"
 
         # Ensure base branch exists locally and is checked out.
-        _run_git(["checkout", base_branch], cwd=repo_root)
-        _run_git(["pull"], cwd=repo_root)
+        _run_git(["checkout", base_branch], cwd=cwd)
+        _run_git(["pull"], cwd=cwd)
 
         # Create and switch.
-        _run_git(["checkout", "-b", branch_name], cwd=repo_root)
+        _run_git(["checkout", "-b", branch_name], cwd=cwd)
 
     task_dir = tasks_dir / spec.task_folder_name
     impl_path = task_dir / "IMPLEMENTATION.md"
@@ -1686,16 +2297,20 @@ def cmd_task_init(args: argparse.Namespace) -> None:
 
 def cmd_task_status(args: argparse.Namespace) -> None:
     """Safely update one global tracker task status."""
-    repo_root = _default_repo_root()
-    workflow_dir = repo_root / ".project-workflow"
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
     tracker_path = workflow_dir / "TRACKER.md"
 
     if not tracker_path.exists():
-        raise SystemExit(f"Missing tracker file: {tracker_path}")
+        raise SystemExit(
+            f"Missing tracker file: {tracker_path}\n"
+            f"Run `{CANONICAL_INIT_COMMAND}` from the repository root first to bootstrap "
+            f"the project workflow."
+        )
 
     task_id = _normalize_task_status_id(args.id)
     previous, current = _update_global_tracker_row_status(
-        root=repo_root,
+        root=cwd,
         tracker_path=tracker_path,
         row_id=task_id,
         new_status=args.to,
@@ -1711,15 +2326,47 @@ def cmd_task_status(args: argparse.Namespace) -> None:
             print(f"Forced transition reason: {args.reason.strip()}")
 
 
-def cmd_epic_init(args: argparse.Namespace) -> None:
-    repo_root = _default_repo_root()
+def cmd_task_ready(args: argparse.Namespace) -> None:
+    """Validate standalone task implementation readiness."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+    if not tracker_path.exists():
+        raise SystemExit(
+            f"Missing tracker file: {tracker_path}\n"
+            f"Run `{CANONICAL_INIT_COMMAND}` from the repository root first to bootstrap "
+            f"the project workflow."
+        )
 
-    workflow_dir = repo_root / ".project-workflow"
+    task_id = _normalize_task_status_id(args.id)
+    requirements_path, implementation_path, _row = _resolve_global_task_docs(
+        root=cwd,
+        tracker_path=tracker_path,
+        task_id=task_id,
+    )
+    readiness_issues = _task_ready_issues_for_paths(
+        requirements_path=requirements_path,
+        implementation_path=implementation_path,
+    )
+    if readiness_issues:
+        raise SystemExit(_format_readiness_block(task_id, readiness_issues))
+    print(f"{task_id} readiness gate passed.")
+
+
+def cmd_epic_init(args: argparse.Namespace) -> None:
+    """Scaffold a new epic in .project-workflow/tasks/."""
+    cwd = Path.cwd()
+
+    workflow_dir = cwd / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
     tracker_path = workflow_dir / "TRACKER.md"
 
     if not tracker_path.exists():
-        raise SystemExit(f"Missing tracker file: {tracker_path}")
+        raise SystemExit(
+            f"Missing tracker file: {tracker_path}\n"
+            f"Run `{CANONICAL_INIT_COMMAND}` from the repository root first to bootstrap "
+            f"the project workflow."
+        )
 
     epic_id = _resolve_epic_id(tasks_dir, tracker_path, title=args.title)
     existing_epic_dirs = [p for p in tasks_dir.glob(f"{epic_id}-*") if p.is_dir()]
@@ -1742,65 +2389,22 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
     epic_tracker_path = epic_dir / "TRACKER.md"
     deferrals_path = epic_dir / "DEFERRALS.md"
 
-    created_files: list[Path] = []
-    overwritten_files: dict[Path, str] = {}
-    created_dirs: list[Path] = []
+    epic_dir.mkdir(parents=True, exist_ok=True)
+    if args.overwrite or not reqs_path.exists():
+        _write_file(reqs_path, _requirements_template(spec.task_id, spec.title), overwrite=True)
+    if args.overwrite or not epic_tracker_path.exists():
+        _write_file(epic_tracker_path, _epic_tracker_template(), overwrite=True)
+    if args.overwrite or not deferrals_path.exists():
+        _write_file(deferrals_path, _epic_deferrals_template(), overwrite=True)
 
-    try:
-        if not epic_dir.exists():
-            epic_dir.mkdir(parents=True, exist_ok=True)
-            created_dirs.append(epic_dir)
-
-        if args.overwrite or not reqs_path.exists():
-            if reqs_path.exists():
-                overwritten_files[reqs_path] = reqs_path.read_text(encoding="utf-8")
-            _write_file(reqs_path, _requirements_template(spec.task_id, spec.title), overwrite=True)
-            if reqs_path not in overwritten_files:
-                created_files.append(reqs_path)
-
-        if args.overwrite or not epic_tracker_path.exists():
-            if epic_tracker_path.exists():
-                overwritten_files[epic_tracker_path] = epic_tracker_path.read_text(encoding="utf-8")
-            _write_file(epic_tracker_path, _epic_tracker_template(), overwrite=True)
-            if epic_tracker_path not in overwritten_files:
-                created_files.append(epic_tracker_path)
-        if args.overwrite or not deferrals_path.exists():
-            if deferrals_path.exists():
-                overwritten_files[deferrals_path] = deferrals_path.read_text(encoding="utf-8")
-            _write_file(deferrals_path, _epic_deferrals_template(), overwrite=True)
-            if deferrals_path not in overwritten_files:
-                created_files.append(deferrals_path)
-
-        docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
-        row_written = _update_tracker(
-            tracker_path,
-            spec=spec,
-            status=args.status,
-            docs_rel_path=docs_rel,
-            on_duplicate="skip",
-        )
-    except (OSError, SystemExit) as exc:
-        rollback_errors = _rollback_file_changes(
-            created_files=created_files,
-            overwritten_files=overwritten_files,
-            created_dirs=created_dirs,
-        )
-        message = (
-            "Epic scaffold failed before completion. "
-            f"Cause: {exc}. "
-            "State was rolled back for files/directories touched in this run."
-        )
-        if rollback_errors:
-            raise SystemExit(
-                message
-                + " Manual cleanup may be required for: "
-                + "; ".join(rollback_errors)
-            )
-        raise SystemExit(
-            message
-            + " Resolve the error and re-run the same command; no manual cleanup should be "
-            "required."
-        )
+    docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
+    row_written = _update_tracker(
+        tracker_path,
+        spec=spec,
+        status=args.status,
+        docs_rel_path=docs_rel,
+        on_duplicate="skip",
+    )
 
     print(f"Created epic: {epic_dir}")
     if row_written:
@@ -1812,8 +2416,8 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
 
 def cmd_epic_approve(args: argparse.Namespace) -> None:
     """Approve a proposed epic child row by updating Status to Approved."""
-    repo_root = _default_repo_root()
-    workflow_dir = repo_root / ".project-workflow"
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
 
     epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
@@ -1830,17 +2434,59 @@ def cmd_epic_approve(args: argparse.Namespace) -> None:
     print(f"Approved epic row {args.id} in {epic_tracker_path}")
 
 
+def cmd_epic_ready(args: argparse.Namespace) -> None:
+    """Validate epic requirements readiness before decomposition."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    if not requirements_path.exists():
+        raise SystemExit(f"Missing epic requirements file: {requirements_path}")
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    readiness_issues = _epic_requirements_readiness_issues(requirements_text)
+    if readiness_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, readiness_issues))
+    print(f"{args.epic_id} epic readiness gate passed.")
+
+
+def cmd_epic_ready_child(args: argparse.Namespace) -> None:
+    """Validate one epic child task readiness before implementation/testing."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    epic_tracker_path = epic_dir / "TRACKER.md"
+    if not epic_tracker_path.exists():
+        raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
+
+    requirements_path, implementation_path, row = _resolve_epic_child_docs(
+        root=cwd,
+        epic_tracker_path=epic_tracker_path,
+        row_id=args.id,
+    )
+    parent_ac_ids = _extract_ac_ids(_extract_parent_ac_coverage(row))
+    readiness_issues = _task_ready_issues_for_paths(
+        requirements_path=requirements_path,
+        implementation_path=implementation_path,
+        parent_ac_ids=parent_ac_ids,
+    )
+    if readiness_issues:
+        raise SystemExit(_format_readiness_block(args.id, readiness_issues))
+    print(f"{args.id} readiness gate passed.")
+
+
 def cmd_epic_status(args: argparse.Namespace) -> None:
     """Safely update one epic tracker row status."""
-    repo_root = _default_repo_root()
-    workflow_dir = repo_root / ".project-workflow"
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
     epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
     epic_tracker_path = epic_dir / "TRACKER.md"
     if not epic_tracker_path.exists():
         raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
     previous, current = _update_epic_child_status(
-        root=repo_root,
+        root=cwd,
         epic_tracker_path=epic_tracker_path,
         row_id=args.id,
         new_status=args.to,
@@ -1857,8 +2503,8 @@ def cmd_epic_status(args: argparse.Namespace) -> None:
 
 def cmd_epic_decompose(args: argparse.Namespace) -> None:
     """Generate Proposed child rows from epic REQUIREMENTS.md without scaffolding child folders."""
-    repo_root = _default_repo_root()
-    workflow_dir = repo_root / ".project-workflow"
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
     tracker_path = workflow_dir / "TRACKER.md"
 
@@ -1874,6 +2520,9 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
         raise SystemExit(f"Missing global tracker file: {tracker_path}")
 
     requirements_text = requirements_path.read_text(encoding="utf-8")
+    readiness_issues = _epic_requirements_readiness_issues(requirements_text)
+    if readiness_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, readiness_issues))
     candidates = _decompose_epic_requirements_to_titles(requirements_text, limit=args.limit)
     if not candidates:
         raise SystemExit(
@@ -1882,27 +2531,8 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
             "'## Acceptance Criteria (Verifiable)' first."
         )
 
-    occupied_ids: set[str] = set()
-    task_re = re.compile(rf"^{re.escape(TASK_ID_PREFIX)}-\d+$")
-
-    for path in tasks_dir.iterdir():
-        if not path.is_dir():
-            continue
-        match = re.match(rf"^{re.escape(TASK_ID_PREFIX)}-(\d+)-", path.name)
-        if match:
-            occupied_ids.add(f"{TASK_ID_PREFIX}-{int(match.group(1)):0{ID_PADDING}d}")
-
-    tracker_text = tracker_path.read_text(encoding="utf-8")
-    for match in re.finditer(rf"\|\s*({re.escape(TASK_ID_PREFIX)}-\d+)\s*\|", tracker_text):
-        candidate = match.group(1)
-        if task_re.match(candidate):
-            occupied_ids.add(candidate)
-
+    occupied_ids = _used_ids_for_prefix(tasks_dir, tracker_path, prefix=TASK_ID_PREFIX)
     _lines, _header_idx, epic_rows = _epic_tracker_rows(epic_tracker_path)
-    for row in epic_rows:
-        candidate = row["ID"].strip()
-        if task_re.match(candidate):
-            occupied_ids.add(candidate)
 
     rows_to_add: list[dict[str, str]] = []
     for title, ac_id in candidates:
@@ -1941,10 +2571,9 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
 
 def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
     """Scaffold one approved child row from an epic tracker."""
-    repo_root = _default_repo_root()
-    workflow_dir = repo_root / ".project-workflow"
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
-    tracker_path = workflow_dir / "TRACKER.md"
 
     epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
     epic_tracker_path = epic_dir / "TRACKER.md"
@@ -1952,7 +2581,7 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
         raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
 
     lines, _header_idx, rows = _epic_tracker_rows(epic_tracker_path)
-    target: dict[str, str] | None = None
+    target: Optional[dict[str, str]] = None
     for row in rows:
         if row["ID"] == args.id:
             target = row
@@ -1966,147 +2595,66 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
             "Only rows with status 'Approved' can be scaffolded."
         )
 
-    assigned_id = target["ID"]
-    occupied_task_ids = _collect_used_task_ids(
-        tasks_dir=tasks_dir,
-        global_tracker_path=tracker_path,
-        exclude_epic_tracker_path=epic_tracker_path,
-        exclude_epic_tracker_line_idx=int(target["_line_idx"]),
-    )
-    if not re.match(rf"^{re.escape(TASK_ID_PREFIX)}-\d+$", assigned_id):
-        reassigned_id = _next_task_id_from_used(occupied_task_ids)
-        print(
-            f"Row {args.id} used non-task ID '{assigned_id}'. "
-            f"Assigned next available global ID: {reassigned_id}."
-        )
-        assigned_id = reassigned_id
-    elif assigned_id in occupied_task_ids:
-        reassigned_id = _next_task_id_from_used(occupied_task_ids)
-        print(
-            f"Detected ID collision for {assigned_id}. "
-            f"Assigned next available global ID: {reassigned_id}."
-        )
-        assigned_id = reassigned_id
-
     child_spec = TaskSpec(
-        task_id=assigned_id,
+        task_id=target["ID"],
         title=target["Title"],
         folder_suffix=slug_titlecase_dashes(target["Title"]),
     )
-    branch_name: str | None = None
+    branch_name: Optional[str] = None
+
+    if args.create_branch:
+        _ensure_clean_git(cwd)
+        epic_branch = args.epic_branch
+        branch_name = f"{args.branch_prefix}{child_spec.task_id}-{slug_kebab_lower(child_spec.title)}"
+
+        if not _branch_exists(cwd, epic_branch):
+            raise SystemExit(
+                f"Epic branch '{epic_branch}' was not found. "
+                "Child branches for epic-managed tasks must branch from the epic branch "
+                "and never fall back to a base branch. "
+                "Create or checkout the epic branch first, for example: "
+                f"git checkout -b {epic_branch} develop"
+            )
+
+        _run_git(["checkout", epic_branch], cwd=cwd)
+        if _branch_exists(cwd, branch_name):
+            _run_git(["checkout", branch_name], cwd=cwd)
+        else:
+            _run_git(["checkout", "-b", branch_name], cwd=cwd)
     child_dir = epic_dir / child_spec.task_folder_name
     impl_path = child_dir / "IMPLEMENTATION.md"
     reqs_path = child_dir / "REQUIREMENTS.md"
     parent_ac_coverage = _extract_parent_ac_coverage(target)
 
-    created_files: list[Path] = []
-    overwritten_files: dict[Path, str] = {}
-    created_dirs: list[Path] = []
-    original_branch: str | None = None
-    created_branch: str | None = None
-
-    try:
-        if args.create_branch:
-            _ensure_clean_git(repo_root)
-            original_branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_root)
-            epic_branch = args.epic_branch
-            branch_name = (
-                f"{args.branch_prefix}{child_spec.task_id}-{slug_kebab_lower(child_spec.title)}"
-            )
-
-            if not _branch_exists(repo_root, epic_branch):
-                raise SystemExit(
-                    f"Epic branch '{epic_branch}' was not found. "
-                    "Child branches for epic-managed tasks must branch from the epic branch "
-                    "and never fall back to a base branch. "
-                    "Create or checkout the epic branch first, for example: "
-                    f"git checkout -b {epic_branch} develop"
-                )
-
-            _run_git(["checkout", epic_branch], cwd=repo_root)
-            if _branch_exists(repo_root, branch_name):
-                _run_git(["checkout", branch_name], cwd=repo_root)
-            else:
-                _run_git(["checkout", "-b", branch_name], cwd=repo_root)
-                created_branch = branch_name
-
-        if not child_dir.exists():
-            child_dir.mkdir(parents=True, exist_ok=True)
-            created_dirs.append(child_dir)
-
-        if args.overwrite or not impl_path.exists():
-            if impl_path.exists():
-                overwritten_files[impl_path] = impl_path.read_text(encoding="utf-8")
-            _write_file(
-                impl_path,
-                _epic_child_implementation_template(
-                    child_spec.task_id,
-                    child_spec.title,
-                    parent_ac_coverage,
-                ),
-                overwrite=True,
-            )
-            if impl_path not in overwritten_files:
-                created_files.append(impl_path)
-
-        if args.overwrite or not reqs_path.exists():
-            if reqs_path.exists():
-                overwritten_files[reqs_path] = reqs_path.read_text(encoding="utf-8")
-            _write_file(
-                reqs_path,
-                _epic_child_requirements_template(
-                    child_spec.task_id,
-                    child_spec.title,
-                    parent_ac_coverage,
-                ),
-                overwrite=True,
-            )
-            if reqs_path not in overwritten_files:
-                created_files.append(reqs_path)
-
-        if target["ID"] != assigned_id:
-            prior_id = target["ID"]
-            target["ID"] = assigned_id
-            note = target["Notes"].strip()
-            collision_note = f"Reassigned from {prior_id} due to ID collision"
-            target["Notes"] = f"{note}; {collision_note}" if note else collision_note
-
-        target["Docs"] = f"tasks/{epic_dir.name}/{child_spec.task_folder_name}/IMPLEMENTATION.md"
-        if branch_name is not None:
-            target["Branch"] = branch_name
-        target["Status"] = "In Progress"
-        line_idx = int(target["_line_idx"])
-        lines[line_idx] = _format_epic_tracker_row(target)
-        epic_tracker_path.write_text("".join(lines), encoding="utf-8")
-    except (subprocess.CalledProcessError, OSError, SystemExit) as exc:
-        rollback_errors = _rollback_file_changes(
-            created_files=created_files,
-            overwritten_files=overwritten_files,
-            created_dirs=created_dirs,
+    child_dir.mkdir(parents=True, exist_ok=True)
+    if args.overwrite or not impl_path.exists():
+        _write_file(
+            impl_path,
+            _epic_child_implementation_template(
+                child_spec.task_id,
+                child_spec.title,
+                parent_ac_coverage,
+            ),
+            overwrite=True,
         )
-        rollback_errors.extend(
-            _rollback_git_state(
-                repo_root,
-                original_branch=original_branch,
-                created_branch=created_branch,
-            )
+    if args.overwrite or not reqs_path.exists():
+        _write_file(
+            reqs_path,
+            _epic_child_requirements_template(
+                child_spec.task_id,
+                child_spec.title,
+                parent_ac_coverage,
+            ),
+            overwrite=True,
         )
-        message = (
-            "Epic child scaffold failed before completion. "
-            f"Cause: {exc}. "
-            "State was rolled back for files/directories and branch changes from this run."
-        )
-        if rollback_errors:
-            raise SystemExit(
-                message
-                + " Manual cleanup may be required for: "
-                + "; ".join(rollback_errors)
-            )
-        raise SystemExit(
-            message
-            + " Resolve the error and re-run the same command; no manual cleanup should be "
-            "required."
-        )
+
+    target["Docs"] = f"tasks/{epic_dir.name}/{child_spec.task_folder_name}/IMPLEMENTATION.md"
+    if branch_name is not None:
+        target["Branch"] = branch_name
+    target["Status"] = "In Progress"
+    line_idx = int(target["_line_idx"])
+    lines[line_idx] = _format_epic_tracker_row(target)
+    epic_tracker_path.write_text("".join(lines), encoding="utf-8")
 
     print(f"Scaffolded epic child: {child_dir}")
     print(f"Updated epic tracker: {epic_tracker_path}")
@@ -2116,8 +2664,8 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
 
 def cmd_epic_audit(args: argparse.Namespace) -> None:
     """Generate an epic acceptance audit artifact."""
-    repo_root = _default_repo_root()
-    epic_dir, audit_rows, gaps = _epic_audit_rows(repo_root, args.epic_id)
+    cwd = Path.cwd()
+    epic_dir, audit_rows, gaps = _epic_audit_rows(cwd, args.epic_id)
     audit_path = epic_dir / "ACCEPTANCE-AUDIT.md"
     audit_path.write_text(_format_acceptance_audit(args.epic_id, audit_rows), encoding="utf-8")
     print(f"Wrote acceptance audit: {audit_path}")
@@ -2131,10 +2679,10 @@ def cmd_epic_audit(args: argparse.Namespace) -> None:
 
 def cmd_epic_closeout(args: argparse.Namespace) -> None:
     """Validate epic closeout gates and optionally mark the global epic row Complete."""
-    repo_root = _default_repo_root()
-    workflow_dir = repo_root / ".project-workflow"
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
     tracker_path = workflow_dir / "TRACKER.md"
-    epic_dir, audit_rows, gaps = _epic_audit_rows(repo_root, args.epic_id)
+    epic_dir, audit_rows, gaps = _epic_audit_rows(cwd, args.epic_id)
     audit_path = epic_dir / "ACCEPTANCE-AUDIT.md"
     audit_path.write_text(_format_acceptance_audit(args.epic_id, audit_rows), encoding="utf-8")
     if gaps:
@@ -2159,11 +2707,31 @@ def cmd_epic_closeout(args: argparse.Namespace) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="workflow",
-        description="Local task scaffolding helper for project-workflow.",
+        prog="project",
+        description=(
+            "Project workflow: Spec-driven development for GitHub Copilot, "
+            "Claude Code, OpenAI Codex, and Cursor."
+        ),
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # ===== project init =====
+    init_parser = subparsers.add_parser(
+        "init",
+        help="Bootstrap project-workflow in current directory (idempotent)",
+    )
+    init_parser.add_argument(
+        "--agent",
+        type=_normalize_agent,
+        default="github-copilot",
+        metavar="AGENT",
+        help=(
+            "Target agent ecosystem: github-copilot (default), claude-code, codex, or cursor. "
+            "Aliases accepted: copilot, claude, codex, cursor."
+        ),
+    )
+    init_parser.set_defaults(func=cmd_project_init)
 
     for command_name in ("doctor", "validate"):
         doctor_parser = subparsers.add_parser(
@@ -2173,7 +2741,7 @@ def build_parser() -> argparse.ArgumentParser:
         )
         doctor_parser.add_argument(
             "--root",
-            help="Repository root to validate (default: repository containing this workflow script)",
+            help="Repository root to validate (default: current directory)",
         )
         doctor_parser.add_argument(
             "--strict",
@@ -2182,51 +2750,52 @@ def build_parser() -> argparse.ArgumentParser:
         )
         doctor_parser.set_defaults(func=cmd_doctor)
 
+    # ===== project task ... =====
     task_parser = subparsers.add_parser("task", help="Task-related commands")
     task_sub = task_parser.add_subparsers(dest="task_command", required=True)
 
-    init_parser = task_sub.add_parser("init", help="Scaffold a new task folder + docs")
-    init_parser.add_argument("--title", required=True, help="Human title (e.g. Super Admin Access)")
-    init_parser.add_argument(
+    task_init_parser = task_sub.add_parser("init", help="Scaffold a new task folder + docs")
+    task_init_parser.add_argument("--title", required=True, help="Human title (e.g. Super Admin Access)")
+    task_init_parser.add_argument(
         "--folder-suffix",
         help=(
             "Overrides the task folder suffix after the ID. "
             "Default: Title converted to Title-Case-With-Dashes"
         ),
     )
-    init_parser.add_argument(
+    task_init_parser.add_argument(
         "--status",
         default="To Do",
         help="Initial tracker status (default: To Do)",
     )
-    init_parser.add_argument(
+    task_init_parser.add_argument(
         "--update-tracker",
         action="store_true",
         help="Append the story to .project-workflow/TRACKER.md",
     )
-    init_parser.add_argument(
+    task_init_parser.add_argument(
         "--overwrite",
         action="store_true",
         help="Overwrite existing task docs if task folder already exists",
     )
 
-    init_parser.add_argument(
+    task_init_parser.add_argument(
         "--create-branch",
         action="store_true",
         help="Create and checkout a git branch for the task",
     )
-    init_parser.add_argument(
+    task_init_parser.add_argument(
         "--base-branch",
         default="develop",
         help="Base branch to branch from (default: develop)",
     )
-    init_parser.add_argument(
+    task_init_parser.add_argument(
         "--branch-prefix",
         default="feature/",
         help="Branch prefix (default: feature/)",
     )
 
-    init_parser.set_defaults(func=cmd_task_init)
+    task_init_parser.set_defaults(func=cmd_task_init)
 
     task_status_parser = task_sub.add_parser(
         "status",
@@ -2251,6 +2820,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     task_status_parser.set_defaults(func=cmd_task_status)
 
+    task_ready_parser = task_sub.add_parser(
+        "ready",
+        help="Validate standalone task readiness before implementation",
+    )
+    task_ready_parser.add_argument("--id", required=True, help="Task ID (e.g. TASK-001)")
+    task_ready_parser.set_defaults(func=cmd_task_ready)
+
+    # ===== project epic ... =====
     epic_parser = subparsers.add_parser("epic", help="Epic-related commands")
     epic_sub = epic_parser.add_subparsers(dest="epic_command", required=True)
 
@@ -2285,6 +2862,23 @@ def build_parser() -> argparse.ArgumentParser:
     epic_approve_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
     epic_approve_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
     epic_approve_parser.set_defaults(func=cmd_epic_approve)
+
+    epic_ready_parser = epic_sub.add_parser(
+        "ready",
+        help="Validate epic requirements readiness before decomposition",
+    )
+    epic_ready_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
+    epic_ready_parser.set_defaults(func=cmd_epic_ready)
+
+    epic_ready_child_parser = epic_sub.add_parser(
+        "ready-child",
+        help="Validate one epic child task readiness before implementation/testing",
+    )
+    epic_ready_child_parser.add_argument(
+        "--epic-id", required=True, help="Epic ID (e.g. EPIC-001)"
+    )
+    epic_ready_child_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
+    epic_ready_child_parser.set_defaults(func=cmd_epic_ready_child)
 
     epic_status_parser = epic_sub.add_parser(
         "status",

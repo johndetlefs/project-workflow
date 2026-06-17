@@ -82,6 +82,12 @@ project task status --id TASK-001 --to "In Progress"
 project doctor
 ```
 
-Re-run `project init` from the latest package to refresh marked generated workflow assets and managed host-file blocks. Unmarked existing files are preserved; project-workflow writes the new generated content beside them as `*.new` for review.
+For refreshing an initialized repository, prefer the canonical UVX command from the target repository root:
+
+```bash
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+```
+
+Use bare `project init` only when the package is intentionally installed locally and known to be current. Re-running init from the latest package refreshes marked generated workflow assets and managed host-file blocks. Unmarked existing files are preserved; project-workflow writes the new generated content beside them as `*.new` for review.
 
 The in-repo script is intentionally dependency-free (stdlib only) so initialized projects can keep using the local workflow helper without installing the package.

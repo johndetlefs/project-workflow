@@ -48,10 +48,10 @@ uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
 Optional: select agent mode explicitly:
 
 ```bash
-project init --agent github-copilot   # default
-project init --agent claude-code
-project init --agent codex
-project init --agent cursor
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent github-copilot   # default
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent claude-code
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent codex
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor
 ```
 
 This creates:
@@ -66,7 +66,7 @@ This creates:
 - `.project-workflow/guidance.md` — User-owned repo-specific workflow guidance
 - `.github/copilot-instructions.md` — A managed Project Workflow block for GitHub Copilot mode
 
-Re-running is **idempotent** and safe. `project init` refreshes files that carry the `project-workflow:generated` marker, appends or refreshes only the managed block in host-owned files such as `AGENTS.md` and `.github/copilot-instructions.md`, and preserves unmarked existing files by writing the new generated content beside them as `*.new`.
+Re-running is **idempotent** and safe. The canonical refresh command is `uvx --from git+https://github.com/johndetlefs/project-workflow.git project init`; it refreshes files that carry the `project-workflow:generated` marker, appends or refreshes only the managed block in host-owned files such as `AGENTS.md` and `.github/copilot-instructions.md`, and preserves unmarked existing files by writing the new generated content beside them as `*.new`.
 
 ### Refresh an Existing Install
 
@@ -76,6 +76,8 @@ To refresh an initialized repository to the latest workflow assets, run the same
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
 ```
 
+For agents: when a user asks to update, refresh, reinstall, or align project-workflow in a repository, use the full `uvx --from git+https://github.com/johndetlefs/project-workflow.git project init` command from that repository root. Do not run bare `project init` unless the user explicitly says the package is installed locally and should be used.
+
 For an explicitly selected agent mode:
 
 ```bash
@@ -83,7 +85,7 @@ uvx --from git+https://github.com/johndetlefs/project-workflow.git project init 
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor
 ```
 
-If your repository was initialized before `doctor`, `validate`, or `task status` existed, the local helper at `./.project-workflow/cli/workflow` will not know about those commands until you run `project init` again from the latest package version. If init writes any `*.new` files, review and merge them manually; your original unmarked files were intentionally left untouched.
+If your repository was initialized before `doctor`, `validate`, or `task status` existed, the local helper at `./.project-workflow/cli/workflow` will not know about those commands until you run the canonical UVX init command again from the latest package version. If init writes any `*.new` files, review and merge them manually; your original unmarked files were intentionally left untouched.
 
 ### Validate Workflow State
 
@@ -133,6 +135,19 @@ Run `project.constitution` with a brief description of your project.
 This agent scans your repo and creates/updates `.project-workflow/CONSTITUTION.md` as the source of truth for product outcomes (non-technical).
 
 If technical guidance is missing, the agent should offer to create or update the relevant agent guidance file for the selected mode.
+
+Project Workflow is human-readable but agent-operated. The owner or PM supplies product intent, constraints, examples, decisions, and approvals conversationally; the agent runs the commands, drafts artifacts, asks targeted questions, validates readiness, implements, and records evidence. You should not normally fill templates by hand.
+
+Minimum owner context for task or epic intake:
+
+- Problem or opportunity
+- Desired outcome
+- Affected user, actor, or system
+- Scope boundaries and non-goals
+- Acceptance signal for "done"
+- Constraints, priority, risks, and relevant examples
+
+If that context is incomplete, the agent should ask focused questions and keep work in requirements/clarification rather than moving into implementation.
 
 ### 1. **Create a Task** (5 min)
 
@@ -216,6 +231,7 @@ Work item: 1
 The agent will:
 
 - Read your requirements and plan
+- Run `./.project-workflow/cli/workflow task ready --id TASK-001` before coding
 - Make code changes incrementally
 - Run validation (tests, type checks, manual verification)
 - Report validation evidence by AC ID for the current work item
@@ -306,6 +322,7 @@ Epic workflow rules:
 - `epic decompose` writes Proposed child rows only. It does not scaffold child folders/docs.
 - `epic approve` moves a row from Proposed to Approved (same semantics as manually editing status in epic tracker).
 - `epic scaffold-child` only accepts Approved rows, moves the row to In Progress after scaffold, and copies parent AC coverage into the child `REQUIREMENTS.md` and `IMPLEMENTATION.md`.
+- `epic ready` validates epic requirements before decomposition; `epic ready-child` validates child requirements and implementation readiness before implementation/testing.
 - `epic status` moves epic child rows through `Testing`, `Review`, and `Complete`; `Complete` requires QA/code-review evidence and parent AC evidence for assigned parent ACs.
 - Scaffolded epic child docs include `Parent AC Coverage` and `Parent AC Evidence` sections so QA can prove the parent epic criteria the child owns.
 - The global tracker summarizes epic rows; each epic `TRACKER.md` owns child rows. Proposed child rows should not be added to the global tracker.
@@ -317,7 +334,7 @@ Epic workflow rules:
 
 ## File Structure (After Init)
 
-### GitHub Copilot mode (`project init` or `project init --agent github-copilot`)
+### GitHub Copilot mode (`uvx --from git+https://github.com/johndetlefs/project-workflow.git project init`)
 
 ```
 your-project/
@@ -350,7 +367,7 @@ your-project/
 └── [your code]
 ```
 
-### Claude Code mode (`project init --agent claude-code`)
+### Claude Code mode (`uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent claude-code`)
 
 ```
 your-project/
@@ -377,7 +394,7 @@ your-project/
 └── [your code]
 ```
 
-### OpenAI Codex mode (`project init --agent codex`)
+### OpenAI Codex mode (`uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent codex`)
 
 ```
 your-project/
@@ -405,7 +422,7 @@ your-project/
 └── [your code]
 ```
 
-### Cursor mode (`project init --agent cursor`)
+### Cursor mode (`uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor`)
 
 ```
 your-project/

@@ -11,7 +11,7 @@ Read `/.project-workflow/guidance.md` if present before changing workflow state.
 
 Inputs:
 
-- Action: `${input:action:setup|init|decompose|approve|scaffold-child|status|audit|closeout}`
+- Action: `${input:action:setup|init|ready|decompose|approve|scaffold-child|ready-child|status|audit|closeout}`
 - Epic title (required for `init`): `${input:title:}`
 - Epic ID (required for all non-init actions): `${input:epicId:EPIC-001}`
 - Row ID (required for `approve` and `scaffold-child`): `${input:id:TASK-014}`
@@ -26,7 +26,7 @@ Defaults and inference:
 
 - If action is omitted, infer from provided inputs:
   - `title` only -> `setup`
-  - `epicId` + no `id` -> `decompose`
+  - `epicId` + no `id` -> `ready` then `decompose`
   - `epicId` + `id` + intent to approve -> `approve`
   - `epicId` + `id` + intent to scaffold -> `scaffold-child`
   - `epicId` + `id` + lifecycle intent -> `status`
@@ -54,6 +54,7 @@ Guided setup mode (`action=setup`):
 
 Requirements readiness gate (before `decompose`):
 
+- Run `./.project-workflow/cli/workflow epic ready --epic-id <EPIC_ID>` before `decompose`.
 - Do not run `decompose` until epic `REQUIREMENTS.md` contains concrete, non-placeholder bullets under `## Requirements` and/or `## Acceptance Criteria`.
 - Acceptance criteria should use stable IDs (`AC1`, `AC2`, etc.). Preserve existing IDs; do not renumber them unless the user explicitly approves the requirements change.
 - If requirements are missing/skeletal, lead the user through filling them:
@@ -115,6 +116,10 @@ Execution:
 
 `./.project-workflow/cli/workflow epic decompose --epic-id <EPIC_ID> --limit <LIMIT> --type <TYPE>`
 
+- `ready`:
+
+`./.project-workflow/cli/workflow epic ready --epic-id <EPIC_ID>`
+
 - `approve`:
 
 `./.project-workflow/cli/workflow epic approve --epic-id <EPIC_ID> --id <ROW_ID>`
@@ -126,6 +131,10 @@ Execution:
 - `scaffold-child` with branch:
 
 `./.project-workflow/cli/workflow epic scaffold-child --epic-id <EPIC_ID> --id <ROW_ID> --create-branch --epic-branch <EPIC_BRANCH> --branch-prefix <PREFIX>`
+
+- `ready-child`:
+
+`./.project-workflow/cli/workflow epic ready-child --epic-id <EPIC_ID> --id <ROW_ID>`
 
 - `status`:
 
@@ -148,6 +157,7 @@ Constraints to enforce in responses:
 - `epic audit` writes `ACCEPTANCE-AUDIT.md` with parent AC coverage, child evidence, deferrals, and verdicts.
 - `epic closeout` must block if any parent AC is unmapped, lacks evidence, lacks a QA pass verdict, or lacks an approved deferral with follow-up.
 - `epic status --to Complete` must block unless the child row is in `Review` and its docs contain QA/code-review evidence plus parent AC evidence for its assigned parent ACs.
+- `epic ready-child` must pass before implementation/testing for an epic child; if it fails, remediate missing child requirements, planning, parent AC coverage, or owner decisions before coding.
 - Approval gate: only Approved rows may be scaffolded.
 - Child task IDs remain globally unique and are managed by workflow behavior.
 - If branch creation is requested for `scaffold-child`, the epic branch must already exist; no fallback branch is allowed.

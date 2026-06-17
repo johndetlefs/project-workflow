@@ -50,6 +50,7 @@ Turn confirmed requirements into a safe, incremental implementation plan.
 8. Keep each table row on one physical line. Use `<br>` for multiple items
    inside a cell and escape literal `|` characters.
 9. Include validation steps for each phase.
-10. Include QA/code review as the required gate after implementation validation
+10. Run `./.project-workflow/cli/workflow task ready --id <TASK-ID>` after planning and before moving to `Plan Confirmed`; if it fails, fix the listed gaps or route to `project-clarify`.
+11. Include QA/code review as the required gate after implementation validation
     and before completion.
-11. Do not implement code during planning.
+12. Do not implement code during planning.

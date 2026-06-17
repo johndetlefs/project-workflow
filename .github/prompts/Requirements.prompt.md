@@ -12,6 +12,17 @@ This is an iterative prompt. Expect to run it multiple times:
 - Pass 1: ask what the feature/bugfix is, draft an initial user story, produce a best-effort `REQUIREMENTS.md`, and ask the minimum questions needed to remove ambiguity.
 - Pass N: incorporate the user’s answers, resolve open questions, tighten acceptance criteria, and strengthen the validation plan.
 
+Operating model: the owner/PM/BA provides product intent and decisions conversationally; the agent extracts, drafts, records, and validates workflow artifacts. Do not ask the owner to manually fill templates as the normal path.
+
+Minimum intake context to gather before downstream planning:
+
+- Problem or opportunity
+- Desired outcome
+- Affected user, actor, or system
+- Scope boundaries and non-goals
+- Acceptance signal for done
+- Constraints, priority/risk, and examples or failure modes
+
 Context sources (reference, don’t duplicate):
 
 - Technical constraints/instructions: [../copilot-instructions.md](../copilot-instructions.md)
@@ -47,6 +58,7 @@ Process:
     - And only the minimal freeform context needed to draft a user story (where in the product, who is affected, and what success looks like).
   - IMPORTANT: In Discovery, do NOT ask A/B/C-style questions yet. You do not have a user story to anchor them to.
   - If Discovery information is missing, STOP after asking the Discovery questions. Do not draft a user story, do not write/update files, and do not ask additional questions.
+  - If the request is explicitly discovery work, record it as `Type: Discovery` with a question, decision enabled, boundary, output, and validation signal.
 
 - Step 1: Draft the user story (only after Discovery is answered).
   - Based on the user’s Discovery answer (or the provided inputs), write a first-draft user story (may be imperfect) and put it in BOTH:
@@ -176,3 +188,4 @@ Guardrails:
 - If delegated-execution decisions evolve, update both `## Acceptance Criteria` and `## Decisions Log` in the same pass so downstream planning/implementation stay aligned.
 - Do not create or update implementation task lists in `IMPLEMENTATION.md` from this prompt; the `project.planner` prompt owns tasks.
 - Do not move the story status past `Analysing` from this prompt.
+- After requirements and implementation planning are complete, the agent must use `./.project-workflow/cli/workflow task ready --id ${input:taskId}` before implementation-oriented status transitions.

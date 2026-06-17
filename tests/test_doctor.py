@@ -20,6 +20,69 @@ def run_project(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def ready_requirements(task_id: str, title: str, ac_lines: list[str] | None = None) -> str:
+    criteria = "\n".join(ac_lines or ["- AC1: Ready outcome is delivered."])
+    return (
+        "# Requirements\n\n"
+        "## Summary\n\n"
+        f"- Task: {task_id}\n"
+        f"- Title: {title}\n\n"
+        "## Goal\n\n"
+        "- Deliver the requested ready outcome.\n\n"
+        "## Non-Goals\n\n"
+        "- Do not expand scope beyond this fixture.\n\n"
+        "## Users & Context\n\n"
+        "- Maintainers need a ready workflow artifact.\n\n"
+        "## Requirements (Outcome-Focused)\n\n"
+        "- The workflow artifact is specific enough to proceed.\n\n"
+        "## Acceptance Criteria (Verifiable)\n\n"
+        f"{criteria}\n\n"
+        "## Open Questions (Answer Needed)\n\n"
+        "- None.\n\n"
+        "## Decisions (Resolved)\n\n"
+        "- Proceed with the ready fixture.\n\n"
+        "## Validation Plan\n\n"
+        "- Run targeted workflow validation.\n"
+    )
+
+
+def ready_implementation(parent_ac: str | None = None, *, qa: bool = False) -> str:
+    parent_sections = ""
+    if parent_ac:
+        parent_sections = (
+            "## Parent AC Coverage\n\n"
+            f"- {parent_ac}\n\n"
+            "## Parent AC Evidence\n\n"
+            f"- {parent_ac}: Targeted parent evidence recorded.\n\n"
+        )
+    qa_section = (
+        "## QA & Code Review\n\n"
+        "- Verdict: Pass\n"
+        "- Evidence: Targeted validation passed.\n"
+        "- Findings: None.\n\n"
+        if qa
+        else "## QA & Code Review\n\n- Verdict: ____\n- Evidence: ____\n- Findings: ____\n\n"
+    )
+    return (
+        "## User Story\n\n"
+        "As a maintainer, I want a ready implementation plan, so that status gates pass.\n\n"
+        f"{parent_sections}"
+        "## Acceptance Criteria\n\n"
+        "- [x] AC1: Ready outcome is delivered.\n\n"
+        "## Validation\n\n"
+        "- AC1: Targeted validation passed.\n\n"
+        "## Task List\n\n"
+        "| ID | Title | Description | Acceptance Criteria | User Verification | Status |\n"
+        "| --: | ----- | ----------- | ------------------- | ----------------- | ------ |\n"
+        "| 1 | Ready Work | Complete the ready fixture work. | AC1: Ready outcome is delivered. | Targeted validation. | Done |\n\n"
+        f"{qa_section}"
+        "## Retro\n\n"
+        "- Reusable lessons: None.\n"
+        "- Conventions or agent assets updated: None.\n"
+        "- Follow-up tasks: None.\n"
+    )
+
+
 def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
@@ -80,6 +143,64 @@ def test_task_scaffold_uses_ac_mapped_implementation_shape(tmp_path: Path) -> No
     assert "| 1 | ____ | ____ | AC1: ____ | ____ | To Do |" in implementation_text
 
 
+def test_task_init_allocates_after_epic_child_ids(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Nested Children"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "TASK-004-Existing-Child").mkdir()
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-009 | Existing Proposed Child | Proposed | Task | AC1 |  |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+
+    task = run_project(
+        ["task", "init", "--title", "After Epic Children", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+    assert "Assigned ID: TASK-010" in task.stdout
+    assert (tmp_path / ".project-workflow" / "tasks" / "TASK-010-After-Epic-Children").exists()
+
+
+def test_epic_decompose_allocates_after_all_epic_child_ids(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    existing_epic = run_project(["epic", "init", "--title", "Existing Children"], cwd=tmp_path)
+    assert existing_epic.returncode == 0, existing_epic.stdout + existing_epic.stderr
+    existing_epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (existing_epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-009 | Existing Child | Complete | Task | AC1 | tasks/EPIC-001-Existing-Children/TASK-009-Existing-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+
+    new_epic = run_project(["epic", "init", "--title", "New Children"], cwd=tmp_path)
+    assert new_epic.returncode == 0, new_epic.stdout + new_epic.stderr
+    new_epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-002-*"))
+    (new_epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-002",
+            "New Children",
+            ["- AC1: First new child is mapped."],
+        ),
+        encoding="utf-8",
+    )
+
+    decompose = run_project(["epic", "decompose", "--epic-id", "EPIC-002"], cwd=tmp_path)
+    assert decompose.returncode == 0, decompose.stdout + decompose.stderr
+    tracker_text = (new_epic_dir / "TRACKER.md").read_text(encoding="utf-8")
+    assert "| TASK-010 | First new child is mapped | Proposed | Task | AC1 |" in tracker_text
+
+
 def test_task_status_updates_packaged_and_local_workflow(tmp_path: Path) -> None:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
@@ -89,6 +210,7 @@ def test_task_status_updates_packaged_and_local_workflow(tmp_path: Path) -> None
         cwd=tmp_path,
     )
     assert task.returncode == 0, task.stdout + task.stderr
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
 
     packaged_status = run_project(
         ["task", "status", "--id", "TASK-001", "--to", "Analysing"],
@@ -96,6 +218,11 @@ def test_task_status_updates_packaged_and_local_workflow(tmp_path: Path) -> None
     )
     assert packaged_status.returncode == 0, packaged_status.stdout + packaged_status.stderr
     assert "Updated TASK-001: To Do -> Analysing" in packaged_status.stdout
+    (task_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements("TASK-001", "Lifecycle Status"),
+        encoding="utf-8",
+    )
+    (task_dir / "IMPLEMENTATION.md").write_text(ready_implementation(), encoding="utf-8")
 
     local_workflow = tmp_path / ".project-workflow" / "cli" / "workflow.py"
     local_status = subprocess.run(
@@ -173,6 +300,12 @@ def test_task_status_blocks_complete_without_qa_evidence(tmp_path: Path) -> None
         cwd=tmp_path,
     )
     assert task.returncode == 0, task.stdout + task.stderr
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    (task_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements("TASK-001", "Completion Gate"),
+        encoding="utf-8",
+    )
+    (task_dir / "IMPLEMENTATION.md").write_text(ready_implementation(), encoding="utf-8")
 
     for status in ("Analysing", "Plan Confirmed", "In Progress", "Testing", "Review"):
         status_result = run_project(
@@ -208,6 +341,16 @@ def test_task_status_blocks_complete_without_qa_evidence(tmp_path: Path) -> None
 
 
 def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
+    missing_tracker = run_project(
+        ["task", "init", "--title", "Missing Tracker", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert missing_tracker.returncode != 0
+    assert (
+        "uvx --from git+https://github.com/johndetlefs/project-workflow.git project init"
+        in missing_tracker.stderr
+    )
+
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
 
@@ -251,14 +394,21 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     codex_agents = (codex_root / "AGENTS.md").read_text(encoding="utf-8")
     assert "# Existing Agent Notes" in codex_agents
     assert "<!-- project-workflow:start -->" in codex_agents
+    assert (
+        "uvx --from git+https://github.com/johndetlefs/project-workflow.git project init"
+        in codex_agents
+    )
+    assert "Do not use bare `project init`" in codex_agents
     assert "workflow doctor" in codex_agents
     assert "task status" in codex_agents
     assert "workflow doctor" in (
         codex_root / ".agents" / "skills" / "project-implement" / "SKILL.md"
     ).read_text(encoding="utf-8")
-    assert "task status" in (
+    implement_skill = (
         codex_root / ".agents" / "skills" / "project-implement" / "SKILL.md"
     ).read_text(encoding="utf-8")
+    assert "task status" in implement_skill
+    assert "task ready" in implement_skill
     qa_skill = (
         codex_root / ".agents" / "skills" / "project-qa-review" / "SKILL.md"
     ).read_text(encoding="utf-8")
@@ -272,12 +422,13 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     cursor_root.mkdir()
     cursor_init = run_project(["init", "--agent", "cursor"], cwd=cursor_root)
     assert cursor_init.returncode == 0, cursor_init.stderr
-    assert "workflow doctor" in (
+    cursor_rules = (
         cursor_root / ".cursor" / "rules" / "project-workflow.mdc"
     ).read_text(encoding="utf-8")
-    assert "task status" in (
-        cursor_root / ".cursor" / "rules" / "project-workflow.mdc"
-    ).read_text(encoding="utf-8")
+    assert "workflow doctor" in cursor_rules
+    assert "task status" in cursor_rules
+    assert "owner-directed and agent-operated" in cursor_rules
+    assert "task ready" in cursor_rules
     assert "workflow doctor" in (
         cursor_root / ".cursor" / "agents" / "project-implement.md"
     ).read_text(encoding="utf-8")
@@ -504,13 +655,14 @@ def test_epic_decompose_preserves_source_ac_ids_in_notes(tmp_path: Path) -> None
     assert "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |" in initialized_tracker
 
     (epic_dir / "REQUIREMENTS.md").write_text(
-        "# Requirements\n\n"
-        "## Summary\n\n"
-        "- Task: EPIC-001\n"
-        "- Title: Mapped Epic\n\n"
-        "## Acceptance Criteria (Verifiable)\n\n"
-        "- AC1: First epic outcome is delivered.\n"
-        "- AC2: Second epic outcome is delivered.\n",
+        ready_requirements(
+            "EPIC-001",
+            "Mapped Epic",
+            [
+                "- AC1: First epic outcome is delivered.",
+                "- AC2: Second epic outcome is delivered.",
+            ],
+        ),
         encoding="utf-8",
     )
 
@@ -537,14 +689,15 @@ def test_epic_decompose_reports_unmapped_parent_ac_ids(tmp_path: Path) -> None:
 
     epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
     (epic_dir / "REQUIREMENTS.md").write_text(
-        "# Requirements\n\n"
-        "## Summary\n\n"
-        "- Task: EPIC-001\n"
-        "- Title: Coverage Gap\n\n"
-        "## Acceptance Criteria (Verifiable)\n\n"
-        "- AC1: First epic outcome is delivered.\n"
-        "- AC2: Second epic outcome is delivered.\n"
-        "- AC3: Third epic outcome is delivered.\n",
+        ready_requirements(
+            "EPIC-001",
+            "Coverage Gap",
+            [
+                "- AC1: First epic outcome is delivered.",
+                "- AC2: Second epic outcome is delivered.",
+                "- AC3: Third epic outcome is delivered.",
+            ],
+        ),
         encoding="utf-8",
     )
 
@@ -633,12 +786,11 @@ def test_epic_audit_and_closeout_complete_only_when_gates_pass(tmp_path: Path) -
 
     epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
     (epic_dir / "REQUIREMENTS.md").write_text(
-        "# Requirements\n\n"
-        "## Summary\n\n"
-        "- Task: EPIC-001\n"
-        "- Title: Closeout Ready\n\n"
-        "## Acceptance Criteria (Verifiable)\n\n"
-        "- AC1: First parent outcome is delivered.\n",
+        ready_requirements(
+            "EPIC-001",
+            "Closeout Ready",
+            ["- AC1: First parent outcome is delivered."],
+        ),
         encoding="utf-8",
     )
     child_dir = epic_dir / "TASK-001-Ready-Child"
@@ -807,16 +959,21 @@ def test_epic_status_requires_parent_ac_evidence_before_complete(tmp_path: Path)
     epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
     child_dir = epic_dir / "TASK-001-Status-Child"
     child_dir.mkdir()
+    (child_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "TASK-001",
+            "Status Child",
+            ["- AC1: Status gates enforce parent evidence."],
+        ),
+        encoding="utf-8",
+    )
     child_impl = child_dir / "IMPLEMENTATION.md"
+    child_impl.write_text(ready_implementation("AC1", qa=True), encoding="utf-8")
     child_impl.write_text(
-        "## User Story\n\n"
-        "As a maintainer, I want status gates.\n\n"
-        "## Parent AC Evidence\n\n"
-        "- AC1: Pending implementation evidence.\n\n"
-        "## QA & Code Review\n\n"
-        "- Verdict: Pass\n"
-        "- Evidence: Local validation passed.\n"
-        "- Findings: None.\n",
+        child_impl.read_text(encoding="utf-8").replace(
+            "- AC1: Targeted parent evidence recorded.",
+            "- AC1: Pending implementation evidence.",
+        ),
         encoding="utf-8",
     )
     (epic_dir / "TRACKER.md").write_text(
@@ -858,3 +1015,132 @@ def test_epic_status_requires_parent_ac_evidence_before_complete(tmp_path: Path)
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert "Updated TASK-001: Review -> Complete" in completed.stdout
+
+
+def test_task_ready_blocks_placeholders_and_allows_ready_docs(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(
+        ["task", "init", "--title", "Readiness Check", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+
+    blocked = run_project(["task", "ready", "--id", "TASK-001"], cwd=tmp_path)
+    assert blocked.returncode != 0
+    assert "TASK-001 is not ready" in blocked.stderr
+    assert "owner input required" in blocked.stderr
+    assert "agent action required" in blocked.stderr
+
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    (task_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements("TASK-001", "Readiness Check"),
+        encoding="utf-8",
+    )
+    (task_dir / "IMPLEMENTATION.md").write_text(ready_implementation(), encoding="utf-8")
+
+    ready = run_project(["task", "ready", "--id", "TASK-001"], cwd=tmp_path)
+    assert ready.returncode == 0, ready.stdout + ready.stderr
+    assert "TASK-001 readiness gate passed." in ready.stdout
+
+
+def test_epic_ready_blocks_vague_epic_and_decomposition(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Vague Epic"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+
+    ready = run_project(["epic", "ready", "--epic-id", "EPIC-001"], cwd=tmp_path)
+    assert ready.returncode != 0
+    assert "EPIC-001 is not ready" in ready.stderr
+
+    decompose = run_project(["epic", "decompose", "--epic-id", "EPIC-001"], cwd=tmp_path)
+    assert decompose.returncode != 0
+    assert "EPIC-001 is not ready" in decompose.stderr
+
+
+def test_epic_ready_child_blocks_shallow_child_status(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Child Readiness"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-001 | Shallow Child | In Progress | Task | AC1 | tasks/EPIC-001-Child-Readiness/TASK-001-Shallow-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+    child_dir = epic_dir / "TASK-001-Shallow-Child"
+    child_dir.mkdir()
+    (child_dir / "REQUIREMENTS.md").write_text(
+        "# Requirements\n\n"
+        "## Summary\n\n"
+        "- Task: TASK-001\n"
+        "- Title: Shallow Child\n\n"
+        "## Goal\n\n"
+        "Describe the user outcome.\n",
+        encoding="utf-8",
+    )
+    (child_dir / "IMPLEMENTATION.md").write_text(
+        "## User Story\n\nAs a ____, I want ____, so that ____.\n",
+        encoding="utf-8",
+    )
+
+    ready_child = run_project(
+        ["epic", "ready-child", "--epic-id", "EPIC-001", "--id", "TASK-001"],
+        cwd=tmp_path,
+    )
+    assert ready_child.returncode != 0
+    assert "TASK-001 is not ready" in ready_child.stderr
+
+    status = run_project(
+        ["epic", "status", "--epic-id", "EPIC-001", "--id", "TASK-001", "--to", "Testing"],
+        cwd=tmp_path,
+    )
+    assert status.returncode != 0
+    assert "TASK-001 is not ready" in status.stderr
+
+
+def test_discovery_task_ready_allows_bounded_discovery(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(
+        ["task", "init", "--title", "Discovery Spike", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    discovery_text = (
+        "# Requirements\n\n"
+        "## Summary\n\n"
+        "- Task: TASK-001\n"
+        "- Title: Discovery Spike\n"
+        "- Type: Discovery\n\n"
+        "## Discovery Plan\n\n"
+        "- Question: Which readiness command shape should ship first?\n"
+        "- Decision: Choose the command shape for implementation.\n"
+        "- Boundary: Limit to CLI and generated guidance review.\n"
+        "- Output: A recommendation recorded in requirements.\n"
+        "- Validation: Owner can approve the recommendation.\n"
+    )
+    (task_dir / "REQUIREMENTS.md").write_text(discovery_text, encoding="utf-8")
+    (task_dir / "IMPLEMENTATION.md").write_text(
+        "## Discovery Plan\n\n"
+        "- Type: Discovery\n"
+        "- Question: Which readiness command shape should ship first?\n"
+        "- Decision: Choose the command shape for implementation.\n"
+        "- Boundary: Limit to CLI and generated guidance review.\n"
+        "- Output: A recommendation recorded in requirements.\n"
+        "- Validation: Owner can approve the recommendation.\n",
+        encoding="utf-8",
+    )
+
+    ready = run_project(["task", "ready", "--id", "TASK-001"], cwd=tmp_path)
+    assert ready.returncode == 0, ready.stdout + ready.stderr
+    assert "TASK-001 readiness gate passed." in ready.stdout

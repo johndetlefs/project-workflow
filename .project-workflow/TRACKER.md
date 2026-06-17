@@ -9,3 +9,4 @@
 | TASK-002 | Tracker-Safe Lifecycle Commands | Complete | `tasks/TASK-002-Tracker-Safe-Lifecycle-Commands/IMPLEMENTATION.md` |
 | TASK-003 | Configurable ID Namespaces | Analysing | `tasks/TASK-003-Configurable-Id-Namespaces/IMPLEMENTATION.md` |
 | EPIC-002 | Epic Acceptance Rigor | Complete | `tasks/EPIC-002-Epic-Acceptance-Rigor/REQUIREMENTS.md` |
+| EPIC-003 | Workflow Discipline Gates | Complete | `tasks/EPIC-003-Workflow-Discipline-Gates/REQUIREMENTS.md` |

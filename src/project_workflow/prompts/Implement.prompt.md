@@ -34,6 +34,7 @@ Defaults and inference:
 
 Required workflow:
 
+- Before coding, run `./.project-workflow/cli/workflow task ready --id ${input:taskId}`. If it fails, remediate the listed requirements/planning/clarification gaps or ask the owner for the required decisions; do not code.
 - Before coding, run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to "In Progress"`.
 - After implementation, run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to Testing`.
 - Do not set it to `Complete`; completion is owned by `project.qa-review` after QA/code review passes and the user explicitly approves completion.

@@ -7,6 +7,8 @@ description: Use when creating a new project-workflow task folder, tracker row, 
 
 Create the minimal workflow artifacts for one new task.
 
+Project Workflow is owner-directed and agent-operated: the owner provides product context and decisions conversationally, while the agent runs commands and records workflow state.
+
 ## Invocation Rules
 
 - Use this skill whenever the user asks to create a project-workflow task, story, feature folder, tracker row, or new tracked work item, even if they ask in natural language.
@@ -21,6 +23,15 @@ Determine these from the user prompt, current branch, or follow-up questions:
 - Task title, such as `Account Usage Export`
 - Whether to create a branch
 - If creating a branch: base branch, default `develop`, and branch prefix, default `feature/`
+
+Minimum context to gather before planning or implementation:
+
+- Problem or opportunity
+- Desired outcome
+- Affected user, actor, or system
+- Scope boundaries and non-goals
+- Acceptance signal for done
+- Constraints, priority/risk, and examples or failure modes
 
 ## Workflow
 
@@ -42,4 +53,4 @@ With branch:
 
 4. Run `./.project-workflow/cli/workflow doctor` and report any workflow-state warnings or errors.
 5. Report the created task folder, assigned task ID, tracker update, and branch name if one was created.
-6. Continue to requirements capture when the user is ready, then proceed through planning, clarification, implementation, QA/code review, and retro.
+6. Continue to requirements capture when the user is ready, then proceed through planning, clarification, readiness validation, implementation, QA/code review, and retro.

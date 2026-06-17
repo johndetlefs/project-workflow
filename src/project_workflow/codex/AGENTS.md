@@ -15,7 +15,17 @@ This repository uses project-workflow for spec-driven development. Keep workflow
 
 For multi-item orchestration, use `project-delegate` after planning. For large bodies of work, use `project-epic` to create proposal-first epic trackers and approved child tasks.
 
+Project Workflow is owner-directed and agent-operated. The owner supplies intent, constraints, examples, decisions, and approvals; the agent runs commands, drafts artifacts, asks focused questions, validates readiness, implements, reviews, and records evidence. Do not make manual template completion the normal user path.
+
 For epic-managed work, preserve parent epic acceptance criteria coverage from the epic tracker through child requirements, child implementation, QA evidence, and closeout. New epic trackers use a `Parent ACs` field; legacy trackers may carry coverage in `Notes` as `Covers AC1, AC3`. The global tracker summarizes epic rows; epic `TRACKER.md` files own child rows, including Proposed rows.
+
+When a user asks to install, update, refresh, reinstall, or align project-workflow in a repository, run the canonical UVX command from that repository root:
+
+```bash
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+```
+
+Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github-copilot` when the target agent mode is known. Do not run bare `project init` unless the user explicitly says the package is already installed locally and should be used.
 
 ## Workflow Skill Map
 
@@ -50,6 +60,7 @@ For epic-managed work, preserve parent epic acceptance criteria coverage from th
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.
 - When planning, make every implementation task row map to one or more stable acceptance criteria IDs (`AC1`, `AC2`, etc.) from the task requirements or implementation acceptance criteria section.
 - When planning epic-managed child tasks, keep both the child AC IDs and parent epic AC coverage visible in requirements, implementation rows, validation evidence, and QA notes.
+- Before implementation-oriented status transitions, run readiness gates where available: `task ready`, `epic ready`, or `epic ready-child`. If a gate fails, remediate repo-gatherable gaps directly and ask the owner only for decisions or missing product context.
 - Keep `.project-workflow/TRACKER.md` status aligned with the current workflow state using `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` when the command is available.
 - Do not mark a task or work item `Complete` unless implementation validation and QA/code review have passed and the user explicitly asks for completion.
 

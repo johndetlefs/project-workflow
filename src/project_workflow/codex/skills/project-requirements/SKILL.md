@@ -7,6 +7,8 @@ description: Use when drafting or updating project-workflow REQUIREMENTS.md with
 
 Capture what is being built before planning or coding.
 
+Project Workflow is owner-directed and agent-operated. The owner provides product context and decisions conversationally; the agent extracts them into workflow artifacts and asks focused questions only when needed.
+
 ## Invocation Rules
 
 - Use this skill whenever the user asks for requirements, scope, acceptance criteria, open questions, decisions, or a validation plan, even if they ask in natural language.
@@ -26,6 +28,7 @@ Capture what is being built before planning or coding.
 1. Identify the task folder. If it does not exist, use `project-task` first.
 2. Read existing `REQUIREMENTS.md` and the `## User Story` section of `IMPLEMENTATION.md`.
 3. If the feature or bugfix is not clear, ask only for discovery context: what change, where in the product, who is affected, and what success looks like.
+   Minimum context should cover problem/opportunity, desired outcome, affected user or system, scope boundaries, acceptance signal, constraints, priority/risk, and examples or failure modes.
 4. Draft or update `REQUIREMENTS.md` with:
    - Overview
    - User Story
@@ -42,3 +45,4 @@ Capture what is being built before planning or coding.
 6. Keep only the `## User Story` section in `IMPLEMENTATION.md` synced with `REQUIREMENTS.md`. Do not add implementation tasks here.
 7. If critical requirements are ambiguous, record them as open questions in `REQUIREMENTS.md`, then ask the user the minimum questions needed.
 8. Do not proceed to planning or implementation until open questions are resolved or explicitly accepted as risks and recorded.
+9. If the work is intentionally exploratory, record it as discovery with a question, decision enabled, boundary, output artifact, and validation signal.

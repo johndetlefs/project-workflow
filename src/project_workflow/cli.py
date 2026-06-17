@@ -124,6 +124,7 @@ GENERATED_MARKER_HTML = f"<!-- {GENERATED_MARKER} -->"
 GENERATED_MARKER_COMMENT = f"# {GENERATED_MARKER}"
 MANAGED_BLOCK_START = "<!-- project-workflow:start -->"
 MANAGED_BLOCK_END = "<!-- project-workflow:end -->"
+CANONICAL_INIT_COMMAND = "uvx --from git+https://github.com/johndetlefs/project-workflow.git project init"
 
 
 def _words(value: str) -> list[str]:
@@ -288,6 +289,11 @@ def _managed_project_workflow_block() -> str:
         "This repository uses project-workflow. Keep workflow state in "
         "`.project-workflow/TRACKER.md` and `.project-workflow/tasks/`.\n\n"
         "- Read repo-specific workflow guidance from `.project-workflow/guidance.md`.\n"
+        f"- To install or refresh project-workflow itself, run `{CANONICAL_INIT_COMMAND}` "
+        "from the repository root; add `--agent codex`, `--agent cursor`, "
+        "`--agent claude-code`, or `--agent github-copilot` when selecting a mode. "
+        "Do not use bare `project init` unless the package is intentionally installed "
+        "and known to be current.\n"
         "- Use `./.project-workflow/cli/workflow` for supported task and validation commands.\n"
         "- Use `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` "
         "for tracker lifecycle changes.\n"
@@ -470,6 +476,19 @@ def _extract_ac_ids(text: str) -> set[str]:
         f"AC{match.group(1)}"
         for match in re.finditer(r"\bAC\s*(\d+)\b", text, flags=re.IGNORECASE)
     }
+
+
+def _extract_declared_ac_ids(text: str) -> set[str]:
+    declared: set[str] = set()
+    for line in text.splitlines():
+        match = re.match(
+            r"^\s*[-*]\s*(?:\[[ xX]\]\s*)?(AC\s*\d+)\s*:",
+            line,
+            flags=re.IGNORECASE,
+        )
+        if match:
+            declared.update(_extract_ac_ids(match.group(1)))
+    return declared
 
 
 def _extract_parent_ac_coverage(row: dict[str, str]) -> str:
@@ -837,7 +856,7 @@ def _doctor_check_implementation_ac_mapping(
     if status not in AC_MAPPED_IMPLEMENTATION_STATUSES:
         return
 
-    criteria_ac_ids = _extract_ac_ids(_markdown_section(docs_text, "Acceptance Criteria"))
+    criteria_ac_ids = _extract_declared_ac_ids(_markdown_section(docs_text, "Acceptance Criteria"))
 
     table_found, rows, malformed_rows = _implementation_task_table_rows(docs_text)
     if not table_found:
@@ -1019,6 +1038,255 @@ def _normalize_task_status_id(row_id: str) -> str:
     return match.group(1)
 
 
+READINESS_REQUIRED_SECTIONS = (
+    "Goal",
+    "Non-Goals",
+    "Users & Context",
+    "Requirements (Outcome-Focused)",
+    "Acceptance Criteria (Verifiable)",
+    "Open Questions (Answer Needed)",
+    "Decisions (Resolved)",
+    "Validation Plan",
+)
+
+
+def _section_has_placeholder(section: str) -> bool:
+    lowered = section.lower()
+    placeholder_phrases = (
+        "____",
+        "describe the user outcome",
+        "list what is explicitly out-of-scope",
+        "who is affected and in what situation",
+        "how we will verify",
+        "as a ____",
+    )
+    return any(phrase in lowered for phrase in placeholder_phrases)
+
+
+def _section_has_substantive_text(section: str) -> bool:
+    cleaned_lines = [
+        line.strip(" -\t")
+        for line in section.splitlines()
+        if line.strip() and not set(line.strip()) <= {"-", "|", " "}
+    ]
+    return any(line and not _section_has_placeholder(line) for line in cleaned_lines)
+
+
+def _is_discovery_work(requirements_text: str, implementation_text: str = "") -> bool:
+    combined = f"{requirements_text}\n{implementation_text}".lower()
+    return "type: discovery" in combined or "discovery: true" in combined
+
+
+def _open_questions_resolved(section: str) -> bool:
+    if _section_has_placeholder(section):
+        return False
+    lowered = section.lower()
+    if "none" in lowered or "no blocking" in lowered:
+        return True
+    if "accepted risk" in lowered or "owner accepted" in lowered:
+        return True
+    return "?" not in section
+
+
+def _requirements_readiness_issues(requirements_text: str) -> list[str]:
+    issues: list[str] = []
+    for heading in READINESS_REQUIRED_SECTIONS:
+        section = _markdown_section(requirements_text, heading)
+        if not section:
+            issues.append(
+                f"owner input required: add `## {heading}` to REQUIREMENTS.md."
+            )
+            continue
+        if heading == "Open Questions (Answer Needed)":
+            if not _open_questions_resolved(section):
+                issues.append(
+                    "owner input required: resolve open questions or record accepted risks "
+                    "under `## Open Questions (Answer Needed)`."
+                )
+            continue
+        if not _section_has_substantive_text(section):
+            issues.append(
+                f"owner input required: replace placeholder content under `## {heading}`."
+            )
+
+    if not _extract_ac_ids(_markdown_section(requirements_text, "Acceptance Criteria (Verifiable)")):
+        issues.append(
+            "owner input required: add stable acceptance criteria IDs under "
+            "`## Acceptance Criteria (Verifiable)`."
+        )
+    return issues
+
+
+def _implementation_readiness_issues(
+    implementation_text: str, *, parent_ac_ids: set[str] | None = None
+) -> list[str]:
+    issues: list[str] = []
+    required_sections = ("User Story", "Acceptance Criteria", "Validation", "Task List")
+    for heading in required_sections:
+        section = _markdown_section(implementation_text, heading)
+        if not section:
+            issues.append(f"agent action required: add `## {heading}` to IMPLEMENTATION.md.")
+            continue
+        if not _section_has_substantive_text(section):
+            issues.append(
+                f"agent action required: replace placeholder content under `## {heading}`."
+            )
+
+    criteria_ac_ids = _extract_declared_ac_ids(
+        _markdown_section(implementation_text, "Acceptance Criteria")
+    )
+    if not criteria_ac_ids:
+        issues.append("agent action required: add child AC IDs under `## Acceptance Criteria`.")
+
+    table_found, rows, malformed_rows = _implementation_task_table_rows(implementation_text)
+    if not table_found:
+        issues.append("agent action required: add an AC-mapped implementation task table.")
+    for line_number in malformed_rows:
+        issues.append(
+            f"agent action required: fix malformed implementation task table row at line {line_number}."
+        )
+    for row in rows:
+        row_id = row.get("ID", "?")
+        row_text = " ".join(row.get(col, "") for col in IMPLEMENTATION_TASK_COLUMNS)
+        if _section_has_placeholder(row_text):
+            issues.append(
+                f"agent action required: replace placeholder content in implementation row {row_id}."
+            )
+        row_ac_ids = _extract_ac_ids(row.get("Acceptance Criteria", ""))
+        if criteria_ac_ids and not row_ac_ids:
+            issues.append(
+                f"agent action required: map implementation row {row_id} to one or more child AC IDs."
+            )
+
+    if parent_ac_ids:
+        parent_section = _markdown_section(implementation_text, "Parent AC Coverage")
+        present_parent_ids = _extract_ac_ids(parent_section)
+        missing_parent_ids = sorted(parent_ac_ids - present_parent_ids)
+        if missing_parent_ids:
+            issues.append(
+                "agent action required: add parent AC coverage for "
+                + ", ".join(missing_parent_ids)
+                + " under `## Parent AC Coverage`."
+            )
+    return issues
+
+
+def _discovery_readiness_issues(requirements_text: str, implementation_text: str = "") -> list[str]:
+    combined = f"{requirements_text}\n{implementation_text}"
+    issues: list[str] = []
+    required_terms = {
+        "question": "owner input required: record the discovery question to answer.",
+        "decision": "owner input required: record the decision this discovery enables.",
+        "boundary": "owner input required: record the discovery scope or time boundary.",
+        "output": "owner input required: record the expected discovery output artifact.",
+        "validation": "owner input required: record how the discovery output will be validated.",
+    }
+    lowered = combined.lower()
+    for term, message in required_terms.items():
+        if term not in lowered:
+            issues.append(message)
+    if _section_has_placeholder(combined):
+        issues.append("agent action required: replace placeholders in the discovery artifact.")
+    return issues
+
+
+def _task_readiness_issues(
+    *,
+    requirements_text: str,
+    implementation_text: str,
+    parent_ac_ids: set[str] | None = None,
+) -> list[str]:
+    if _is_discovery_work(requirements_text, implementation_text):
+        return _discovery_readiness_issues(requirements_text, implementation_text)
+    return [
+        *_requirements_readiness_issues(requirements_text),
+        *_implementation_readiness_issues(implementation_text, parent_ac_ids=parent_ac_ids),
+    ]
+
+
+def _epic_requirements_readiness_issues(requirements_text: str) -> list[str]:
+    if _is_discovery_work(requirements_text):
+        return _discovery_readiness_issues(requirements_text)
+    issues = _requirements_readiness_issues(requirements_text)
+    parent_ac_ids = _extract_parent_ac_ids_from_requirements(requirements_text)
+    if len(parent_ac_ids) < 1:
+        issues.append(
+            "owner input required: add stable parent AC IDs before epic decomposition."
+        )
+    return issues
+
+
+def _format_readiness_block(label: str, issues: list[str]) -> str:
+    lines = [f"{label} is not ready:"]
+    lines.extend(f"- {issue}" for issue in issues)
+    return "\n".join(lines)
+
+
+def _status_requires_task_readiness(new_status: str) -> bool:
+    return new_status in {"Plan Confirmed", "In Progress", "Testing", "Review", "Complete"}
+
+
+def _status_requires_epic_child_readiness(new_status: str) -> bool:
+    return new_status in {"Testing", "Review", "Complete"}
+
+
+def _resolve_global_task_docs(
+    *, root: Path, tracker_path: Path, task_id: str
+) -> tuple[Path, Path, dict[str, str]]:
+    normalized_task_id = _normalize_task_status_id(task_id)
+    _lines, _header_idx, rows = _global_tracker_rows(tracker_path)
+    for row in rows:
+        if row["ID"] != normalized_task_id:
+            continue
+        docs_rel = _clean_markdown_cell_path(row["Docs"])
+        if not docs_rel:
+            raise SystemExit(f"{task_id} has no docs path in {tracker_path}.")
+        implementation_path = root / ".project-workflow" / docs_rel
+        requirements_path = implementation_path.parent / "REQUIREMENTS.md"
+        if not implementation_path.exists():
+            raise SystemExit(f"{task_id} docs path does not exist: {implementation_path}")
+        if not requirements_path.exists():
+            raise SystemExit(f"{task_id} requirements path does not exist: {requirements_path}")
+        return requirements_path, implementation_path, row
+    raise SystemExit(f"No global tracker row found for ID '{task_id}' in {tracker_path}.")
+
+
+def _resolve_epic_child_docs(
+    *, root: Path, epic_tracker_path: Path, row_id: str
+) -> tuple[Path, Path, dict[str, str]]:
+    _lines, _header_idx, rows = _epic_tracker_rows(epic_tracker_path)
+    for row in rows:
+        if row["ID"] != row_id:
+            continue
+        docs_rel = _clean_markdown_cell_path(row.get("Docs", ""))
+        if not docs_rel:
+            raise SystemExit(f"{row_id} has no docs path in {epic_tracker_path}.")
+        implementation_path = root / ".project-workflow" / docs_rel
+        requirements_path = implementation_path.parent / "REQUIREMENTS.md"
+        if not implementation_path.exists():
+            raise SystemExit(f"{row_id} docs path does not exist: {implementation_path}")
+        if not requirements_path.exists():
+            raise SystemExit(f"{row_id} requirements path does not exist: {requirements_path}")
+        return requirements_path, implementation_path, row
+    raise SystemExit(f"No epic tracker row found for ID '{row_id}' in {epic_tracker_path}.")
+
+
+def _task_ready_issues_for_paths(
+    *, requirements_path: Path, implementation_path: Path, parent_ac_ids: set[str] | None = None
+) -> list[str]:
+    if not requirements_path.exists():
+        return [f"agent action required: create requirements file `{requirements_path.name}`."]
+    if not implementation_path.exists():
+        return [f"agent action required: create implementation file `{implementation_path.name}`."]
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    implementation_text = implementation_path.read_text(encoding="utf-8")
+    return _task_readiness_issues(
+        requirements_text=requirements_text,
+        implementation_text=implementation_text,
+        parent_ac_ids=parent_ac_ids,
+    )
+
+
 def _update_global_tracker_row_status(
     *,
     root: Path,
@@ -1076,6 +1344,19 @@ def _update_global_tracker_row_status(
                     f"{current_status} -> {new_status}. "
                     "Use --force --reason for audited non-Complete exceptions."
                 )
+
+        if (
+            _status_requires_task_readiness(new_status)
+            and not force
+            and normalized_row_id.startswith(f"{TASK_ID_PREFIX}-")
+        ):
+            requirements_path = docs_path.parent / "REQUIREMENTS.md"
+            readiness_issues = _task_ready_issues_for_paths(
+                requirements_path=requirements_path,
+                implementation_path=docs_path,
+            )
+            if readiness_issues:
+                raise SystemExit(_format_readiness_block(row_id, readiness_issues))
 
         if current_status == new_status:
             return current_status, new_status
@@ -1233,12 +1514,21 @@ def _update_epic_child_status(
             if not docs_path.exists():
                 raise SystemExit(f"{row_id} docs path does not exist: {docs_path}")
             docs_text = docs_path.read_text(encoding="utf-8")
+            parent_ac_ids = _extract_ac_ids(_extract_parent_ac_coverage(row))
+            requirements_path = docs_path.parent / "REQUIREMENTS.md"
+            if requirements_path.exists():
+                readiness_issues = _task_ready_issues_for_paths(
+                    requirements_path=requirements_path,
+                    implementation_path=docs_path,
+                    parent_ac_ids=parent_ac_ids,
+                )
+                if readiness_issues:
+                    raise SystemExit(_format_readiness_block(row_id, readiness_issues))
             if not _has_qa_review_evidence(docs_text):
                 raise SystemExit(
                     f"{row_id} cannot move to Complete without non-placeholder "
                     "QA/code-review evidence."
                 )
-            parent_ac_ids = _extract_ac_ids(_extract_parent_ac_coverage(row))
             missing_parent_evidence = [
                 ac_id
                 for ac_id in sorted(parent_ac_ids)
@@ -1251,6 +1541,24 @@ def _update_epic_child_status(
                 )
         if current_status == new_status:
             return current_status, new_status
+        if (
+            _status_requires_epic_child_readiness(new_status)
+            and not force
+            and new_status != "Complete"
+        ):
+            docs_rel = _clean_markdown_cell_path(row.get("Docs", ""))
+            if not docs_rel:
+                raise SystemExit(f"{row_id} cannot move to {new_status} without a docs path.")
+            docs_path = root / ".project-workflow" / docs_rel
+            requirements_path = docs_path.parent / "REQUIREMENTS.md"
+            parent_ac_ids = _extract_ac_ids(_extract_parent_ac_coverage(row))
+            readiness_issues = _task_ready_issues_for_paths(
+                requirements_path=requirements_path,
+                implementation_path=docs_path,
+                parent_ac_ids=parent_ac_ids,
+            )
+            if readiness_issues:
+                raise SystemExit(_format_readiness_block(row_id, readiness_issues))
         row["Status"] = new_status
         lines[int(row["_line_idx"])] = _format_epic_tracker_row(row)
         epic_tracker_path.write_text("".join(lines), encoding="utf-8")
@@ -1284,21 +1592,58 @@ def _next_task_id_from_used(used_ids: set[str]) -> str:
     return f"{TASK_ID_PREFIX}-{max_value + 1:0{ID_PADDING}d}"
 
 
+def _used_ids_for_prefix(tasks_dir: Path, tracker_path: Path, *, prefix: str) -> set[str]:
+    used_ids: set[str] = set()
+    id_re = re.compile(rf"^{re.escape(prefix)}-(\d+)$")
+    dir_re = re.compile(rf"^{re.escape(prefix)}-(\d+)-")
+    row_re = re.compile(rf"\|\s*({re.escape(prefix)}-\d+)\s*\|")
+
+    if tasks_dir.exists():
+        for path in tasks_dir.rglob("*"):
+            if not path.is_dir():
+                continue
+            match = dir_re.match(path.name)
+            if match:
+                used_ids.add(f"{prefix}-{int(match.group(1)):0{ID_PADDING}d}")
+
+    tracker_paths = [tracker_path]
+    if tasks_dir.exists():
+        tracker_paths.extend(sorted(tasks_dir.rglob("TRACKER.md")))
+
+    for candidate_tracker in tracker_paths:
+        if not candidate_tracker.exists():
+            continue
+        try:
+            tracker_text = candidate_tracker.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        for match in row_re.finditer(tracker_text):
+            candidate = match.group(1)
+            if id_re.match(candidate):
+                used_ids.add(candidate)
+
+    return used_ids
+
+
 def _decompose_epic_requirements_to_titles(
     requirements_text: str, *, limit: int
 ) -> list[tuple[str, str | None]]:
     lines = requirements_text.splitlines()
-    bullets: list[tuple[str, str | None]] = []
-    in_section = False
+    ac_bullets: list[tuple[str, str | None]] = []
+    requirement_bullets: list[tuple[str, str | None]] = []
+    active_section: str | None = None
     for line in lines:
         stripped = line.strip()
         if stripped.startswith("## "):
             heading = stripped[3:].strip().lower()
-            in_section = heading.startswith("acceptance criteria") or heading.startswith(
-                "requirements"
-            )
+            if heading.startswith("acceptance criteria"):
+                active_section = "acceptance"
+            elif heading.startswith("requirements"):
+                active_section = "requirements"
+            else:
+                active_section = None
             continue
-        if not in_section:
+        if active_section is None:
             continue
 
         bullet: Optional[str] = None
@@ -1325,10 +1670,13 @@ def _decompose_epic_requirements_to_titles(
         bullet = re.sub(r"^A user can\s+", "", bullet, flags=re.IGNORECASE)
         bullet = re.sub(r"^Users can\s+", "", bullet, flags=re.IGNORECASE)
         bullet = bullet[:1].upper() + bullet[1:] if bullet else bullet
-        bullets.append((bullet.rstrip("."), ac_id))
-        if len(bullets) >= limit:
-            break
-    return bullets
+        if active_section == "acceptance":
+            ac_bullets.append((bullet.rstrip("."), ac_id))
+        else:
+            requirement_bullets.append((bullet.rstrip("."), ac_id))
+
+    candidates = ac_bullets or requirement_bullets
+    return candidates[:limit]
 
 
 def _append_epic_tracker_rows(epic_tracker_path: Path, rows_to_add: list[dict[str, str]]) -> None:
@@ -1485,19 +1833,9 @@ def _update_tracker(
 
 def _next_sequential_id(tasks_dir: Path, tracker_path: Path, *, prefix: str) -> str:
     max_value = 0
-
-    dir_re = re.compile(rf"^{re.escape(prefix)}-(\d+)-")
-    for path in tasks_dir.iterdir():
-        if not path.is_dir():
-            continue
-        match = dir_re.match(path.name)
-        if match:
-            max_value = max(max_value, int(match.group(1)))
-
-    tracker = tracker_path.read_text(encoding="utf-8")
-    row_re = re.compile(rf"^\|\s*{re.escape(prefix)}-(\d+)\s*\|", flags=re.MULTILINE)
-    for match in row_re.finditer(tracker):
-        max_value = max(max_value, int(match.group(1)))
+    for used_id in _used_ids_for_prefix(tasks_dir, tracker_path, prefix=prefix):
+        _, _, numeric = used_id.partition("-")
+        max_value = max(max_value, int(numeric))
 
     return f"{prefix}-{max_value + 1:0{ID_PADDING}d}"
 
@@ -1641,6 +1979,31 @@ def _doctor_check_task_doc(
                 requirements_path,
                 f"{row_id} has active status '{status}' but requirements still contain placeholders.",
             )
+    if (
+        docs_path.name == "IMPLEMENTATION.md"
+        and status != "Complete"
+        and _status_requires_task_readiness(status)
+    ):
+        if requirements_text is not None:
+            for readiness_issue in _task_readiness_issues(
+                requirements_text=requirements_text,
+                implementation_text=docs_text,
+            ):
+                _add_issue(
+                    issues,
+                    "warning",
+                    docs_path,
+                    f"{row_id} readiness gate: {readiness_issue}",
+                )
+    if docs_path.name == "REQUIREMENTS.md" and row_id.startswith(f"{EPIC_ID_PREFIX}-"):
+        if status not in ("To Do", "N/A"):
+            for readiness_issue in _epic_requirements_readiness_issues(docs_text):
+                _add_issue(
+                    issues,
+                    "warning",
+                    docs_path,
+                    f"{row_id} epic readiness gate: {readiness_issue}",
+                )
 
     _doctor_check_implementation_ac_mapping(
         docs_path=docs_path,
@@ -1875,7 +2238,8 @@ def cmd_task_init(args: argparse.Namespace) -> None:
     if not tracker_path.exists():
         raise SystemExit(
             f"Missing tracker file: {tracker_path}\n"
-            f"Run 'project init' first to bootstrap the project workflow."
+            f"Run `{CANONICAL_INIT_COMMAND}` from the repository root first to bootstrap "
+            f"the project workflow."
         )
 
     task_id = _next_sequential_id(tasks_dir, tracker_path, prefix=TASK_ID_PREFIX)
@@ -1940,7 +2304,8 @@ def cmd_task_status(args: argparse.Namespace) -> None:
     if not tracker_path.exists():
         raise SystemExit(
             f"Missing tracker file: {tracker_path}\n"
-            f"Run 'project init' first to bootstrap the project workflow."
+            f"Run `{CANONICAL_INIT_COMMAND}` from the repository root first to bootstrap "
+            f"the project workflow."
         )
 
     task_id = _normalize_task_status_id(args.id)
@@ -1961,6 +2326,33 @@ def cmd_task_status(args: argparse.Namespace) -> None:
             print(f"Forced transition reason: {args.reason.strip()}")
 
 
+def cmd_task_ready(args: argparse.Namespace) -> None:
+    """Validate standalone task implementation readiness."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+    if not tracker_path.exists():
+        raise SystemExit(
+            f"Missing tracker file: {tracker_path}\n"
+            f"Run `{CANONICAL_INIT_COMMAND}` from the repository root first to bootstrap "
+            f"the project workflow."
+        )
+
+    task_id = _normalize_task_status_id(args.id)
+    requirements_path, implementation_path, _row = _resolve_global_task_docs(
+        root=cwd,
+        tracker_path=tracker_path,
+        task_id=task_id,
+    )
+    readiness_issues = _task_ready_issues_for_paths(
+        requirements_path=requirements_path,
+        implementation_path=implementation_path,
+    )
+    if readiness_issues:
+        raise SystemExit(_format_readiness_block(task_id, readiness_issues))
+    print(f"{task_id} readiness gate passed.")
+
+
 def cmd_epic_init(args: argparse.Namespace) -> None:
     """Scaffold a new epic in .project-workflow/tasks/."""
     cwd = Path.cwd()
@@ -1972,7 +2364,8 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
     if not tracker_path.exists():
         raise SystemExit(
             f"Missing tracker file: {tracker_path}\n"
-            f"Run 'project init' first to bootstrap the project workflow."
+            f"Run `{CANONICAL_INIT_COMMAND}` from the repository root first to bootstrap "
+            f"the project workflow."
         )
 
     epic_id = _resolve_epic_id(tasks_dir, tracker_path, title=args.title)
@@ -2041,6 +2434,48 @@ def cmd_epic_approve(args: argparse.Namespace) -> None:
     print(f"Approved epic row {args.id} in {epic_tracker_path}")
 
 
+def cmd_epic_ready(args: argparse.Namespace) -> None:
+    """Validate epic requirements readiness before decomposition."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    if not requirements_path.exists():
+        raise SystemExit(f"Missing epic requirements file: {requirements_path}")
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    readiness_issues = _epic_requirements_readiness_issues(requirements_text)
+    if readiness_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, readiness_issues))
+    print(f"{args.epic_id} epic readiness gate passed.")
+
+
+def cmd_epic_ready_child(args: argparse.Namespace) -> None:
+    """Validate one epic child task readiness before implementation/testing."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    epic_tracker_path = epic_dir / "TRACKER.md"
+    if not epic_tracker_path.exists():
+        raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
+
+    requirements_path, implementation_path, row = _resolve_epic_child_docs(
+        root=cwd,
+        epic_tracker_path=epic_tracker_path,
+        row_id=args.id,
+    )
+    parent_ac_ids = _extract_ac_ids(_extract_parent_ac_coverage(row))
+    readiness_issues = _task_ready_issues_for_paths(
+        requirements_path=requirements_path,
+        implementation_path=implementation_path,
+        parent_ac_ids=parent_ac_ids,
+    )
+    if readiness_issues:
+        raise SystemExit(_format_readiness_block(args.id, readiness_issues))
+    print(f"{args.id} readiness gate passed.")
+
+
 def cmd_epic_status(args: argparse.Namespace) -> None:
     """Safely update one epic tracker row status."""
     cwd = Path.cwd()
@@ -2085,6 +2520,9 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
         raise SystemExit(f"Missing global tracker file: {tracker_path}")
 
     requirements_text = requirements_path.read_text(encoding="utf-8")
+    readiness_issues = _epic_requirements_readiness_issues(requirements_text)
+    if readiness_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, readiness_issues))
     candidates = _decompose_epic_requirements_to_titles(requirements_text, limit=args.limit)
     if not candidates:
         raise SystemExit(
@@ -2093,27 +2531,8 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
             "'## Acceptance Criteria (Verifiable)' first."
         )
 
-    occupied_ids: set[str] = set()
-    task_re = re.compile(rf"^{re.escape(TASK_ID_PREFIX)}-\d+$")
-
-    for path in tasks_dir.iterdir():
-        if not path.is_dir():
-            continue
-        match = re.match(rf"^{re.escape(TASK_ID_PREFIX)}-(\d+)-", path.name)
-        if match:
-            occupied_ids.add(f"{TASK_ID_PREFIX}-{int(match.group(1)):0{ID_PADDING}d}")
-
-    tracker_text = tracker_path.read_text(encoding="utf-8")
-    for match in re.finditer(rf"\|\s*({re.escape(TASK_ID_PREFIX)}-\d+)\s*\|", tracker_text):
-        candidate = match.group(1)
-        if task_re.match(candidate):
-            occupied_ids.add(candidate)
-
+    occupied_ids = _used_ids_for_prefix(tasks_dir, tracker_path, prefix=TASK_ID_PREFIX)
     _lines, _header_idx, epic_rows = _epic_tracker_rows(epic_tracker_path)
-    for row in epic_rows:
-        candidate = row["ID"].strip()
-        if task_re.match(candidate):
-            occupied_ids.add(candidate)
 
     rows_to_add: list[dict[str, str]] = []
     for title, ac_id in candidates:
@@ -2401,6 +2820,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     task_status_parser.set_defaults(func=cmd_task_status)
 
+    task_ready_parser = task_sub.add_parser(
+        "ready",
+        help="Validate standalone task readiness before implementation",
+    )
+    task_ready_parser.add_argument("--id", required=True, help="Task ID (e.g. TASK-001)")
+    task_ready_parser.set_defaults(func=cmd_task_ready)
+
     # ===== project epic ... =====
     epic_parser = subparsers.add_parser("epic", help="Epic-related commands")
     epic_sub = epic_parser.add_subparsers(dest="epic_command", required=True)
@@ -2436,6 +2862,23 @@ def build_parser() -> argparse.ArgumentParser:
     epic_approve_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
     epic_approve_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
     epic_approve_parser.set_defaults(func=cmd_epic_approve)
+
+    epic_ready_parser = epic_sub.add_parser(
+        "ready",
+        help="Validate epic requirements readiness before decomposition",
+    )
+    epic_ready_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
+    epic_ready_parser.set_defaults(func=cmd_epic_ready)
+
+    epic_ready_child_parser = epic_sub.add_parser(
+        "ready-child",
+        help="Validate one epic child task readiness before implementation/testing",
+    )
+    epic_ready_child_parser.add_argument(
+        "--epic-id", required=True, help="Epic ID (e.g. EPIC-001)"
+    )
+    epic_ready_child_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
+    epic_ready_child_parser.set_defaults(func=cmd_epic_ready_child)
 
     epic_status_parser = epic_sub.add_parser(
         "status",

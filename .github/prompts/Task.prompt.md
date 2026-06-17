@@ -17,6 +17,8 @@ Purpose: create the minimal workflow scaffolding for a new feature/task inside t
 
 This is the **only** step that creates folders/files for a new story. Requirements/Clarify/Planner/Implement/QA Review/Retro assume the task folder already exists.
 
+Project Workflow is owner-directed and agent-operated. The user supplies product judgment, constraints, examples, decisions, and approvals conversationally. The agent runs commands, drafts artifacts, asks targeted questions, and records workflow state.
+
 Read `/.project-workflow/guidance.md` if present before changing workflow state.
 
 ## Inputs (ask the user)
@@ -35,6 +37,17 @@ If branch = yes, also ask:
 
 - Base branch (default: `develop`)
 - Branch prefix (default: `feature/`)
+
+Minimum intake context before downstream work:
+
+- Problem or opportunity
+- Desired outcome
+- Affected user, actor, or system
+- Scope boundaries and non-goals
+- Acceptance signal for done
+- Constraints, priority/risk, and examples or failure modes
+
+If the user has not provided this context, create the scaffold only as a requirements/clarification artifact. Do not proceed to planning or implementation until `task ready` passes or the owner explicitly records discovery/accepted risk.
 
 ## Safety checks
 

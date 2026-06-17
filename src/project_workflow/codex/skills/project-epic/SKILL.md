@@ -60,6 +60,18 @@ Generate an epic acceptance audit:
 ./.project-workflow/cli/workflow epic audit --epic-id <EPIC-ID>
 ```
 
+Validate epic requirements before decomposition:
+
+```bash
+./.project-workflow/cli/workflow epic ready --epic-id <EPIC-ID>
+```
+
+Validate one child task before implementation/testing:
+
+```bash
+./.project-workflow/cli/workflow epic ready-child --epic-id <EPIC-ID> --id <TASK-ID>
+```
+
 Validate epic closeout, optionally completing the global epic row when gates pass:
 
 ```bash
@@ -70,12 +82,14 @@ Validate epic closeout, optionally completing the global epic row when gates pas
 
 - `epic init` creates an epic `REQUIREMENTS.md` and epic `TRACKER.md`.
 - Epic acceptance criteria should use stable IDs (`AC1`, `AC2`, etc.).
+- `epic ready` must pass before decomposition; if it fails, ask the owner only for missing product decisions/context and record answers in `REQUIREMENTS.md`.
 - `epic decompose` writes Proposed child rows only and does not create child task folders.
 - Proposed child rows should preserve source AC IDs in the epic tracker `Parent ACs` field when they come from numbered acceptance criteria. Legacy trackers may still carry coverage in `Notes` as `Covers AC1, AC3`.
 - `epic approve` moves a child row from `Proposed` to `Approved`.
 - `epic scaffold-child` only accepts `Approved` child rows and moves them to `In Progress` after scaffold.
 - `epic status` moves child rows through `Testing`, `Review`, and `Complete`; `Complete` requires QA/code-review evidence and parent AC evidence.
 - Scaffolded epic child task docs must include parent AC coverage and parent AC evidence sections. Their implementation plans must map every task row to one or more stable child AC IDs and keep the parent AC mapping visible.
+- `epic ready-child` must pass before implementation/testing; if it fails, remediate missing child requirements, planning, validation, parent AC coverage, or owner decisions first.
 - The global tracker summarizes epic rows; the epic tracker owns child rows. Proposed child rows must stay in the epic tracker and must not be added to the global tracker.
 - `epic audit` writes `ACCEPTANCE-AUDIT.md` with parent AC coverage, child evidence, deferrals, and verdicts.
 - `epic closeout` must block if any parent AC is unmapped, lacks evidence, lacks a QA pass verdict, or lacks an approved deferral with follow-up.
