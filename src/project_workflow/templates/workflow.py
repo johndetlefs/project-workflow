@@ -62,8 +62,10 @@ IMPLEMENTATION_TASK_COLUMNS = (
 TRACKER_STATUSES = (
     "To Do",
     "Analysing",
+    "Ready",
     "Plan Confirmed",
     "In Progress",
+    "Closeout",
     "Blocked",
     "Testing",
     "Review",
@@ -444,6 +446,23 @@ def _epic_deferrals_template() -> str:
     )
 
 
+def _epic_retro_template(epic_id: str, title: str) -> str:
+    return (
+        "# Epic Retro\n\n"
+        f"- Epic: {epic_id}\n"
+        f"- Title: {title}\n"
+        f"- Last updated: {date.today().isoformat()}\n\n"
+        "## Lessons\n\n"
+        "- ____\n\n"
+        "## Follow-up Tasks\n\n"
+        "- ____\n\n"
+        "## Deferrals\n\n"
+        "- ____\n\n"
+        "## Missed In-Scope Work\n\n"
+        "- ____\n"
+    )
+
+
 def _parse_markdown_table_cells(line: str) -> list[str] | None:
     stripped = line.strip()
     if not stripped.startswith("|"):
@@ -706,6 +725,178 @@ def _format_acceptance_audit(epic_id: str, audit_rows: list[dict[str, str]]) -> 
             + " |\n"
         )
     return "".join(lines)
+
+
+def _acceptance_map_status(row: dict[str, str]) -> str:
+    verdict = row["Verdict"]
+    child_rows = row["Child Rows"]
+    evidence = row["Evidence"]
+    deferral = row["Deferral"]
+    if verdict == "Pass":
+        return "Satisfied"
+    if verdict == "Deferred":
+        return "Deferred"
+    if deferral != "None":
+        return "Deferral needs metadata"
+    if child_rows == "None":
+        return "Unmapped"
+    if evidence == "None":
+        return "Mapped - evidence pending"
+    return "Needs attention"
+
+
+def _format_acceptance_map(epic_id: str, audit_rows: list[dict[str, str]]) -> str:
+    lines = [
+        "# Acceptance Map\n",
+        "\n",
+        f"- Epic: {epic_id}\n",
+        f"- Last updated: {date.today().isoformat()}\n",
+        "\n",
+        "| Parent AC | Summary | Child Coverage | Evidence State | Deferral State | Status |\n",
+        "| --- | --- | --- | --- | --- | --- |\n",
+    ]
+    for row in audit_rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                _markdown_cell(value)
+                for value in (
+                    row["Parent AC"],
+                    row["Summary"],
+                    row["Child Rows"],
+                    row["Evidence"],
+                    row["Deferral"],
+                    _acceptance_map_status(row),
+                )
+            )
+            + " |\n"
+        )
+    lines.extend(
+        [
+            "\n",
+            "## Notes\n",
+            "\n",
+            "- This is a working coverage map derived from requirements, the epic tracker, "
+            "deferrals, and child task evidence.\n",
+            "- `ACCEPTANCE-AUDIT.md` remains the closeout evidence artifact.\n",
+        ]
+    )
+    return "".join(lines)
+
+
+def _write_acceptance_map(root: Path, epic_id: str) -> Path:
+    epic_dir, audit_rows, _gaps = _epic_audit_rows(root, epic_id)
+    map_path = epic_dir / "ACCEPTANCE-MAP.md"
+    map_path.write_text(_format_acceptance_map(epic_id, audit_rows), encoding="utf-8")
+    return map_path
+
+
+EPIC_RETRO_REQUIRED_SECTIONS = (
+    "Lessons",
+    "Follow-up Tasks",
+    "Deferrals",
+    "Missed In-Scope Work",
+)
+
+EPIC_GLOBAL_LIFECYCLE_STATUSES = (
+    "Analysing",
+    "Ready",
+    "In Progress",
+    "Closeout",
+    "Complete",
+)
+
+
+def _epic_retro_issues(epic_dir: Path) -> list[str]:
+    retro_path = epic_dir / "RETRO.md"
+    if not retro_path.exists():
+        return ["epic retro is missing RETRO.md"]
+    retro_text = retro_path.read_text(encoding="utf-8")
+    issues: list[str] = []
+    for section in EPIC_RETRO_REQUIRED_SECTIONS:
+        section_text = _markdown_section(retro_text, section)
+        if not _section_has_substantive_text(section_text):
+            issues.append(f"epic retro section '{section}' is missing or still placeholder")
+    return issues
+
+
+def _epic_lifecycle_gate_issues(root: Path, epic_id: str, target_status: str) -> list[str]:
+    workflow_dir = root / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    epic_dir = _resolve_epic_dir(tasks_dir, epic_id)
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    if target_status == "Complete":
+        return ["use `epic closeout --epic-id <EPIC-ID> --complete` to mark an epic Complete"]
+    if target_status == "Analysing":
+        return []
+    if not requirements_path.exists():
+        return [f"missing epic requirements file: {requirements_path}"]
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    readiness_issues = _epic_requirements_readiness_issues(requirements_text)
+    if target_status == "Ready":
+        return readiness_issues
+
+    epic_dir, audit_rows, audit_gaps = _epic_audit_rows(root, epic_id)
+    mapping_gaps = [
+        f"{row['Parent AC']}: no mapped child rows"
+        for row in audit_rows
+        if row["Child Rows"] == "None" and row["Deferral"] == "None"
+    ]
+    if target_status == "In Progress":
+        return [*readiness_issues, *mapping_gaps]
+    if target_status == "Closeout":
+        return [*audit_gaps, *_epic_retro_issues(epic_dir)]
+    return [f"unsupported epic lifecycle status: {target_status}"]
+
+
+def _matching_gaps(gaps: list[str], pattern: str) -> list[str]:
+    return [gap for gap in gaps if pattern in gap]
+
+
+def _format_list_or_none(values: list[str]) -> str:
+    return ", ".join(values) if values else "None"
+
+
+def _epic_closeout_summary(
+    audit_rows: list[dict[str, str]], gaps: list[str], *, complete_requested: bool
+) -> str:
+    total = len(audit_rows)
+    passed = sum(1 for row in audit_rows if row["Verdict"] == "Pass")
+    deferred = sum(1 for row in audit_rows if row["Verdict"] == "Deferred")
+    gap_count = total - passed - deferred
+    missing_mappings = [
+        row["Parent AC"]
+        for row in audit_rows
+        if row["Child Rows"] == "None" and row["Deferral"] == "None"
+    ]
+    incomplete_children = _matching_gaps(gaps, " is ") + _matching_gaps(gaps, " has no docs path")
+    missing_evidence = _matching_gaps(gaps, "lacks parent AC evidence")
+    missing_qa = _matching_gaps(gaps, "lacks QA pass verdict")
+    deferral_gaps = _matching_gaps(gaps, "deferral is missing")
+    retro_gaps = _matching_gaps(gaps, "epic retro")
+    approved_deferrals = [
+        f"{row['Parent AC']}: {row['Deferral']}"
+        for row in audit_rows
+        if row["Deferral"] != "None" and row["Verdict"] == "Deferred"
+    ]
+
+    lines = [
+        "Epic closeout summary:",
+        f"- Parent ACs: {total} total, {passed} pass, {deferred} deferred, {gap_count} gap",
+        f"- Missing mappings: {_format_list_or_none(missing_mappings)}",
+        f"- Incomplete children/docs: {_format_list_or_none(incomplete_children)}",
+        f"- Missing parent evidence: {_format_list_or_none(missing_evidence)}",
+        f"- Missing QA pass: {_format_list_or_none(missing_qa)}",
+        f"- Deferrals/follow-ups: {_format_list_or_none([*approved_deferrals, *deferral_gaps])}",
+        f"- Epic retro: {_format_list_or_none(retro_gaps)}",
+    ]
+    if gaps:
+        lines.append("- Next action: resolve the listed gaps or record approved deferrals with follow-up work.")
+    elif complete_requested:
+        lines.append("- Next action: global epic row can be marked Complete.")
+    else:
+        lines.append("- Next action: rerun closeout with --complete to mark the global epic row Complete.")
+    return "\n".join(lines)
 
 
 def _update_global_epic_status(
@@ -2092,19 +2283,36 @@ def _doctor_issue_is_blocking(issue: DoctorIssue, *, strict: bool) -> bool:
     return issue.severity == "error" or (strict and issue.severity == "warning")
 
 
+def _doctor_issue_is_legacy(issue: DoctorIssue) -> bool:
+    if issue.severity != "warning":
+        return False
+    path_text = str(issue.path)
+    if ".project-workflow/tasks/APP-" in path_text:
+        return True
+    match = re.search(r"\.project-workflow/tasks/EPIC-(\d+)-", path_text)
+    return bool(match and int(match.group(1)) < 3)
+
+
 def cmd_doctor(args: argparse.Namespace) -> None:
     root = Path(args.root).resolve() if args.root else Path.cwd()
     issues = run_doctor(root)
     blocking = [issue for issue in issues if _doctor_issue_is_blocking(issue, strict=args.strict)]
+    current_issues = [issue for issue in issues if not _doctor_issue_is_legacy(issue)]
+    legacy_issues = [issue for issue in issues if _doctor_issue_is_legacy(issue)]
 
     if not issues:
         print(f"project doctor: no issues found in {root}")
         return
 
     print(f"project doctor: checked {root}")
-    for issue in issues:
+    for issue in current_issues:
         severity = "error" if args.strict and issue.severity == "warning" else issue.severity
         print(f"{severity.upper()}: {issue.path}: {issue.message}")
+    for issue in legacy_issues:
+        severity = "error" if args.strict and issue.severity == "warning" else "legacy warning"
+        print(f"{severity.upper()}: {issue.path}: {issue.message}")
+    if legacy_issues:
+        print(f"project doctor: {len(legacy_issues)} legacy warning(s) shown separately.")
 
     if blocking:
         print(f"project doctor: failed with {len(blocking)} blocking issue(s).")
@@ -2388,6 +2596,7 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
     reqs_path = epic_dir / "REQUIREMENTS.md"
     epic_tracker_path = epic_dir / "TRACKER.md"
     deferrals_path = epic_dir / "DEFERRALS.md"
+    retro_path = epic_dir / "RETRO.md"
 
     epic_dir.mkdir(parents=True, exist_ok=True)
     if args.overwrite or not reqs_path.exists():
@@ -2396,6 +2605,9 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
         _write_file(epic_tracker_path, _epic_tracker_template(), overwrite=True)
     if args.overwrite or not deferrals_path.exists():
         _write_file(deferrals_path, _epic_deferrals_template(), overwrite=True)
+    if args.overwrite or not retro_path.exists():
+        _write_file(retro_path, _epic_retro_template(spec.task_id, spec.title), overwrite=True)
+    map_path = _write_acceptance_map(cwd, spec.task_id)
 
     docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
     row_written = _update_tracker(
@@ -2407,6 +2619,7 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
     )
 
     print(f"Created epic: {epic_dir}")
+    print(f"Wrote acceptance map: {map_path}")
     if row_written:
         print(f"Updated tracker: {tracker_path}")
     else:
@@ -2431,7 +2644,9 @@ def cmd_epic_approve(args: argparse.Namespace) -> None:
         expected_from="Proposed",
         new_status="Approved",
     )
+    map_path = _write_acceptance_map(cwd, args.epic_id)
     print(f"Approved epic row {args.id} in {epic_tracker_path}")
+    print(f"Refreshed acceptance map: {map_path}")
 
 
 def cmd_epic_ready(args: argparse.Namespace) -> None:
@@ -2499,6 +2714,35 @@ def cmd_epic_status(args: argparse.Namespace) -> None:
         print(f"Updated {args.id}: {previous} -> {current} in {epic_tracker_path}")
         if args.force:
             print(f"Forced transition reason: {args.reason.strip()}")
+    map_path = _write_acceptance_map(cwd, args.epic_id)
+    print(f"Refreshed acceptance map: {map_path}")
+
+
+def cmd_epic_lifecycle(args: argparse.Namespace) -> None:
+    """Safely update one global epic tracker lifecycle status."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+    if not tracker_path.exists():
+        raise SystemExit(f"Missing global tracker file: {tracker_path}")
+
+    gate_issues = _epic_lifecycle_gate_issues(cwd, args.epic_id, args.to)
+    if gate_issues:
+        lines = [
+            f"{args.epic_id} cannot move to {args.to}:",
+            *[f"- {issue}" for issue in gate_issues],
+        ]
+        raise SystemExit("\n".join(lines))
+
+    previous, current = _update_global_epic_status(
+        tracker_path,
+        epic_id=args.epic_id,
+        new_status=args.to,
+    )
+    if previous == current:
+        print(f"{args.epic_id} already has status '{current}' in {tracker_path}")
+    else:
+        print(f"Updated {args.epic_id}: {previous} -> {current} in {tracker_path}")
 
 
 def cmd_epic_decompose(args: argparse.Namespace) -> None:
@@ -2555,7 +2799,9 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
         )
 
     _append_epic_tracker_rows(epic_tracker_path, rows_to_add)
+    map_path = _write_acceptance_map(cwd, args.epic_id)
     print(f"Added {len(rows_to_add)} Proposed row(s) to {epic_tracker_path}")
+    print(f"Refreshed acceptance map: {map_path}")
     print("No child task folders were created in this decomposition step.")
     parent_ac_ids = _extract_parent_ac_ids_from_requirements(requirements_text)
     mapped_ac_ids = _extract_parent_ac_ids_from_epic_rows([*epic_rows, *rows_to_add])
@@ -2655,9 +2901,11 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
     line_idx = int(target["_line_idx"])
     lines[line_idx] = _format_epic_tracker_row(target)
     epic_tracker_path.write_text("".join(lines), encoding="utf-8")
+    map_path = _write_acceptance_map(cwd, args.epic_id)
 
     print(f"Scaffolded epic child: {child_dir}")
     print(f"Updated epic tracker: {epic_tracker_path}")
+    print(f"Refreshed acceptance map: {map_path}")
     if branch_name is not None:
         print(f"Child branch active from epic branch {args.epic_branch}: {branch_name}")
 
@@ -2668,7 +2916,9 @@ def cmd_epic_audit(args: argparse.Namespace) -> None:
     epic_dir, audit_rows, gaps = _epic_audit_rows(cwd, args.epic_id)
     audit_path = epic_dir / "ACCEPTANCE-AUDIT.md"
     audit_path.write_text(_format_acceptance_audit(args.epic_id, audit_rows), encoding="utf-8")
+    map_path = _write_acceptance_map(cwd, args.epic_id)
     print(f"Wrote acceptance audit: {audit_path}")
+    print(f"Refreshed acceptance map: {map_path}")
     if gaps:
         print("WARNING: Epic acceptance gaps remain:")
         for gap in gaps:
@@ -2683,16 +2933,22 @@ def cmd_epic_closeout(args: argparse.Namespace) -> None:
     workflow_dir = cwd / ".project-workflow"
     tracker_path = workflow_dir / "TRACKER.md"
     epic_dir, audit_rows, gaps = _epic_audit_rows(cwd, args.epic_id)
+    gaps = [*gaps, *_epic_retro_issues(epic_dir)]
     audit_path = epic_dir / "ACCEPTANCE-AUDIT.md"
     audit_path.write_text(_format_acceptance_audit(args.epic_id, audit_rows), encoding="utf-8")
+    map_path = _write_acceptance_map(cwd, args.epic_id)
     if gaps:
         print(f"Wrote acceptance audit: {audit_path}")
+        print(f"Refreshed acceptance map: {map_path}")
+        print(_epic_closeout_summary(audit_rows, gaps, complete_requested=args.complete))
         print("Epic closeout blocked by acceptance gaps:")
         for gap in gaps:
             print(f"- {gap}")
         raise SystemExit(1)
 
     print(f"Wrote acceptance audit: {audit_path}")
+    print(f"Refreshed acceptance map: {map_path}")
+    print(_epic_closeout_summary(audit_rows, gaps, complete_requested=args.complete))
     print("Epic closeout gates passed.")
     if args.complete:
         previous, current = _update_global_epic_status(
@@ -2902,6 +3158,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="Required with --force; short audit reason for the exception",
     )
     epic_status_parser.set_defaults(func=cmd_epic_status)
+
+    epic_lifecycle_parser = epic_sub.add_parser(
+        "lifecycle",
+        help="Safely update the global tracker lifecycle status for one epic",
+    )
+    epic_lifecycle_parser.add_argument(
+        "--epic-id", required=True, help="Epic ID (e.g. EPIC-001)"
+    )
+    epic_lifecycle_parser.add_argument(
+        "--to",
+        required=True,
+        choices=EPIC_GLOBAL_LIFECYCLE_STATUSES,
+        help="Target global epic lifecycle status",
+    )
+    epic_lifecycle_parser.set_defaults(func=cmd_epic_lifecycle)
 
     epic_decompose_parser = epic_sub.add_parser(
         "decompose",

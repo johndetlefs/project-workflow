@@ -83,6 +83,23 @@ def ready_implementation(parent_ac: str | None = None, *, qa: bool = False) -> s
     )
 
 
+def ready_epic_retro(epic_id: str = "EPIC-001", title: str = "Ready Epic") -> str:
+    return (
+        "# Epic Retro\n\n"
+        f"- Epic: {epic_id}\n"
+        f"- Title: {title}\n"
+        "- Last updated: 2026-06-17\n\n"
+        "## Lessons\n\n"
+        "- None.\n\n"
+        "## Follow-up Tasks\n\n"
+        "- None.\n\n"
+        "## Deferrals\n\n"
+        "- None.\n\n"
+        "## Missed In-Scope Work\n\n"
+        "- None.\n"
+    )
+
+
 def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
@@ -583,6 +600,45 @@ def test_doctor_strict_fails_complete_task_without_qa_evidence(tmp_path: Path) -
     assert "lacks non-placeholder QA/code-review evidence" in strict_doctor.stdout
 
 
+def test_doctor_separates_legacy_warnings_from_current_warnings(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    current = run_project(
+        ["task", "init", "--title", "Current Missing QA", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert current.returncode == 0, current.stdout + current.stderr
+    current_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    current_impl = current_dir / "IMPLEMENTATION.md"
+
+    legacy_dir = tmp_path / ".project-workflow" / "tasks" / "APP-001-Legacy"
+    legacy_dir.mkdir()
+    legacy_impl = legacy_dir / "IMPLEMENTATION.md"
+    legacy_impl.write_text(
+        "## User Story\n\n"
+        "As a maintainer, I have historical workflow state.\n\n",
+        encoding="utf-8",
+    )
+
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    tracker_text = tracker_path.read_text(encoding="utf-8")
+    tracker_text = tracker_text.replace(" | To Do | ", " | Complete | ")
+    tracker_text += "| APP-001 | Legacy | Complete | `tasks/APP-001-Legacy/IMPLEMENTATION.md` |\n"
+    tracker_path.write_text(tracker_text, encoding="utf-8")
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    assert f"WARNING: {current_impl}" in doctor.stdout
+    assert f"LEGACY WARNING: {legacy_impl}" in doctor.stdout
+    assert "project doctor: 1 legacy warning(s) shown separately." in doctor.stdout
+
+    strict_doctor = run_project(["doctor", "--strict"], cwd=tmp_path)
+    assert strict_doctor.returncode != 0
+    assert f"ERROR: {current_impl}" in strict_doctor.stdout
+    assert f"ERROR: {legacy_impl}" in strict_doctor.stdout
+
+
 def test_doctor_warns_when_active_task_row_lacks_ac_mapping(tmp_path: Path) -> None:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
@@ -653,6 +709,11 @@ def test_epic_decompose_preserves_source_ac_ids_in_notes(tmp_path: Path) -> None
     epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
     initialized_tracker = (epic_dir / "TRACKER.md").read_text(encoding="utf-8")
     assert "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |" in initialized_tracker
+    initialized_map = (epic_dir / "ACCEPTANCE-MAP.md").read_text(encoding="utf-8")
+    assert "| AC1 | ____ | None | None | None | Unmapped |" in initialized_map
+    initialized_retro = (epic_dir / "RETRO.md").read_text(encoding="utf-8")
+    assert "## Lessons" in initialized_retro
+    assert "## Missed In-Scope Work" in initialized_retro
 
     (epic_dir / "REQUIREMENTS.md").write_text(
         ready_requirements(
@@ -678,6 +739,9 @@ def test_epic_decompose_preserves_source_ac_ids_in_notes(tmp_path: Path) -> None
     assert "| TASK-002 | Second epic outcome is delivered | Proposed | Task | AC2 |" in epic_tracker
     assert "Covers AC1; Generated from REQUIREMENTS.md" in epic_tracker
     assert "Covers AC2; Generated from REQUIREMENTS.md" in epic_tracker
+    acceptance_map = (epic_dir / "ACCEPTANCE-MAP.md").read_text(encoding="utf-8")
+    assert "| AC1 | First epic outcome is delivered. | TASK-001 (Proposed) | None | None | Mapped - evidence pending |" in acceptance_map
+    assert "| AC2 | Second epic outcome is delivered. | TASK-002 (Proposed) | None | None | Mapped - evidence pending |" in acceptance_map
 
 
 def test_epic_decompose_reports_unmapped_parent_ac_ids(tmp_path: Path) -> None:
@@ -814,6 +878,10 @@ def test_epic_audit_and_closeout_complete_only_when_gates_pass(tmp_path: Path) -
         "| TASK-001 | Ready Child | Complete | Task | AC1 | tasks/EPIC-001-Closeout-Ready/TASK-001-Ready-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
         encoding="utf-8",
     )
+    (epic_dir / "RETRO.md").write_text(
+        ready_epic_retro("EPIC-001", "Closeout Ready"),
+        encoding="utf-8",
+    )
 
     audit = run_project(["epic", "audit", "--epic-id", "EPIC-001"], cwd=tmp_path)
     assert audit.returncode == 0, audit.stdout + audit.stderr
@@ -821,9 +889,14 @@ def test_epic_audit_and_closeout_complete_only_when_gates_pass(tmp_path: Path) -
     audit_text = (epic_dir / "ACCEPTANCE-AUDIT.md").read_text(encoding="utf-8")
     assert "| AC1 | First parent outcome is delivered. | TASK-001 (Complete) |" in audit_text
     assert "TASK-001: parent AC evidence recorded; TASK-001: QA pass" in audit_text
+    map_text = (epic_dir / "ACCEPTANCE-MAP.md").read_text(encoding="utf-8")
+    assert "| AC1 | First parent outcome is delivered. | TASK-001 (Complete) | TASK-001: parent AC evidence recorded; TASK-001: QA pass | None | Satisfied |" in map_text
 
     validate_only = run_project(["epic", "closeout", "--epic-id", "EPIC-001"], cwd=tmp_path)
     assert validate_only.returncode == 0, validate_only.stdout + validate_only.stderr
+    assert "Epic closeout summary:" in validate_only.stdout
+    assert "- Parent ACs: 1 total, 1 pass, 0 deferred, 0 gap" in validate_only.stdout
+    assert "- Next action: rerun closeout with --complete" in validate_only.stdout
     tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(encoding="utf-8")
     assert "| EPIC-001 | Closeout Ready | To Do |" in tracker_text
 
@@ -832,6 +905,7 @@ def test_epic_audit_and_closeout_complete_only_when_gates_pass(tmp_path: Path) -
         cwd=tmp_path,
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "- Next action: global epic row can be marked Complete." in completed.stdout
     tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(encoding="utf-8")
     assert "| EPIC-001 | Closeout Ready | Complete |" in tracker_text
 
@@ -880,6 +954,11 @@ def test_epic_closeout_blocks_missing_parent_ac_evidence(tmp_path: Path) -> None
 
     blocked = run_project(["epic", "closeout", "--epic-id", "EPIC-001"], cwd=tmp_path)
     assert blocked.returncode != 0
+    assert "Epic closeout summary:" in blocked.stdout
+    assert "- Parent ACs: 1 total, 0 pass, 0 deferred, 1 gap" in blocked.stdout
+    assert "- Missing parent evidence: AC1: TASK-001 lacks parent AC evidence" in blocked.stdout
+    assert "- Epic retro: epic retro section 'Lessons' is missing or still placeholder" in blocked.stdout
+    assert "- Next action: resolve the listed gaps or record approved deferrals" in blocked.stdout
     assert "Epic closeout blocked by acceptance gaps" in blocked.stdout
     assert "AC1: TASK-001 lacks parent AC evidence" in blocked.stdout
 
@@ -907,6 +986,10 @@ def test_epic_closeout_accepts_approved_deferral_with_follow_up(tmp_path: Path) 
         "| Parent AC | Status | Owner | Decision Date | Reason | Follow-up | Notes |\n"
         "|---|---|---|---|---|---|---|\n"
         "| AC1 | Approved | Product Owner | 2026-06-17 | Deferred from MVP | EPIC-002 | Owner approved follow-up |\n",
+        encoding="utf-8",
+    )
+    (epic_dir / "RETRO.md").write_text(
+        ready_epic_retro("EPIC-001", "Deferred Epic"),
         encoding="utf-8",
     )
 
@@ -1059,6 +1142,80 @@ def test_epic_ready_blocks_vague_epic_and_decomposition(tmp_path: Path) -> None:
     decompose = run_project(["epic", "decompose", "--epic-id", "EPIC-001"], cwd=tmp_path)
     assert decompose.returncode != 0
     assert "EPIC-001 is not ready" in decompose.stderr
+
+
+def test_epic_lifecycle_gates_global_epic_status(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Lifecycle Epic"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+
+    analysing = run_project(
+        ["epic", "lifecycle", "--epic-id", "EPIC-001", "--to", "Analysing"],
+        cwd=tmp_path,
+    )
+    assert analysing.returncode == 0, analysing.stdout + analysing.stderr
+    assert "Updated EPIC-001: To Do -> Analysing" in analysing.stdout
+
+    ready_blocked = run_project(
+        ["epic", "lifecycle", "--epic-id", "EPIC-001", "--to", "Ready"],
+        cwd=tmp_path,
+    )
+    assert ready_blocked.returncode != 0
+    assert "EPIC-001 cannot move to Ready" in ready_blocked.stderr
+
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Lifecycle Epic",
+            ["- AC1: Lifecycle status is safely gated."],
+        ),
+        encoding="utf-8",
+    )
+
+    ready = run_project(
+        ["epic", "lifecycle", "--epic-id", "EPIC-001", "--to", "Ready"],
+        cwd=tmp_path,
+    )
+    assert ready.returncode == 0, ready.stdout + ready.stderr
+    assert "Updated EPIC-001: Analysing -> Ready" in ready.stdout
+
+    in_progress_blocked = run_project(
+        ["epic", "lifecycle", "--epic-id", "EPIC-001", "--to", "In Progress"],
+        cwd=tmp_path,
+    )
+    assert in_progress_blocked.returncode != 0
+    assert "AC1: no mapped child rows" in in_progress_blocked.stderr
+
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-001 | Lifecycle Child | Proposed | Task | AC1 |  |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+    in_progress = run_project(
+        ["epic", "lifecycle", "--epic-id", "EPIC-001", "--to", "In Progress"],
+        cwd=tmp_path,
+    )
+    assert in_progress.returncode == 0, in_progress.stdout + in_progress.stderr
+    assert "Updated EPIC-001: Ready -> In Progress" in in_progress.stdout
+
+    closeout_blocked = run_project(
+        ["epic", "lifecycle", "--epic-id", "EPIC-001", "--to", "Closeout"],
+        cwd=tmp_path,
+    )
+    assert closeout_blocked.returncode != 0
+    assert "TASK-001 is Proposed, not Complete" in closeout_blocked.stderr
+
+    complete_blocked = run_project(
+        ["epic", "lifecycle", "--epic-id", "EPIC-001", "--to", "Complete"],
+        cwd=tmp_path,
+    )
+    assert complete_blocked.returncode != 0
+    assert "use `epic closeout --epic-id <EPIC-ID> --complete`" in complete_blocked.stderr
 
 
 def test_epic_ready_child_blocks_shallow_child_status(tmp_path: Path) -> None:

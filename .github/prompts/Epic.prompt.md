@@ -1,7 +1,7 @@
 ---
 name: project.epic
-description: Manage epic lifecycle (init, decompose, approve, scaffold child, status, audit, closeout).
-argument-hint: action=setup|init|decompose|approve|scaffold-child|status|audit|closeout title="..." epicId=EPIC-001 id=TASK-001
+description: Manage epic lifecycle (init, lifecycle, decompose, approve, scaffold child, status, audit, closeout).
+argument-hint: action=setup|init|lifecycle|decompose|approve|scaffold-child|status|audit|closeout title="..." epicId=EPIC-001 id=TASK-001
 agent: agent
 ---
 
@@ -11,11 +11,12 @@ Read `/.project-workflow/guidance.md` if present before changing workflow state.
 
 Inputs:
 
-- Action: `${input:action:setup|init|ready|decompose|approve|scaffold-child|ready-child|status|audit|closeout}`
+- Action: `${input:action:setup|init|ready|lifecycle|decompose|approve|scaffold-child|ready-child|status|audit|closeout}`
 - Epic title (required for `init`): `${input:title:}`
 - Epic ID (required for all non-init actions): `${input:epicId:EPIC-001}`
 - Row ID (required for `approve` and `scaffold-child`): `${input:id:TASK-014}`
 - Status target (required for `status`): `${input:status:Testing|Review|Complete}`
+ - Epic lifecycle target (required for `lifecycle`): `${input:lifecycleStatus:Analysing|Ready|In Progress|Closeout|Complete}`
 - Decompose limit (optional, default 5): `${input:limit:5}`
 - Decompose type (optional, default Task): `${input:type:Task}`
 - Create branch for scaffold-child (optional): `${input:createBranch:no}`
@@ -120,6 +121,10 @@ Execution:
 
 `./.project-workflow/cli/workflow epic ready --epic-id <EPIC_ID>`
 
+- `lifecycle`:
+
+`./.project-workflow/cli/workflow epic lifecycle --epic-id <EPIC_ID> --to <LIFECYCLE_STATUS>`
+
 - `approve`:
 
 `./.project-workflow/cli/workflow epic approve --epic-id <EPIC_ID> --id <ROW_ID>`
@@ -151,13 +156,16 @@ Execution:
 Constraints to enforce in responses:
 
 - Decomposition is proposal-first: it writes Proposed rows and does not scaffold child folders.
+- `ACCEPTANCE-MAP.md` is the in-progress parent AC coverage view. It is created on `epic init` and refreshed by epic lifecycle commands from requirements, tracker rows, deferrals, and child evidence.
 - Proposed child rows should preserve source AC IDs in the epic tracker `Parent ACs` field when they come from numbered acceptance criteria. Legacy trackers may still carry coverage in `Notes` as `Covers AC1, AC3`.
 - Scaffolded epic child tasks must carry parent AC coverage and parent AC evidence sections forward into their docs. Their `IMPLEMENTATION.md` planning table must map each row to child AC IDs while keeping the parent AC mapping visible.
 - The global tracker summarizes epic rows; the epic tracker owns child rows. Proposed child rows must stay in the epic tracker and must not be added to the global tracker.
-- `epic audit` writes `ACCEPTANCE-AUDIT.md` with parent AC coverage, child evidence, deferrals, and verdicts.
-- `epic closeout` must block if any parent AC is unmapped, lacks evidence, lacks a QA pass verdict, or lacks an approved deferral with follow-up.
+- `epic audit` writes `ACCEPTANCE-AUDIT.md` with parent AC coverage, child evidence, deferrals, and verdicts. The audit is the closeout evidence artifact; `ACCEPTANCE-MAP.md` is the working coverage map.
+- `epic closeout` must block if any parent AC is unmapped, lacks evidence, lacks a QA pass verdict, lacks an approved deferral with follow-up, or if `RETRO.md` is missing/incomplete.
+- Before closeout, ensure `RETRO.md` records lessons, follow-up tasks, deferrals, and missed in-scope work. Use explicit `None.` entries when a section has nothing to report.
 - `epic status --to Complete` must block unless the child row is in `Review` and its docs contain QA/code-review evidence plus parent AC evidence for its assigned parent ACs.
 - `epic ready-child` must pass before implementation/testing for an epic child; if it fails, remediate missing child requirements, planning, parent AC coverage, or owner decisions before coding.
+- `epic lifecycle` updates the global epic row through `Analysing`, `Ready`, `In Progress`, and `Closeout`. `Ready`, `In Progress`, and `Closeout` are gated; `Complete` remains owned by `epic closeout --complete`.
 - Approval gate: only Approved rows may be scaffolded.
 - Child task IDs remain globally unique and are managed by workflow behavior.
 - If branch creation is requested for `scaffold-child`, the epic branch must already exist; no fallback branch is allowed.

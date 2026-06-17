@@ -299,6 +299,7 @@ Installed CLI path:
 
 ```bash
 project epic init --title "Checkout Reliability"
+project epic lifecycle --epic-id EPIC-001 --to Analysing
 project epic decompose --epic-id EPIC-001 --limit 5 --type Task
 project epic approve --epic-id EPIC-001 --id TASK-014
 project epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
@@ -308,6 +309,7 @@ Local workflow script path (inside an initialized repo):
 
 ```bash
 .venv/bin/python .project-workflow/cli/workflow.py epic init --title "Checkout Reliability"
+.venv/bin/python .project-workflow/cli/workflow.py epic lifecycle --epic-id EPIC-001 --to Analysing
 .venv/bin/python .project-workflow/cli/workflow.py epic decompose --epic-id EPIC-001 --limit 5 --type Task
 .venv/bin/python .project-workflow/cli/workflow.py epic approve --epic-id EPIC-001 --id TASK-014
 .venv/bin/python .project-workflow/cli/workflow.py epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
@@ -315,9 +317,11 @@ Local workflow script path (inside an initialized repo):
 
 Epic workflow rules:
 
-- `epic init` auto-assigns the next sequential epic ID and writes an epic `REQUIREMENTS.md` plus epic `TRACKER.md`.
+- `epic init` auto-assigns the next sequential epic ID and writes an epic `REQUIREMENTS.md`, epic `TRACKER.md`, `DEFERRALS.md`, `RETRO.md`, and `ACCEPTANCE-MAP.md`.
 - `epic init` also writes `DEFERRALS.md`, where owner-approved deferrals must record parent AC, status, owner, decision date, reason, and follow-up reference.
+- `ACCEPTANCE-MAP.md` is the in-progress parent AC coverage view. It is refreshed by epic lifecycle commands from requirements, tracker rows, deferrals, and child evidence.
 - Epic requirements should use stable parent acceptance criteria IDs (`AC1`, `AC2`, etc.) and preserve existing IDs across revisions.
+- `epic lifecycle` safely updates the global epic row through `Analysing`, `Ready`, `In Progress`, and `Closeout`. `Ready`, `In Progress`, and `Closeout` are gated; `Complete` remains owned by `epic closeout --complete`.
 - New epic trackers include a `Parent ACs` column for child-row coverage. Legacy trackers that use `Notes` values such as `Covers AC1, AC3` remain supported.
 - `epic decompose` writes Proposed child rows only. It does not scaffold child folders/docs.
 - `epic approve` moves a row from Proposed to Approved (same semantics as manually editing status in epic tracker).
@@ -326,7 +330,8 @@ Epic workflow rules:
 - `epic status` moves epic child rows through `Testing`, `Review`, and `Complete`; `Complete` requires QA/code-review evidence and parent AC evidence for assigned parent ACs.
 - Scaffolded epic child docs include `Parent AC Coverage` and `Parent AC Evidence` sections so QA can prove the parent epic criteria the child owns.
 - The global tracker summarizes epic rows; each epic `TRACKER.md` owns child rows. Proposed child rows should not be added to the global tracker.
-- `epic audit` writes `ACCEPTANCE-AUDIT.md`; `epic closeout` validates gates and only marks the global epic row Complete when `--complete` is explicit and all parent ACs have evidence or approved deferrals.
+- `epic audit` writes `ACCEPTANCE-AUDIT.md`; the audit is the closeout evidence artifact, while `ACCEPTANCE-MAP.md` remains the working coverage map.
+- `epic closeout` validates gates and only marks the global epic row Complete when `--complete` is explicit, all parent ACs have evidence or approved deferrals, and `RETRO.md` records lessons, follow-ups, deferrals, and missed in-scope work. Use explicit `None.` entries when a retro section has nothing to report.
 - Child IDs remain globally unique task IDs (`TASK-###`) across standalone and epic-managed work.
 - If `--create-branch` is used for epic child scaffold, `--epic-branch` must already exist; the command fails fast and never falls back to a base branch.
 
