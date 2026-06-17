@@ -20,6 +20,23 @@ def run_project(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def write_namespace_config(root: Path) -> None:
+    (root / ".project-workflow" / "config.json").write_text(
+        "{\n"
+        '  "task_id_prefixes": ["TASK", "UI", "MCP", "DEV", "WF"],\n'
+        '  "default_task_id_prefix": "WF",\n'
+        '  "prefix_guidance": {\n'
+        '    "TASK": "General task work.",\n'
+        '    "UI": "Frontend, widget, component, route, layout, visual, interaction, UX.",\n'
+        '    "MCP": "MCP server, app tool, payload contract, fixture, orchestration.",\n'
+        '    "DEV": "Local development, debug tooling, tunnels, build scripts.",\n'
+        '    "WF": "Project workflow conventions, process automation, prompts, agent guidance."\n'
+        "  }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+
+
 def ready_requirements(task_id: str, title: str, ac_lines: list[str] | None = None) -> str:
     criteria = "\n".join(ac_lines or ["- AC1: Ready outcome is delivered."])
     return (
@@ -105,6 +122,7 @@ def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:
     assert init.returncode == 0, init.stderr
     assert ".project-workflow/guidance.md" in init.stdout
     assert (tmp_path / ".project-workflow" / "guidance.md").exists()
+    assert (tmp_path / ".project-workflow" / "config.json").exists()
     assert "<!-- project-workflow:start -->" in (
         tmp_path / ".github" / "copilot-instructions.md"
     ).read_text(encoding="utf-8")
@@ -263,6 +281,52 @@ def test_task_status_updates_packaged_and_local_workflow(tmp_path: Path) -> None
 
     tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(encoding="utf-8")
     assert "| TASK-001 | Lifecycle Status | Plan Confirmed |" in tracker_text
+
+
+def test_configured_task_prefixes_work_for_packaged_and_local_workflow(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+    write_namespace_config(tmp_path)
+
+    packaged_task = run_project(
+        ["task", "init", "--prefix", "WF", "--title", "Workflow Status", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert packaged_task.returncode == 0, packaged_task.stdout + packaged_task.stderr
+    assert "Assigned ID: WF-001" in packaged_task.stdout
+    assert (tmp_path / ".project-workflow" / "tasks" / "WF-001-Workflow-Status").exists()
+
+    status = run_project(
+        ["task", "status", "--id", "WF-001-Workflow-Status", "--to", "Analysing"],
+        cwd=tmp_path,
+    )
+    assert status.returncode == 0, status.stdout + status.stderr
+    assert "Updated WF-001: To Do -> Analysing" in status.stdout
+
+    local_workflow = tmp_path / ".project-workflow" / "cli" / "workflow.py"
+    local_task = subprocess.run(
+        [
+            sys.executable,
+            str(local_workflow),
+            "task",
+            "init",
+            "--prefix",
+            "MCP",
+            "--title",
+            "Tool Contract",
+            "--update-tracker",
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert local_task.returncode == 0, local_task.stdout + local_task.stderr
+    assert "Assigned ID: MCP-001" in local_task.stdout
+
+    tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(encoding="utf-8")
+    assert "| WF-001 | Workflow Status | Analysing | `tasks/WF-001-Workflow-Status/IMPLEMENTATION.md` |" in tracker_text
+    assert "| MCP-001 | Tool Contract | To Do | `tasks/MCP-001-Tool-Contract/IMPLEMENTATION.md` |" in tracker_text
 
 
 def test_task_status_rejects_illegal_transition_without_force(tmp_path: Path) -> None:
@@ -631,12 +695,39 @@ def test_doctor_separates_legacy_warnings_from_current_warnings(tmp_path: Path) 
     assert doctor.returncode == 0, doctor.stdout + doctor.stderr
     assert f"WARNING: {current_impl}" in doctor.stdout
     assert f"LEGACY WARNING: {legacy_impl}" in doctor.stdout
-    assert "project doctor: 1 legacy warning(s) shown separately." in doctor.stdout
+    assert "LEGACY WARNING" in doctor.stdout
+    assert "APP-001 uses unconfigured task ID prefix 'APP'" in doctor.stdout
+    assert "project doctor: 2 legacy warning(s) shown separately." in doctor.stdout
 
     strict_doctor = run_project(["doctor", "--strict"], cwd=tmp_path)
     assert strict_doctor.returncode != 0
     assert f"ERROR: {current_impl}" in strict_doctor.stdout
     assert f"ERROR: {legacy_impl}" in strict_doctor.stdout
+
+
+def test_doctor_warns_for_unconfigured_task_prefixes(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    task_dir = tmp_path / ".project-workflow" / "tasks" / "WF-003-Workflow-Task"
+    task_dir.mkdir()
+    (task_dir / "IMPLEMENTATION.md").write_text(
+        "## User Story\n\nAs a maintainer, I have namespace state.\n",
+        encoding="utf-8",
+    )
+    tracker_text = tracker_path.read_text(encoding="utf-8")
+    tracker_text += "| WF-003 | Workflow Task | To Do | `tasks/WF-003-Workflow-Task/IMPLEMENTATION.md` |\n"
+    tracker_path.write_text(tracker_text, encoding="utf-8")
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    assert "WF-003 uses unconfigured task ID prefix 'WF'" in doctor.stdout
+
+    strict_doctor = run_project(["doctor", "--strict"], cwd=tmp_path)
+    assert strict_doctor.returncode != 0
+    assert "ERROR" in strict_doctor.stdout
+    assert "WF-003 uses unconfigured task ID prefix 'WF'" in strict_doctor.stdout
 
 
 def test_doctor_warns_when_active_task_row_lacks_ac_mapping(tmp_path: Path) -> None:
@@ -737,11 +828,73 @@ def test_epic_decompose_preserves_source_ac_ids_in_notes(tmp_path: Path) -> None
     epic_tracker = (epic_dir / "TRACKER.md").read_text(encoding="utf-8")
     assert "| TASK-001 | First epic outcome is delivered | Proposed | Task | AC1 |" in epic_tracker
     assert "| TASK-002 | Second epic outcome is delivered | Proposed | Task | AC2 |" in epic_tracker
-    assert "Covers AC1; Generated from REQUIREMENTS.md" in epic_tracker
-    assert "Covers AC2; Generated from REQUIREMENTS.md" in epic_tracker
+    assert "Covers AC1; Prefix TASK:" in epic_tracker
+    assert "Covers AC2; Prefix TASK:" in epic_tracker
+    assert "Generated from REQUIREMENTS.md" in epic_tracker
     acceptance_map = (epic_dir / "ACCEPTANCE-MAP.md").read_text(encoding="utf-8")
     assert "| AC1 | First epic outcome is delivered. | TASK-001 (Proposed) | None | None | Mapped - evidence pending |" in acceptance_map
     assert "| AC2 | Second epic outcome is delivered. | TASK-002 (Proposed) | None | None | Mapped - evidence pending |" in acceptance_map
+
+
+def test_epic_decompose_uses_configured_mixed_prefixes_and_prefix_override(
+    tmp_path: Path,
+) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+    write_namespace_config(tmp_path)
+
+    epic = run_project(["epic", "init", "--title", "Mixed App Work"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Mixed App Work",
+            [
+                "- AC1: MCP server payload contract is delivered.",
+                "- AC2: Frontend UI route interaction is delivered.",
+            ],
+        ),
+        encoding="utf-8",
+    )
+
+    decompose = run_project(
+        ["epic", "decompose", "--epic-id", "EPIC-001", "--limit", "2"],
+        cwd=tmp_path,
+    )
+    assert decompose.returncode == 0, decompose.stdout + decompose.stderr
+
+    epic_tracker = (epic_dir / "TRACKER.md").read_text(encoding="utf-8")
+    assert "| MCP-001 | MCP server payload contract is delivered | Proposed | Task | AC1 |" in epic_tracker
+    assert "| UI-001 | Frontend UI route interaction is delivered | Proposed | Task | AC2 |" in epic_tracker
+    assert "Prefix MCP: " in epic_tracker
+    assert "Prefix UI: " in epic_tracker
+
+    second_epic = run_project(["epic", "init", "--title", "Forced Mcp Work"], cwd=tmp_path)
+    assert second_epic.returncode == 0, second_epic.stdout + second_epic.stderr
+    second_epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-002-*"))
+    (second_epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-002",
+            "Forced Mcp Work",
+            [
+                "- AC1: Frontend UI fixture is delivered.",
+                "- AC2: Workflow prompt fixture is delivered.",
+            ],
+        ),
+        encoding="utf-8",
+    )
+
+    forced = run_project(
+        ["epic", "decompose", "--epic-id", "EPIC-002", "--limit", "2", "--prefix", "MCP"],
+        cwd=tmp_path,
+    )
+    assert forced.returncode == 0, forced.stdout + forced.stderr
+    forced_tracker = (second_epic_dir / "TRACKER.md").read_text(encoding="utf-8")
+    assert "| MCP-002 | Frontend UI fixture is delivered | Proposed | Task | AC1 |" in forced_tracker
+    assert "| MCP-003 | Workflow prompt fixture is delivered | Proposed | Task | AC2 |" in forced_tracker
+    assert "Prefix MCP: forced by --prefix" in forced_tracker
 
 
 def test_epic_decompose_reports_unmapped_parent_ac_ids(tmp_path: Path) -> None:

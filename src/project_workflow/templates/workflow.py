@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import shutil
 import subprocess
@@ -50,6 +51,10 @@ CODEX_SKILL_NAMES = [
 TASK_ID_PREFIX = "TASK"
 EPIC_ID_PREFIX = "EPIC"
 ID_PADDING = 3
+WORKFLOW_CONFIG_FILENAME = "config.json"
+DEFAULT_PREFIX_GUIDANCE = {
+    TASK_ID_PREFIX: "General task work that does not need a repository-specific namespace.",
+}
 GLOBAL_TRACKER_COLUMNS = ("ID", "Title", "Status", "Docs")
 IMPLEMENTATION_TASK_COLUMNS = (
     "ID",
@@ -284,6 +289,25 @@ def _ensure_user_guidance_file(path: Path) -> str:
     return f"Created: {path}"
 
 
+def _default_workflow_config_text() -> str:
+    return json.dumps(
+        {
+            "task_id_prefixes": [TASK_ID_PREFIX],
+            "default_task_id_prefix": TASK_ID_PREFIX,
+            "prefix_guidance": DEFAULT_PREFIX_GUIDANCE,
+        },
+        indent=2,
+    ) + "\n"
+
+
+def _ensure_user_config_file(path: Path) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        return f"Exists: {path}"
+    path.write_text(_default_workflow_config_text(), encoding="utf-8")
+    return f"Created: {path}"
+
+
 def _managed_project_workflow_block() -> str:
     return (
         f"{MANAGED_BLOCK_START}\n"
@@ -291,6 +315,7 @@ def _managed_project_workflow_block() -> str:
         "This repository uses project-workflow. Keep workflow state in "
         "`.project-workflow/TRACKER.md` and `.project-workflow/tasks/`.\n\n"
         "- Read repo-specific workflow guidance from `.project-workflow/guidance.md`.\n"
+        "- Read task ID namespace config from `.project-workflow/config.json`.\n"
         f"- To install or refresh project-workflow itself, run `{CANONICAL_INIT_COMMAND}` "
         "from the repository root; add `--agent codex`, `--agent cursor`, "
         "`--agent claude-code`, or `--agent github-copilot` when selecting a mode. "
@@ -360,6 +385,136 @@ class DoctorIssue:
     severity: str
     path: str
     message: str
+
+
+@dataclass(frozen=True)
+class WorkflowConfig:
+    task_id_prefixes: tuple[str, ...]
+    default_task_id_prefix: str
+    prefix_guidance: dict[str, str]
+
+
+def _workflow_config_path(root: Path) -> Path:
+    return root / ".project-workflow" / WORKFLOW_CONFIG_FILENAME
+
+
+def _normalize_task_id_prefix(prefix: str) -> str:
+    normalized = prefix.strip().upper()
+    if not re.match(r"^[A-Z][A-Z0-9]*$", normalized):
+        raise SystemExit(
+            f"Invalid task ID prefix '{prefix}'. "
+            "Use uppercase letters/numbers, starting with a letter."
+        )
+    if normalized == EPIC_ID_PREFIX:
+        raise SystemExit(f"Task ID prefix '{EPIC_ID_PREFIX}' is reserved for epics.")
+    return normalized
+
+
+def _default_workflow_config() -> WorkflowConfig:
+    return WorkflowConfig(
+        task_id_prefixes=(TASK_ID_PREFIX,),
+        default_task_id_prefix=TASK_ID_PREFIX,
+        prefix_guidance=dict(DEFAULT_PREFIX_GUIDANCE),
+    )
+
+
+def _load_workflow_config(root: Path) -> WorkflowConfig:
+    config_path = _workflow_config_path(root)
+    if not config_path.exists():
+        return _default_workflow_config()
+
+    try:
+        raw = json.loads(config_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid JSON in {config_path}: {exc}") from exc
+    except OSError as exc:
+        raise SystemExit(f"Could not read {config_path}: {exc}") from exc
+
+    if not isinstance(raw, dict):
+        raise SystemExit(f"{config_path} must contain a JSON object.")
+
+    raw_prefixes = raw.get("task_id_prefixes", [TASK_ID_PREFIX])
+    if not isinstance(raw_prefixes, list) or not raw_prefixes:
+        raise SystemExit(f"{config_path} field 'task_id_prefixes' must be a non-empty list.")
+
+    prefixes: list[str] = []
+    for raw_prefix in raw_prefixes:
+        if not isinstance(raw_prefix, str):
+            raise SystemExit(f"{config_path} field 'task_id_prefixes' must contain strings.")
+        prefix = _normalize_task_id_prefix(raw_prefix)
+        if prefix not in prefixes:
+            prefixes.append(prefix)
+
+    raw_default = raw.get("default_task_id_prefix", prefixes[0])
+    if not isinstance(raw_default, str):
+        raise SystemExit(f"{config_path} field 'default_task_id_prefix' must be a string.")
+    default_prefix = _normalize_task_id_prefix(raw_default)
+    if default_prefix not in prefixes:
+        raise SystemExit(
+            f"{config_path} default_task_id_prefix '{default_prefix}' must appear in "
+            "task_id_prefixes."
+        )
+
+    raw_guidance = raw.get("prefix_guidance", {})
+    if not isinstance(raw_guidance, dict):
+        raise SystemExit(f"{config_path} field 'prefix_guidance' must be an object.")
+
+    prefix_guidance: dict[str, str] = {}
+    for raw_prefix, raw_text in raw_guidance.items():
+        if not isinstance(raw_prefix, str) or not isinstance(raw_text, str):
+            raise SystemExit(f"{config_path} field 'prefix_guidance' must map strings to strings.")
+        prefix = _normalize_task_id_prefix(raw_prefix)
+        if prefix not in prefixes:
+            raise SystemExit(
+                f"{config_path} prefix_guidance key '{prefix}' must appear in task_id_prefixes."
+            )
+        prefix_guidance[prefix] = raw_text.strip()
+
+    for prefix in prefixes:
+        prefix_guidance.setdefault(prefix, "")
+
+    return WorkflowConfig(
+        task_id_prefixes=tuple(prefixes),
+        default_task_id_prefix=default_prefix,
+        prefix_guidance=prefix_guidance,
+    )
+
+
+def _format_task_prefixes(prefixes: tuple[str, ...]) -> str:
+    return " or ".join(f"{prefix}-###" for prefix in prefixes)
+
+
+def _resolve_task_id_prefix(root: Path, requested_prefix: str | None) -> str:
+    config = _load_workflow_config(root)
+    prefix = (
+        _normalize_task_id_prefix(requested_prefix)
+        if requested_prefix
+        else config.default_task_id_prefix
+    )
+    if prefix not in config.task_id_prefixes:
+        raise SystemExit(
+            f"Task ID prefix '{prefix}' is not configured in {_workflow_config_path(root)}."
+        )
+    return prefix
+
+
+def _normalize_task_status_id(row_id: str, *, root: Path) -> str:
+    config = _load_workflow_config(root)
+    prefix_pattern = "|".join(
+        re.escape(prefix) for prefix in sorted(config.task_id_prefixes, key=len, reverse=True)
+    )
+    match = re.match(rf"^(({prefix_pattern})-\d+)(?:-.+)?$", row_id)
+    if not match:
+        raise SystemExit(
+            f"Task status only supports {_format_task_prefixes(config.task_id_prefixes)} IDs; "
+            f"got '{row_id}'."
+        )
+    return match.group(1)
+
+
+def _task_prefix_from_id(row_id: str) -> str | None:
+    match = re.match(r"^([A-Z][A-Z0-9]*)-\d+(?:-.+)?$", row_id)
+    return match.group(1) if match else None
 
 
 def _write_file(path: Path, content: str, *, overwrite: bool) -> None:
@@ -1222,13 +1377,6 @@ def _validate_status_force_args(*, new_status: str, force: bool, reason: str | N
         raise SystemExit("--force is not supported for Complete transitions.")
 
 
-def _normalize_task_status_id(row_id: str) -> str:
-    match = re.match(rf"^({re.escape(TASK_ID_PREFIX)}-\d+)(?:-.+)?$", row_id)
-    if not match:
-        raise SystemExit(f"Task status only supports {TASK_ID_PREFIX}-### IDs; got '{row_id}'.")
-    return match.group(1)
-
-
 READINESS_REQUIRED_SECTIONS = (
     "Goal",
     "Non-Goals",
@@ -1424,7 +1572,7 @@ def _status_requires_epic_child_readiness(new_status: str) -> bool:
 def _resolve_global_task_docs(
     *, root: Path, tracker_path: Path, task_id: str
 ) -> tuple[Path, Path, dict[str, str]]:
-    normalized_task_id = _normalize_task_status_id(task_id)
+    normalized_task_id = _normalize_task_status_id(task_id, root=root)
     _lines, _header_idx, rows = _global_tracker_rows(tracker_path)
     for row in rows:
         if row["ID"] != normalized_task_id:
@@ -1487,7 +1635,7 @@ def _update_global_tracker_row_status(
     force: bool,
     reason: str | None,
 ) -> tuple[str, str]:
-    normalized_row_id = _normalize_task_status_id(row_id)
+    normalized_row_id = _normalize_task_status_id(row_id, root=root)
 
     if new_status not in TRACKER_STATUSES:
         raise SystemExit(
@@ -1536,11 +1684,7 @@ def _update_global_tracker_row_status(
                     "Use --force --reason for audited non-Complete exceptions."
                 )
 
-        if (
-            _status_requires_task_readiness(new_status)
-            and not force
-            and normalized_row_id.startswith(f"{TASK_ID_PREFIX}-")
-        ):
+        if _status_requires_task_readiness(new_status) and not force:
             requirements_path = docs_path.parent / "REQUIREMENTS.md"
             readiness_issues = _task_ready_issues_for_paths(
                 requirements_path=requirements_path,
@@ -1773,14 +1917,14 @@ def _resolve_epic_dir(tasks_dir: Path, epic_id: str) -> Path:
     return matches[0]
 
 
-def _next_task_id_from_used(used_ids: set[str]) -> str:
+def _next_task_id_from_used(used_ids: set[str], *, prefix: str) -> str:
     max_value = 0
-    row_re = re.compile(rf"^{re.escape(TASK_ID_PREFIX)}-(\d+)$")
+    row_re = re.compile(rf"^{re.escape(prefix)}-(\d+)$")
     for used_id in used_ids:
         match = row_re.match(used_id)
         if match:
             max_value = max(max_value, int(match.group(1)))
-    return f"{TASK_ID_PREFIX}-{max_value + 1:0{ID_PADDING}d}"
+    return f"{prefix}-{max_value + 1:0{ID_PADDING}d}"
 
 
 def _used_ids_for_prefix(tasks_dir: Path, tracker_path: Path, *, prefix: str) -> set[str]:
@@ -1868,6 +2012,55 @@ def _decompose_epic_requirements_to_titles(
 
     candidates = ac_bullets or requirement_bullets
     return candidates[:limit]
+
+
+def _guidance_words(text: str) -> set[str]:
+    ignored = {
+        "and",
+        "for",
+        "the",
+        "that",
+        "with",
+        "work",
+        "task",
+        "tasks",
+        "into",
+        "such",
+        "from",
+        "this",
+    }
+    return {
+        word
+        for word in re.split(r"[^a-z0-9]+", text.lower())
+        if len(word) >= 3 and word not in ignored
+    }
+
+
+def _classify_task_prefix(title: str, config: WorkflowConfig) -> tuple[str, str]:
+    title_words = _guidance_words(title)
+    scored: list[tuple[int, str, list[str]]] = []
+    for prefix in config.task_id_prefixes:
+        score = 0
+        reasons: list[str] = []
+        if prefix.lower() in title.lower():
+            score += 4
+            reasons.append(f"title mentions {prefix}")
+
+        guidance = config.prefix_guidance.get(prefix, "")
+        matched_words = sorted(title_words & _guidance_words(guidance))
+        if matched_words:
+            score += len(matched_words)
+            reasons.append("matched guidance: " + ", ".join(matched_words[:5]))
+        scored.append((score, prefix, reasons))
+
+    scored.sort(key=lambda item: (-item[0], config.task_id_prefixes.index(item[1])))
+    best_score, best_prefix, best_reasons = scored[0]
+    if best_score <= 0:
+        return (
+            config.default_task_id_prefix,
+            f"Prefix {config.default_task_id_prefix}: default prefix; no guidance match",
+        )
+    return best_prefix, f"Prefix {best_prefix}: " + "; ".join(best_reasons)
 
 
 def _append_epic_tracker_rows(epic_tracker_path: Path, rows_to_add: list[dict[str, str]]) -> None:
@@ -2124,6 +2317,37 @@ def _doctor_check_pending_generated_updates(root: Path, issues: list[DoctorIssue
             )
 
 
+def _doctor_check_namespace_config(root: Path, issues: list[DoctorIssue]) -> WorkflowConfig | None:
+    config_path = _workflow_config_path(root)
+    try:
+        return _load_workflow_config(root)
+    except SystemExit as exc:
+        _add_issue(issues, "error", config_path, str(exc))
+        return None
+
+
+def _doctor_check_row_namespace(
+    row_id: str,
+    *,
+    config: WorkflowConfig | None,
+    path: Path,
+    issues: list[DoctorIssue],
+) -> None:
+    if config is None:
+        return
+    prefix = _task_prefix_from_id(row_id)
+    if prefix is None or prefix == EPIC_ID_PREFIX:
+        return
+    if prefix not in config.task_id_prefixes:
+        _add_issue(
+            issues,
+            "warning",
+            path,
+            f"{row_id} uses unconfigured task ID prefix '{prefix}'. "
+            f"Configured prefixes: {', '.join(config.task_id_prefixes)}.",
+        )
+
+
 def _doctor_check_task_doc(
     *,
     root: Path,
@@ -2205,7 +2429,9 @@ def _doctor_check_task_doc(
     )
 
 
-def _doctor_check_global_tracker(root: Path, issues: list[DoctorIssue]) -> None:
+def _doctor_check_global_tracker(
+    root: Path, issues: list[DoctorIssue], *, config: WorkflowConfig | None
+) -> None:
     workflow_dir = root / ".project-workflow"
     tracker_path = workflow_dir / "TRACKER.md"
     if not tracker_path.exists():
@@ -2220,6 +2446,7 @@ def _doctor_check_global_tracker(root: Path, issues: list[DoctorIssue]) -> None:
     )
     for row in rows:
         row_id = row["ID"]
+        _doctor_check_row_namespace(row_id, config=config, path=tracker_path, issues=issues)
         status = row["Status"]
         if status not in TRACKER_STATUSES:
             _add_issue(
@@ -2238,7 +2465,9 @@ def _doctor_check_global_tracker(root: Path, issues: list[DoctorIssue]) -> None:
         )
 
 
-def _doctor_check_epic_trackers(root: Path, issues: list[DoctorIssue]) -> None:
+def _doctor_check_epic_trackers(
+    root: Path, issues: list[DoctorIssue], *, config: WorkflowConfig | None
+) -> None:
     tasks_dir = root / ".project-workflow" / "tasks"
     if not tasks_dir.exists():
         return
@@ -2251,6 +2480,9 @@ def _doctor_check_epic_trackers(root: Path, issues: list[DoctorIssue]) -> None:
             continue
         for row in rows:
             row_id = row["ID"]
+            _doctor_check_row_namespace(
+                row_id, config=config, path=epic_tracker_path, issues=issues
+            )
             status = row["Status"]
             if status not in EPIC_TRACKER_STATUSES:
                 _add_issue(
@@ -2272,10 +2504,11 @@ def _doctor_check_epic_trackers(root: Path, issues: list[DoctorIssue]) -> None:
 
 def run_doctor(root: Path) -> list[DoctorIssue]:
     issues: list[DoctorIssue] = []
+    config = _doctor_check_namespace_config(root, issues)
     _doctor_check_source_mirrors(root, issues)
     _doctor_check_pending_generated_updates(root, issues)
-    _doctor_check_global_tracker(root, issues)
-    _doctor_check_epic_trackers(root, issues)
+    _doctor_check_global_tracker(root, issues, config=config)
+    _doctor_check_epic_trackers(root, issues, config=config)
     return issues
 
 
@@ -2288,6 +2521,8 @@ def _doctor_issue_is_legacy(issue: DoctorIssue) -> bool:
         return False
     path_text = str(issue.path)
     if ".project-workflow/tasks/APP-" in path_text:
+        return True
+    if "uses unconfigured task ID prefix 'APP'" in issue.message:
         return True
     match = re.search(r"\.project-workflow/tasks/EPIC-(\d+)-", path_text)
     return bool(match and int(match.group(1)) < 3)
@@ -2336,6 +2571,7 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     cli_dir = project_workflow_dir / "cli"
     tracker_path = project_workflow_dir / "TRACKER.md"
     guidance_path = project_workflow_dir / "guidance.md"
+    config_path = project_workflow_dir / WORKFLOW_CONFIG_FILENAME
 
     # Create directories
     tasks_dir.mkdir(parents=True, exist_ok=True)
@@ -2349,6 +2585,7 @@ def cmd_project_init(args: argparse.Namespace) -> None:
         print(f"✓ Exists: {tracker_path}")
 
     print(f"✓ {_ensure_user_guidance_file(guidance_path)}")
+    print(f"✓ {_ensure_user_config_file(config_path)}")
 
     # Create/update the workflow CLI files in .project-workflow/cli/
     workflow_py_path = cli_dir / "workflow.py"
@@ -2450,7 +2687,8 @@ def cmd_task_init(args: argparse.Namespace) -> None:
             f"the project workflow."
         )
 
-    task_id = _next_sequential_id(tasks_dir, tracker_path, prefix=TASK_ID_PREFIX)
+    task_prefix = _resolve_task_id_prefix(cwd, args.prefix)
+    task_id = _next_sequential_id(tasks_dir, tracker_path, prefix=task_prefix)
     existing_task_dirs = [p for p in tasks_dir.glob(f"{task_id}-*") if p.is_dir()]
     if args.folder_suffix:
         folder_suffix = args.folder_suffix
@@ -2516,7 +2754,7 @@ def cmd_task_status(args: argparse.Namespace) -> None:
             f"the project workflow."
         )
 
-    task_id = _normalize_task_status_id(args.id)
+    task_id = _normalize_task_status_id(args.id, root=cwd)
     previous, current = _update_global_tracker_row_status(
         root=cwd,
         tracker_path=tracker_path,
@@ -2546,7 +2784,7 @@ def cmd_task_ready(args: argparse.Namespace) -> None:
             f"the project workflow."
         )
 
-    task_id = _normalize_task_status_id(args.id)
+    task_id = _normalize_task_status_id(args.id, root=cwd)
     requirements_path, implementation_path, _row = _resolve_global_task_docs(
         root=cwd,
         tracker_path=tracker_path,
@@ -2775,14 +3013,28 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
             "'## Acceptance Criteria (Verifiable)' first."
         )
 
-    occupied_ids = _used_ids_for_prefix(tasks_dir, tracker_path, prefix=TASK_ID_PREFIX)
+    config = _load_workflow_config(cwd)
+    forced_prefix = _resolve_task_id_prefix(cwd, args.prefix) if args.prefix else None
+    occupied_ids_by_prefix = {
+        prefix: _used_ids_for_prefix(tasks_dir, tracker_path, prefix=prefix)
+        for prefix in config.task_id_prefixes
+    }
     _lines, _header_idx, epic_rows = _epic_tracker_rows(epic_tracker_path)
 
     rows_to_add: list[dict[str, str]] = []
     for title, ac_id in candidates:
-        next_id = _next_task_id_from_used(occupied_ids)
+        if forced_prefix:
+            child_prefix = forced_prefix
+            classification_note = f"Prefix {child_prefix}: forced by --prefix"
+        else:
+            child_prefix, classification_note = _classify_task_prefix(title, config)
+        occupied_ids = occupied_ids_by_prefix.setdefault(
+            child_prefix,
+            _used_ids_for_prefix(tasks_dir, tracker_path, prefix=child_prefix),
+        )
+        next_id = _next_task_id_from_used(occupied_ids, prefix=child_prefix)
         occupied_ids.add(next_id)
-        notes = f"Generated from {requirements_path.name}"
+        notes = f"{classification_note}; Generated from {requirements_path.name}"
         if ac_id:
             notes = f"Covers {ac_id}; {notes}"
         rows_to_add.append(
@@ -3013,6 +3265,14 @@ def build_parser() -> argparse.ArgumentParser:
     task_init_parser = task_sub.add_parser("init", help="Scaffold a new task folder + docs")
     task_init_parser.add_argument("--title", required=True, help="Human title (e.g. Super Admin Access)")
     task_init_parser.add_argument(
+        "--prefix",
+        help=(
+            "Task ID prefix to allocate, such as UI or MCP. "
+            "Must be listed in .project-workflow/config.json. "
+            "Default: configured default_task_id_prefix."
+        ),
+    )
+    task_init_parser.add_argument(
         "--folder-suffix",
         help=(
             "Overrides the task folder suffix after the ID. "
@@ -3192,6 +3452,13 @@ def build_parser() -> argparse.ArgumentParser:
         dest="item_type",
         default="Task",
         help="Tracker Type column value for proposed rows (default: Task)",
+    )
+    epic_decompose_parser.add_argument(
+        "--prefix",
+        help=(
+            "Force all proposed child rows to use one configured task prefix. "
+            "Omit for config-guided mixed-prefix decomposition."
+        ),
     )
     epic_decompose_parser.set_defaults(func=cmd_epic_decompose)
 

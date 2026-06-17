@@ -94,6 +94,7 @@ Validate epic closeout, optionally completing the global epic row when gates pas
 - `epic ready` must pass before decomposition; if it fails, ask the owner only for missing product decisions/context and record answers in `REQUIREMENTS.md`.
 - `epic lifecycle` updates the global epic row through `Analysing`, `Ready`, `In Progress`, and `Closeout`. `Ready`, `In Progress`, and `Closeout` are gated; `Complete` remains owned by `epic closeout --complete`.
 - `epic decompose` writes Proposed child rows only and does not create child task folders.
+- `epic decompose` reads `.project-workflow/config.json` namespace guidance by default and may produce mixed child prefixes such as `MCP-###` and `UI-###`; use `--prefix <PREFIX>` only for an explicitly homogeneous batch.
 - Proposed child rows should preserve source AC IDs in the epic tracker `Parent ACs` field when they come from numbered acceptance criteria. Legacy trackers may still carry coverage in `Notes` as `Covers AC1, AC3`.
 - `epic approve` moves a child row from `Proposed` to `Approved`.
 - `epic scaffold-child` only accepts `Approved` child rows and moves them to `In Progress` after scaffold.
@@ -104,6 +105,6 @@ Validate epic closeout, optionally completing the global epic row when gates pas
 - `epic audit` writes `ACCEPTANCE-AUDIT.md` with parent AC coverage, child evidence, deferrals, and verdicts. The audit is the closeout evidence artifact; the acceptance map is the in-progress coverage view.
 - `epic closeout` must block if any parent AC is unmapped, lacks evidence, lacks a QA pass verdict, lacks an approved deferral with follow-up, or if `RETRO.md` is missing/incomplete.
 - `RETRO.md` must record lessons, follow-up tasks, deferrals, and missed in-scope work before closeout. Explicit `None.` entries are valid when there is nothing to report.
-- Child IDs remain globally unique `TASK-###` IDs across standalone and epic-managed work.
+- Child IDs remain globally unique within their configured task prefix namespaces across standalone and epic-managed work.
 - When `--create-branch` is used, the epic branch must already exist; do not fall back to a base branch.
 - After any epic tracker or child scaffold change, run `./.project-workflow/cli/workflow doctor` and report workflow-state warnings or errors.
