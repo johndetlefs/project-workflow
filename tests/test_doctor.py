@@ -287,6 +287,10 @@ def test_configured_task_prefixes_work_for_packaged_and_local_workflow(tmp_path:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
     write_namespace_config(tmp_path)
+    custom_config = (tmp_path / ".project-workflow" / "config.json").read_text(encoding="utf-8")
+    refresh = run_project(["init"], cwd=tmp_path)
+    assert refresh.returncode == 0, refresh.stdout + refresh.stderr
+    assert (tmp_path / ".project-workflow" / "config.json").read_text(encoding="utf-8") == custom_config
 
     packaged_task = run_project(
         ["task", "init", "--prefix", "WF", "--title", "Workflow Status", "--update-tracker"],
@@ -971,6 +975,40 @@ def test_epic_child_scaffold_carries_parent_ac_sections(tmp_path: Path) -> None:
     standalone_impl = (standalone_dir / "IMPLEMENTATION.md").read_text(encoding="utf-8")
     assert "## Parent AC Coverage" not in standalone_impl
     assert "## Parent AC Evidence" not in standalone_impl
+
+
+def test_epic_child_scaffold_preserves_configured_task_prefix(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+    write_namespace_config(tmp_path)
+
+    epic = run_project(["epic", "init", "--title", "Custom Prefix Child"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| UI-008 | Widget Interaction | Approved | Task | AC1 |  |  | Prefix UI: owner selected UI child |\n",
+        encoding="utf-8",
+    )
+
+    scaffold = run_project(
+        ["epic", "scaffold-child", "--epic-id", "EPIC-001", "--id", "UI-008"],
+        cwd=tmp_path,
+    )
+    assert scaffold.returncode == 0, scaffold.stdout + scaffold.stderr
+
+    child_dir = epic_dir / "UI-008-Widget-Interaction"
+    assert child_dir.exists()
+    requirements_text = (child_dir / "REQUIREMENTS.md").read_text(encoding="utf-8")
+    implementation_text = (child_dir / "IMPLEMENTATION.md").read_text(encoding="utf-8")
+    tracker_text = (epic_dir / "TRACKER.md").read_text(encoding="utf-8")
+
+    assert "- Task: UI-008" in requirements_text
+    assert "- Task: UI-008" in implementation_text
+    assert "| UI-008 | Widget Interaction | In Progress | Task | AC1 | tasks/EPIC-001-Custom-Prefix-Child/UI-008-Widget-Interaction/IMPLEMENTATION.md |" in tracker_text
 
 
 def test_doctor_accepts_legacy_epic_tracker_schema(tmp_path: Path) -> None:

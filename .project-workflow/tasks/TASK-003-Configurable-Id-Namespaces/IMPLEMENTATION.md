@@ -32,15 +32,15 @@ tracker reclassification.
 ## Validation
 
 - AC1/AC2: `uv run --extra dev pytest tests/test_doctor.py` covered default
-  init plus non-destructive config preservation.
+  init plus non-destructive custom config preservation across init refresh.
 - AC3/AC4: `test_configured_task_prefixes_work_for_packaged_and_local_workflow`
   covered packaged `WF` task creation and local helper `MCP` task creation.
 - AC5/AC7: `test_epic_decompose_uses_configured_mixed_prefixes_and_prefix_override`
   covered mixed `MCP` and `UI` child rows with classification notes.
 - AC6: The same decomposition regression covered `--prefix MCP` homogeneous
   override allocation.
-- AC8: Existing epic scaffold-child coverage preserves the row ID supplied by
-  the epic tracker; custom prefixes are no longer normalized through `TASK`.
+- AC8: `test_epic_child_scaffold_preserves_configured_task_prefix` scaffolded
+  `UI-008` and verified child folder, docs, and tracker path preserved `UI-008`.
 - AC9: `test_configured_task_prefixes_work_for_packaged_and_local_workflow`
   moved `WF-001-Workflow-Status` to `Analysing`.
 - AC10: `test_doctor_warns_for_unconfigured_task_prefixes` covered non-strict
