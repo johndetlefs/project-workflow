@@ -42,7 +42,7 @@ Required workflow:
    - automated test, typecheck, lint, build, or script result
    - manual verification result
    - code inspection finding
-5. Run any missing narrow validation that is necessary to support the review. Do not rerun broad checks unless they are the most meaningful available check.
+5. Run any missing narrow validation that is necessary to support the review. Do not ask the user to manually test behavior that the agent can validate directly with available commands, tests, scripts, or local tools. Do not rerun broad checks unless they are the most meaningful available check.
 6. Review code for:
    - correctness against requirements and decisions
    - unintended scope expansion
@@ -55,6 +55,7 @@ Required workflow:
    - reviewer/agent context
    - files or areas reviewed
    - validation evidence
+   - a clear distinction between verified evidence and deferred setup, owner-only actions, or unavailable connector/OAuth checks
    - findings, if any
    - verdict: `Pass`, `Pass with follow-ups`, or `Changes requested`
 8. Run `./.project-workflow/cli/workflow doctor` when available and include any workflow-state warnings or errors in the review output.

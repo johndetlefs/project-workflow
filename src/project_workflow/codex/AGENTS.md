@@ -15,6 +15,8 @@ This repository uses project-workflow for spec-driven development. Keep workflow
 
 For multi-item orchestration, use `project-delegate` after planning. For large bodies of work, use `project-epic` to create proposal-first epic trackers and approved child tasks.
 
+For epic-managed work, preserve parent epic acceptance criteria coverage from the epic tracker through child requirements, child implementation, QA evidence, and closeout. New epic trackers use a `Parent ACs` field; legacy trackers may carry coverage in `Notes` as `Covers AC1, AC3`. The global tracker summarizes epic rows; epic `TRACKER.md` files own child rows, including Proposed rows.
+
 ## Workflow Skill Map
 
 - If the user asks to create, update, review, or align the product constitution, use `.agents/skills/project-constitution/SKILL.md`.
@@ -47,6 +49,7 @@ For multi-item orchestration, use `project-delegate` after planning. For large b
 - Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.
 - When planning, make every implementation task row map to one or more stable acceptance criteria IDs (`AC1`, `AC2`, etc.) from the task requirements or implementation acceptance criteria section.
+- When planning epic-managed child tasks, keep both the child AC IDs and parent epic AC coverage visible in requirements, implementation rows, validation evidence, and QA notes.
 - Keep `.project-workflow/TRACKER.md` status aligned with the current workflow state using `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` when the command is available.
 - Do not mark a task or work item `Complete` unless implementation validation and QA/code review have passed and the user explicitly asks for completion.
 

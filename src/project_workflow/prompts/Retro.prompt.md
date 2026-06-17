@@ -53,12 +53,14 @@ Required workflow:
    - follow-up task suggestions, if any
    - "No durable updates needed" when nothing should change
 7. If follow-up work is needed, propose a new task rather than reopening the completed task.
+8. Keep follow-up tasks separate from missed in-scope work. Missed in-scope work should be recorded as a completion/process issue unless it was explicitly deferred with owner approval and a follow-up reference.
 
 Output expectations:
 
 - Summarize convention/agent changes made.
 - List any files updated.
 - List proposed follow-up tasks separately.
+- List missed in-scope work separately from follow-up suggestions.
 - Leave the completed task status as `Complete` unless the user explicitly asks to reopen it.
 
 Guardrails:

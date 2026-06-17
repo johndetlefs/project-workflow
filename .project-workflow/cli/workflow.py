@@ -35,8 +35,36 @@ TRACKER_STATUSES = (
     "Complete",
     "N/A",
 )
-EPIC_TRACKER_COLUMNS = ("ID", "Title", "Status", "Type", "Docs", "Branch", "Notes")
-EPIC_TRACKER_STATUSES = ("Proposed", "Approved", "In Progress", "Testing", "Complete")
+EPIC_TRACKER_COLUMNS = (
+    "ID",
+    "Title",
+    "Status",
+    "Type",
+    "Parent ACs",
+    "Docs",
+    "Branch",
+    "Notes",
+)
+LEGACY_EPIC_TRACKER_COLUMNS = ("ID", "Title", "Status", "Type", "Docs", "Branch", "Notes")
+EPIC_TRACKER_FORMAT_KEY = "_format_columns"
+EPIC_TRACKER_STATUSES = (
+    "Proposed",
+    "Approved",
+    "In Progress",
+    "Testing",
+    "Review",
+    "Blocked",
+    "Complete",
+)
+EPIC_STATUS_TRANSITIONS = {
+    "Proposed": {"Approved", "Blocked"},
+    "Approved": {"In Progress", "Blocked"},
+    "In Progress": {"Testing", "Blocked"},
+    "Testing": {"Review", "In Progress", "Blocked"},
+    "Review": {"Complete", "In Progress", "Blocked"},
+    "Blocked": {"Proposed", "Approved", "In Progress", "Testing", "Review"},
+    "Complete": set(),
+}
 AC_MAPPED_IMPLEMENTATION_STATUSES = (
     "Plan Confirmed",
     "In Progress",
@@ -297,7 +325,15 @@ def _tracker_template() -> str:
 def _epic_tracker_template() -> str:
     return (
         "# Stories\n\n"
-        "| ID | Title | Status | Type | Docs | Branch | Notes |\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+    )
+
+
+def _epic_deferrals_template() -> str:
+    return (
+        "# Deferrals\n\n"
+        "| Parent AC | Status | Owner | Decision Date | Reason | Follow-up | Notes |\n"
         "|---|---|---|---|---|---|---|\n"
     )
 
@@ -334,6 +370,302 @@ def _extract_ac_ids(text: str) -> set[str]:
         f"AC{match.group(1)}"
         for match in re.finditer(r"\bAC\s*(\d+)\b", text, flags=re.IGNORECASE)
     }
+
+
+def _extract_parent_ac_coverage(row: dict[str, str]) -> str:
+    direct = row.get("Parent ACs", "").strip()
+    if direct:
+        return direct
+    notes = row.get("Notes", "")
+    match = re.search(
+        r"\bCovers\s+((?:AC\s*\d+\s*,?\s*)+)",
+        notes,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return ""
+    return ", ".join(sorted(_extract_ac_ids(match.group(1))))
+
+
+def _extract_parent_ac_ids_from_requirements(requirements_text: str) -> set[str]:
+    return (
+        _extract_ac_ids(_markdown_section(requirements_text, "Acceptance Criteria (Verifiable)"))
+        | _extract_ac_ids(_markdown_section(requirements_text, "Acceptance Criteria"))
+    )
+
+
+def _extract_parent_ac_ids_from_epic_rows(rows: list[dict[str, str]]) -> set[str]:
+    mapped: set[str] = set()
+    for row in rows:
+        mapped.update(_extract_ac_ids(_extract_parent_ac_coverage(row)))
+    return mapped
+
+
+def _markdown_cell(value: str) -> str:
+    return re.sub(r"\s+", " ", value).replace("|", "\\|").strip()
+
+
+def _extract_parent_ac_summaries(requirements_text: str) -> dict[str, str]:
+    section = _markdown_section(requirements_text, "Acceptance Criteria (Verifiable)")
+    if not section:
+        section = _markdown_section(requirements_text, "Acceptance Criteria")
+    summaries: dict[str, str] = {}
+    for line in section.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("-", "*")):
+            stripped = stripped[1:].strip()
+        match = re.match(r"^(AC\s*(\d+))\s*:\s*(.+)$", stripped, flags=re.IGNORECASE)
+        if match:
+            summaries[f"AC{match.group(2)}"] = match.group(3).strip()
+    return summaries
+
+
+DEFERRAL_COLUMNS = (
+    "Parent AC",
+    "Status",
+    "Owner",
+    "Decision Date",
+    "Reason",
+    "Follow-up",
+    "Notes",
+)
+
+
+def _epic_deferrals(epic_dir: Path) -> dict[str, dict[str, str]]:
+    deferrals_path = epic_dir / "DEFERRALS.md"
+    if not deferrals_path.exists():
+        return {}
+    rows = _parse_markdown_table(
+        deferrals_path,
+        expected_columns=DEFERRAL_COLUMNS,
+        issues=[],
+        label="Epic deferrals",
+    )
+    return {row["Parent AC"]: row for row in rows if row.get("Parent AC")}
+
+
+def _approved_deferral(row: dict[str, str] | None) -> bool:
+    if not row:
+        return False
+    return (
+        row.get("Status", "").strip().lower() == "approved"
+        and bool(row.get("Owner", "").strip())
+        and bool(row.get("Decision Date", "").strip())
+        and bool(row.get("Reason", "").strip())
+        and bool(row.get("Follow-up", "").strip())
+    )
+
+
+def _qa_passed(docs_text: str) -> bool:
+    qa_section = _markdown_section(docs_text, "QA & Code Review").lower()
+    return "verdict: pass" in qa_section
+
+
+def _parent_ac_evidence_present(docs_text: str, ac_id: str) -> bool:
+    evidence_section = _markdown_section(docs_text, "Parent AC Evidence")
+    if not evidence_section or ac_id not in _extract_ac_ids(evidence_section):
+        return False
+    lowered = evidence_section.lower()
+    return "pending" not in lowered and "____" not in evidence_section
+
+
+def _epic_audit_rows(root: Path, epic_id: str) -> tuple[Path, list[dict[str, str]], list[str]]:
+    workflow_dir = root / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    epic_dir = _resolve_epic_dir(tasks_dir, epic_id)
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    epic_tracker_path = epic_dir / "TRACKER.md"
+    if not requirements_path.exists():
+        raise SystemExit(f"Missing epic requirements file: {requirements_path}")
+    if not epic_tracker_path.exists():
+        raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
+
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    ac_summaries = _extract_parent_ac_summaries(requirements_text)
+    _lines, _header_idx, tracker_rows = _epic_tracker_rows(epic_tracker_path)
+    deferrals = _epic_deferrals(epic_dir)
+    audit_rows: list[dict[str, str]] = []
+    gaps: list[str] = []
+
+    for ac_id in sorted(ac_summaries):
+        deferral = deferrals.get(ac_id)
+        has_approved_deferral = _approved_deferral(deferral)
+        mapped_rows = [
+            row
+            for row in tracker_rows
+            if ac_id in _extract_ac_ids(_extract_parent_ac_coverage(row))
+        ]
+        child_labels: list[str] = []
+        evidence_bits: list[str] = []
+        verdict = "Deferred" if has_approved_deferral else "Pass"
+
+        if not mapped_rows and not has_approved_deferral:
+            verdict = "Gap"
+            gaps.append(f"{ac_id}: no mapped child rows")
+
+        for row in mapped_rows:
+            row_id = row["ID"]
+            status = row["Status"]
+            child_labels.append(f"{row_id} ({status})")
+            docs_rel = _clean_markdown_cell_path(row.get("Docs", ""))
+            if status != "Complete" and not has_approved_deferral:
+                verdict = "Gap"
+                gaps.append(f"{ac_id}: {row_id} is {status}, not Complete")
+            if not docs_rel:
+                if not has_approved_deferral:
+                    verdict = "Gap"
+                    gaps.append(f"{ac_id}: {row_id} has no docs path")
+                continue
+            docs_path = root / ".project-workflow" / docs_rel
+            if not docs_path.exists():
+                if not has_approved_deferral:
+                    verdict = "Gap"
+                    gaps.append(f"{ac_id}: {row_id} docs path is missing")
+                continue
+            docs_text = docs_path.read_text(encoding="utf-8")
+            evidence_present = _parent_ac_evidence_present(docs_text, ac_id)
+            qa_passed = _qa_passed(docs_text)
+            if evidence_present:
+                evidence_bits.append(f"{row_id}: parent AC evidence recorded")
+            elif not has_approved_deferral:
+                verdict = "Gap"
+                gaps.append(f"{ac_id}: {row_id} lacks parent AC evidence")
+            if qa_passed:
+                evidence_bits.append(f"{row_id}: QA pass")
+            elif not has_approved_deferral:
+                verdict = "Gap"
+                gaps.append(f"{ac_id}: {row_id} lacks QA pass verdict")
+
+        deferral_text = "None"
+        if deferral:
+            deferral_text = (
+                f"{deferral.get('Status', '')}: {deferral.get('Reason', '')} "
+                f"(owner: {deferral.get('Owner', '')}; follow-up: {deferral.get('Follow-up', '')})"
+            ).strip()
+            if not has_approved_deferral:
+                verdict = "Gap"
+                gaps.append(f"{ac_id}: deferral is missing approval metadata or follow-up")
+
+        audit_rows.append(
+            {
+                "Parent AC": ac_id,
+                "Summary": ac_summaries[ac_id],
+                "Child Rows": ", ".join(child_labels) if child_labels else "None",
+                "Evidence": "; ".join(evidence_bits) if evidence_bits else "None",
+                "Deferral": deferral_text,
+                "Verdict": verdict,
+            }
+        )
+
+    return epic_dir, audit_rows, gaps
+
+
+def _format_acceptance_audit(epic_id: str, audit_rows: list[dict[str, str]]) -> str:
+    lines = [
+        "# Acceptance Audit\n",
+        "\n",
+        f"- Epic: {epic_id}\n",
+        f"- Last updated: {date.today().isoformat()}\n",
+        "\n",
+        "| Parent AC | Summary | Child Rows | Evidence | Deferral | Verdict |\n",
+        "| --- | --- | --- | --- | --- | --- |\n",
+    ]
+    for row in audit_rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                _markdown_cell(row[column])
+                for column in (
+                    "Parent AC",
+                    "Summary",
+                    "Child Rows",
+                    "Evidence",
+                    "Deferral",
+                    "Verdict",
+                )
+            )
+            + " |\n"
+        )
+    return "".join(lines)
+
+
+def _update_global_epic_status(
+    tracker_path: Path, *, epic_id: str, new_status: str
+) -> tuple[str, str]:
+    lines, _header_idx, rows = _global_tracker_rows(tracker_path)
+    for row in rows:
+        if row["ID"] != epic_id:
+            continue
+        previous = row["Status"]
+        row["Status"] = new_status
+        lines[int(row["_line_idx"])] = _format_global_tracker_row(row)
+        tracker_path.write_text("".join(lines), encoding="utf-8")
+        return previous, new_status
+    raise SystemExit(f"No global tracker row found for epic ID '{epic_id}' in {tracker_path}.")
+
+
+def _epic_child_implementation_template(
+    task_id: str, title: str, parent_ac_coverage: str
+) -> str:
+    parent_ac_value = parent_ac_coverage or "____"
+    return (
+        f"## User Story\n\n"
+        f"As a ____, I want ____, so that ____.\n\n"
+        f"## Parent AC Coverage\n\n"
+        f"- {parent_ac_value}\n\n"
+        f"## Acceptance Criteria\n\n"
+        f"- [ ] AC1: Covers parent AC(s) {parent_ac_value}: ____\n\n"
+        f"## Validation\n\n"
+        f"- AC1 / parent AC(s) {parent_ac_value}: ____\n\n"
+        f"## Task List\n\n"
+        f"| ID | Title | Description | Acceptance Criteria | User Verification | Status |\n"
+        f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ |\n"
+        f"| 1 | ____ | ____ | AC1 / parent AC(s) {parent_ac_value}: ____ | ____ | To Do |\n\n"
+        f"## Parent AC Evidence\n\n"
+        f"- {parent_ac_value}: Pending implementation evidence.\n\n"
+        f"## QA & Code Review\n\n"
+        f"- Verdict: ____\n"
+        f"- Evidence: ____\n"
+        f"- Findings: ____\n\n"
+        f"## Retro\n\n"
+        f"- Reusable lessons: ____\n"
+        f"- Conventions or agent assets updated: ____\n"
+        f"- Follow-up tasks: ____\n\n"
+        f"## Notes\n\n"
+        f"- Task: {task_id}\n"
+        f"- Title: {title}\n"
+        f"- Created: {date.today().isoformat()}\n"
+    )
+
+
+def _epic_child_requirements_template(
+    task_id: str, title: str, parent_ac_coverage: str
+) -> str:
+    parent_ac_value = parent_ac_coverage or "____"
+    return (
+        f"# Requirements\n\n"
+        f"## Summary\n\n"
+        f"- Task: {task_id}\n"
+        f"- Title: {title}\n"
+        f"- Parent AC Coverage: {parent_ac_value}\n"
+        f"- Last updated: {date.today().isoformat()}\n\n"
+        f"## Goal\n\n"
+        f"Describe the user outcome this epic child must deliver for its parent AC coverage.\n\n"
+        f"## Non-Goals\n\n"
+        f"List what is explicitly out-of-scope.\n\n"
+        f"## Users & Context\n\n"
+        f"Who is affected and in what situation?\n\n"
+        f"## Requirements (Outcome-Focused)\n\n"
+        f"- ____\n\n"
+        f"## Acceptance Criteria (Verifiable)\n\n"
+        f"- AC1: Covers parent AC(s) {parent_ac_value}: ____\n\n"
+        f"## Open Questions (Answer Needed)\n\n"
+        f"- ____\n\n"
+        f"## Decisions (Resolved)\n\n"
+        f"- ____\n\n"
+        f"## Validation Plan\n\n"
+        f"- How we will verify child and parent acceptance criteria: ____\n"
+    )
 
 
 def _implementation_task_table_rows(
@@ -375,6 +707,21 @@ def _has_qa_review_evidence(text: str) -> bool:
         return False
     lowered = section.lower()
     return "verdict" in lowered and "evidence" in lowered
+
+
+def _has_epic_acceptance_audit_evidence(docs_path: Path, row_id: str) -> bool:
+    if not row_id.startswith("EPIC-"):
+        return False
+    audit_path = docs_path.parent / "ACCEPTANCE-AUDIT.md"
+    if not audit_path.exists():
+        return False
+    try:
+        audit_text = audit_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    if "| Parent AC |" not in audit_text or "____" in audit_text:
+        return False
+    return bool(re.search(r"\|\s*AC\d+\s*\|.*\|\s*Pass\s*\|", audit_text))
 
 
 def _doctor_check_implementation_ac_mapping(
@@ -642,20 +989,33 @@ def _update_global_tracker_row_status(
     raise SystemExit(f"No global tracker row found for ID '{row_id}' in {tracker_path}.")
 
 
+def _epic_tracker_header_columns(cells: list[str] | None) -> tuple[str, ...] | None:
+    if cells == list(EPIC_TRACKER_COLUMNS):
+        return EPIC_TRACKER_COLUMNS
+    if cells == list(LEGACY_EPIC_TRACKER_COLUMNS):
+        return LEGACY_EPIC_TRACKER_COLUMNS
+    return None
+
+
 def _epic_tracker_rows(epic_tracker_path: Path) -> tuple[list[str], int, list[dict[str, str]]]:
     lines = epic_tracker_path.read_text(encoding="utf-8").splitlines(keepends=True)
     header_idx: int | None = None
+    header_columns: tuple[str, ...] | None = None
     for idx, line in enumerate(lines):
         cells = _parse_markdown_table_cells(line)
-        if cells == list(EPIC_TRACKER_COLUMNS):
+        columns = _epic_tracker_header_columns(cells)
+        if columns is not None:
             header_idx = idx
+            header_columns = columns
             break
 
-    if header_idx is None:
+    if header_idx is None or header_columns is None:
         expected = " | ".join(EPIC_TRACKER_COLUMNS)
+        legacy = " | ".join(LEGACY_EPIC_TRACKER_COLUMNS)
         raise SystemExit(
             "Epic tracker schema mismatch. Expected header: "
-            f"'| {expected} |' in {epic_tracker_path}."
+            f"'| {expected} |' in {epic_tracker_path}. "
+            f"Legacy header is still accepted: '| {legacy} |'."
         )
 
     rows: list[dict[str, str]] = []
@@ -664,13 +1024,14 @@ def _epic_tracker_rows(epic_tracker_path: Path) -> tuple[list[str], int, list[di
         cells = _parse_markdown_table_cells(lines[row_idx])
         if cells is None:
             break
-        if len(cells) != len(EPIC_TRACKER_COLUMNS):
+        if len(cells) != len(header_columns):
             raise SystemExit(
                 "Epic tracker row has wrong number of columns. "
-                f"Expected {len(EPIC_TRACKER_COLUMNS)} columns in {epic_tracker_path}: "
+                f"Expected {len(header_columns)} columns in {epic_tracker_path}: "
                 f"{lines[row_idx].strip()}"
             )
-        row = dict(zip(EPIC_TRACKER_COLUMNS, cells))
+        row = dict(zip(header_columns, cells))
+        row.setdefault("Parent ACs", "")
         status = row["Status"]
         if status and status not in EPIC_TRACKER_STATUSES:
             raise SystemExit(
@@ -678,6 +1039,7 @@ def _epic_tracker_rows(epic_tracker_path: Path) -> tuple[list[str], int, list[di
                 f"'{status}'. Allowed: {', '.join(EPIC_TRACKER_STATUSES)}."
             )
         row["_line_idx"] = str(row_idx)
+        row[EPIC_TRACKER_FORMAT_KEY] = "\x1f".join(header_columns)
         rows.append(row)
         row_idx += 1
 
@@ -685,7 +1047,13 @@ def _epic_tracker_rows(epic_tracker_path: Path) -> tuple[list[str], int, list[di
 
 
 def _format_epic_tracker_row(row: dict[str, str]) -> str:
-    return "| " + " | ".join(row[col] for col in EPIC_TRACKER_COLUMNS) + " |\n"
+    format_columns_value = row.get(EPIC_TRACKER_FORMAT_KEY)
+    columns = (
+        tuple(format_columns_value.split("\x1f"))
+        if format_columns_value
+        else EPIC_TRACKER_COLUMNS
+    )
+    return "| " + " | ".join(row.get(col, "") for col in columns) + " |\n"
 
 
 def _update_epic_tracker_row_status(
@@ -711,6 +1079,82 @@ def _update_epic_tracker_row_status(
         lines[line_idx] = _format_epic_tracker_row(row)
         epic_tracker_path.write_text("".join(lines), encoding="utf-8")
         return row
+
+    raise SystemExit(f"No epic tracker row found for ID '{row_id}' in {epic_tracker_path}.")
+
+
+def _epic_status_transition_allowed(current_status: str, new_status: str) -> bool:
+    if current_status == new_status:
+        return True
+    return new_status in EPIC_STATUS_TRANSITIONS.get(current_status, set())
+
+
+def _update_epic_child_status(
+    *,
+    root: Path,
+    epic_tracker_path: Path,
+    row_id: str,
+    new_status: str,
+    force: bool,
+    reason: str | None,
+) -> tuple[str, str]:
+    _validate_status_force_args(new_status=new_status, force=force, reason=reason)
+    lines, _header_idx, rows = _epic_tracker_rows(epic_tracker_path)
+    for row in rows:
+        if row["ID"] != row_id:
+            continue
+        current_status = row["Status"]
+        if current_status not in EPIC_TRACKER_STATUSES:
+            raise SystemExit(
+                f"{row_id} has invalid current status '{current_status}'. "
+                f"Allowed: {', '.join(EPIC_TRACKER_STATUSES)}."
+            )
+        if new_status not in EPIC_TRACKER_STATUSES:
+            raise SystemExit(
+                f"Invalid target status '{new_status}'. "
+                f"Allowed: {', '.join(EPIC_TRACKER_STATUSES)}."
+            )
+        if not force and not _epic_status_transition_allowed(current_status, new_status):
+            raise SystemExit(
+                f"Illegal epic status transition for {row_id}: "
+                f"{current_status} -> {new_status}. Use --force --reason for audited "
+                "non-Complete exceptions."
+            )
+        if new_status == "Complete":
+            if current_status != "Review":
+                raise SystemExit(
+                    f"{row_id} can only move to Complete from Review; "
+                    f"current status is {current_status}."
+                )
+            docs_rel = _clean_markdown_cell_path(row.get("Docs", ""))
+            if not docs_rel:
+                raise SystemExit(f"{row_id} cannot move to Complete without a docs path.")
+            docs_path = root / ".project-workflow" / docs_rel
+            if not docs_path.exists():
+                raise SystemExit(f"{row_id} docs path does not exist: {docs_path}")
+            docs_text = docs_path.read_text(encoding="utf-8")
+            if not _has_qa_review_evidence(docs_text):
+                raise SystemExit(
+                    f"{row_id} cannot move to Complete without non-placeholder "
+                    "QA/code-review evidence."
+                )
+            parent_ac_ids = _extract_ac_ids(_extract_parent_ac_coverage(row))
+            missing_parent_evidence = [
+                ac_id
+                for ac_id in sorted(parent_ac_ids)
+                if not _parent_ac_evidence_present(docs_text, ac_id)
+            ]
+            if missing_parent_evidence:
+                raise SystemExit(
+                    f"{row_id} cannot move to Complete without parent AC evidence for: "
+                    + ", ".join(missing_parent_evidence)
+                )
+        if current_status == new_status:
+            return current_status, new_status
+        row["Status"] = new_status
+        lines[int(row["_line_idx"])] = _format_epic_tracker_row(row)
+        epic_tracker_path.write_text("".join(lines), encoding="utf-8")
+        return current_status, new_status
 
     raise SystemExit(f"No epic tracker row found for ID '{row_id}' in {epic_tracker_path}.")
 
@@ -835,6 +1279,8 @@ def _decompose_epic_requirements_to_titles(
 
 def _append_epic_tracker_rows(epic_tracker_path: Path, rows_to_add: list[dict[str, str]]) -> None:
     lines, header_idx, rows = _epic_tracker_rows(epic_tracker_path)
+    header_cells = _parse_markdown_table_cells(lines[header_idx])
+    header_columns = _epic_tracker_header_columns(header_cells) or EPIC_TRACKER_COLUMNS
     existing_ids = {row["ID"] for row in rows}
     duplicate_ids = [row["ID"] for row in rows_to_add if row["ID"] in existing_ids]
     if duplicate_ids:
@@ -844,6 +1290,8 @@ def _append_epic_tracker_rows(epic_tracker_path: Path, rows_to_add: list[dict[st
         )
 
     insert_at = header_idx + 2 + len(rows)
+    for row in rows_to_add:
+        row[EPIC_TRACKER_FORMAT_KEY] = "\x1f".join(header_columns)
     formatted = [_format_epic_tracker_row(row) for row in rows_to_add]
     lines[insert_at:insert_at] = formatted
     epic_tracker_path.write_text("".join(lines), encoding="utf-8")
@@ -1041,7 +1489,10 @@ def _doctor_check_task_doc(
         _add_issue(issues, "error", docs_path, f"Could not read docs for {row_id}: {exc}")
         return
 
-    if status == "Complete" and not _has_qa_review_evidence(docs_text):
+    has_completion_evidence = _has_qa_review_evidence(
+        docs_text
+    ) or _has_epic_acceptance_audit_evidence(docs_path, row_id)
+    if status == "Complete" and not has_completion_evidence:
         _add_issue(
             issues,
             "warning",
@@ -1110,12 +1561,11 @@ def _doctor_check_epic_trackers(root: Path, issues: list[DoctorIssue]) -> None:
         return
 
     for epic_tracker_path in sorted(tasks_dir.glob(f"{EPIC_ID_PREFIX}-*/TRACKER.md")):
-        rows = _parse_markdown_table(
-            epic_tracker_path,
-            expected_columns=EPIC_TRACKER_COLUMNS,
-            issues=issues,
-            label="Epic tracker",
-        )
+        try:
+            _lines, _header_idx, rows = _epic_tracker_rows(epic_tracker_path)
+        except SystemExit as exc:
+            _add_issue(issues, "error", epic_tracker_path, str(exc))
+            continue
         for row in rows:
             row_id = row["ID"]
             status = row["Status"]
@@ -1290,6 +1740,7 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
     epic_dir = tasks_dir / spec.task_folder_name
     reqs_path = epic_dir / "REQUIREMENTS.md"
     epic_tracker_path = epic_dir / "TRACKER.md"
+    deferrals_path = epic_dir / "DEFERRALS.md"
 
     created_files: list[Path] = []
     overwritten_files: dict[Path, str] = {}
@@ -1313,6 +1764,12 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
             _write_file(epic_tracker_path, _epic_tracker_template(), overwrite=True)
             if epic_tracker_path not in overwritten_files:
                 created_files.append(epic_tracker_path)
+        if args.overwrite or not deferrals_path.exists():
+            if deferrals_path.exists():
+                overwritten_files[deferrals_path] = deferrals_path.read_text(encoding="utf-8")
+            _write_file(deferrals_path, _epic_deferrals_template(), overwrite=True)
+            if deferrals_path not in overwritten_files:
+                created_files.append(deferrals_path)
 
         docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
         row_written = _update_tracker(
@@ -1371,6 +1828,31 @@ def cmd_epic_approve(args: argparse.Namespace) -> None:
         new_status="Approved",
     )
     print(f"Approved epic row {args.id} in {epic_tracker_path}")
+
+
+def cmd_epic_status(args: argparse.Namespace) -> None:
+    """Safely update one epic tracker row status."""
+    repo_root = _default_repo_root()
+    workflow_dir = repo_root / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    epic_tracker_path = epic_dir / "TRACKER.md"
+    if not epic_tracker_path.exists():
+        raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
+    previous, current = _update_epic_child_status(
+        root=repo_root,
+        epic_tracker_path=epic_tracker_path,
+        row_id=args.id,
+        new_status=args.to,
+        force=args.force,
+        reason=args.reason,
+    )
+    if previous == current:
+        print(f"{args.id} already has status '{current}' in {epic_tracker_path}")
+    else:
+        print(f"Updated {args.id}: {previous} -> {current} in {epic_tracker_path}")
+        if args.force:
+            print(f"Forced transition reason: {args.reason.strip()}")
 
 
 def cmd_epic_decompose(args: argparse.Namespace) -> None:
@@ -1435,6 +1917,7 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
                 "Title": title,
                 "Status": "Proposed",
                 "Type": args.item_type,
+                "Parent ACs": ac_id or "",
                 "Docs": "",
                 "Branch": "",
                 "Notes": notes,
@@ -1444,6 +1927,16 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
     _append_epic_tracker_rows(epic_tracker_path, rows_to_add)
     print(f"Added {len(rows_to_add)} Proposed row(s) to {epic_tracker_path}")
     print("No child task folders were created in this decomposition step.")
+    parent_ac_ids = _extract_parent_ac_ids_from_requirements(requirements_text)
+    mapped_ac_ids = _extract_parent_ac_ids_from_epic_rows([*epic_rows, *rows_to_add])
+    unmapped_ac_ids = sorted(parent_ac_ids - mapped_ac_ids)
+    if unmapped_ac_ids:
+        print(
+            "WARNING: Unmapped parent ACs after decomposition: "
+            + ", ".join(unmapped_ac_ids)
+        )
+    elif parent_ac_ids:
+        print("Parent AC coverage mapped: " + ", ".join(sorted(parent_ac_ids)))
 
 
 def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
@@ -1504,6 +1997,7 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
     child_dir = epic_dir / child_spec.task_folder_name
     impl_path = child_dir / "IMPLEMENTATION.md"
     reqs_path = child_dir / "REQUIREMENTS.md"
+    parent_ac_coverage = _extract_parent_ac_coverage(target)
 
     created_files: list[Path] = []
     overwritten_files: dict[Path, str] = {}
@@ -1545,7 +2039,11 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
                 overwritten_files[impl_path] = impl_path.read_text(encoding="utf-8")
             _write_file(
                 impl_path,
-                _implementation_template(child_spec.task_id, child_spec.title),
+                _epic_child_implementation_template(
+                    child_spec.task_id,
+                    child_spec.title,
+                    parent_ac_coverage,
+                ),
                 overwrite=True,
             )
             if impl_path not in overwritten_files:
@@ -1556,7 +2054,11 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
                 overwritten_files[reqs_path] = reqs_path.read_text(encoding="utf-8")
             _write_file(
                 reqs_path,
-                _requirements_template(child_spec.task_id, child_spec.title),
+                _epic_child_requirements_template(
+                    child_spec.task_id,
+                    child_spec.title,
+                    parent_ac_coverage,
+                ),
                 overwrite=True,
             )
             if reqs_path not in overwritten_files:
@@ -1610,6 +2112,49 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
     print(f"Updated epic tracker: {epic_tracker_path}")
     if branch_name is not None:
         print(f"Child branch active from epic branch {args.epic_branch}: {branch_name}")
+
+
+def cmd_epic_audit(args: argparse.Namespace) -> None:
+    """Generate an epic acceptance audit artifact."""
+    repo_root = _default_repo_root()
+    epic_dir, audit_rows, gaps = _epic_audit_rows(repo_root, args.epic_id)
+    audit_path = epic_dir / "ACCEPTANCE-AUDIT.md"
+    audit_path.write_text(_format_acceptance_audit(args.epic_id, audit_rows), encoding="utf-8")
+    print(f"Wrote acceptance audit: {audit_path}")
+    if gaps:
+        print("WARNING: Epic acceptance gaps remain:")
+        for gap in gaps:
+            print(f"- {gap}")
+    else:
+        print("Epic acceptance audit passed.")
+
+
+def cmd_epic_closeout(args: argparse.Namespace) -> None:
+    """Validate epic closeout gates and optionally mark the global epic row Complete."""
+    repo_root = _default_repo_root()
+    workflow_dir = repo_root / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+    epic_dir, audit_rows, gaps = _epic_audit_rows(repo_root, args.epic_id)
+    audit_path = epic_dir / "ACCEPTANCE-AUDIT.md"
+    audit_path.write_text(_format_acceptance_audit(args.epic_id, audit_rows), encoding="utf-8")
+    if gaps:
+        print(f"Wrote acceptance audit: {audit_path}")
+        print("Epic closeout blocked by acceptance gaps:")
+        for gap in gaps:
+            print(f"- {gap}")
+        raise SystemExit(1)
+
+    print(f"Wrote acceptance audit: {audit_path}")
+    print("Epic closeout gates passed.")
+    if args.complete:
+        previous, current = _update_global_epic_status(
+            tracker_path,
+            epic_id=args.epic_id,
+            new_status="Complete",
+        )
+        print(f"Updated {args.epic_id}: {previous} -> {current} in {tracker_path}")
+    else:
+        print("Global epic status was not changed. Re-run with --complete to mark Complete.")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1741,6 +2286,29 @@ def build_parser() -> argparse.ArgumentParser:
     epic_approve_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
     epic_approve_parser.set_defaults(func=cmd_epic_approve)
 
+    epic_status_parser = epic_sub.add_parser(
+        "status",
+        help="Safely update one epic tracker row status",
+    )
+    epic_status_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
+    epic_status_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
+    epic_status_parser.add_argument(
+        "--to",
+        required=True,
+        choices=EPIC_TRACKER_STATUSES,
+        help="Target epic tracker status",
+    )
+    epic_status_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow audited non-Complete lifecycle exceptions",
+    )
+    epic_status_parser.add_argument(
+        "--reason",
+        help="Required with --force; short audit reason for the exception",
+    )
+    epic_status_parser.set_defaults(func=cmd_epic_status)
+
     epic_decompose_parser = epic_sub.add_parser(
         "decompose",
         help="Generate Proposed child rows only (no child scaffolding)",
@@ -1795,6 +2363,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Child branch prefix (default: feature/)",
     )
     epic_scaffold_child_parser.set_defaults(func=cmd_epic_scaffold_child)
+
+    epic_audit_parser = epic_sub.add_parser(
+        "audit",
+        help="Generate or refresh an epic ACCEPTANCE-AUDIT.md",
+    )
+    epic_audit_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
+    epic_audit_parser.set_defaults(func=cmd_epic_audit)
+
+    epic_closeout_parser = epic_sub.add_parser(
+        "closeout",
+        help="Validate epic acceptance gates before completion",
+    )
+    epic_closeout_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
+    epic_closeout_parser.add_argument(
+        "--complete",
+        action="store_true",
+        help="Mark the global epic tracker row Complete after all gates pass",
+    )
+    epic_closeout_parser.set_defaults(func=cmd_epic_closeout)
 
     return parser
 

@@ -233,6 +233,8 @@ Scope: Review the implemented export flow
 The agent will:
 
 - Map acceptance criteria IDs to validation evidence
+- Run validation it can perform directly before asking you for manual testing
+- Separate verified evidence from deferred setup, owner-only actions, or unavailable connector/OAuth checks
 - Review changed code for correctness, security, maintainability, and scope control
 - Record findings in `.project-workflow/tasks/TASK-001-*/IMPLEMENTATION.md`
 - Move the tracker through `Review`, then `Complete` with `task status` only after review passes and you explicitly approve completion
@@ -298,9 +300,16 @@ Local workflow script path (inside an initialized repo):
 Epic workflow rules:
 
 - `epic init` auto-assigns the next sequential epic ID and writes an epic `REQUIREMENTS.md` plus epic `TRACKER.md`.
+- `epic init` also writes `DEFERRALS.md`, where owner-approved deferrals must record parent AC, status, owner, decision date, reason, and follow-up reference.
+- Epic requirements should use stable parent acceptance criteria IDs (`AC1`, `AC2`, etc.) and preserve existing IDs across revisions.
+- New epic trackers include a `Parent ACs` column for child-row coverage. Legacy trackers that use `Notes` values such as `Covers AC1, AC3` remain supported.
 - `epic decompose` writes Proposed child rows only. It does not scaffold child folders/docs.
 - `epic approve` moves a row from Proposed to Approved (same semantics as manually editing status in epic tracker).
-- `epic scaffold-child` only accepts Approved rows and moves the row to In Progress after scaffold.
+- `epic scaffold-child` only accepts Approved rows, moves the row to In Progress after scaffold, and copies parent AC coverage into the child `REQUIREMENTS.md` and `IMPLEMENTATION.md`.
+- `epic status` moves epic child rows through `Testing`, `Review`, and `Complete`; `Complete` requires QA/code-review evidence and parent AC evidence for assigned parent ACs.
+- Scaffolded epic child docs include `Parent AC Coverage` and `Parent AC Evidence` sections so QA can prove the parent epic criteria the child owns.
+- The global tracker summarizes epic rows; each epic `TRACKER.md` owns child rows. Proposed child rows should not be added to the global tracker.
+- `epic audit` writes `ACCEPTANCE-AUDIT.md`; `epic closeout` validates gates and only marks the global epic row Complete when `--complete` is explicit and all parent ACs have evidence or approved deferrals.
 - Child IDs remain globally unique task IDs (`TASK-###`) across standalone and epic-managed work.
 - If `--create-branch` is used for epic child scaffold, `--epic-branch` must already exist; the command fails fast and never falls back to a base branch.
 
