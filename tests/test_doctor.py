@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from project_workflow import cli as workflow_cli
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_CMD = [sys.executable, "-m", "project_workflow.cli"]
@@ -105,12 +107,25 @@ def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:
     assert init.returncode == 0, init.stderr
     assert ".project-workflow/guidance.md" in init.stdout
     assert (tmp_path / ".project-workflow" / "guidance.md").exists()
+    backlog_text = (tmp_path / ".project-workflow" / "BACKLOG.md").read_text(encoding="utf-8")
+    assert (
+        "| ID | Title | Type | Priority | Status | Outcome | Promoted To | Notes |"
+        in backlog_text
+    )
+    assert "`Task Candidate`" in backlog_text
+    assert "`Accepted` means worth keeping or preparing" in backlog_text
+    assert "active execution status lives in `.project-workflow/TRACKER.md`" in backlog_text
     assert "<!-- project-workflow:start -->" in (
         tmp_path / ".github" / "copilot-instructions.md"
     ).read_text(encoding="utf-8")
     assert "project-workflow:generated" in (
         tmp_path / ".github" / "prompts" / "Task.prompt.md"
     ).read_text(encoding="utf-8")
+    backlog_prompt = (tmp_path / ".github" / "prompts" / "Backlog.prompt.md").read_text(
+        encoding="utf-8"
+    )
+    assert "project.backlog" in backlog_prompt
+    assert "Promoted rows stay in the backlog" in backlog_prompt
 
     second_init = run_project(["init"], cwd=tmp_path)
     assert second_init.returncode == 0, second_init.stderr
@@ -122,6 +137,267 @@ def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:
 
     validate = run_project(["validate"], cwd=tmp_path)
     assert validate.returncode == 0, validate.stdout + validate.stderr
+
+
+def test_project_init_preserves_existing_backlog(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    backlog_path = workflow_dir / "BACKLOG.md"
+    existing_backlog = (
+        "# Backlog\n\n"
+        "| ID | Title | Type | Priority | Status | Outcome | Promoted To | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| BL-007 | Existing Idea | Idea | High | Accepted | Keep this row. |  | User-owned. |\n"
+    )
+    backlog_path.write_text(existing_backlog, encoding="utf-8")
+
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    assert backlog_path.read_text(encoding="utf-8") == existing_backlog
+
+
+def test_backlog_helpers_allocate_ids_and_detect_duplicates(tmp_path: Path) -> None:
+    backlog_path = tmp_path / "BACKLOG.md"
+    backlog_path.write_text(
+        "# Backlog\n\n"
+        "| ID | Title | Type | Priority | Status | Outcome | Promoted To | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| BL-001 | First | Idea | Unset | Proposed | First outcome. |  |  |\n"
+        "| BL-010 | Later | Follow-Up | Low | Deferred | Later outcome. |  |  |\n"
+        "| BL-010 | Duplicate | Idea | High | Accepted | Duplicate outcome. |  |  |\n",
+        encoding="utf-8",
+    )
+
+    rows = workflow_cli._backlog_rows(backlog_path)
+    assert workflow_cli._next_backlog_id_from_rows(rows) == "BL-011"
+    assert workflow_cli._duplicate_backlog_ids(rows) == ["BL-010"]
+
+
+def test_backlog_cli_add_list_update_status_and_validate(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+
+    add = run_project(
+        [
+            "backlog",
+            "add",
+            "--title",
+            "Backlog UX",
+            "--type",
+            "Task Candidate",
+            "--priority",
+            "High",
+            "--outcome",
+            "Capture future UX work.",
+            "--notes",
+            "Owner requested.",
+        ],
+        cwd=tmp_path,
+    )
+    assert add.returncode == 0, add.stdout + add.stderr
+    assert "Added backlog row BL-001" in add.stdout
+
+    backlog_path = tmp_path / ".project-workflow" / "BACKLOG.md"
+    before_list = backlog_path.read_text(encoding="utf-8")
+    list_rows = run_project(["backlog", "list"], cwd=tmp_path)
+    assert list_rows.returncode == 0, list_rows.stdout + list_rows.stderr
+    assert "BL-001: Backlog UX [Task Candidate / High / Proposed]" in list_rows.stdout
+    assert backlog_path.read_text(encoding="utf-8") == before_list
+
+    invalid_status = run_project(
+        ["backlog", "status", "--id", "BL-001", "--to", "In Progress"],
+        cwd=tmp_path,
+    )
+    assert invalid_status.returncode != 0
+    assert "invalid choice" in invalid_status.stderr
+    assert backlog_path.read_text(encoding="utf-8") == before_list
+
+    invalid_priority = run_project(
+        ["backlog", "update", "--id", "BL-001", "--priority", "Urgent"],
+        cwd=tmp_path,
+    )
+    assert invalid_priority.returncode != 0
+    assert "invalid choice" in invalid_priority.stderr
+    assert backlog_path.read_text(encoding="utf-8") == before_list
+
+    update = run_project(
+        [
+            "backlog",
+            "update",
+            "--id",
+            "BL-001",
+            "--priority",
+            "Medium",
+            "--outcome",
+            "Capture future UX work with clearer scope.",
+        ],
+        cwd=tmp_path,
+    )
+    assert update.returncode == 0, update.stdout + update.stderr
+
+    status = run_project(["backlog", "status", "--id", "BL-001", "--to", "Accepted"], cwd=tmp_path)
+    assert status.returncode == 0, status.stdout + status.stderr
+
+    backlog_text = backlog_path.read_text(encoding="utf-8")
+    assert "| BL-001 | Backlog UX | Task Candidate | Medium | Accepted |" in backlog_text
+
+    validate = run_project(["backlog", "validate"], cwd=tmp_path)
+    assert validate.returncode == 0, validate.stdout + validate.stderr
+    assert "Backlog validation passed" in validate.stdout
+
+
+def test_backlog_validate_reports_invalid_rows_and_bad_promoted_refs(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    backlog_path = tmp_path / ".project-workflow" / "BACKLOG.md"
+    backlog_path.write_text(
+        "# Backlog\n\n"
+        "| ID | Title | Type | Priority | Status | Outcome | Promoted To | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| BL-001 | Bad Type | Feature | High | Proposed | Outcome. |  |  |\n"
+        "| BL-001 | Duplicate | Idea | Urgent | Done | Outcome. | TASK-999 |  |\n"
+        "| BL-002 | Promoted Missing Ref | Idea | Low | Promoted | Outcome. |  |  |\n",
+        encoding="utf-8",
+    )
+
+    validate = run_project(["backlog", "validate"], cwd=tmp_path)
+    assert validate.returncode == 1, validate.stdout + validate.stderr
+    assert "duplicate ID 'BL-001'" in validate.stdout
+    assert "invalid Type 'Feature'" in validate.stdout
+    assert "invalid Priority 'Urgent'" in validate.stdout
+    assert "invalid Status 'Done'" in validate.stdout
+    assert "Promoted To reference does not exist: TASK-999" in validate.stdout
+    assert "BL-002 is Promoted but lacks Promoted To" in validate.stdout
+
+
+def test_doctor_reports_existing_backlog_validation_errors(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    (tmp_path / ".project-workflow" / "BACKLOG.md").write_text(
+        "# Backlog\n\n"
+        "| ID | Title | Type | Priority | Status | Outcome | Promoted To | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| BL-001 | Bad Status | Idea | Unset | In Progress | Outcome. |  |  |\n",
+        encoding="utf-8",
+    )
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode == 1, doctor.stdout + doctor.stderr
+    assert "BL-001 has invalid Status 'In Progress'" in doctor.stdout
+
+
+def test_backlog_promote_to_task_preserves_source_and_row(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    add = run_project(
+        [
+            "backlog",
+            "add",
+            "--title",
+            "Export Ideas",
+            "--type",
+            "Task Candidate",
+            "--priority",
+            "High",
+            "--status",
+            "Accepted",
+            "--outcome",
+            "A user can export ideas.",
+            "--notes",
+            "Source conversation.",
+        ],
+        cwd=tmp_path,
+    )
+    assert add.returncode == 0, add.stdout + add.stderr
+
+    promote = run_project(["backlog", "promote", "--id", "BL-001", "--to", "task"], cwd=tmp_path)
+    assert promote.returncode == 0, promote.stdout + promote.stderr
+    assert "Promoted BL-001 to task TASK-001" in promote.stdout
+
+    backlog_text = (tmp_path / ".project-workflow" / "BACKLOG.md").read_text(encoding="utf-8")
+    assert "| BL-001 | Export Ideas | Task Candidate | High | Promoted |" in backlog_text
+    assert "| TASK-001 |" in backlog_text
+
+    task_dir = tmp_path / ".project-workflow" / "tasks" / "TASK-001-Export-Ideas"
+    requirements_text = (task_dir / "REQUIREMENTS.md").read_text(encoding="utf-8")
+    assert "## Backlog Source" in requirements_text
+    assert "- ID: BL-001" in requirements_text
+    assert "- Outcome: A user can export ideas." in requirements_text
+
+    tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(encoding="utf-8")
+    assert "| TASK-001 | Export Ideas | To Do | `tasks/TASK-001-Export-Ideas/IMPLEMENTATION.md` |" in tracker_text
+    validate = run_project(["backlog", "validate"], cwd=tmp_path)
+    assert validate.returncode == 0, validate.stdout + validate.stderr
+
+
+def test_backlog_promote_to_epic_preserves_source_and_row(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    add = run_project(
+        [
+            "backlog",
+            "add",
+            "--title",
+            "Planning Foundation",
+            "--type",
+            "Epic Candidate",
+            "--priority",
+            "Medium",
+            "--status",
+            "Accepted",
+            "--outcome",
+            "Planning work has a parent epic.",
+        ],
+        cwd=tmp_path,
+    )
+    assert add.returncode == 0, add.stdout + add.stderr
+
+    promote = run_project(["backlog", "promote", "--id", "BL-001", "--to", "epic"], cwd=tmp_path)
+    assert promote.returncode == 0, promote.stdout + promote.stderr
+    assert "Promoted BL-001 to epic EPIC-001" in promote.stdout
+
+    epic_dir = tmp_path / ".project-workflow" / "tasks" / "EPIC-001-Planning-Foundation"
+    assert (epic_dir / "TRACKER.md").exists()
+    assert (epic_dir / "ACCEPTANCE-MAP.md").exists()
+    requirements_text = (epic_dir / "REQUIREMENTS.md").read_text(encoding="utf-8")
+    assert "## Backlog Source" in requirements_text
+    assert "- ID: BL-001" in requirements_text
+    assert "- Type: Epic Candidate" in requirements_text
+
+    backlog_text = (tmp_path / ".project-workflow" / "BACKLOG.md").read_text(encoding="utf-8")
+    assert "| BL-001 | Planning Foundation | Epic Candidate | Medium | Promoted |" in backlog_text
+    assert "| EPIC-001 |" in backlog_text
+    validate = run_project(["backlog", "validate"], cwd=tmp_path)
+    assert validate.returncode == 0, validate.stdout + validate.stderr
+
+
+def test_backlog_promote_requires_accepted_or_explicit_accept(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    add = run_project(
+        [
+            "backlog",
+            "add",
+            "--title",
+            "Unaccepted Work",
+            "--outcome",
+            "Potential work is captured.",
+        ],
+        cwd=tmp_path,
+    )
+    assert add.returncode == 0, add.stdout + add.stderr
+
+    blocked = run_project(["backlog", "promote", "--id", "BL-001", "--to", "task"], cwd=tmp_path)
+    assert blocked.returncode == 1, blocked.stdout + blocked.stderr
+    assert "must be Accepted before promotion" in blocked.stderr
+    assert not (tmp_path / ".project-workflow" / "tasks" / "TASK-001-Unaccepted-Work").exists()
+
+    promoted = run_project(
+        ["backlog", "promote", "--id", "BL-001", "--to", "task", "--accept"],
+        cwd=tmp_path,
+    )
+    assert promoted.returncode == 0, promoted.stdout + promoted.stderr
+    assert (tmp_path / ".project-workflow" / "tasks" / "TASK-001-Unaccepted-Work").exists()
 
 
 def test_generated_local_workflow_exposes_doctor(tmp_path: Path) -> None:
@@ -139,6 +415,17 @@ def test_generated_local_workflow_exposes_doctor(tmp_path: Path) -> None:
 
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert "Validate workflow tracker state" in completed.stdout
+
+    backlog_help = subprocess.run(
+        [sys.executable, str(local_workflow), "backlog", "--help"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert backlog_help.returncode == 0, backlog_help.stdout + backlog_help.stderr
+    assert "Backlog-related commands" in backlog_help.stdout
+    assert "promote" in backlog_help.stdout
 
 
 def test_task_scaffold_uses_ac_mapped_implementation_shape(tmp_path: Path) -> None:
@@ -417,6 +704,8 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     )
     assert "Do not use bare `project init`" in codex_agents
     assert "workflow doctor" in codex_agents
+    assert ".project-workflow/BACKLOG.md" in codex_agents
+    assert "Promoted rows stay in the backlog" in codex_agents
     assert "task status" in codex_agents
     assert "workflow doctor" in (
         codex_root / ".agents" / "skills" / "project-implement" / "SKILL.md"
@@ -434,6 +723,11 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert ".project-workflow/guidance.md" in (
         codex_root / ".agents" / "skills" / "project-implement" / "SKILL.md"
     ).read_text(encoding="utf-8")
+    backlog_skill = (
+        codex_root / ".agents" / "skills" / "project-backlog" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    assert "Promoted rows stay in the backlog" in backlog_skill
+    assert "Existing roadmap/backlog documents" in backlog_skill
 
     cursor_root = tmp_path / "cursor"
     cursor_root.mkdir()
@@ -446,9 +740,22 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "task status" in cursor_rules
     assert "owner-directed and agent-operated" in cursor_rules
     assert "task ready" in cursor_rules
+    assert ".project-workflow/BACKLOG.md" in cursor_rules
+    assert "Existing roadmap/backlog documents" in cursor_rules
+    assert (
+        cursor_root / ".cursor" / "agents" / "project-backlog.md"
+    ).exists()
     assert "workflow doctor" in (
         cursor_root / ".cursor" / "agents" / "project-implement.md"
     ).read_text(encoding="utf-8")
+
+    claude_root = tmp_path / "claude"
+    claude_root.mkdir()
+    claude_init = run_project(["init", "--agent", "claude-code"], cwd=claude_root)
+    assert claude_init.returncode == 0, claude_init.stderr
+    assert (
+        claude_root / ".claude" / "agents" / "project-backlog.md"
+    ).exists()
 
 
 def test_init_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path) -> None:

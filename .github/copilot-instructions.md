@@ -25,6 +25,7 @@ Product outcomes and mission belong in `.project-workflow/CONSTITUTION.md`.
 - If a generated target path exists without the generated marker, init must leave it untouched and write the new generated content beside it as `*.new`.
 - `project init` must scaffold:
   - `.project-workflow/TRACKER.md`
+  - `.project-workflow/BACKLOG.md`
   - `.project-workflow/guidance.md`
   - `.project-workflow/cli/workflow`
   - `.project-workflow/cli/workflow.py`
@@ -33,6 +34,7 @@ Product outcomes and mission belong in `.project-workflow/CONSTITUTION.md`.
   - `.claude/agents/*.md` when Claude Code mode is selected
   - `.cursor/agents/*.md` and `.cursor/rules/project-workflow.mdc` when Cursor mode is selected
 - `project task init` must continue scaffolding task docs and optional tracker updates/branch creation.
+- `project backlog` commands must keep backlog state separate from tracker execution lifecycle state.
 - Prefer extending behavior with additive flags/options; avoid changing defaults without explicit task scope.
 
 ## Prompt/Agent Sync Rules
@@ -129,12 +131,13 @@ When behavior changes:
 Use this sequence unless user direction overrides it:
 
 1. `/project.constitution` (once per repo, or when outcomes change)
-2. `/project.task`
-3. `/project.requirements`
-4. `/project.planner`
-5. `/project.clarify`
-6. `/project.implement`
-7. `/project.qa-review`
-8. `/project.retro`
+2. `/project.backlog` when future intent should be captured before committed task/epic workflow
+3. `/project.task`
+4. `/project.requirements`
+5. `/project.planner`
+6. `/project.clarify`
+7. `/project.implement`
+8. `/project.qa-review`
+9. `/project.retro`
 
 Do not mark work `Complete` from implementation alone. Use `./.project-workflow/cli/workflow task status ...` for tracker lifecycle moves: implementation moves work to `Testing`; QA/code review moves it to `Review` and may complete only after passing review and explicit user approval. Retro runs after completion and updates durable conventions or agent guidance only when there is a reusable lesson.

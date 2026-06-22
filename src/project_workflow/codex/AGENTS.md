@@ -5,15 +5,18 @@ This repository uses project-workflow for spec-driven development. Keep workflow
 ## Workflow Order
 
 1. Constitution: use `project-constitution` to establish or update `.project-workflow/CONSTITUTION.md` for product outcomes.
-2. Task: use `project-task` to create one task folder under `.project-workflow/tasks/TASK-<NNN>-<Suffix>/`, with `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and a tracker row.
-3. Requirements: use `project-requirements` to capture the user story, scope, acceptance criteria, open questions, decisions, and validation plan in `REQUIREMENTS.md`.
-4. Planner: use `project-planner` to turn confirmed requirements into testable work items in `IMPLEMENTATION.md`.
-5. Clarify: use `project-clarify` to resolve inconsistencies between requirements, plan, repo constraints, and product outcomes before implementation.
-6. Implement: use `project-implement` to make the smallest scoped code change for one work item, validate it, and move it to testing.
-7. QA & Code Review: use `project-qa-review` to independently verify acceptance criteria and review the code before completion.
-8. Retro: use `project-retro` after completion to update durable conventions, agent guidance, and follow-up tasks.
+2. Backlog: use `project-backlog` when future intent should be captured before it becomes committed task or epic workflow state.
+3. Task: use `project-task` to create one task folder under `.project-workflow/tasks/TASK-<NNN>-<Suffix>/`, with `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and a tracker row.
+4. Requirements: use `project-requirements` to capture the user story, scope, acceptance criteria, open questions, decisions, and validation plan in `REQUIREMENTS.md`.
+5. Planner: use `project-planner` to turn confirmed requirements into testable work items in `IMPLEMENTATION.md`.
+6. Clarify: use `project-clarify` to resolve inconsistencies between requirements, plan, repo constraints, and product outcomes before implementation.
+7. Implement: use `project-implement` to make the smallest scoped code change for one work item, validate it, and move it to testing.
+8. QA & Code Review: use `project-qa-review` to independently verify acceptance criteria and review the code before completion.
+9. Retro: use `project-retro` after completion to update durable conventions, agent guidance, and follow-up tasks.
 
 For multi-item orchestration, use `project-delegate` after planning. For large bodies of work, use `project-epic` to create proposal-first epic trackers and approved child tasks.
+
+Backlog is optional and sits between constitution and tracker state. Keep `.project-workflow/BACKLOG.md` for future intent, rough priority, options, and promotion history. Promoted rows remain in the backlog with `Promoted To` pointing at the created `TASK-###` or `EPIC-###`; active execution status belongs only in `.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
 
 Project Workflow is owner-directed and agent-operated. The owner supplies intent, constraints, examples, decisions, and approvals; the agent runs commands, drafts artifacts, asks focused questions, validates readiness, implements, reviews, and records evidence. Do not make manual template completion the normal user path.
 
@@ -30,6 +33,7 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 ## Workflow Skill Map
 
 - If the user asks to create, update, review, or align the product constitution, use `.agents/skills/project-constitution/SKILL.md`.
+- If the user asks to capture, refine, validate, accept, defer, reject, supersede, or promote future project intent before task/epic execution, use `.agents/skills/project-backlog/SKILL.md`.
 - If the user asks to create a task, story, feature folder, tracker row, or new project-workflow item, use `.agents/skills/project-task/SKILL.md`.
 - If the user asks to create, decompose, approve, or scaffold epic-managed work, use `.agents/skills/project-epic/SKILL.md`.
 - If the user asks to capture requirements, define scope, write acceptance criteria, record open questions, or prepare a validation plan, use `.agents/skills/project-requirements/SKILL.md`.
@@ -45,6 +49,7 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 ## CLI Requirements
 
 - Treat `.project-workflow/cli/workflow` as the authoritative way to perform operations it supports.
+- Use the CLI for backlog row creation, status changes, validation, and promotion. Do not hand-edit backlog lifecycle state when the CLI can do it.
 - Use the CLI for task scaffolding and tracker-safe task creation. Do not manually create task folders, starter `REQUIREMENTS.md`, starter `IMPLEMENTATION.md`, or tracker rows when the CLI can do it.
 - Run project-workflow CLI commands from the repository root.
 - If a selected project-workflow skill documents a CLI command, run that command instead of recreating its behavior manually.
@@ -55,6 +60,8 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 
 - Use the repo-scoped skills in `.agents/skills/project-*` when the user asks for project workflow steps, even when the user asks in natural language rather than naming the skill.
 - Read `.project-workflow/guidance.md` before changing workflow state when the file exists.
+- For broad future objectives, use `project-backlog` to draft outcome-focused backlog candidates from project context. Do not create tracker rows, task folders, or epic folders until the owner accepts or promotes the row.
+- Existing roadmap/backlog documents outside `.project-workflow/BACKLOG.md` are preserved. Do not import or transform them automatically; create a repo-local migration task if needed.
 - If a task folder does not exist, run `./.project-workflow/cli/workflow task init --title "<TITLE>" --update-tracker` from the repo root and let the CLI assign the next `TASK-###` ID.
 - Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.

@@ -13,17 +13,22 @@ Project Workflow is owner-directed and agent-operated. The owner supplies produc
 ## Workflow Order
 
 1. Constitution: establish or update `.project-workflow/CONSTITUTION.md` for product outcomes.
-2. Task: create one task folder under `.project-workflow/tasks/TASK-<NNN>-<Suffix>/`, with `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and a tracker row.
-3. Requirements: capture the user story, scope, acceptance criteria, open questions, decisions, and validation plan in `REQUIREMENTS.md`.
-4. Planner: turn confirmed requirements into testable work items in `IMPLEMENTATION.md`.
-5. Clarify: resolve inconsistencies between requirements, plan, repo constraints, and product outcomes before implementation.
-6. Implement: make the smallest scoped code change for one work item, validate it, and move it to testing.
-7. QA & Code Review: independently verify acceptance criteria and review code before completion.
-8. Retro: after completion, update durable conventions, agent guidance, and follow-up tasks.
+2. Backlog: optionally capture future intent in `.project-workflow/BACKLOG.md` before it becomes committed task or epic workflow state.
+3. Task: create one task folder under `.project-workflow/tasks/TASK-<NNN>-<Suffix>/`, with `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and a tracker row.
+4. Requirements: capture the user story, scope, acceptance criteria, open questions, decisions, and validation plan in `REQUIREMENTS.md`.
+5. Planner: turn confirmed requirements into testable work items in `IMPLEMENTATION.md`.
+6. Clarify: resolve inconsistencies between requirements, plan, repo constraints, and product outcomes before implementation.
+7. Implement: make the smallest scoped code change for one work item, validate it, and move it to testing.
+8. QA & Code Review: independently verify acceptance criteria and review code before completion.
+9. Retro: after completion, update durable conventions, agent guidance, and follow-up tasks.
 
 ## Cursor Usage
 
 - Read `.project-workflow/guidance.md` before changing workflow state when the file exists.
+- Use `.project-workflow/BACKLOG.md` for future intent, rough priority, options, and promotion history. Backlog is optional; direct task/epic creation is still valid for clear immediate work.
+- For broad future objectives, draft outcome-focused backlog candidates from project context and ask for owner review before accepting or promoting rows.
+- Promoted rows remain in the backlog with `Promoted To` pointing at the created `TASK-###` or `EPIC-###`. Active execution status belongs only in `.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
+- Existing roadmap/backlog documents outside `.project-workflow/BACKLOG.md` are preserved. Do not import or transform them automatically; create a repo-local migration task if needed.
 - If a task folder does not exist, run `./.project-workflow/cli/workflow task init --title "<TITLE>" --update-tracker` from the repo root and let the CLI assign the next `TASK-###` ID.
 - Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.

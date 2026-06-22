@@ -22,6 +22,7 @@ AGENT_CHOICES = {
 }
 
 PROMPT_FILES = [
+    "Backlog.prompt.md",
     "Constitution.prompt.md",
     "Clarify.prompt.md",
     "Delegate.prompt.md",
@@ -35,6 +36,7 @@ PROMPT_FILES = [
 ]
 
 CODEX_SKILL_NAMES = [
+    "project-backlog",
     "project-constitution",
     "project-task",
     "project-epic",
@@ -49,8 +51,29 @@ CODEX_SKILL_NAMES = [
 
 TASK_ID_PREFIX = "TASK"
 EPIC_ID_PREFIX = "EPIC"
+BACKLOG_ID_PREFIX = "BL"
 ID_PADDING = 3
 GLOBAL_TRACKER_COLUMNS = ("ID", "Title", "Status", "Docs")
+BACKLOG_COLUMNS = (
+    "ID",
+    "Title",
+    "Type",
+    "Priority",
+    "Status",
+    "Outcome",
+    "Promoted To",
+    "Notes",
+)
+BACKLOG_TYPES = ("Idea", "Task Candidate", "Epic Candidate", "Discovery", "Follow-Up")
+BACKLOG_PRIORITIES = ("High", "Medium", "Low", "Unset")
+BACKLOG_STATUSES = (
+    "Proposed",
+    "Accepted",
+    "Deferred",
+    "Rejected",
+    "Superseded",
+    "Promoted",
+)
 IMPLEMENTATION_TASK_COLUMNS = (
     "ID",
     "Title",
@@ -289,14 +312,18 @@ def _managed_project_workflow_block() -> str:
         f"{MANAGED_BLOCK_START}\n"
         "## Project Workflow\n\n"
         "This repository uses project-workflow. Keep workflow state in "
-        "`.project-workflow/TRACKER.md` and `.project-workflow/tasks/`.\n\n"
+        "`.project-workflow/BACKLOG.md`, `.project-workflow/TRACKER.md`, "
+        "and `.project-workflow/tasks/`.\n\n"
         "- Read repo-specific workflow guidance from `.project-workflow/guidance.md`.\n"
+        "- Use `.project-workflow/BACKLOG.md` for optional future intent before work is "
+        "promoted into task or epic execution state. Promoted rows stay in the backlog; "
+        "active execution status belongs in trackers and task/epic docs.\n"
         f"- To install or refresh project-workflow itself, run `{CANONICAL_INIT_COMMAND}` "
         "from the repository root; add `--agent codex`, `--agent cursor`, "
         "`--agent claude-code`, or `--agent github-copilot` when selecting a mode. "
         "Do not use bare `project init` unless the package is intentionally installed "
         "and known to be current.\n"
-        "- Use `./.project-workflow/cli/workflow` for supported task and validation commands.\n"
+        "- Use `./.project-workflow/cli/workflow` for supported backlog, task, and validation commands.\n"
         "- Use `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` "
         "for tracker lifecycle changes.\n"
         "- Run `./.project-workflow/cli/workflow doctor` after tracker or task-doc changes.\n"
@@ -430,6 +457,28 @@ def _tracker_template() -> str:
     )
 
 
+def _backlog_template() -> str:
+    return (
+        "# Backlog\n\n"
+        "Use this file for future intent, rough priorities, and promotion history before "
+        "work becomes an executable project-workflow task or epic.\n\n"
+        "Backlog status is not implementation status. `Accepted` means worth keeping or "
+        "preparing, not ready to implement. After promotion, active execution status lives "
+        "in `.project-workflow/TRACKER.md` or the relevant epic tracker.\n\n"
+        "Allowed `Type` values: "
+        + ", ".join(f"`{value}`" for value in BACKLOG_TYPES)
+        + ".\n\n"
+        "Allowed `Priority` values: "
+        + ", ".join(f"`{value}`" for value in BACKLOG_PRIORITIES)
+        + ".\n\n"
+        "Allowed `Status` values: "
+        + ", ".join(f"`{value}`" for value in BACKLOG_STATUSES)
+        + ".\n\n"
+        "| ID | Title | Type | Priority | Status | Outcome | Promoted To | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+    )
+
+
 def _epic_tracker_template() -> str:
     return (
         "# Stories\n\n"
@@ -537,6 +586,231 @@ def _extract_parent_ac_ids_from_epic_rows(rows: list[dict[str, str]]) -> set[str
     for row in rows:
         mapped.update(_extract_ac_ids(_extract_parent_ac_coverage(row)))
     return mapped
+
+
+def _duplicate_backlog_ids(rows: list[dict[str, str]]) -> list[str]:
+    seen: set[str] = set()
+    duplicates: set[str] = set()
+    for row in rows:
+        row_id = row.get("ID", "").strip()
+        if not row_id:
+            continue
+        if row_id in seen:
+            duplicates.add(row_id)
+        seen.add(row_id)
+    return sorted(duplicates)
+
+
+def _backlog_rows(
+    backlog_path: Path, issues: list[DoctorIssue] | None = None
+) -> list[dict[str, str]]:
+    return _parse_markdown_table(
+        backlog_path,
+        expected_columns=BACKLOG_COLUMNS,
+        issues=issues if issues is not None else [],
+        label="Backlog",
+    )
+
+
+def _backlog_rows_for_update(backlog_path: Path) -> tuple[list[str], int, list[dict[str, str]]]:
+    lines = backlog_path.read_text(encoding="utf-8").splitlines(keepends=True)
+    header_idx: int | None = None
+    for idx, line in enumerate(lines):
+        cells = _parse_markdown_table_cells(line)
+        if cells == list(BACKLOG_COLUMNS):
+            header_idx = idx
+            break
+
+    if header_idx is None:
+        expected = " | ".join(BACKLOG_COLUMNS)
+        raise SystemExit(
+            "Backlog schema mismatch. Expected header: "
+            f"'| {expected} |' in {backlog_path}."
+        )
+
+    rows: list[dict[str, str]] = []
+    row_idx = header_idx + 2
+    while row_idx < len(lines):
+        cells = _parse_markdown_table_cells(lines[row_idx])
+        if cells is None:
+            break
+        if len(cells) != len(BACKLOG_COLUMNS):
+            raise SystemExit(
+                "Backlog row has wrong number of columns. "
+                f"Expected {len(BACKLOG_COLUMNS)} columns in {backlog_path}: "
+                f"{lines[row_idx].strip()}"
+            )
+        row = dict(zip(BACKLOG_COLUMNS, cells))
+        row["_line_idx"] = str(row_idx)
+        rows.append(row)
+        row_idx += 1
+
+    return lines, header_idx, rows
+
+
+def _next_backlog_id_from_rows(rows: list[dict[str, str]]) -> str:
+    max_value = 0
+    row_re = re.compile(rf"^{re.escape(BACKLOG_ID_PREFIX)}-(\d+)$")
+    for row in rows:
+        match = row_re.match(row.get("ID", "").strip())
+        if match:
+            max_value = max(max_value, int(match.group(1)))
+    return f"{BACKLOG_ID_PREFIX}-{max_value + 1:0{ID_PADDING}d}"
+
+
+def _format_backlog_row(row: dict[str, str]) -> str:
+    return "| " + " | ".join(_markdown_cell(row.get(col, "")) for col in BACKLOG_COLUMNS) + " |\n"
+
+
+def _normalize_backlog_value(value: str, allowed: tuple[str, ...], label: str) -> str:
+    for allowed_value in allowed:
+        if value.strip().lower() == allowed_value.lower():
+            return allowed_value
+    raise SystemExit(f"Invalid backlog {label} '{value}'. Allowed: {', '.join(allowed)}.")
+
+
+def _backlog_path(root: Path) -> Path:
+    return root / ".project-workflow" / "BACKLOG.md"
+
+
+def _ensure_backlog_file(backlog_path: Path) -> bool:
+    backlog_path.parent.mkdir(parents=True, exist_ok=True)
+    if backlog_path.exists():
+        return False
+    backlog_path.write_text(_backlog_template(), encoding="utf-8")
+    return True
+
+
+def _append_backlog_row(backlog_path: Path, row: dict[str, str]) -> None:
+    lines, header_idx, _rows = _backlog_rows_for_update(backlog_path)
+    insert_at = header_idx + 1
+    while insert_at < len(lines) and lines[insert_at].lstrip().startswith("|"):
+        insert_at += 1
+    lines.insert(insert_at, _format_backlog_row(row))
+    backlog_path.write_text("".join(lines), encoding="utf-8")
+
+
+def _update_backlog_row(backlog_path: Path, row_id: str, updates: dict[str, str]) -> dict[str, str]:
+    lines, _header_idx, rows = _backlog_rows_for_update(backlog_path)
+    for row in rows:
+        if row["ID"] != row_id:
+            continue
+        row.update(updates)
+        lines[int(row["_line_idx"])] = _format_backlog_row(row)
+        backlog_path.write_text("".join(lines), encoding="utf-8")
+        return row
+    raise SystemExit(f"No backlog row found for ID '{row_id}' in {backlog_path}.")
+
+
+def _workflow_ref_exists(root: Path, ref: str) -> bool:
+    workflow_dir = root / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    tracker_path = workflow_dir / "TRACKER.md"
+    if tracker_path.exists():
+        rows = _parse_markdown_table(
+            tracker_path,
+            expected_columns=GLOBAL_TRACKER_COLUMNS,
+            issues=[],
+            label="Global tracker",
+        )
+        if any(row.get("ID") == ref for row in rows):
+            return True
+
+    if not tasks_dir.exists():
+        return False
+    if ref.startswith(f"{EPIC_ID_PREFIX}-"):
+        return any(path.is_dir() and path.name.startswith(f"{ref}-") for path in tasks_dir.iterdir())
+    if ref.startswith(f"{TASK_ID_PREFIX}-"):
+        return any(path.is_dir() and path.name.startswith(f"{ref}-") for path in tasks_dir.rglob("*"))
+    return False
+
+
+def _backlog_validation_issues(root: Path, backlog_path: Path) -> list[DoctorIssue]:
+    issues: list[DoctorIssue] = []
+    if not backlog_path.exists():
+        _add_issue(issues, "error", backlog_path, "Backlog is missing. Run `project backlog init`.")
+        return issues
+
+    rows = _backlog_rows(backlog_path, issues)
+    for duplicate_id in _duplicate_backlog_ids(rows):
+        _add_issue(issues, "error", backlog_path, f"Backlog has duplicate ID '{duplicate_id}'.")
+
+    id_re = re.compile(rf"^{re.escape(BACKLOG_ID_PREFIX)}-\d{{3,}}$")
+    required_columns = ("ID", "Title", "Type", "Priority", "Status", "Outcome")
+    for row in rows:
+        row_label = row.get("ID", "").strip() or f"line {row.get('_line_idx', '?')}"
+        for column in required_columns:
+            if not row.get(column, "").strip():
+                _add_issue(issues, "error", backlog_path, f"{row_label} is missing {column}.")
+
+        row_id = row.get("ID", "").strip()
+        if row_id and not id_re.match(row_id):
+            _add_issue(
+                issues,
+                "error",
+                backlog_path,
+                f"{row_label} has invalid ID '{row_id}'. Expected {BACKLOG_ID_PREFIX}-###.",
+            )
+
+        row_type = row.get("Type", "").strip()
+        if row_type and row_type not in BACKLOG_TYPES:
+            _add_issue(issues, "error", backlog_path, f"{row_label} has invalid Type '{row_type}'.")
+
+        priority = row.get("Priority", "").strip()
+        if priority and priority not in BACKLOG_PRIORITIES:
+            _add_issue(
+                issues,
+                "error",
+                backlog_path,
+                f"{row_label} has invalid Priority '{priority}'.",
+            )
+
+        status = row.get("Status", "").strip()
+        if status and status not in BACKLOG_STATUSES:
+            _add_issue(issues, "error", backlog_path, f"{row_label} has invalid Status '{status}'.")
+
+        promoted_to = row.get("Promoted To", "").strip()
+        if status == "Promoted" and not promoted_to:
+            _add_issue(issues, "error", backlog_path, f"{row_label} is Promoted but lacks Promoted To.")
+        if promoted_to:
+            if not re.match(rf"^(?:{TASK_ID_PREFIX}|{EPIC_ID_PREFIX})-\d+$", promoted_to):
+                _add_issue(
+                    issues,
+                    "error",
+                    backlog_path,
+                    f"{row_label} has invalid Promoted To reference '{promoted_to}'.",
+                )
+            elif not _workflow_ref_exists(root, promoted_to):
+                _add_issue(
+                    issues,
+                    "error",
+                    backlog_path,
+                    f"{row_label} Promoted To reference does not exist: {promoted_to}.",
+                )
+    return issues
+
+
+def _backlog_source_section(row: dict[str, str]) -> str:
+    notes = row.get("Notes", "").strip() or "None."
+    promoted_from_status = row.get("Status", "").strip()
+    return (
+        "## Backlog Source\n\n"
+        f"- ID: {row.get('ID', '').strip()}\n"
+        f"- Title: {row.get('Title', '').strip()}\n"
+        f"- Type: {row.get('Type', '').strip()}\n"
+        f"- Priority: {row.get('Priority', '').strip()}\n"
+        f"- Status before promotion: {promoted_from_status}\n"
+        f"- Outcome: {row.get('Outcome', '').strip()}\n"
+        f"- Notes: {notes}\n\n"
+    )
+
+
+def _requirements_with_backlog_source(requirements_text: str, row: dict[str, str]) -> str:
+    marker = "## Goal\n\n"
+    source = _backlog_source_section(row)
+    if marker in requirements_text:
+        return requirements_text.replace(marker, f"{source}{marker}", 1)
+    return f"{requirements_text.rstrip()}\n\n{source}"
 
 
 def _markdown_cell(value: str) -> str:
@@ -2238,6 +2512,13 @@ def _doctor_check_global_tracker(root: Path, issues: list[DoctorIssue]) -> None:
         )
 
 
+def _doctor_check_backlog(root: Path, issues: list[DoctorIssue]) -> None:
+    backlog_path = _backlog_path(root)
+    if not backlog_path.exists():
+        return
+    issues.extend(_backlog_validation_issues(root, backlog_path))
+
+
 def _doctor_check_epic_trackers(root: Path, issues: list[DoctorIssue]) -> None:
     tasks_dir = root / ".project-workflow" / "tasks"
     if not tasks_dir.exists():
@@ -2274,6 +2555,7 @@ def run_doctor(root: Path) -> list[DoctorIssue]:
     issues: list[DoctorIssue] = []
     _doctor_check_source_mirrors(root, issues)
     _doctor_check_pending_generated_updates(root, issues)
+    _doctor_check_backlog(root, issues)
     _doctor_check_global_tracker(root, issues)
     _doctor_check_epic_trackers(root, issues)
     return issues
@@ -2321,6 +2603,221 @@ def cmd_doctor(args: argparse.Namespace) -> None:
     print("project doctor: passed with warnings")
 
 
+def cmd_backlog_init(args: argparse.Namespace) -> None:
+    """Create .project-workflow/BACKLOG.md if it is missing."""
+    backlog_path = _backlog_path(Path.cwd())
+    created = _ensure_backlog_file(backlog_path)
+    if created:
+        print(f"Created backlog: {backlog_path}")
+    else:
+        print(f"Backlog already exists: {backlog_path}")
+
+
+def cmd_backlog_add(args: argparse.Namespace) -> None:
+    """Append one backlog row with the next BL-### ID."""
+    root = Path.cwd()
+    backlog_path = _backlog_path(root)
+    _ensure_backlog_file(backlog_path)
+    rows = _backlog_rows(backlog_path)
+    row_id = _next_backlog_id_from_rows(rows)
+    row = {
+        "ID": row_id,
+        "Title": args.title,
+        "Type": _normalize_backlog_value(args.type, BACKLOG_TYPES, "type"),
+        "Priority": _normalize_backlog_value(args.priority, BACKLOG_PRIORITIES, "priority"),
+        "Status": _normalize_backlog_value(args.status, BACKLOG_STATUSES, "status"),
+        "Outcome": args.outcome,
+        "Promoted To": "",
+        "Notes": args.notes or "",
+    }
+    _append_backlog_row(backlog_path, row)
+    print(f"Added backlog row {row_id}: {args.title}")
+
+
+def cmd_backlog_list(args: argparse.Namespace) -> None:
+    """Print backlog rows without mutating the backlog file."""
+    backlog_path = _backlog_path(Path.cwd())
+    if not backlog_path.exists():
+        raise SystemExit(f"Missing backlog file: {backlog_path}. Run `project backlog init`.")
+    rows = _backlog_rows(backlog_path)
+    if not rows:
+        print("No backlog rows.")
+        return
+    for row in rows:
+        print(
+            f"{row['ID']}: {row['Title']} "
+            f"[{row['Type']} / {row['Priority']} / {row['Status']}] "
+            f"-> {row['Promoted To'] or 'not promoted'}"
+        )
+
+
+def cmd_backlog_status(args: argparse.Namespace) -> None:
+    """Safely update one backlog row status."""
+    backlog_path = _backlog_path(Path.cwd())
+    if not backlog_path.exists():
+        raise SystemExit(f"Missing backlog file: {backlog_path}. Run `project backlog init`.")
+    status = _normalize_backlog_value(args.to, BACKLOG_STATUSES, "status")
+    row = _update_backlog_row(backlog_path, args.id, {"Status": status})
+    print(f"Updated {row['ID']} status to {row['Status']} in {backlog_path}")
+
+
+def cmd_backlog_update(args: argparse.Namespace) -> None:
+    """Update non-lifecycle fields for one backlog row."""
+    backlog_path = _backlog_path(Path.cwd())
+    if not backlog_path.exists():
+        raise SystemExit(f"Missing backlog file: {backlog_path}. Run `project backlog init`.")
+    updates: dict[str, str] = {}
+    if args.title is not None:
+        updates["Title"] = args.title
+    if args.type is not None:
+        updates["Type"] = _normalize_backlog_value(args.type, BACKLOG_TYPES, "type")
+    if args.priority is not None:
+        updates["Priority"] = _normalize_backlog_value(
+            args.priority,
+            BACKLOG_PRIORITIES,
+            "priority",
+        )
+    if args.outcome is not None:
+        updates["Outcome"] = args.outcome
+    if args.promoted_to is not None:
+        updates["Promoted To"] = args.promoted_to
+    if args.notes is not None:
+        updates["Notes"] = args.notes
+    if not updates:
+        raise SystemExit("No backlog updates supplied.")
+    row = _update_backlog_row(backlog_path, args.id, updates)
+    print(f"Updated backlog row {row['ID']}: {row['Title']}")
+
+
+def cmd_backlog_promote(args: argparse.Namespace) -> None:
+    """Promote an accepted backlog row to a normal task or epic scaffold."""
+    root = Path.cwd()
+    workflow_dir = root / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    tracker_path = workflow_dir / "TRACKER.md"
+    backlog_path = _backlog_path(root)
+    if not backlog_path.exists():
+        raise SystemExit(f"Missing backlog file: {backlog_path}. Run `project backlog init`.")
+    if not tracker_path.exists():
+        raise SystemExit(f"Missing global tracker file: {tracker_path}. Run `project init`.")
+
+    validation_issues = _backlog_validation_issues(root, backlog_path)
+    if validation_issues:
+        raise SystemExit(
+            "Backlog must validate before promotion:\n"
+            + "\n".join(f"- {issue.message}" for issue in validation_issues)
+        )
+
+    _lines, _header_idx, rows = _backlog_rows_for_update(backlog_path)
+    source_row = next((row for row in rows if row["ID"] == args.id), None)
+    if source_row is None:
+        raise SystemExit(f"No backlog row found for ID '{args.id}' in {backlog_path}.")
+
+    source_status = source_row["Status"]
+    if source_status == "Promoted":
+        raise SystemExit(f"{args.id} is already Promoted.")
+    if source_status in {"Rejected", "Superseded"}:
+        raise SystemExit(f"{args.id} cannot be promoted from status {source_status}.")
+    if source_status != "Accepted" and not args.accept:
+        raise SystemExit(
+            f"{args.id} must be Accepted before promotion. "
+            "Pass --accept to confirm accepting and promoting in one operation."
+        )
+
+    title = args.title or source_row["Title"]
+    tasks_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.to == "task":
+        task_id = _next_sequential_id(tasks_dir, tracker_path, prefix=TASK_ID_PREFIX)
+        spec = TaskSpec(
+            task_id=task_id,
+            title=title,
+            folder_suffix=slug_titlecase_dashes(title),
+        )
+        task_dir = tasks_dir / spec.task_folder_name
+        if task_dir.exists():
+            raise SystemExit(f"Task folder already exists: {task_dir}")
+        task_dir.mkdir(parents=True, exist_ok=True)
+        _write_file(
+            task_dir / "IMPLEMENTATION.md",
+            _implementation_template(spec.task_id, spec.title),
+            overwrite=True,
+        )
+        _write_file(
+            task_dir / "REQUIREMENTS.md",
+            _requirements_with_backlog_source(
+                _requirements_template(spec.task_id, spec.title),
+                source_row,
+            ),
+            overwrite=True,
+        )
+        docs_rel = f"tasks/{spec.task_folder_name}/IMPLEMENTATION.md"
+        _update_tracker(
+            tracker_path,
+            spec=spec,
+            status="To Do",
+            docs_rel_path=docs_rel,
+        )
+        promoted_id = task_id
+        promoted_path = task_dir
+    else:
+        epic_id = _next_sequential_id(tasks_dir, tracker_path, prefix=EPIC_ID_PREFIX)
+        spec = TaskSpec(
+            task_id=epic_id,
+            title=title,
+            folder_suffix=slug_titlecase_dashes(title),
+        )
+        epic_dir = tasks_dir / spec.task_folder_name
+        if epic_dir.exists():
+            raise SystemExit(f"Epic folder already exists: {epic_dir}")
+        epic_dir.mkdir(parents=True, exist_ok=True)
+        _write_file(
+            epic_dir / "REQUIREMENTS.md",
+            _requirements_with_backlog_source(
+                _requirements_template(spec.task_id, spec.title),
+                source_row,
+            ),
+            overwrite=True,
+        )
+        _write_file(epic_dir / "TRACKER.md", _epic_tracker_template(), overwrite=True)
+        _write_file(epic_dir / "DEFERRALS.md", _epic_deferrals_template(), overwrite=True)
+        _write_file(epic_dir / "RETRO.md", _epic_retro_template(spec.task_id, spec.title), overwrite=True)
+        _write_acceptance_map(root, spec.task_id)
+        docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
+        _update_tracker(
+            tracker_path,
+            spec=spec,
+            status="To Do",
+            docs_rel_path=docs_rel,
+        )
+        promoted_id = epic_id
+        promoted_path = epic_dir
+
+    _update_backlog_row(
+        backlog_path,
+        args.id,
+        {
+            "Status": "Promoted",
+            "Promoted To": promoted_id,
+        },
+    )
+    print(f"Promoted {args.id} to {args.to} {promoted_id}: {promoted_path}")
+
+
+def cmd_backlog_validate(args: argparse.Namespace) -> None:
+    """Validate .project-workflow/BACKLOG.md structure and references."""
+    root = Path.cwd()
+    backlog_path = _backlog_path(root)
+    issues = _backlog_validation_issues(root, backlog_path)
+    if not issues:
+        print(f"Backlog validation passed: {backlog_path}")
+        return
+    print(f"Backlog validation failed: {backlog_path}")
+    for issue in issues:
+        print(f"- {issue.message}")
+    raise SystemExit(1)
+
+
 def cmd_project_init(args: argparse.Namespace) -> None:
     """Bootstrap project-workflow in the current directory."""
     cwd = Path.cwd()
@@ -2335,6 +2832,7 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     tasks_dir = project_workflow_dir / "tasks"
     cli_dir = project_workflow_dir / "cli"
     tracker_path = project_workflow_dir / "TRACKER.md"
+    backlog_path = project_workflow_dir / "BACKLOG.md"
     guidance_path = project_workflow_dir / "guidance.md"
 
     # Create directories
@@ -2347,6 +2845,13 @@ def cmd_project_init(args: argparse.Namespace) -> None:
         print(f"✓ Created: {tracker_path}")
     else:
         print(f"✓ Exists: {tracker_path}")
+
+    # Create initial BACKLOG.md if missing. Preserve it as user-owned workflow state.
+    if not backlog_path.exists():
+        backlog_path.write_text(_backlog_template(), encoding="utf-8")
+        print(f"✓ Created: {backlog_path}")
+    else:
+        print(f"✓ Exists: {backlog_path}")
 
     print(f"✓ {_ensure_user_guidance_file(guidance_path)}")
 
@@ -3005,6 +3510,99 @@ def build_parser() -> argparse.ArgumentParser:
             help="Treat safety warnings, such as missing completion evidence, as failures",
         )
         doctor_parser.set_defaults(func=cmd_doctor)
+
+    # ===== project backlog ... =====
+    backlog_parser = subparsers.add_parser(
+        "backlog",
+        help="Backlog-related commands",
+        description="Backlog-related commands.",
+    )
+    backlog_sub = backlog_parser.add_subparsers(dest="backlog_command", required=True)
+
+    backlog_init_parser = backlog_sub.add_parser(
+        "init",
+        help="Create .project-workflow/BACKLOG.md if missing",
+    )
+    backlog_init_parser.set_defaults(func=cmd_backlog_init)
+
+    backlog_add_parser = backlog_sub.add_parser("add", help="Add one backlog row")
+    backlog_add_parser.add_argument("--title", required=True, help="Backlog item title")
+    backlog_add_parser.add_argument("--outcome", required=True, help="Desired outcome")
+    backlog_add_parser.add_argument(
+        "--type",
+        default="Idea",
+        choices=BACKLOG_TYPES,
+        help="Backlog item type",
+    )
+    backlog_add_parser.add_argument(
+        "--priority",
+        default="Unset",
+        choices=BACKLOG_PRIORITIES,
+        help="Backlog item priority",
+    )
+    backlog_add_parser.add_argument(
+        "--status",
+        default="Proposed",
+        choices=BACKLOG_STATUSES,
+        help="Initial backlog item status",
+    )
+    backlog_add_parser.add_argument("--notes", help="Optional notes")
+    backlog_add_parser.set_defaults(func=cmd_backlog_add)
+
+    backlog_list_parser = backlog_sub.add_parser("list", help="List backlog rows")
+    backlog_list_parser.set_defaults(func=cmd_backlog_list)
+
+    backlog_status_parser = backlog_sub.add_parser(
+        "status",
+        help="Safely update one backlog row status",
+    )
+    backlog_status_parser.add_argument("--id", required=True, help="Backlog ID (e.g. BL-001)")
+    backlog_status_parser.add_argument(
+        "--to",
+        required=True,
+        choices=BACKLOG_STATUSES,
+        help="Target backlog status",
+    )
+    backlog_status_parser.set_defaults(func=cmd_backlog_status)
+
+    backlog_update_parser = backlog_sub.add_parser("update", help="Update one backlog row")
+    backlog_update_parser.add_argument("--id", required=True, help="Backlog ID (e.g. BL-001)")
+    backlog_update_parser.add_argument("--title", help="New title")
+    backlog_update_parser.add_argument("--type", choices=BACKLOG_TYPES, help="New type")
+    backlog_update_parser.add_argument(
+        "--priority",
+        choices=BACKLOG_PRIORITIES,
+        help="New priority",
+    )
+    backlog_update_parser.add_argument("--outcome", help="New outcome")
+    backlog_update_parser.add_argument("--promoted-to", help="Promoted task or epic ID")
+    backlog_update_parser.add_argument("--notes", help="New notes")
+    backlog_update_parser.set_defaults(func=cmd_backlog_update)
+
+    backlog_promote_parser = backlog_sub.add_parser(
+        "promote",
+        help="Promote an accepted backlog row to a task or epic",
+    )
+    backlog_promote_parser.add_argument("--id", required=True, help="Backlog ID (e.g. BL-001)")
+    backlog_promote_parser.add_argument(
+        "--to",
+        required=True,
+        choices=("task", "epic"),
+        help="Promotion target",
+    )
+    backlog_promote_parser.add_argument("--title", help="Override promoted task/epic title")
+    backlog_promote_parser.add_argument(
+        "--accept",
+        action="store_true",
+        help="Confirm accepting and promoting a non-Accepted row in one operation",
+    )
+    backlog_promote_parser.set_defaults(func=cmd_backlog_promote)
+
+    backlog_validate_parser = backlog_sub.add_parser(
+        "validate",
+        help="Validate backlog structure and promoted references",
+    )
+    backlog_validate_parser.set_defaults(func=cmd_backlog_validate)
 
     # ===== project task ... =====
     task_parser = subparsers.add_parser("task", help="Task-related commands")

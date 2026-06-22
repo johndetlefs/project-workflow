@@ -56,13 +56,14 @@ uvx --from git+https://github.com/johndetlefs/project-workflow.git project init 
 
 This creates:
 
-- `.project-workflow/` — Task folders, tracker, and local CLI
+- `.project-workflow/` — Backlog, task folders, tracker, guidance, and local CLI
 - Agent definitions in one mode-specific location:
   - `.github/prompts/` for GitHub Copilot
   - `.claude/agents/` for Claude Code
   - `AGENTS.md` managed block and `.agents/skills/` for OpenAI Codex
   - `.cursor/agents/` and `.cursor/rules/project-workflow.mdc` for Cursor
 - `.project-workflow/TRACKER.md` — Centralized task status tracking
+- `.project-workflow/BACKLOG.md` — Optional future-intent backlog before work is promoted
 - `.project-workflow/guidance.md` — User-owned repo-specific workflow guidance
 - `.github/copilot-instructions.md` — A managed Project Workflow block for GitHub Copilot mode
 
@@ -148,6 +149,30 @@ Minimum owner context for task or epic intake:
 - Constraints, priority, risks, and relevant examples
 
 If that context is incomplete, the agent should ask focused questions and keep work in requirements/clarification rather than moving into implementation.
+
+### Optional: **Capture Future Backlog Items**
+
+Run `project.backlog` when you want to preserve future intent before it is ready to become a task or epic:
+
+```
+Action: add
+Title: Expanded dashboard planning
+Outcome: Keep the later planning-dashboard idea visible without making it active implementation work.
+```
+
+Backlog rows live in `.project-workflow/BACKLOG.md` with `BL-###` IDs. They are not active execution state. `Accepted` means worth keeping or preparing, not ready to implement.
+
+When a backlog row is ready for workflow execution, promote it:
+
+```bash
+./.project-workflow/cli/workflow backlog status --id BL-001 --to Accepted
+./.project-workflow/cli/workflow backlog promote --id BL-001 --to task
+./.project-workflow/cli/workflow backlog promote --id BL-002 --to epic
+```
+
+Promoted rows stay in the backlog with status `Promoted` and `Promoted To` set to the created `TASK-###` or `EPIC-###`. Execution status then belongs in `.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
+
+Existing roadmap or backlog documents outside `.project-workflow/BACKLOG.md` are preserved. If you want to normalize them into the canonical backlog, create a repo-local project-workflow task and review the proposed rows before changing source documents.
 
 ### 1. **Create a Task** (5 min)
 
@@ -345,6 +370,7 @@ Epic workflow rules:
 your-project/
 ├── .project-workflow/
 │   ├── TRACKER.md                    # ← Check this to see project status
+│   ├── BACKLOG.md                    # ← Optional future-intent backlog
 │   ├── guidance.md                   # ← User-owned workflow guidance
 │   ├── CONSTITUTION.md               # ← Product outcomes (non-technical)
 │   ├── cli/
@@ -360,6 +386,7 @@ your-project/
 │   ├── copilot-instructions.md       # ← Host-owned file with Project Workflow managed block
 │   └── prompts/                      # ← Agent definitions used by Copilot
 │       ├── Constitution.prompt.md    # /project.constitution
+│       ├── Backlog.prompt.md         # /project.backlog
 │       ├── Task.prompt.md            # /project.task
 │       ├── Epic.prompt.md            # /project.epic
 │       ├── Requirements.prompt.md    # /project.requirements
@@ -378,6 +405,7 @@ your-project/
 your-project/
 ├── .project-workflow/
 │   ├── TRACKER.md
+│   ├── BACKLOG.md
 │   ├── CONSTITUTION.md
 │   ├── cli/
 │   │   ├── workflow
@@ -387,6 +415,7 @@ your-project/
 ├── .claude/
 │   └── agents/
 │       ├── project-constitution.md
+│       ├── project-backlog.md
 │       ├── project-task.md
 │       ├── project-epic.md
 │       ├── project-requirements.md
@@ -405,6 +434,7 @@ your-project/
 your-project/
 ├── .project-workflow/
 │   ├── TRACKER.md
+│   ├── BACKLOG.md
 │   ├── CONSTITUTION.md
 │   ├── cli/
 │   │   ├── workflow
@@ -415,6 +445,7 @@ your-project/
 ├── .agents/
 │   └── skills/
 │       ├── project-constitution/
+│       ├── project-backlog/
 │       ├── project-task/
 │       ├── project-epic/
 │       ├── project-requirements/
@@ -433,6 +464,7 @@ your-project/
 your-project/
 ├── .project-workflow/
 │   ├── TRACKER.md
+│   ├── BACKLOG.md
 │   ├── CONSTITUTION.md
 │   ├── cli/
 │   │   ├── workflow
@@ -442,6 +474,7 @@ your-project/
 ├── .cursor/
 │   ├── agents/
 │   │   ├── project-constitution.md
+│   │   ├── project-backlog.md
 │   │   ├── project-task.md
 │   │   ├── project-epic.md
 │   │   ├── project-requirements.md
@@ -464,7 +497,7 @@ your-project/
 
 The agents are designed to be used **in order**. Skipping steps = ambiguous code and rework.
 
-1. **Constitution (once)** → 2. **Task** → 3. **Requirements** → 4. **Planner** → 5. **Clarify** → 6. **Implement** → 7. **QA & Code Review** → 8. **Retro**
+1. **Constitution (once)** → 2. **Backlog (optional)** → 3. **Task/Epic** → 4. **Requirements** → 5. **Planner** → 6. **Clarify** → 7. **Implement** → 8. **QA & Code Review** → 9. **Retro**
 
 Always run Clarify after Planner to verify internal consistency before implementation.
 Use **Delegate** as an execution option when a task has multiple work items with dependencies.
