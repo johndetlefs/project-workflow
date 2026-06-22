@@ -65,6 +65,7 @@ This creates:
 - `.project-workflow/TRACKER.md` — Centralized task status tracking
 - `.project-workflow/BACKLOG.md` — Optional future-intent backlog before work is promoted
 - `.project-workflow/guidance.md` — User-owned repo-specific workflow guidance
+- `.project-workflow/config.json` — User-owned task ID namespace configuration
 - `.github/copilot-instructions.md` — A managed Project Workflow block for GitHub Copilot mode
 
 Re-running is **idempotent** and safe. The canonical refresh command is `uvx --from git+https://github.com/johndetlefs/project-workflow.git project init`; it refreshes files that carry the `project-workflow:generated` marker, appends or refreshes only the managed block in host-owned files such as `AGENTS.md` and `.github/copilot-instructions.md`, and preserves unmarked existing files by writing the new generated content beside them as `*.new`.
@@ -109,6 +110,33 @@ In repositories initialized with project-workflow, the local dependency-free hel
 ./.project-workflow/cli/workflow doctor
 ./.project-workflow/cli/workflow validate --strict
 ```
+
+### Task ID Namespaces
+
+Repos can choose task ID prefixes in `.project-workflow/config.json`. If the
+file is missing, project-workflow keeps the compatibility default:
+`TASK-###` for tasks and `EPIC-###` for epics.
+
+Example:
+
+```json
+{
+  "task_id_prefixes": ["TASK", "MCP", "UI", "DEV", "WF"],
+  "default_task_id_prefix": "WF",
+  "prefix_guidance": {
+    "TASK": "General task work.",
+    "MCP": "MCP server, app tool, payload contract, fixture, orchestration.",
+    "UI": "Frontend, widget, component, route, layout, visual, interaction, UX.",
+    "DEV": "Local development, debug tooling, tunnels, build scripts.",
+    "WF": "Project workflow conventions, process automation, prompts, agent guidance."
+  }
+}
+```
+
+Use `task init --prefix UI` to force a configured namespace for one task. Omit
+`--prefix` to use the configured default. `epic decompose` uses
+`prefix_guidance` for mixed-prefix child rows by default; pass `--prefix MCP`
+only for a deliberately homogeneous batch.
 
 ---
 
@@ -349,6 +377,7 @@ Epic workflow rules:
 - `epic lifecycle` safely updates the global epic row through `Analysing`, `Ready`, `In Progress`, and `Closeout`. `Ready`, `In Progress`, and `Closeout` are gated; `Complete` remains owned by `epic closeout --complete`.
 - New epic trackers include a `Parent ACs` column for child-row coverage. Legacy trackers that use `Notes` values such as `Covers AC1, AC3` remain supported.
 - `epic decompose` writes Proposed child rows only. It does not scaffold child folders/docs.
+- `epic decompose` reads `.project-workflow/config.json` prefix guidance by default and can propose mixed-prefix child rows. Use `--prefix <PREFIX>` only when intentionally forcing one configured namespace for the whole batch.
 - `epic approve` moves a row from Proposed to Approved (same semantics as manually editing status in epic tracker).
 - `epic scaffold-child` only accepts Approved rows, moves the row to In Progress after scaffold, and copies parent AC coverage into the child `REQUIREMENTS.md` and `IMPLEMENTATION.md`.
 - `epic ready` validates epic requirements before decomposition; `epic ready-child` validates child requirements and implementation readiness before implementation/testing.
@@ -357,7 +386,7 @@ Epic workflow rules:
 - The global tracker summarizes epic rows; each epic `TRACKER.md` owns child rows. Proposed child rows should not be added to the global tracker.
 - `epic audit` writes `ACCEPTANCE-AUDIT.md`; the audit is the closeout evidence artifact, while `ACCEPTANCE-MAP.md` remains the working coverage map.
 - `epic closeout` validates gates and only marks the global epic row Complete when `--complete` is explicit, all parent ACs have evidence or approved deferrals, and `RETRO.md` records lessons, follow-ups, deferrals, and missed in-scope work. Use explicit `None.` entries when a retro section has nothing to report.
-- Child IDs remain globally unique task IDs (`TASK-###`) across standalone and epic-managed work.
+- Child IDs remain globally unique within configured task prefix namespaces across standalone and epic-managed work.
 - If `--create-branch` is used for epic child scaffold, `--epic-branch` must already exist; the command fails fast and never falls back to a base branch.
 
 ---

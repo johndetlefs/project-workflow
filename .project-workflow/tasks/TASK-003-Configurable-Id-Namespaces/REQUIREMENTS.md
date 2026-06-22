@@ -109,25 +109,8 @@ to propose mixed-prefix child work without forcing everything through
 
 ## Open Questions (Answer Needed)
 
-- Q1: Should the config file be JSON or TOML?
-  - Recommendation: use JSON for the first pass because the package supports
-    Python 3.10+ and JSON is stdlib-only. TOML would require a dependency or a
-    Python-version split.
-- Q2: Should prefix numbers be global across all prefixes or per prefix?
-  - Recommendation: allocate per prefix. `UI-008` and `MCP-008` should both be
-    valid when each namespace has its own sequence.
-- Q3: Should `epic decompose` require `--prefix`?
-  - Recommendation: no. The normal mixed-epic path should read namespace config
-    automatically and classify each child row. `--prefix` should be an override
-    for homogeneous batches only.
-- Q4: How should ambiguous prefix classification be handled?
-  - Recommendation: Proposed rows should include classification rationale in
-    `Notes`; low-confidence or fallback classifications should be obvious for
-    review before approval/scaffolding. Do not silently select a non-default
-    custom prefix without a recorded reason.
-- Q5: Should unconfigured historical prefixes fail doctor?
-  - Recommendation: warn in default doctor and fail only under `--strict`, so
-    existing repos can adopt config incrementally.
+- None. Q1-Q5 were resolved before implementation and are recorded under
+  `## Decisions (Resolved)`.
 
 ## Decisions (Resolved)
 
@@ -144,6 +127,16 @@ to propose mixed-prefix child work without forcing everything through
   - Why: This keeps `project init` safe for existing users.
 - Decision: Config must be user-owned and non-destructive.
   - Why: Prefix taxonomy is project-specific and should survive package upgrades.
+- Decision: Use JSON for the first namespace config format.
+  - Why: Python 3.10 support keeps stdlib-only JSON simpler than TOML for the
+    first pass.
+- Decision: Allocate numbers per prefix.
+  - Why: `UI-008` and `MCP-008` should both be valid when each namespace owns
+    its own sequence.
+- Decision: Unconfigured historical prefixes warn by default and fail only under
+  `--strict`.
+  - Why: Existing repositories can adopt config incrementally without breaking
+    normal doctor runs.
 
 ## Validation Plan
 

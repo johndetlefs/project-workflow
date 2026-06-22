@@ -105,6 +105,11 @@ Execution:
 
 `./.project-workflow/cli/workflow epic decompose --epic-id <EPIC_ID> --limit <LIMIT> --type <TYPE>`
 
+When `.project-workflow/config.json` defines multiple task namespaces,
+decomposition classifies each proposed child row with `prefix_guidance` by
+default. Use `--prefix <PREFIX>` only when intentionally forcing every proposed
+child row into one configured namespace.
+
 `./.project-workflow/cli/workflow epic approve --epic-id <EPIC_ID> --id <ROW_ID>` (one or more user-selected rows)
 
 `./.project-workflow/cli/workflow epic scaffold-child --epic-id <EPIC_ID> --id <ROW_ID> [--create-branch --epic-branch <EPIC_BRANCH> --branch-prefix <PREFIX>]` (optional)
@@ -158,6 +163,7 @@ Constraints to enforce in responses:
 - Decomposition is proposal-first: it writes Proposed rows and does not scaffold child folders.
 - `ACCEPTANCE-MAP.md` is the in-progress parent AC coverage view. It is created on `epic init` and refreshed by epic lifecycle commands from requirements, tracker rows, deferrals, and child evidence.
 - Proposed child rows should preserve source AC IDs in the epic tracker `Parent ACs` field when they come from numbered acceptance criteria. Legacy trackers may still carry coverage in `Notes` as `Covers AC1, AC3`.
+- Proposed child rows should preserve configured task prefixes such as `UI`, `MCP`, `DEV`, or `WF`, and their `Notes` should include prefix classification rationale.
 - Scaffolded epic child tasks must carry parent AC coverage and parent AC evidence sections forward into their docs. Their `IMPLEMENTATION.md` planning table must map each row to child AC IDs while keeping the parent AC mapping visible.
 - The global tracker summarizes epic rows; the epic tracker owns child rows. Proposed child rows must stay in the epic tracker and must not be added to the global tracker.
 - `epic audit` writes `ACCEPTANCE-AUDIT.md` with parent AC coverage, child evidence, deferrals, and verdicts. The audit is the closeout evidence artifact; `ACCEPTANCE-MAP.md` is the working coverage map.
@@ -167,7 +173,7 @@ Constraints to enforce in responses:
 - `epic ready-child` must pass before implementation/testing for an epic child; if it fails, remediate missing child requirements, planning, parent AC coverage, or owner decisions before coding.
 - `epic lifecycle` updates the global epic row through `Analysing`, `Ready`, `In Progress`, and `Closeout`. `Ready`, `In Progress`, and `Closeout` are gated; `Complete` remains owned by `epic closeout --complete`.
 - Approval gate: only Approved rows may be scaffolded.
-- Child task IDs remain globally unique and are managed by workflow behavior.
+- Child task IDs remain globally unique within their configured prefix namespaces and are managed by workflow behavior.
 - If branch creation is requested for `scaffold-child`, the epic branch must already exist; no fallback branch is allowed.
 - In setup mode, do not skip required gates even if the user asks for later steps first; explain what is missing, satisfy the gate, then continue.
 
