@@ -13,3 +13,4 @@
 | EPIC-004 | Epic Lifecycle Polish | Complete | `tasks/EPIC-004-Epic-Lifecycle-Polish/REQUIREMENTS.md` |
 | EPIC-005 | Project Backlog Support | Complete | `tasks/EPIC-005-Project-Backlog-Support/REQUIREMENTS.md` |
 | TASK-026 | Collision-Resistant ID Generation | Testing | `tasks/TASK-026-Collision-Resistant-Id-Generation/IMPLEMENTATION.md` |
+| TASK-027 | Accepted Doctor Warning Suppression | Testing | `tasks/TASK-027-Accepted-Doctor-Warning-Suppression/IMPLEMENTATION.md` |

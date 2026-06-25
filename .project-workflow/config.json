@@ -1,0 +1,65 @@
+{
+  "task_id_prefixes": [
+    "TASK"
+  ],
+  "default_task_id_prefix": "TASK",
+  "id_generation": {
+    "tasks": "sequential",
+    "epics": "sequential",
+    "backlog": "sequential"
+  },
+  "unique_id_length": 5,
+  "accepted_doctor_warnings": [
+    {
+      "fingerprint": "c9aac09ff0fcf2ad",
+      "reason": "Accepted legacy APP-001 tracker prefix from pre-namespace workflow state."
+    },
+    {
+      "fingerprint": "a0f1735c2ea43837",
+      "reason": "Accepted legacy APP-001 completion evidence gap from pre-doctor workflow state."
+    },
+    {
+      "fingerprint": "473760faaa2ed6bb",
+      "reason": "Accepted legacy APP-002 tracker prefix from pre-namespace workflow state."
+    },
+    {
+      "fingerprint": "112af1fa983f0055",
+      "reason": "Accepted legacy APP-002 completion evidence gap from pre-doctor workflow state."
+    },
+    {
+      "fingerprint": "6877b7d4a8c1145a",
+      "reason": "Accepted legacy APP-003 tracker prefix from pre-namespace workflow state."
+    },
+    {
+      "fingerprint": "f459c21d1ae310b2",
+      "reason": "Accepted legacy APP-003 completion evidence gap from pre-doctor workflow state."
+    },
+    {
+      "fingerprint": "c5c02ec67e789a92",
+      "reason": "Accepted legacy EPIC-002 implementation AC reference drift."
+    },
+    {
+      "fingerprint": "f467d28d8ef3b488",
+      "reason": "Accepted legacy EPIC-002 implementation AC reference drift."
+    },
+    {
+      "fingerprint": "25ee43865c00c9e3",
+      "reason": "Accepted legacy EPIC-002 implementation AC reference drift."
+    },
+    {
+      "fingerprint": "655b0fe0f5817390",
+      "reason": "Accepted legacy EPIC-002 implementation AC reference drift."
+    },
+    {
+      "fingerprint": "c4e0e108c5646ffd",
+      "reason": "Accepted legacy EPIC-002 implementation AC reference drift."
+    },
+    {
+      "fingerprint": "8997732e20ff9d79",
+      "reason": "Accepted legacy EPIC-002 implementation AC reference drift."
+    }
+  ],
+  "prefix_guidance": {
+    "TASK": "General task work that does not need a repository-specific namespace."
+  }
+}

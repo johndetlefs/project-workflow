@@ -104,6 +104,29 @@ Use strict mode when you want safety warnings, such as completed tasks without Q
 project doctor --strict
 ```
 
+Doctor warnings include stable fingerprints. To permanently accept a known
+warning, add the fingerprint to `.project-workflow/config.json`:
+
+```json
+{
+  "accepted_doctor_warnings": [
+    {
+      "fingerprint": "22715ece2effa18a",
+      "reason": "Accepted historical workflow artifact."
+    }
+  ]
+}
+```
+
+Accepted warnings are hidden from normal `doctor` output and do not fail
+`doctor --strict`. They are exact matches over severity, repo-relative path, and
+message; if a warning changes, it reappears for review. Audit accepted warnings
+with:
+
+```bash
+project doctor --show-accepted
+```
+
 In repositories initialized with project-workflow, the local dependency-free helper exposes the same command surface:
 
 ```bash
@@ -130,6 +153,7 @@ Example:
     "backlog": "sequential"
   },
   "unique_id_length": 5,
+  "accepted_doctor_warnings": [],
   "prefix_guidance": {
     "TASK": "General task work.",
     "MCP": "MCP server, app tool, payload contract, fixture, orchestration.",

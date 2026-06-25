@@ -62,7 +62,8 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 - Read `.project-workflow/guidance.md` before changing workflow state when the file exists.
 - For broad future objectives, use `project-backlog` to draft outcome-focused backlog candidates from project context. Do not create tracker rows, task folders, or epic folders until the owner accepts or promotes the row.
 - Existing roadmap/backlog documents outside `.project-workflow/BACKLOG.md` are preserved. Do not import or transform them automatically; create a repo-local migration task if needed.
-- Read `.project-workflow/config.json` for repo-owned task ID namespaces and ID generation when it exists. Sequential IDs look like `TASK-001`; unique IDs keep the prefix and use a 5-character base36 suffix by default, such as `WF-K7F3Q`.
+- Read `.project-workflow/config.json` for repo-owned task ID namespaces, ID generation, and accepted doctor warning fingerprints when it exists. Sequential IDs look like `TASK-001`; unique IDs keep the prefix and use a 5-character base36 suffix by default, such as `WF-K7F3Q`.
+- Do not report accepted doctor warnings as active issues after `doctor` hides them. Use `doctor --show-accepted` only when auditing accepted workflow debt.
 - If a task folder does not exist, run `./.project-workflow/cli/workflow task init --title "<TITLE>" --update-tracker` from the repo root and let the CLI assign the next configured task ID. Add `--prefix <PREFIX>` only when the user or repo guidance calls for a configured non-default prefix.
 - Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.

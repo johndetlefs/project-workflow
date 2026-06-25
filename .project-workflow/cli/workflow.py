@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import secrets
@@ -329,6 +330,7 @@ def _default_workflow_config_text() -> str:
             "default_task_id_prefix": TASK_ID_PREFIX,
             "id_generation": DEFAULT_ID_GENERATION,
             "unique_id_length": DEFAULT_UNIQUE_ID_LENGTH,
+            "accepted_doctor_warnings": [],
             "prefix_guidance": DEFAULT_PREFIX_GUIDANCE,
         },
         indent=2,
@@ -433,6 +435,7 @@ class WorkflowConfig:
     prefix_guidance: dict[str, str]
     id_generation: dict[str, str]
     unique_id_length: int
+    accepted_doctor_warnings: dict[str, str]
 
 
 def _workflow_config_path(root: Path) -> Path:
@@ -470,6 +473,7 @@ def _default_workflow_config() -> WorkflowConfig:
         prefix_guidance=dict(DEFAULT_PREFIX_GUIDANCE),
         id_generation=dict(DEFAULT_ID_GENERATION),
         unique_id_length=DEFAULT_UNIQUE_ID_LENGTH,
+        accepted_doctor_warnings={},
     )
 
 
@@ -556,12 +560,49 @@ def _load_workflow_config(root: Path) -> WorkflowConfig:
     if raw_unique_id_length < 1 or raw_unique_id_length > 32:
         raise SystemExit(f"{config_path} field 'unique_id_length' must be between 1 and 32.")
 
+    raw_accepted_warnings = raw.get("accepted_doctor_warnings", [])
+    if not isinstance(raw_accepted_warnings, list):
+        raise SystemExit(f"{config_path} field 'accepted_doctor_warnings' must be a list.")
+
+    accepted_doctor_warnings: dict[str, str] = {}
+    for idx, raw_warning in enumerate(raw_accepted_warnings, start=1):
+        if isinstance(raw_warning, str):
+            fingerprint = raw_warning.strip()
+            reason = ""
+        elif isinstance(raw_warning, dict):
+            raw_fingerprint = raw_warning.get("fingerprint")
+            if not isinstance(raw_fingerprint, str):
+                raise SystemExit(
+                    f"{config_path} accepted_doctor_warnings entry {idx} must include "
+                    "a string 'fingerprint'."
+                )
+            fingerprint = raw_fingerprint.strip()
+            raw_reason = raw_warning.get("reason", "")
+            if not isinstance(raw_reason, str):
+                raise SystemExit(
+                    f"{config_path} accepted_doctor_warnings entry {idx} field "
+                    "'reason' must be a string."
+                )
+            reason = raw_reason.strip()
+        else:
+            raise SystemExit(
+                f"{config_path} accepted_doctor_warnings entry {idx} must be "
+                "a string fingerprint or object."
+            )
+        if not re.match(r"^[0-9a-f]{16}$", fingerprint):
+            raise SystemExit(
+                f"{config_path} accepted_doctor_warnings entry {idx} has invalid "
+                "fingerprint. Expected 16 lowercase hex characters."
+            )
+        accepted_doctor_warnings[fingerprint] = reason
+
     return WorkflowConfig(
         task_id_prefixes=tuple(prefixes),
         default_task_id_prefix=default_prefix,
         prefix_guidance=prefix_guidance,
         id_generation=id_generation,
         unique_id_length=raw_unique_id_length,
+        accepted_doctor_warnings=accepted_doctor_warnings,
     )
 
 
@@ -3048,32 +3089,142 @@ def _doctor_issue_is_legacy(issue: DoctorIssue) -> bool:
     return bool(match and int(match.group(1)) < 3)
 
 
+def _doctor_issue_path_for_fingerprint(issue: DoctorIssue, root: Path) -> str:
+    issue_path = Path(issue.path)
+    if issue_path.is_absolute():
+        try:
+            return issue_path.relative_to(root).as_posix()
+        except ValueError:
+            return issue_path.as_posix()
+    return str(issue.path).replace("\\", "/")
+
+
+def _doctor_issue_fingerprint(issue: DoctorIssue, root: Path) -> str:
+    payload = "\n".join(
+        (
+            issue.severity,
+            _doctor_issue_path_for_fingerprint(issue, root),
+            issue.message,
+        )
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def _accepted_doctor_warning_fingerprints(root: Path) -> dict[str, str]:
+    try:
+        return _load_workflow_config(root).accepted_doctor_warnings
+    except SystemExit:
+        return {}
+
+
+def _doctor_issue_is_accepted(
+    issue: DoctorIssue, *, root: Path, accepted_fingerprints: dict[str, str]
+) -> bool:
+    return _doctor_issue_fingerprint(issue, root) in accepted_fingerprints
+
+
+def _format_doctor_issue(
+    issue: DoctorIssue,
+    *,
+    root: Path,
+    strict: bool,
+    accepted_fingerprints: dict[str, str],
+    accepted: bool = False,
+) -> str:
+    if accepted:
+        severity = "accepted"
+    elif _doctor_issue_is_legacy(issue):
+        severity = "error" if strict and issue.severity == "warning" else "legacy warning"
+    else:
+        severity = "error" if strict and issue.severity == "warning" else issue.severity
+    fingerprint = _doctor_issue_fingerprint(issue, root)
+    reason = accepted_fingerprints.get(fingerprint, "")
+    reason_text = f" (accepted: {reason})" if accepted and reason else ""
+    return (
+        f"{severity.upper()}: {issue.path}: {issue.message} "
+        f"[fingerprint: {fingerprint}]{reason_text}"
+    )
+
+
 def cmd_doctor(args: argparse.Namespace) -> None:
     root = Path(args.root).resolve() if args.root else Path.cwd()
     issues = run_doctor(root)
-    blocking = [issue for issue in issues if _doctor_issue_is_blocking(issue, strict=args.strict)]
-    current_issues = [issue for issue in issues if not _doctor_issue_is_legacy(issue)]
-    legacy_issues = [issue for issue in issues if _doctor_issue_is_legacy(issue)]
+    accepted_fingerprints = _accepted_doctor_warning_fingerprints(root)
+    accepted_issues = [
+        issue
+        for issue in issues
+        if _doctor_issue_is_accepted(
+            issue,
+            root=root,
+            accepted_fingerprints=accepted_fingerprints,
+        )
+    ]
+    visible_issues = [
+        issue
+        for issue in issues
+        if not _doctor_issue_is_accepted(
+            issue,
+            root=root,
+            accepted_fingerprints=accepted_fingerprints,
+        )
+    ]
+    blocking = [
+        issue for issue in visible_issues if _doctor_issue_is_blocking(issue, strict=args.strict)
+    ]
+    current_issues = [issue for issue in visible_issues if not _doctor_issue_is_legacy(issue)]
+    legacy_issues = [issue for issue in visible_issues if _doctor_issue_is_legacy(issue)]
 
-    if not issues:
+    if not visible_issues and not (args.show_accepted and accepted_issues):
         print(f"project doctor: no issues found in {root}")
+        if accepted_issues:
+            print(f"project doctor: {len(accepted_issues)} accepted warning(s) hidden.")
         return
 
     print(f"project doctor: checked {root}")
     for issue in current_issues:
-        severity = "error" if args.strict and issue.severity == "warning" else issue.severity
-        print(f"{severity.upper()}: {issue.path}: {issue.message}")
+        print(
+            _format_doctor_issue(
+                issue,
+                root=root,
+                strict=args.strict,
+                accepted_fingerprints=accepted_fingerprints,
+            )
+        )
     for issue in legacy_issues:
-        severity = "error" if args.strict and issue.severity == "warning" else "legacy warning"
-        print(f"{severity.upper()}: {issue.path}: {issue.message}")
+        print(
+            _format_doctor_issue(
+                issue,
+                root=root,
+                strict=args.strict,
+                accepted_fingerprints=accepted_fingerprints,
+            )
+        )
     if legacy_issues:
         print(f"project doctor: {len(legacy_issues)} legacy warning(s) shown separately.")
+    if accepted_issues:
+        if args.show_accepted:
+            print(f"project doctor: {len(accepted_issues)} accepted warning(s):")
+            for issue in accepted_issues:
+                print(
+                    _format_doctor_issue(
+                        issue,
+                        root=root,
+                        strict=args.strict,
+                        accepted_fingerprints=accepted_fingerprints,
+                        accepted=True,
+                    )
+                )
+        else:
+            print(f"project doctor: {len(accepted_issues)} accepted warning(s) hidden.")
 
     if blocking:
         print(f"project doctor: failed with {len(blocking)} blocking issue(s).")
         raise SystemExit(1)
 
-    print("project doctor: passed with warnings")
+    if visible_issues:
+        print("project doctor: passed with warnings")
+    else:
+        print("project doctor: passed")
 
 
 def cmd_backlog_init(args: argparse.Namespace) -> None:
@@ -4022,6 +4173,11 @@ def build_parser() -> argparse.ArgumentParser:
             "--strict",
             action="store_true",
             help="Treat safety warnings, such as missing completion evidence, as failures",
+        )
+        doctor_parser.add_argument(
+            "--show-accepted",
+            action="store_true",
+            help="Show warnings accepted in .project-workflow/config.json",
         )
         doctor_parser.set_defaults(func=cmd_doctor)
 

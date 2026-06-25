@@ -8,10 +8,11 @@ All notable changes to this project are documented in this file.
 
 - Added configurable sequential or unique workflow ID generation for tasks, epics, and backlog rows.
 - Added 5-character uppercase base36 unique IDs with local collision checks across trackers, backlog rows, and task folders.
+- Added config-backed accepted doctor warning fingerprints and `doctor --show-accepted`.
 
 ### Changed
 
-- Updated workflow validation, generated agent guidance, and README documentation to support configured unique IDs.
+- Updated workflow validation, generated agent guidance, and README documentation to support configured unique IDs and accepted doctor warnings.
 
 ## 0.1.2 - 2026-06-04
 

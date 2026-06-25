@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -61,6 +62,13 @@ def write_unique_id_config(root: Path) -> None:
         "}\n",
         encoding="utf-8",
     )
+
+
+def add_accepted_doctor_warnings(root: Path, entries: list[object]) -> None:
+    config_path = root / ".project-workflow" / "config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["accepted_doctor_warnings"] = entries
+    config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
 
 def assert_unique_id(value: str, prefix: str) -> None:
@@ -1083,6 +1091,110 @@ def test_doctor_strict_fails_complete_task_without_qa_evidence(tmp_path: Path) -
     assert strict_doctor.returncode != 0
     assert "ERROR" in strict_doctor.stdout
     assert "lacks non-placeholder QA/code-review evidence" in strict_doctor.stdout
+
+
+def test_doctor_hides_accepted_warning_fingerprints_and_shows_on_request(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(
+        ["task", "init", "--title", "Accepted Warning", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    (task_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements("TASK-001", "Accepted Warning"),
+        encoding="utf-8",
+    )
+    (task_dir / "IMPLEMENTATION.md").write_text(ready_implementation(), encoding="utf-8")
+
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace(" | To Do | ", " | Complete | "),
+        encoding="utf-8",
+    )
+
+    issues = workflow_cli.run_doctor(tmp_path)
+    target = next(issue for issue in issues if "lacks non-placeholder QA" in issue.message)
+    fingerprint = workflow_cli._doctor_issue_fingerprint(target, tmp_path)
+    add_accepted_doctor_warnings(
+        tmp_path,
+        [{"fingerprint": fingerprint, "reason": "Known historical fixture."}],
+    )
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    assert "no issues found" in doctor.stdout
+    assert "1 accepted warning(s) hidden" in doctor.stdout
+    assert "lacks non-placeholder QA" not in doctor.stdout
+
+    strict_doctor = run_project(["doctor", "--strict"], cwd=tmp_path)
+    assert strict_doctor.returncode == 0, strict_doctor.stdout + strict_doctor.stderr
+    assert "1 accepted warning(s) hidden" in strict_doctor.stdout
+
+    audit = run_project(["doctor", "--show-accepted"], cwd=tmp_path)
+    assert audit.returncode == 0, audit.stdout + audit.stderr
+    assert "ACCEPTED:" in audit.stdout
+    assert fingerprint in audit.stdout
+    assert "Known historical fixture." in audit.stdout
+    assert "lacks non-placeholder QA" in audit.stdout
+
+
+def test_doctor_string_accepted_fingerprint_does_not_hide_different_warning(
+    tmp_path: Path,
+) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    first = run_project(
+        ["task", "init", "--title", "First Accepted Warning", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert first.returncode == 0, first.stdout + first.stderr
+    second = run_project(
+        ["task", "init", "--title", "Second Visible Warning", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert second.returncode == 0, second.stdout + second.stderr
+    first_dir = next(
+        (tmp_path / ".project-workflow" / "tasks").glob("TASK-001-First-Accepted-Warning")
+    )
+    second_dir = next(
+        (tmp_path / ".project-workflow" / "tasks").glob("TASK-002-Second-Visible-Warning")
+    )
+    (first_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements("TASK-001", "First Accepted Warning"),
+        encoding="utf-8",
+    )
+    (first_dir / "IMPLEMENTATION.md").write_text(ready_implementation(), encoding="utf-8")
+    (second_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements("TASK-002", "Second Visible Warning"),
+        encoding="utf-8",
+    )
+    (second_dir / "IMPLEMENTATION.md").write_text(ready_implementation(), encoding="utf-8")
+
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace(" | To Do | ", " | Complete | "),
+        encoding="utf-8",
+    )
+
+    issues = workflow_cli.run_doctor(tmp_path)
+    accepted_issue = next(issue for issue in issues if "First-Accepted-Warning" in issue.path)
+    visible_issue = next(issue for issue in issues if "Second-Visible-Warning" in issue.path)
+    accepted_fingerprint = workflow_cli._doctor_issue_fingerprint(accepted_issue, tmp_path)
+    visible_fingerprint = workflow_cli._doctor_issue_fingerprint(visible_issue, tmp_path)
+    add_accepted_doctor_warnings(tmp_path, [accepted_fingerprint])
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    assert "1 accepted warning(s) hidden" in doctor.stdout
+    assert accepted_fingerprint not in doctor.stdout
+    assert visible_fingerprint in doctor.stdout
+    assert "Second-Visible-Warning" in doctor.stdout
+    assert "First-Accepted-Warning" not in doctor.stdout
 
 
 def test_doctor_separates_legacy_warnings_from_current_warnings(tmp_path: Path) -> None:
