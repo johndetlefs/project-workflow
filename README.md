@@ -65,7 +65,7 @@ This creates:
 - `.project-workflow/TRACKER.md` — Centralized task status tracking
 - `.project-workflow/BACKLOG.md` — Optional future-intent backlog before work is promoted
 - `.project-workflow/guidance.md` — User-owned repo-specific workflow guidance
-- `.project-workflow/config.json` — User-owned task ID namespace configuration
+- `.project-workflow/config.json` — User-owned task ID namespace and generation configuration
 - `.github/copilot-instructions.md` — A managed Project Workflow block for GitHub Copilot mode
 
 Re-running is **idempotent** and safe. The canonical refresh command is `uvx --from git+https://github.com/johndetlefs/project-workflow.git project init`; it refreshes files that carry the `project-workflow:generated` marker, appends or refreshes only the managed block in host-owned files such as `AGENTS.md` and `.github/copilot-instructions.md`, and preserves unmarked existing files by writing the new generated content beside them as `*.new`.
@@ -111,11 +111,12 @@ In repositories initialized with project-workflow, the local dependency-free hel
 ./.project-workflow/cli/workflow validate --strict
 ```
 
-### Task ID Namespaces
+### Task ID Namespaces and Generation
 
-Repos can choose task ID prefixes in `.project-workflow/config.json`. If the
-file is missing, project-workflow keeps the compatibility default:
-`TASK-###` for tasks and `EPIC-###` for epics.
+Repos can choose task ID prefixes and ID generation in
+`.project-workflow/config.json`. If the file is missing, project-workflow keeps
+the compatibility default: sequential `TASK-###` IDs for tasks, `EPIC-###` IDs
+for epics, and `BL-###` IDs for backlog rows.
 
 Example:
 
@@ -123,6 +124,12 @@ Example:
 {
   "task_id_prefixes": ["TASK", "MCP", "UI", "DEV", "WF"],
   "default_task_id_prefix": "WF",
+  "id_generation": {
+    "tasks": "sequential",
+    "epics": "sequential",
+    "backlog": "sequential"
+  },
+  "unique_id_length": 5,
   "prefix_guidance": {
     "TASK": "General task work.",
     "MCP": "MCP server, app tool, payload contract, fixture, orchestration.",
@@ -137,6 +144,13 @@ Use `task init --prefix UI` to force a configured namespace for one task. Omit
 `--prefix` to use the configured default. `epic decompose` uses
 `prefix_guidance` for mixed-prefix child rows by default; pass `--prefix MCP`
 only for a deliberately homogeneous batch.
+
+For team repos with multiple active branches, set `id_generation` values to
+`unique` to avoid merge-time collisions from independent `max+1` allocation.
+Unique IDs keep the prefix and use a short uppercase base36 suffix, for example
+`WF-K7F3Q`, `EPIC-R5M8T`, and `BL-Q6P4V`. The default unique suffix length is
+`5`; the CLI checks existing tracker rows, epic trackers, backlog rows, and
+workflow task folders before accepting a generated ID.
 
 ---
 
@@ -188,7 +202,10 @@ Title: Expanded dashboard planning
 Outcome: Keep the later planning-dashboard idea visible without making it active implementation work.
 ```
 
-Backlog rows live in `.project-workflow/BACKLOG.md` with `BL-###` IDs. They are not active execution state. `Accepted` means worth keeping or preparing, not ready to implement.
+Backlog rows live in `.project-workflow/BACKLOG.md` with `BL-###` IDs by default,
+or `BL-K7F3Q` style IDs when backlog ID generation is configured as `unique`.
+They are not active execution state. `Accepted` means worth keeping or preparing,
+not ready to implement.
 
 When a backlog row is ready for workflow execution, promote it:
 
@@ -198,7 +215,9 @@ When a backlog row is ready for workflow execution, promote it:
 ./.project-workflow/cli/workflow backlog promote --id BL-002 --to epic
 ```
 
-Promoted rows stay in the backlog with status `Promoted` and `Promoted To` set to the created `TASK-###` or `EPIC-###`. Execution status then belongs in `.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
+Promoted rows stay in the backlog with status `Promoted` and `Promoted To` set to
+the created task or epic ID. Execution status then belongs in
+`.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
 
 Existing roadmap or backlog documents outside `.project-workflow/BACKLOG.md` are preserved. If you want to normalize them into the canonical backlog, create a repo-local project-workflow task and review the proposed rows before changing source documents.
 
@@ -370,7 +389,7 @@ Local workflow script path (inside an initialized repo):
 
 Epic workflow rules:
 
-- `epic init` auto-assigns the next sequential epic ID and writes an epic `REQUIREMENTS.md`, epic `TRACKER.md`, `DEFERRALS.md`, `RETRO.md`, and `ACCEPTANCE-MAP.md`.
+- `epic init` auto-assigns the next configured epic ID and writes an epic `REQUIREMENTS.md`, epic `TRACKER.md`, `DEFERRALS.md`, `RETRO.md`, and `ACCEPTANCE-MAP.md`.
 - `epic init` also writes `DEFERRALS.md`, where owner-approved deferrals must record parent AC, status, owner, decision date, reason, and follow-up reference.
 - `ACCEPTANCE-MAP.md` is the in-progress parent AC coverage view. It is refreshed by epic lifecycle commands from requirements, tracker rows, deferrals, and child evidence.
 - Epic requirements should use stable parent acceptance criteria IDs (`AC1`, `AC2`, etc.) and preserve existing IDs across revisions.

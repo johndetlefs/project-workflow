@@ -36,7 +36,7 @@ Allowed status values: `Proposed`, `Accepted`, `Deferred`, `Rejected`, `Supersed
 
 `Accepted` means worth keeping or preparing; it does not mean ready to implement.
 
-Promoted rows stay in the backlog with status `Promoted` and `Promoted To` set to the created `TASK-###` or `EPIC-###`.
+Promoted rows stay in the backlog with status `Promoted` and `Promoted To` set to the created task or epic ID.
 
 Existing roadmap/backlog documents outside `.project-workflow/BACKLOG.md` must be preserved. Do not import or transform them automatically; create a repo-local migration task if needed.
 

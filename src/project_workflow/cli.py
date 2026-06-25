@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import secrets
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -55,6 +56,15 @@ EPIC_ID_PREFIX = "EPIC"
 BACKLOG_ID_PREFIX = "BL"
 ID_PADDING = 3
 WORKFLOW_CONFIG_FILENAME = "config.json"
+ID_GENERATION_KINDS = ("tasks", "epics", "backlog")
+ID_GENERATION_MODES = ("sequential", "unique")
+DEFAULT_ID_GENERATION = {
+    "tasks": "sequential",
+    "epics": "sequential",
+    "backlog": "sequential",
+}
+UNIQUE_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+DEFAULT_UNIQUE_ID_LENGTH = 5
 DEFAULT_PREFIX_GUIDANCE = {
     TASK_ID_PREFIX: "General task work that does not need a repository-specific namespace.",
 }
@@ -317,6 +327,8 @@ def _default_workflow_config_text() -> str:
         {
             "task_id_prefixes": [TASK_ID_PREFIX],
             "default_task_id_prefix": TASK_ID_PREFIX,
+            "id_generation": DEFAULT_ID_GENERATION,
+            "unique_id_length": DEFAULT_UNIQUE_ID_LENGTH,
             "prefix_guidance": DEFAULT_PREFIX_GUIDANCE,
         },
         indent=2,
@@ -342,7 +354,7 @@ def _managed_project_workflow_block() -> str:
         "- Use `.project-workflow/BACKLOG.md` for optional future intent before work is "
         "promoted into task or epic execution state. Promoted rows stay in the backlog; "
         "active execution status belongs in trackers and task/epic docs.\n"
-        "- Read task ID namespace config from `.project-workflow/config.json`.\n"
+        "- Read task ID namespace and generation config from `.project-workflow/config.json`.\n"
         f"- To install or refresh project-workflow itself, run `{CANONICAL_INIT_COMMAND}` "
         "from the repository root; add `--agent codex`, `--agent cursor`, "
         "`--agent claude-code`, or `--agent github-copilot` when selecting a mode. "
@@ -419,6 +431,8 @@ class WorkflowConfig:
     task_id_prefixes: tuple[str, ...]
     default_task_id_prefix: str
     prefix_guidance: dict[str, str]
+    id_generation: dict[str, str]
+    unique_id_length: int
 
 
 def _workflow_config_path(root: Path) -> Path:
@@ -437,11 +451,25 @@ def _normalize_task_id_prefix(prefix: str) -> str:
     return normalized
 
 
+def _normalize_id_generation_mode(value: str) -> str:
+    normalized = value.strip().lower().replace("-", "_")
+    if normalized in {"guid", "uuid"}:
+        normalized = "unique"
+    if normalized not in ID_GENERATION_MODES:
+        raise SystemExit(
+            f"Invalid ID generation mode '{value}'. "
+            f"Allowed: {', '.join(ID_GENERATION_MODES)}."
+        )
+    return normalized
+
+
 def _default_workflow_config() -> WorkflowConfig:
     return WorkflowConfig(
         task_id_prefixes=(TASK_ID_PREFIX,),
         default_task_id_prefix=TASK_ID_PREFIX,
         prefix_guidance=dict(DEFAULT_PREFIX_GUIDANCE),
+        id_generation=dict(DEFAULT_ID_GENERATION),
+        unique_id_length=DEFAULT_UNIQUE_ID_LENGTH,
     )
 
 
@@ -500,15 +528,85 @@ def _load_workflow_config(root: Path) -> WorkflowConfig:
     for prefix in prefixes:
         prefix_guidance.setdefault(prefix, "")
 
+    raw_id_generation = raw.get("id_generation", DEFAULT_ID_GENERATION)
+    id_generation = dict(DEFAULT_ID_GENERATION)
+    if isinstance(raw_id_generation, str):
+        mode = _normalize_id_generation_mode(raw_id_generation)
+        id_generation = {kind: mode for kind in ID_GENERATION_KINDS}
+    elif isinstance(raw_id_generation, dict):
+        for raw_kind, raw_mode in raw_id_generation.items():
+            if raw_kind not in ID_GENERATION_KINDS:
+                raise SystemExit(
+                    f"{config_path} field 'id_generation' has unknown key '{raw_kind}'. "
+                    f"Allowed: {', '.join(ID_GENERATION_KINDS)}."
+                )
+            if not isinstance(raw_mode, str):
+                raise SystemExit(
+                    f"{config_path} field 'id_generation.{raw_kind}' must be a string."
+                )
+            id_generation[raw_kind] = _normalize_id_generation_mode(raw_mode)
+    else:
+        raise SystemExit(
+            f"{config_path} field 'id_generation' must be a string or an object."
+        )
+
+    raw_unique_id_length = raw.get("unique_id_length", DEFAULT_UNIQUE_ID_LENGTH)
+    if not isinstance(raw_unique_id_length, int) or isinstance(raw_unique_id_length, bool):
+        raise SystemExit(f"{config_path} field 'unique_id_length' must be an integer.")
+    if raw_unique_id_length < 1 or raw_unique_id_length > 32:
+        raise SystemExit(f"{config_path} field 'unique_id_length' must be between 1 and 32.")
+
     return WorkflowConfig(
         task_id_prefixes=tuple(prefixes),
         default_task_id_prefix=default_prefix,
         prefix_guidance=prefix_guidance,
+        id_generation=id_generation,
+        unique_id_length=raw_unique_id_length,
     )
 
 
 def _format_task_prefixes(prefixes: tuple[str, ...]) -> str:
     return " or ".join(f"{prefix}-###" for prefix in prefixes)
+
+
+def _id_generation_mode(config: WorkflowConfig, kind: str) -> str:
+    return config.id_generation.get(kind, DEFAULT_ID_GENERATION[kind])
+
+
+def _configured_suffix_pattern(config: WorkflowConfig, kind: str) -> str:
+    suffixes = [r"\d{3,}" if kind == "backlog" else r"\d+"]
+    if _id_generation_mode(config, kind) == "unique":
+        suffixes.append(rf"[A-Z0-9]{{{config.unique_id_length}}}")
+    return "(?:" + "|".join(suffixes) + ")"
+
+
+def _valid_id_for_prefix(row_id: str, *, prefix: str, config: WorkflowConfig, kind: str) -> bool:
+    pattern = rf"^{re.escape(prefix)}-{_configured_suffix_pattern(config, kind)}$"
+    return bool(re.match(pattern, row_id))
+
+
+def _valid_task_id(row_id: str, *, config: WorkflowConfig) -> bool:
+    prefix = _task_prefix_from_id(row_id)
+    if prefix is None or prefix not in config.task_id_prefixes:
+        return False
+    return _valid_id_for_prefix(row_id, prefix=prefix, config=config, kind="tasks")
+
+
+def _valid_epic_id(row_id: str, *, config: WorkflowConfig) -> bool:
+    return _valid_id_for_prefix(row_id, prefix=EPIC_ID_PREFIX, config=config, kind="epics")
+
+
+def _valid_backlog_id(row_id: str, *, config: WorkflowConfig) -> bool:
+    return _valid_id_for_prefix(
+        row_id,
+        prefix=BACKLOG_ID_PREFIX,
+        config=config,
+        kind="backlog",
+    )
+
+
+def _valid_workflow_ref_id(row_id: str, *, config: WorkflowConfig) -> bool:
+    return _valid_epic_id(row_id, config=config) or _valid_task_id(row_id, config=config)
 
 
 def _resolve_task_id_prefix(root: Path, requested_prefix: str | None) -> str:
@@ -530,7 +628,10 @@ def _normalize_task_status_id(row_id: str, *, root: Path) -> str:
     prefix_pattern = "|".join(
         re.escape(prefix) for prefix in sorted(config.task_id_prefixes, key=len, reverse=True)
     )
-    match = re.match(rf"^(({prefix_pattern})-\d+)(?:-.+)?$", row_id)
+    match = re.match(
+        rf"^(({prefix_pattern})-{_configured_suffix_pattern(config, 'tasks')})(?:-.+)?$",
+        row_id,
+    )
     if not match:
         raise SystemExit(
             f"Task status only supports {_format_task_prefixes(config.task_id_prefixes)} IDs; "
@@ -540,7 +641,7 @@ def _normalize_task_status_id(row_id: str, *, root: Path) -> str:
 
 
 def _task_prefix_from_id(row_id: str) -> str | None:
-    match = re.match(r"^([A-Z][A-Z0-9]*)-\d+(?:-.+)?$", row_id)
+    match = re.match(r"^([A-Z][A-Z0-9]*)-[A-Z0-9]+(?:-.+)?$", row_id)
     return match.group(1) if match else None
 
 
@@ -813,6 +914,25 @@ def _next_backlog_id_from_rows(rows: list[dict[str, str]]) -> str:
     return f"{BACKLOG_ID_PREFIX}-{max_value + 1:0{ID_PADDING}d}"
 
 
+def _next_backlog_id(root: Path, rows: list[dict[str, str]]) -> str:
+    config = _load_workflow_config(root)
+    if _id_generation_mode(config, "backlog") == "sequential":
+        return _next_backlog_id_from_rows(rows)
+
+    workflow_dir = root / ".project-workflow"
+    used_ids = _used_ids_for_prefix(
+        workflow_dir / "tasks",
+        workflow_dir / "TRACKER.md",
+        prefix=BACKLOG_ID_PREFIX,
+    )
+    used_ids.update(row.get("ID", "").strip() for row in rows if row.get("ID", "").strip())
+    return _next_unique_id_from_used(
+        used_ids,
+        prefix=BACKLOG_ID_PREFIX,
+        length=config.unique_id_length,
+    )
+
+
 def _format_backlog_row(row: dict[str, str]) -> str:
     return "| " + " | ".join(_markdown_cell(row.get(col, "")) for col in BACKLOG_COLUMNS) + " |\n"
 
@@ -873,24 +993,25 @@ def _workflow_ref_exists(root: Path, ref: str) -> bool:
 
     if not tasks_dir.exists():
         return False
-    if ref.startswith(f"{EPIC_ID_PREFIX}-"):
-        return any(path.is_dir() and path.name.startswith(f"{ref}-") for path in tasks_dir.iterdir())
-    if ref.startswith(f"{TASK_ID_PREFIX}-"):
-        return any(path.is_dir() and path.name.startswith(f"{ref}-") for path in tasks_dir.rglob("*"))
-    return False
+    return any(path.is_dir() and path.name.startswith(f"{ref}-") for path in tasks_dir.rglob("*"))
 
 
-def _backlog_validation_issues(root: Path, backlog_path: Path) -> list[DoctorIssue]:
+def _backlog_validation_issues(
+    root: Path,
+    backlog_path: Path,
+    *,
+    config: WorkflowConfig | None = None,
+) -> list[DoctorIssue]:
     issues: list[DoctorIssue] = []
     if not backlog_path.exists():
         _add_issue(issues, "error", backlog_path, "Backlog is missing. Run `project backlog init`.")
         return issues
+    config = config or _load_workflow_config(root)
 
     rows = _backlog_rows(backlog_path, issues)
     for duplicate_id in _duplicate_backlog_ids(rows):
         _add_issue(issues, "error", backlog_path, f"Backlog has duplicate ID '{duplicate_id}'.")
 
-    id_re = re.compile(rf"^{re.escape(BACKLOG_ID_PREFIX)}-\d{{3,}}$")
     required_columns = ("ID", "Title", "Type", "Priority", "Status", "Outcome")
     for row in rows:
         row_label = row.get("ID", "").strip() or f"line {row.get('_line_idx', '?')}"
@@ -899,7 +1020,7 @@ def _backlog_validation_issues(root: Path, backlog_path: Path) -> list[DoctorIss
                 _add_issue(issues, "error", backlog_path, f"{row_label} is missing {column}.")
 
         row_id = row.get("ID", "").strip()
-        if row_id and not id_re.match(row_id):
+        if row_id and not _valid_backlog_id(row_id, config=config):
             _add_issue(
                 issues,
                 "error",
@@ -928,7 +1049,7 @@ def _backlog_validation_issues(root: Path, backlog_path: Path) -> list[DoctorIss
         if status == "Promoted" and not promoted_to:
             _add_issue(issues, "error", backlog_path, f"{row_label} is Promoted but lacks Promoted To.")
         if promoted_to:
-            if not re.match(rf"^(?:{TASK_ID_PREFIX}|{EPIC_ID_PREFIX})-\d+$", promoted_to):
+            if not _valid_workflow_ref_id(promoted_to, config=config):
                 _add_issue(
                     issues,
                     "error",
@@ -2191,7 +2312,7 @@ def _resolve_epic_dir(tasks_dir: Path, epic_id: str) -> Path:
     return matches[0]
 
 
-def _next_task_id_from_used(used_ids: set[str], *, prefix: str) -> str:
+def _next_sequential_id_from_used(used_ids: set[str], *, prefix: str) -> str:
     max_value = 0
     row_re = re.compile(rf"^{re.escape(prefix)}-(\d+)$")
     for used_id in used_ids:
@@ -2201,11 +2322,33 @@ def _next_task_id_from_used(used_ids: set[str], *, prefix: str) -> str:
     return f"{prefix}-{max_value + 1:0{ID_PADDING}d}"
 
 
+def _next_unique_id_from_used(used_ids: set[str], *, prefix: str, length: int) -> str:
+    for _attempt in range(1000):
+        suffix = "".join(secrets.choice(UNIQUE_ID_ALPHABET) for _ in range(length))
+        if suffix.isdigit():
+            continue
+        candidate = f"{prefix}-{suffix}"
+        if candidate not in used_ids:
+            return candidate
+    raise SystemExit(f"Could not allocate a unique {prefix} ID after 1000 attempts.")
+
+
+def _next_task_id_from_used(
+    used_ids: set[str], *, prefix: str, config: WorkflowConfig, kind: str
+) -> str:
+    if _id_generation_mode(config, kind) == "unique":
+        return _next_unique_id_from_used(
+            used_ids,
+            prefix=prefix,
+            length=config.unique_id_length,
+        )
+    return _next_sequential_id_from_used(used_ids, prefix=prefix)
+
+
 def _used_ids_for_prefix(tasks_dir: Path, tracker_path: Path, *, prefix: str) -> set[str]:
     used_ids: set[str] = set()
-    id_re = re.compile(rf"^{re.escape(prefix)}-(\d+)$")
-    dir_re = re.compile(rf"^{re.escape(prefix)}-(\d+)-")
-    row_re = re.compile(rf"\|\s*({re.escape(prefix)}-\d+)\s*\|")
+    dir_re = re.compile(rf"^{re.escape(prefix)}-([A-Za-z0-9]+)(?:-|$)")
+    id_re = re.compile(rf"\b({re.escape(prefix)}-[A-Za-z0-9]+)\b")
 
     if tasks_dir.exists():
         for path in tasks_dir.rglob("*"):
@@ -2213,11 +2356,17 @@ def _used_ids_for_prefix(tasks_dir: Path, tracker_path: Path, *, prefix: str) ->
                 continue
             match = dir_re.match(path.name)
             if match:
-                used_ids.add(f"{prefix}-{int(match.group(1)):0{ID_PADDING}d}")
+                suffix = match.group(1).upper()
+                if suffix.isdigit():
+                    suffix = f"{int(suffix):0{ID_PADDING}d}"
+                used_ids.add(f"{prefix}-{suffix}")
 
     tracker_paths = [tracker_path]
     if tasks_dir.exists():
         tracker_paths.extend(sorted(tasks_dir.rglob("TRACKER.md")))
+    backlog_path = tracker_path.parent / "BACKLOG.md"
+    if backlog_path.exists():
+        tracker_paths.append(backlog_path)
 
     for candidate_tracker in tracker_paths:
         if not candidate_tracker.exists():
@@ -2226,10 +2375,8 @@ def _used_ids_for_prefix(tasks_dir: Path, tracker_path: Path, *, prefix: str) ->
             tracker_text = candidate_tracker.read_text(encoding="utf-8")
         except OSError:
             continue
-        for match in row_re.finditer(tracker_text):
-            candidate = match.group(1)
-            if id_re.match(candidate):
-                used_ids.add(candidate)
+        for match in id_re.finditer(tracker_text):
+            used_ids.add(match.group(1).upper())
 
     return used_ids
 
@@ -2490,17 +2637,29 @@ def _update_tracker(
 
 
 def _next_sequential_id(tasks_dir: Path, tracker_path: Path, *, prefix: str) -> str:
-    max_value = 0
-    for used_id in _used_ids_for_prefix(tasks_dir, tracker_path, prefix=prefix):
-        _, _, numeric = used_id.partition("-")
-        max_value = max(max_value, int(numeric))
-
-    return f"{prefix}-{max_value + 1:0{ID_PADDING}d}"
+    return _next_sequential_id_from_used(
+        _used_ids_for_prefix(tasks_dir, tracker_path, prefix=prefix),
+        prefix=prefix,
+    )
 
 
-def _resolve_epic_id(tasks_dir: Path, tracker_path: Path, *, title: str) -> str:
+def _next_workflow_id(
+    root: Path, tasks_dir: Path, tracker_path: Path, *, prefix: str, kind: str
+) -> str:
+    config = _load_workflow_config(root)
+    return _next_task_id_from_used(
+        _used_ids_for_prefix(tasks_dir, tracker_path, prefix=prefix),
+        prefix=prefix,
+        config=config,
+        kind=kind,
+    )
+
+
+def _resolve_epic_id(root: Path, tasks_dir: Path, tracker_path: Path, *, title: str) -> str:
     suffix = slug_titlecase_dashes(title)
-    match_re = re.compile(rf"^{re.escape(EPIC_ID_PREFIX)}-(\d+)-{re.escape(suffix)}$")
+    match_re = re.compile(
+        rf"^{re.escape(EPIC_ID_PREFIX)}-([A-Za-z0-9]+)-{re.escape(suffix)}$"
+    )
 
     matches: list[str] = []
     for path in tasks_dir.iterdir():
@@ -2508,7 +2667,10 @@ def _resolve_epic_id(tasks_dir: Path, tracker_path: Path, *, title: str) -> str:
             continue
         match = match_re.match(path.name)
         if match:
-            matches.append(f"{EPIC_ID_PREFIX}-{int(match.group(1)):0{ID_PADDING}d}")
+            id_suffix = match.group(1).upper()
+            if id_suffix.isdigit():
+                id_suffix = f"{int(id_suffix):0{ID_PADDING}d}"
+            matches.append(f"{EPIC_ID_PREFIX}-{id_suffix}")
 
     if len(matches) > 1:
         raise SystemExit(
@@ -2518,7 +2680,13 @@ def _resolve_epic_id(tasks_dir: Path, tracker_path: Path, *, title: str) -> str:
     if len(matches) == 1:
         return matches[0]
 
-    return _next_sequential_id(tasks_dir, tracker_path, prefix=EPIC_ID_PREFIX)
+    return _next_workflow_id(
+        root,
+        tasks_dir,
+        tracker_path,
+        prefix=EPIC_ID_PREFIX,
+        kind="epics",
+    )
 
 
 def _doctor_check_source_mirrors(root: Path, issues: list[DoctorIssue]) -> None:
@@ -2622,6 +2790,64 @@ def _doctor_check_row_namespace(
         )
 
 
+def _doctor_check_row_id_format(
+    row_id: str,
+    *,
+    config: WorkflowConfig | None,
+    path: Path,
+    issues: list[DoctorIssue],
+    task_only: bool = False,
+) -> None:
+    if config is None:
+        return
+    if not task_only and row_id.startswith(f"{EPIC_ID_PREFIX}-"):
+        if not _valid_epic_id(row_id, config=config):
+            _add_issue(issues, "error", path, f"{row_id} has invalid epic ID format.")
+        return
+
+    prefix = _task_prefix_from_id(row_id)
+    if prefix is None:
+        _add_issue(issues, "error", path, f"{row_id} has invalid task ID format.")
+        return
+    if prefix in config.task_id_prefixes and not _valid_task_id(row_id, config=config):
+        _add_issue(issues, "error", path, f"{row_id} has invalid task ID format.")
+
+
+def _doctor_check_duplicate_tracker_ids(root: Path, issues: list[DoctorIssue]) -> None:
+    workflow_dir = root / ".project-workflow"
+    tracker_paths = [workflow_dir / "TRACKER.md"]
+    tasks_dir = workflow_dir / "tasks"
+    if tasks_dir.exists():
+        tracker_paths.extend(sorted(tasks_dir.glob(f"{EPIC_ID_PREFIX}-*/TRACKER.md")))
+
+    seen: dict[str, Path] = {}
+    reported: set[str] = set()
+    for tracker_path in tracker_paths:
+        if not tracker_path.exists():
+            continue
+        try:
+            if tracker_path.name == "TRACKER.md" and tracker_path.parent == workflow_dir:
+                _lines, _header_idx, rows = _global_tracker_rows(tracker_path)
+            else:
+                _lines, _header_idx, rows = _epic_tracker_rows(tracker_path)
+        except SystemExit:
+            continue
+        for row in rows:
+            row_id = row.get("ID", "").strip()
+            if not row_id:
+                continue
+            if row_id in seen and row_id not in reported:
+                _add_issue(
+                    issues,
+                    "error",
+                    tracker_path,
+                    f"Duplicate workflow ID '{row_id}' also appears in {seen[row_id]}.",
+                )
+                reported.add(row_id)
+            else:
+                seen[row_id] = tracker_path
+
+
 def _doctor_check_task_doc(
     *,
     root: Path,
@@ -2720,6 +2946,7 @@ def _doctor_check_global_tracker(
     )
     for row in rows:
         row_id = row["ID"]
+        _doctor_check_row_id_format(row_id, config=config, path=tracker_path, issues=issues)
         _doctor_check_row_namespace(row_id, config=config, path=tracker_path, issues=issues)
         status = row["Status"]
         if status not in TRACKER_STATUSES:
@@ -2738,11 +2965,15 @@ def _doctor_check_global_tracker(
             issues=issues,
         )
 
-def _doctor_check_backlog(root: Path, issues: list[DoctorIssue]) -> None:
+def _doctor_check_backlog(
+    root: Path, issues: list[DoctorIssue], *, config: WorkflowConfig | None
+) -> None:
     backlog_path = _backlog_path(root)
     if not backlog_path.exists():
         return
-    issues.extend(_backlog_validation_issues(root, backlog_path))
+    if config is None:
+        return
+    issues.extend(_backlog_validation_issues(root, backlog_path, config=config))
 
 
 def _doctor_check_epic_trackers(
@@ -2760,6 +2991,13 @@ def _doctor_check_epic_trackers(
             continue
         for row in rows:
             row_id = row["ID"]
+            _doctor_check_row_id_format(
+                row_id,
+                config=config,
+                path=epic_tracker_path,
+                issues=issues,
+                task_only=True,
+            )
             _doctor_check_row_namespace(
                 row_id, config=config, path=epic_tracker_path, issues=issues
             )
@@ -2787,7 +3025,8 @@ def run_doctor(root: Path) -> list[DoctorIssue]:
     config = _doctor_check_namespace_config(root, issues)
     _doctor_check_source_mirrors(root, issues)
     _doctor_check_pending_generated_updates(root, issues)
-    _doctor_check_backlog(root, issues)
+    _doctor_check_backlog(root, issues, config=config)
+    _doctor_check_duplicate_tracker_ids(root, issues)
     _doctor_check_global_tracker(root, issues, config=config)
     _doctor_check_epic_trackers(root, issues, config=config)
     return issues
@@ -2848,12 +3087,12 @@ def cmd_backlog_init(args: argparse.Namespace) -> None:
 
 
 def cmd_backlog_add(args: argparse.Namespace) -> None:
-    """Append one backlog row with the next BL-### ID."""
+    """Append one backlog row with the next configured BL ID."""
     root = Path.cwd()
     backlog_path = _backlog_path(root)
     _ensure_backlog_file(backlog_path)
     rows = _backlog_rows(backlog_path)
-    row_id = _next_backlog_id_from_rows(rows)
+    row_id = _next_backlog_id(root, rows)
     row = {
         "ID": row_id,
         "Title": args.title,
@@ -2962,7 +3201,14 @@ def cmd_backlog_promote(args: argparse.Namespace) -> None:
     tasks_dir.mkdir(parents=True, exist_ok=True)
 
     if args.to == "task":
-        task_id = _next_sequential_id(tasks_dir, tracker_path, prefix=TASK_ID_PREFIX)
+        task_prefix = _resolve_task_id_prefix(root, None)
+        task_id = _next_workflow_id(
+            root,
+            tasks_dir,
+            tracker_path,
+            prefix=task_prefix,
+            kind="tasks",
+        )
         spec = TaskSpec(
             task_id=task_id,
             title=title,
@@ -2995,7 +3241,13 @@ def cmd_backlog_promote(args: argparse.Namespace) -> None:
         promoted_id = task_id
         promoted_path = task_dir
     else:
-        epic_id = _next_sequential_id(tasks_dir, tracker_path, prefix=EPIC_ID_PREFIX)
+        epic_id = _next_workflow_id(
+            root,
+            tasks_dir,
+            tracker_path,
+            prefix=EPIC_ID_PREFIX,
+            kind="epics",
+        )
         spec = TaskSpec(
             task_id=epic_id,
             title=title,
@@ -3192,7 +3444,13 @@ def cmd_task_init(args: argparse.Namespace) -> None:
         )
 
     task_prefix = _resolve_task_id_prefix(cwd, args.prefix)
-    task_id = _next_sequential_id(tasks_dir, tracker_path, prefix=task_prefix)
+    task_id = _next_workflow_id(
+        cwd,
+        tasks_dir,
+        tracker_path,
+        prefix=task_prefix,
+        kind="tasks",
+    )
     existing_task_dirs = [p for p in tasks_dir.glob(f"{task_id}-*") if p.is_dir()]
     if args.folder_suffix:
         folder_suffix = args.folder_suffix
@@ -3318,7 +3576,7 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
             f"the project workflow."
         )
 
-    epic_id = _resolve_epic_id(tasks_dir, tracker_path, title=args.title)
+    epic_id = _resolve_epic_id(cwd, tasks_dir, tracker_path, title=args.title)
     existing_epic_dirs = [p for p in tasks_dir.glob(f"{epic_id}-*") if p.is_dir()]
     if args.folder_suffix:
         folder_suffix = args.folder_suffix
@@ -3536,7 +3794,12 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
             child_prefix,
             _used_ids_for_prefix(tasks_dir, tracker_path, prefix=child_prefix),
         )
-        next_id = _next_task_id_from_used(occupied_ids, prefix=child_prefix)
+        next_id = _next_task_id_from_used(
+            occupied_ids,
+            prefix=child_prefix,
+            config=config,
+            kind="tasks",
+        )
         occupied_ids.add(next_id)
         notes = f"{classification_note}; Generated from {requirements_path.name}"
         if ac_id:

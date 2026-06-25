@@ -16,7 +16,7 @@ This repository uses project-workflow for spec-driven development. Keep workflow
 
 For multi-item orchestration, use `project-delegate` after planning. For large bodies of work, use `project-epic` to create proposal-first epic trackers and approved child tasks.
 
-Backlog is optional and sits between constitution and tracker state. Keep `.project-workflow/BACKLOG.md` for future intent, rough priority, options, and promotion history. Promoted rows remain in the backlog with `Promoted To` pointing at the created `TASK-###` or `EPIC-###`; active execution status belongs only in `.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
+Backlog is optional and sits between constitution and tracker state. Keep `.project-workflow/BACKLOG.md` for future intent, rough priority, options, and promotion history. Promoted rows remain in the backlog with `Promoted To` pointing at the created task or epic ID; active execution status belongs only in `.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
 
 Project Workflow is owner-directed and agent-operated. The owner supplies intent, constraints, examples, decisions, and approvals; the agent runs commands, drafts artifacts, asks focused questions, validates readiness, implements, reviews, and records evidence. Do not make manual template completion the normal user path.
 
@@ -62,7 +62,7 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 - Read `.project-workflow/guidance.md` before changing workflow state when the file exists.
 - For broad future objectives, use `project-backlog` to draft outcome-focused backlog candidates from project context. Do not create tracker rows, task folders, or epic folders until the owner accepts or promotes the row.
 - Existing roadmap/backlog documents outside `.project-workflow/BACKLOG.md` are preserved. Do not import or transform them automatically; create a repo-local migration task if needed.
-- Read `.project-workflow/config.json` for repo-owned task ID namespaces when it exists.
+- Read `.project-workflow/config.json` for repo-owned task ID namespaces and ID generation when it exists. Sequential IDs look like `TASK-001`; unique IDs keep the prefix and use a 5-character base36 suffix by default, such as `WF-K7F3Q`.
 - If a task folder does not exist, run `./.project-workflow/cli/workflow task init --title "<TITLE>" --update-tracker` from the repo root and let the CLI assign the next configured task ID. Add `--prefix <PREFIX>` only when the user or repo guidance calls for a configured non-default prefix.
 - Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.

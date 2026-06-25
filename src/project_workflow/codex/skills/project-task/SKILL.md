@@ -38,9 +38,9 @@ Minimum context to gather before planning or implementation:
 1. Confirm `.project-workflow/TRACKER.md` exists. If missing, tell the user to run `project init` first.
 2. If creating a branch, ensure the working tree is clean before switching branches.
 3. Run the local scaffolder from the repo root and let it assign the next ID.
-   Repositories may choose task ID namespaces in `.project-workflow/config.json`;
-   pass `--prefix <PREFIX>` only when the user or repo guidance calls for a
-   configured non-default prefix.
+   Repositories may choose task ID namespaces and ID generation in
+   `.project-workflow/config.json`; pass `--prefix <PREFIX>` only when the user
+   or repo guidance calls for a configured non-default prefix.
 
 Without branch:
 

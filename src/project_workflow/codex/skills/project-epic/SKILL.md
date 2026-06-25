@@ -94,7 +94,7 @@ Validate epic closeout, optionally completing the global epic row when gates pas
 - `epic ready` must pass before decomposition; if it fails, ask the owner only for missing product decisions/context and record answers in `REQUIREMENTS.md`.
 - `epic lifecycle` updates the global epic row through `Analysing`, `Ready`, `In Progress`, and `Closeout`. `Ready`, `In Progress`, and `Closeout` are gated; `Complete` remains owned by `epic closeout --complete`.
 - `epic decompose` writes Proposed child rows only and does not create child task folders.
-- `epic decompose` reads `.project-workflow/config.json` namespace guidance by default and may produce mixed child prefixes such as `MCP-###` and `UI-###`; use `--prefix <PREFIX>` only for an explicitly homogeneous batch.
+- `epic decompose` reads `.project-workflow/config.json` namespace and ID generation guidance by default and may produce mixed child prefixes such as `MCP-001` or `UI-K7F3Q`; use `--prefix <PREFIX>` only for an explicitly homogeneous batch.
 - Proposed child rows should preserve source AC IDs in the epic tracker `Parent ACs` field when they come from numbered acceptance criteria. Legacy trackers may still carry coverage in `Notes` as `Covers AC1, AC3`.
 - `epic approve` moves a child row from `Proposed` to `Approved`.
 - `epic scaffold-child` only accepts `Approved` child rows and moves them to `In Progress` after scaffold.

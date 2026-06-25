@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import sys
@@ -37,6 +38,35 @@ def write_namespace_config(root: Path) -> None:
         "}\n",
         encoding="utf-8",
     )
+
+
+def write_unique_id_config(root: Path) -> None:
+    (root / ".project-workflow" / "config.json").write_text(
+        "{\n"
+        '  "task_id_prefixes": ["TASK", "UI", "MCP", "DEV", "WF"],\n'
+        '  "default_task_id_prefix": "WF",\n'
+        '  "id_generation": {\n'
+        '    "tasks": "unique",\n'
+        '    "epics": "unique",\n'
+        '    "backlog": "unique"\n'
+        "  },\n"
+        '  "unique_id_length": 5,\n'
+        '  "prefix_guidance": {\n'
+        '    "TASK": "General task work.",\n'
+        '    "UI": "Frontend, widget, component, route, layout, visual, interaction, UX.",\n'
+        '    "MCP": "MCP server, app tool, payload contract, fixture, orchestration.",\n'
+        '    "DEV": "Local development, debug tooling, tunnels, build scripts.",\n'
+        '    "WF": "Project workflow conventions, process automation, prompts, agent guidance."\n'
+        "  }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+
+
+def assert_unique_id(value: str, prefix: str) -> None:
+    match = re.fullmatch(rf"{re.escape(prefix)}-([0-9A-Z]{{5}})", value)
+    assert match, value
+    assert not match.group(1).isdigit()
 
 
 def ready_requirements(task_id: str, title: str, ac_lines: list[str] | None = None) -> str:
@@ -262,6 +292,86 @@ def test_backlog_cli_add_list_update_status_and_validate(tmp_path: Path) -> None
     validate = run_project(["backlog", "validate"], cwd=tmp_path)
     assert validate.returncode == 0, validate.stdout + validate.stderr
     assert "Backlog validation passed" in validate.stdout
+
+
+def test_unique_id_generation_for_task_epic_backlog_and_promotion(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    write_unique_id_config(tmp_path)
+
+    backlog_add = run_project(
+        [
+            "backlog",
+            "add",
+            "--title",
+            "Unique Backlog",
+            "--type",
+            "Task Candidate",
+            "--priority",
+            "High",
+            "--status",
+            "Accepted",
+            "--outcome",
+            "A team-safe backlog row exists.",
+        ],
+        cwd=tmp_path,
+    )
+    assert backlog_add.returncode == 0, backlog_add.stdout + backlog_add.stderr
+    backlog_match = re.search(r"Added backlog row (BL-[0-9A-Z]{5})", backlog_add.stdout)
+    assert backlog_match, backlog_add.stdout
+    backlog_id = backlog_match.group(1)
+    assert_unique_id(backlog_id, "BL")
+
+    task = run_project(
+        ["task", "init", "--title", "Unique Task", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+    task_match = re.search(r"Assigned ID: (WF-[0-9A-Z]{5})", task.stdout)
+    assert task_match, task.stdout
+    task_id = task_match.group(1)
+    assert_unique_id(task_id, "WF")
+    assert next((tmp_path / ".project-workflow" / "tasks").glob(f"{task_id}-Unique-Task"))
+
+    epic = run_project(["epic", "init", "--title", "Unique Epic"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_match = re.search(r"Assigned ID: (EPIC-[0-9A-Z]{5})", epic.stdout)
+    assert epic_match, epic.stdout
+    epic_id = epic_match.group(1)
+    assert_unique_id(epic_id, "EPIC")
+    assert next((tmp_path / ".project-workflow" / "tasks").glob(f"{epic_id}-Unique-Epic"))
+
+    promote = run_project(["backlog", "promote", "--id", backlog_id, "--to", "task"], cwd=tmp_path)
+    assert promote.returncode == 0, promote.stdout + promote.stderr
+    promoted_match = re.search(r"Promoted .* to task (WF-[0-9A-Z]{5})", promote.stdout)
+    assert promoted_match, promote.stdout
+    promoted_id = promoted_match.group(1)
+    assert_unique_id(promoted_id, "WF")
+
+    backlog_text = (tmp_path / ".project-workflow" / "BACKLOG.md").read_text(encoding="utf-8")
+    assert f"| {backlog_id} | Unique Backlog | Task Candidate | High | Promoted |" in backlog_text
+    assert (
+        f"| {backlog_id} | Unique Backlog | Task Candidate | High | Promoted | "
+        f"A team-safe backlog row exists. | {promoted_id} |"
+    ) in backlog_text
+
+    validate = run_project(["backlog", "validate"], cwd=tmp_path)
+    assert validate.returncode == 0, validate.stdout + validate.stderr
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+
+
+def test_unique_id_allocator_retries_local_collisions(monkeypatch) -> None:
+    choices = iter("ABCDE" "FGHIJ")
+    monkeypatch.setattr(workflow_cli.secrets, "choice", lambda _alphabet: next(choices))
+
+    allocated = workflow_cli._next_unique_id_from_used(
+        {"TASK-ABCDE"},
+        prefix="TASK",
+        length=5,
+    )
+
+    assert allocated == "TASK-FGHIJ"
 
 
 def test_backlog_validate_reports_invalid_rows_and_bad_promoted_refs(tmp_path: Path) -> None:
@@ -1039,6 +1149,32 @@ def test_doctor_warns_for_unconfigured_task_prefixes(tmp_path: Path) -> None:
     assert strict_doctor.returncode != 0
     assert "ERROR" in strict_doctor.stdout
     assert "WF-003 uses unconfigured task ID prefix 'WF'" in strict_doctor.stdout
+
+
+def test_doctor_detects_duplicate_configured_unique_tracker_ids(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+    write_unique_id_config(tmp_path)
+
+    tasks_dir = tmp_path / ".project-workflow" / "tasks"
+    first_dir = tasks_dir / "WF-ABCDE-First"
+    second_dir = tasks_dir / "WF-ABCDE-Second"
+    first_dir.mkdir()
+    second_dir.mkdir()
+    (first_dir / "IMPLEMENTATION.md").write_text("## User Story\n\nFirst.\n", encoding="utf-8")
+    (second_dir / "IMPLEMENTATION.md").write_text("## User Story\n\nSecond.\n", encoding="utf-8")
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8")
+        + "| WF-ABCDE | First | To Do | `tasks/WF-ABCDE-First/IMPLEMENTATION.md` |\n"
+        + "| WF-ABCDE | Second | To Do | `tasks/WF-ABCDE-Second/IMPLEMENTATION.md` |\n",
+        encoding="utf-8",
+    )
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+
+    assert doctor.returncode == 1, doctor.stdout + doctor.stderr
+    assert "Duplicate workflow ID 'WF-ABCDE'" in doctor.stdout
 
 
 def test_doctor_warns_when_active_task_row_lacks_ac_mapping(tmp_path: Path) -> None:

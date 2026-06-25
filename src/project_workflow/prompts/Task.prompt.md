@@ -54,8 +54,11 @@ If the user has not provided this context, create the scaffold only as a require
 Before creating a branch, ensure the repo working tree is clean. If it’s not clean, stop and ask the user to commit/stash first.
 
 Task IDs are assigned automatically by the scaffolder. The default prefix is `TASK`,
-but repositories can choose task ID namespaces in `.project-workflow/config.json`
-with `task_id_prefixes`, `default_task_id_prefix`, and `prefix_guidance`.
+but repositories can choose task ID namespaces and generation in
+`.project-workflow/config.json` with `task_id_prefixes`,
+`default_task_id_prefix`, `id_generation`, `unique_id_length`, and
+`prefix_guidance`. Sequential IDs look like `TASK-001`; unique IDs keep the
+prefix and use a 5-character base36 suffix by default, such as `WF-K7F3Q`.
 
 ## Action (run the scaffolder)
 
@@ -78,7 +81,7 @@ To use a configured namespace, add `--prefix <PREFIX>`:
 After running:
 
 - Confirm the created folder path under `.project-workflow/tasks/...`
-- Confirm the assigned task ID (for example `TASK-###`, `UI-###`, or another configured prefix)
+- Confirm the assigned task ID (for example `TASK-001`, `UI-K7F3Q`, or another configured prefix)
 - Confirm tracker updated
 - If branch created, confirm the new branch name
 - Run `./.project-workflow/cli/workflow doctor` and report any warnings or errors.

@@ -37,7 +37,7 @@ Rules:
 - Backlog use is optional. If work is already clear and immediate, `project.task` or `project.epic` may be used directly.
 - Do not use the backlog as a second active tracker.
 - `Accepted` means worth keeping or preparing; it does not mean ready to implement.
-- Promoted rows stay in the backlog with status `Promoted` and `Promoted To` set to the created `TASK-###` or `EPIC-###`.
+- Promoted rows stay in the backlog with status `Promoted` and `Promoted To` set to the created task or epic ID.
 - Existing roadmap/backlog documents outside `.project-workflow/BACKLOG.md` must be preserved. Do not import or transform them automatically; create a repo-local migration task if needed.
 - Promotion requires owner confirmation. If the owner explicitly asks to accept and promote in one operation, pass `--accept`.
 
@@ -86,5 +86,5 @@ Output:
 
 - Report the exact command run.
 - Summarize created or updated rows.
-- For promotion, report the created `TASK-###` or `EPIC-###`, generated files, and backlog `Promoted To` reference.
+- For promotion, report the created task or epic ID, generated files, and backlog `Promoted To` reference.
 - Run `./.project-workflow/cli/workflow doctor` after promotion or structural backlog edits and report warnings/errors.

@@ -12,3 +12,4 @@
 | EPIC-003 | Workflow Discipline Gates | Complete | `tasks/EPIC-003-Workflow-Discipline-Gates/REQUIREMENTS.md` |
 | EPIC-004 | Epic Lifecycle Polish | Complete | `tasks/EPIC-004-Epic-Lifecycle-Polish/REQUIREMENTS.md` |
 | EPIC-005 | Project Backlog Support | Complete | `tasks/EPIC-005-Project-Backlog-Support/REQUIREMENTS.md` |
+| TASK-026 | Collision-Resistant ID Generation | Testing | `tasks/TASK-026-Collision-Resistant-Id-Generation/IMPLEMENTATION.md` |
