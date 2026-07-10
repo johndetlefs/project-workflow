@@ -327,6 +327,7 @@ Work item: 1
 The agent will:
 
 - Read your requirements and plan
+- Confirm the task is inside an approved requirements/AC envelope; if approval is missing or stale, record owner approval once with `task approve-requirements` after requirements are ready
 - Run `./.project-workflow/cli/workflow task ready --id TASK-001` before coding
 - Make code changes incrementally
 - Run validation (tests, type checks, manual verification)
@@ -396,6 +397,7 @@ Installed CLI path:
 ```bash
 project epic init --title "Checkout Reliability"
 project epic lifecycle --epic-id EPIC-001 --to Analysing
+project epic approve-requirements --epic-id EPIC-001 --approved-by "Product Owner" --source "Owner approved epic requirements and decomposition boundary"
 project epic decompose --epic-id EPIC-001 --limit 5 --type Task
 project epic approve --epic-id EPIC-001 --id TASK-014
 project epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
@@ -406,6 +408,7 @@ Local workflow script path (inside an initialized repo):
 ```bash
 .venv/bin/python .project-workflow/cli/workflow.py epic init --title "Checkout Reliability"
 .venv/bin/python .project-workflow/cli/workflow.py epic lifecycle --epic-id EPIC-001 --to Analysing
+.venv/bin/python .project-workflow/cli/workflow.py epic approve-requirements --epic-id EPIC-001 --approved-by "Product Owner" --source "Owner approved epic requirements and decomposition boundary"
 .venv/bin/python .project-workflow/cli/workflow.py epic decompose --epic-id EPIC-001 --limit 5 --type Task
 .venv/bin/python .project-workflow/cli/workflow.py epic approve --epic-id EPIC-001 --id TASK-014
 .venv/bin/python .project-workflow/cli/workflow.py epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
@@ -413,19 +416,28 @@ Local workflow script path (inside an initialized repo):
 
 Epic workflow rules:
 
-- `epic init` auto-assigns the next configured epic ID and writes an epic `REQUIREMENTS.md`, epic `TRACKER.md`, `DEFERRALS.md`, `RETRO.md`, and `ACCEPTANCE-MAP.md`.
+- `epic init` auto-assigns the next configured epic ID and writes an epic `REQUIREMENTS.md`, `EPIC-CONTRACT.md`, epic `TRACKER.md`, `DEFERRALS.md`, `AMENDMENTS.md`, `RETRO.md`, and `ACCEPTANCE-MAP.md`.
 - `epic init` also writes `DEFERRALS.md`, where owner-approved deferrals must record parent AC, status, owner, decision date, reason, and follow-up reference.
 - `ACCEPTANCE-MAP.md` is the in-progress parent AC coverage view. It is refreshed by epic lifecycle commands from requirements, tracker rows, deferrals, and child evidence.
 - Epic requirements should use stable parent acceptance criteria IDs (`AC1`, `AC2`, etc.) and preserve existing IDs across revisions.
+- `epic approve-requirements` records the owner-approved requirements/AC authority envelope. It should happen once after requirements are ready; unchanged child work inside that envelope should proceed without repeated owner approval.
+- Approval gates are drift checks, not approval fatigue. Missing/stale requirements, out-of-envelope child rows, and evidence gaps should fail with concrete reasons for the agent to fix or amend.
+- `EPIC-CONTRACT.md` records the epic sources of truth, invalid substitutes, invariants, artifact targets, and parent AC proof owners. New/adopted epics must replace placeholder contract content before decomposition, child approval/scaffolding, or movement into `Ready`/`In Progress`.
 - `epic lifecycle` safely updates the global epic row through `Analysing`, `Ready`, `In Progress`, and `Closeout`. `Ready`, `In Progress`, and `Closeout` are gated; `Complete` remains owned by `epic closeout --complete`.
 - New epic trackers include a `Parent ACs` column for child-row coverage. Legacy trackers that use `Notes` values such as `Covers AC1, AC3` remain supported.
-- `epic decompose` writes Proposed child rows only. It does not scaffold child folders/docs.
+- `epic decompose` writes Proposed child rows and `DECOMPOSITION.md`, the approved child-row authority plan. It does not scaffold child folders/docs.
+- If requirements include a `Proposed Child Work` table, `epic decompose` uses that owner-reviewed decomposition before falling back to generated requirement/AC candidates.
 - `epic decompose` reads `.project-workflow/config.json` prefix guidance by default and can propose mixed-prefix child rows. Use `--prefix <PREFIX>` only when intentionally forcing one configured namespace for the whole batch.
-- `epic approve` moves a row from Proposed to Approved (same semantics as manually editing status in epic tracker).
-- `epic scaffold-child` only accepts Approved rows, moves the row to In Progress after scaffold, and copies parent AC coverage into the child `REQUIREMENTS.md` and `IMPLEMENTATION.md`.
-- `epic ready` validates epic requirements before decomposition; `epic ready-child` validates child requirements and implementation readiness before implementation/testing.
-- `epic status` moves epic child rows through `Testing`, `Review`, and `Complete`; `Complete` requires QA/code-review evidence and parent AC evidence for assigned parent ACs.
-- Scaffolded epic child docs include `Parent AC Coverage` and `Parent AC Evidence` sections so QA can prove the parent epic criteria the child owns.
+- `epic approve`, `epic scaffold-child`, `epic ready-child`, and `epic status` reject child rows whose ID, title, or parent AC coverage does not match `DECOMPOSITION.md`; matching rows inside the plan do not need separate per-row owner approval.
+- `epic amend` records an owner-approved amendment in `AMENDMENTS.md` and appends the matching Proposed child row. Use it for mid-epic reactive fixes, new child work, source-of-truth changes, artifact identity changes, or proof-obligation changes; direct tracker edits outside decomposition/amendment authority remain blocked.
+- `task adopt` and `epic adopt` bring pre-existing work under current gates by recording an approval envelope plus a `Legacy Adoption` block. Pre-adoption inferred evidence is marked untrusted unless `--evidence-refreshed` is used after refreshing proof.
+- `epic scaffold-child` only accepts Approved rows, moves the row to In Progress after scaffold, and copies parent AC coverage plus a contract-derived child charter into the child `REQUIREMENTS.md` and `IMPLEMENTATION.md`.
+- `epic ready` validates epic requirements before decomposition; `epic ready-child` validates planned child requirements and implementation readiness before implementation/testing.
+- `epic status` moves planned epic child rows through `Testing`, `Review`, and `Complete`; `Complete` requires QA/code-review evidence and parent AC evidence for assigned parent ACs.
+- Scaffolded epic child docs include `Parent AC Coverage`, `Child Charter`, `Parent AC Evidence`, and `EVIDENCE.json` so QA can prove only the parent epic criteria the child owns.
+- Proof recipes are triggered by requirements and material claims. Built-in recipes cover `visual-reference-fidelity`, `external-contract-alignment`, `deployed-artifact-alignment`, `runtime-target-source`, and `responsive-visual-behavior`.
+- When a proof recipe is triggered, `epic status` blocks `Review`/`Complete`, `epic audit` refuses parent AC credit, and `doctor` fails invalid current states unless `EVIDENCE.json` contains passing structured claim records with recipe-specific fields and evidence artifacts.
+- Invalid substitutes do not count as partial proof. For example, visual/reference fidelity cannot be satisfied by code review, unit tests, build output, surrogate surfaces, or unrendered inspection; runtime target/source claims require evidence of the exact execution target and source/artifact under test.
 - The global tracker summarizes epic rows; each epic `TRACKER.md` owns child rows. Proposed child rows should not be added to the global tracker.
 - `epic audit` writes `ACCEPTANCE-AUDIT.md`; the audit is the closeout evidence artifact, while `ACCEPTANCE-MAP.md` remains the working coverage map.
 - `epic closeout` validates gates and only marks the global epic row Complete when `--complete` is explicit, all parent ACs have evidence or approved deferrals, and `RETRO.md` records lessons, follow-ups, deferrals, and missed in-scope work. Use explicit `None.` entries when a retro section has nothing to report.

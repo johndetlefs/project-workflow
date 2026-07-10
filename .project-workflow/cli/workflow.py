@@ -57,6 +57,10 @@ EPIC_ID_PREFIX = "EPIC"
 BACKLOG_ID_PREFIX = "BL"
 ID_PADDING = 3
 WORKFLOW_CONFIG_FILENAME = "config.json"
+EPIC_CONTRACT_FILENAME = "EPIC-CONTRACT.md"
+DECOMPOSITION_PLAN_FILENAME = "DECOMPOSITION.md"
+EPIC_AMENDMENTS_FILENAME = "AMENDMENTS.md"
+STRUCTURED_EVIDENCE_FILENAME = "EVIDENCE.json"
 ID_GENERATION_KINDS = ("tasks", "epics", "backlog")
 ID_GENERATION_MODES = ("sequential", "unique")
 DEFAULT_ID_GENERATION = {
@@ -141,6 +145,169 @@ EPIC_STATUS_TRANSITIONS = {
     "Blocked": {"Proposed", "Approved", "In Progress", "Testing", "Review"},
     "Complete": set(),
 }
+DECOMPOSITION_PLAN_COLUMNS = (
+    "ID",
+    "Title",
+    "Parent ACs",
+    "Source",
+)
+EPIC_AMENDMENT_COLUMNS = (
+    "ID",
+    "Title",
+    "Parent ACs",
+    "Approved By",
+    "Decision Date",
+    "Reason",
+    "Source",
+)
+EPIC_CONTRACT_PROOF_OWNER_COLUMNS = (
+    "Parent AC",
+    "Proof Owner",
+    "Required Evidence",
+)
+EPIC_CONTRACT_REQUIRED_SECTIONS = (
+    "Sources of Truth",
+    "Invalid Substitutes",
+    "Invariants",
+    "Artifact Targets",
+    "Parent AC Proof Ownership",
+)
+PROOF_RECIPE_REQUIRED_FIELDS = {
+    "visual-reference-fidelity": (
+        "commit",
+        "timestamp",
+        "parent_ac",
+        "claim",
+        "reference_artifact",
+        "delivered_artifact",
+        "comparison_method",
+        "evidence_artifact",
+        "evidence_artifact_hash",
+    ),
+    "external-contract-alignment": (
+        "commit",
+        "timestamp",
+        "parent_ac",
+        "claim",
+        "contract_artifact",
+        "implementation_artifact",
+        "comparison_method",
+        "evidence_artifact",
+        "evidence_artifact_hash",
+    ),
+    "deployed-artifact-alignment": (
+        "commit",
+        "timestamp",
+        "parent_ac",
+        "claim",
+        "execution_target",
+        "source_artifact",
+        "artifact_identity",
+        "observation_method",
+        "evidence_artifact",
+        "evidence_artifact_hash",
+    ),
+    "runtime-target-source": (
+        "commit",
+        "timestamp",
+        "parent_ac",
+        "claim",
+        "execution_target",
+        "source_artifact",
+        "observation_method",
+        "target_used_source_proof",
+        "evidence_artifact",
+        "evidence_artifact_hash",
+    ),
+    "responsive-visual-behavior": (
+        "commit",
+        "timestamp",
+        "parent_ac",
+        "claim",
+        "reference_artifact",
+        "delivered_artifact",
+        "viewports",
+        "contexts",
+        "comparison_method",
+        "evidence_artifact",
+        "evidence_artifact_hash",
+    ),
+}
+PROOF_RECIPE_TRIGGER_PATTERNS = {
+    "visual-reference-fidelity": (
+        r"\bvisual/reference-fidelity\b",
+        r"\bvisual reference fidelity\b",
+        r"\bmatch(?:es|ed|ing)?\s+(?:the\s+)?(?:playground|design|reference|screenshot|visual)\b",
+        r"\blooks?\s+like\s+(?:the\s+)?(?:playground|design|reference|screenshot)\b",
+        r"\bfaithfully\s+reproduc(?:e|es|ed|ing)\b",
+    ),
+    "external-contract-alignment": (
+        r"\bexternal-contract-alignment\b",
+        r"\bexternal contract alignment\b",
+        r"\b(?:api|mcp|external)\s+contract\b",
+        r"\bcontract\s+align(?:s|ed|ment)?\b",
+    ),
+    "deployed-artifact-alignment": (
+        r"\bdeployed-artifact-alignment\b",
+        r"\bdeployed artifact alignment\b",
+        r"\bdeployed\s+(?:artifact|surface|app|site)\b",
+        r"\bpublished\s+(?:artifact|surface|app|site)\b",
+    ),
+    "runtime-target-source": (
+        r"\bruntime-target-source\b",
+        r"\bruntime target/source\b",
+        r"\btarget/source\b",
+        r"\bexecution target\b",
+        r"\btarget\s+actually\s+used\s+(?:that\s+)?source\b",
+    ),
+    "responsive-visual-behavior": (
+        r"\bresponsive-visual-behavior\b",
+        r"\bresponsive visual behavior\b",
+        r"\bresponsive\b",
+        r"\bviewport(?:s)?\b",
+        r"\bmobile\s+and\s+desktop\b",
+        r"\bmulti-context\b",
+    ),
+}
+PROOF_RECIPE_INVALID_SUBSTITUTE_PATTERNS = {
+    "visual-reference-fidelity": (
+        "unit test",
+        "build passed",
+        "code review only",
+        "surrogate",
+        "unrendered",
+    ),
+    "external-contract-alignment": (
+        "manual skim",
+        "shape looked right",
+        "sample payload only",
+    ),
+    "deployed-artifact-alignment": (
+        "local only",
+        "deploy succeeded",
+        "related environment",
+    ),
+    "runtime-target-source": (
+        "relay running",
+        "service running",
+        "tunnel exists",
+        "deploy succeeded",
+        "related environment",
+    ),
+    "responsive-visual-behavior": (
+        "single viewport",
+        "desktop only",
+        "mobile only",
+        "unit test",
+    ),
+}
+EPIC_CHILD_GATED_STATUSES = (
+    "Approved",
+    "In Progress",
+    "Testing",
+    "Review",
+    "Complete",
+)
 AC_MAPPED_IMPLEMENTATION_STATUSES = (
     "Plan Confirmed",
     "In Progress",
@@ -363,6 +530,21 @@ def _managed_project_workflow_block() -> str:
         "Do not use bare `project init` unless the package is intentionally installed "
         "and known to be current.\n"
         "- Use `./.project-workflow/cli/workflow` for supported backlog, task, and validation commands.\n"
+        "- Before implementation, record one owner approval envelope with "
+        "`task approve-requirements` or `epic approve-requirements`; unchanged work inside "
+        "that envelope should proceed without repeated approval prompts, while drift, stale "
+        "requirements, or evidence gaps must be fixed or amended.\n"
+        "- For pre-existing work, use `task adopt` or `epic adopt`; pre-adoption inferred "
+        "evidence stays untrusted until refreshed.\n"
+        "- For epics, `epic decompose` writes `DECOMPOSITION.md`; child rows must match "
+        "that plan before approval, scaffold, readiness, or status advancement.\n"
+        "- Use `epic amend` for owner-approved mid-epic child rows outside the decomposition "
+        "plan; direct tracker edits outside decomposition/amendment authority remain blocked.\n"
+        "- New/adopted epics require non-placeholder `EPIC-CONTRACT.md` before "
+        "decomposition, child approval/scaffolding, or movement into Ready/In Progress.\n"
+        "- If requirements or claims trigger visual/reference, external contract, deployed "
+        "artifact, runtime target/source, or responsive visual proof, fill child-local "
+        "`EVIDENCE.json`; QA prose, tests, builds, or surrogate artifacts are invalid substitutes.\n"
         "- Use `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` "
         "for tracker lifecycle changes.\n"
         "- Run `./.project-workflow/cli/workflow doctor` after tracker or task-doc changes.\n"
@@ -727,6 +909,16 @@ def _requirements_template(task_id: str, title: str) -> str:
         f"- Task: {task_id}\n"
         f"- Title: {title}\n"
         f"- Last updated: {date.today().isoformat()}\n\n"
+        f"## Owner Approval\n\n"
+        f"- Requirements reviewed by owner: No\n"
+        f"- Acceptance criteria reviewed by owner: No\n"
+        f"- Approved for decomposition: No\n"
+        f"- Approved for implementation: No\n"
+        f"- Approved scope envelope: No\n"
+        f"- Approved by: Not approved\n"
+        f"- Approval date: Not approved\n"
+        f"- Approval note / source: Not approved\n"
+        f"- Approved artifact identity: Not approved\n\n"
         f"## Goal\n\n"
         f"Describe the user outcome this change must deliver.\n\n"
         f"## Non-Goals\n\n"
@@ -792,6 +984,15 @@ def _epic_deferrals_template() -> str:
     )
 
 
+def _epic_amendments_template() -> str:
+    return (
+        "# Epic Amendments\n\n"
+        "## Approved Child Row Amendments\n\n"
+        "| ID | Title | Parent ACs | Approved By | Decision Date | Reason | Source |\n"
+        "|---|---|---|---|---|---|---|\n"
+    )
+
+
 def _epic_retro_template(epic_id: str, title: str) -> str:
     return (
         "# Epic Retro\n\n"
@@ -806,6 +1007,28 @@ def _epic_retro_template(epic_id: str, title: str) -> str:
         "- ____\n\n"
         "## Missed In-Scope Work\n\n"
         "- ____\n"
+    )
+
+
+def _epic_contract_template(epic_id: str, title: str) -> str:
+    return (
+        "# Epic Contract\n\n"
+        "## Summary\n\n"
+        f"- Epic: {epic_id}\n"
+        f"- Title: {title}\n"
+        f"- Last updated: {date.today().isoformat()}\n\n"
+        "## Sources of Truth\n\n"
+        "- ____\n\n"
+        "## Invalid Substitutes\n\n"
+        "- ____\n\n"
+        "## Invariants\n\n"
+        "- ____\n\n"
+        "## Artifact Targets\n\n"
+        "- ____\n\n"
+        "## Parent AC Proof Ownership\n\n"
+        "| Parent AC | Proof Owner | Required Evidence |\n"
+        "| --- | --- | --- |\n"
+        "| AC1 | ____ | ____ |\n\n"
     )
 
 
@@ -883,6 +1106,391 @@ def _extract_parent_ac_ids_from_epic_rows(rows: list[dict[str, str]]) -> set[str
     for row in rows:
         mapped.update(_extract_ac_ids(_extract_parent_ac_coverage(row)))
     return mapped
+
+
+def _normalize_ac_list(value: str) -> str:
+    ac_ids = sorted(_extract_ac_ids(value), key=lambda ac_id: int(ac_id[2:]))
+    return ", ".join(ac_ids)
+
+
+def _markdown_table_rows_from_section(
+    text: str,
+    heading: str,
+    *,
+    expected_columns: tuple[str, ...],
+) -> list[dict[str, str]]:
+    section = _markdown_section(text, heading)
+    if not section:
+        return []
+
+    lines = section.splitlines()
+    header_idx: int | None = None
+    for idx, line in enumerate(lines):
+        cells = _parse_markdown_table_cells(line)
+        if cells == list(expected_columns):
+            header_idx = idx
+            break
+    if header_idx is None:
+        return []
+
+    rows: list[dict[str, str]] = []
+    row_idx = header_idx + 2
+    while row_idx < len(lines):
+        cells = _parse_markdown_table_cells(lines[row_idx])
+        if cells is None or len(cells) != len(expected_columns):
+            break
+        rows.append(dict(zip(expected_columns, cells)))
+        row_idx += 1
+    return rows
+
+
+def _proposed_child_work_rows(requirements_text: str) -> list[dict[str, str]]:
+    return _markdown_table_rows_from_section(
+        requirements_text,
+        "Proposed Child Work",
+        expected_columns=("Proposed Child", "Parent ACs", "Purpose"),
+    )
+
+
+def _decomposition_plan_path(epic_dir: Path) -> Path:
+    return epic_dir / DECOMPOSITION_PLAN_FILENAME
+
+
+def _epic_amendments_path(epic_dir: Path) -> Path:
+    return epic_dir / EPIC_AMENDMENTS_FILENAME
+
+
+def _epic_contract_path(epic_dir: Path) -> Path:
+    return epic_dir / EPIC_CONTRACT_FILENAME
+
+
+def _epic_contract_proof_owner_rows(contract_text: str) -> list[dict[str, str]]:
+    return _markdown_table_rows_from_section(
+        contract_text,
+        "Parent AC Proof Ownership",
+        expected_columns=EPIC_CONTRACT_PROOF_OWNER_COLUMNS,
+    )
+
+
+def _extract_work_item_ids(text: str) -> set[str]:
+    return set(re.findall(r"\b[A-Z][A-Z0-9]*-[A-Z0-9]+\b", text))
+
+
+def _epic_contract_proof_owner_map(contract_text: str) -> dict[str, set[str]]:
+    owner_map: dict[str, set[str]] = {}
+    for row in _epic_contract_proof_owner_rows(contract_text):
+        owners = _extract_work_item_ids(row.get("Proof Owner", ""))
+        for ac_id in _extract_ac_ids(row.get("Parent AC", "")):
+            owner_map.setdefault(ac_id, set()).update(owners)
+    return owner_map
+
+
+def _contract_section_bullets(contract_text: str, heading: str) -> list[str]:
+    section = _markdown_section(contract_text, heading)
+    bullets: list[str] = []
+    for line in section.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("-", "*")) and not _section_has_placeholder(stripped):
+            bullets.append(stripped.lstrip("-*").strip())
+    return bullets
+
+
+def _format_child_charter_from_contract(
+    *,
+    epic_dir: Path,
+    parent_ac_coverage: str,
+) -> str:
+    contract_path = _epic_contract_path(epic_dir)
+    if not contract_path.exists():
+        return ""
+    contract_text = contract_path.read_text(encoding="utf-8")
+    parent_ac_ids = sorted(
+        _extract_ac_ids(parent_ac_coverage),
+        key=lambda ac_id: int(ac_id[2:]),
+    )
+    proof_rows = [
+        row
+        for row in _epic_contract_proof_owner_rows(contract_text)
+        if _extract_ac_ids(row.get("Parent AC", "")) & set(parent_ac_ids)
+    ]
+
+    def bullet_lines(values: list[str]) -> str:
+        return "\n".join(f"- {value}" for value in values) if values else "- None recorded."
+
+    proof_lines = []
+    for row in proof_rows:
+        proof_lines.append(
+            f"- {row.get('Parent AC', '').strip()}: owner `{row.get('Proof Owner', '').strip()}`; "
+            f"required evidence: {row.get('Required Evidence', '').strip()}"
+        )
+    return (
+        "## Child Charter\n\n"
+        "### Inherited Invariants\n\n"
+        f"{bullet_lines(_contract_section_bullets(contract_text, 'Invariants'))}\n\n"
+        "### Invalid Substitutes\n\n"
+        f"{bullet_lines(_contract_section_bullets(contract_text, 'Invalid Substitutes'))}\n\n"
+        "### Artifact Targets\n\n"
+        f"{bullet_lines(_contract_section_bullets(contract_text, 'Artifact Targets'))}\n\n"
+        "### Parent AC Proof Ownership\n\n"
+        f"{chr(10).join(proof_lines) if proof_lines else '- None assigned to this child.'}\n\n"
+    )
+
+
+def _epic_contract_issues(epic_dir: Path, requirements_text: str) -> list[str]:
+    contract_path = _epic_contract_path(epic_dir)
+    if not contract_path.exists():
+        return [f"{EPIC_CONTRACT_FILENAME} is missing."]
+
+    contract_text = contract_path.read_text(encoding="utf-8")
+    issues: list[str] = []
+    for heading in EPIC_CONTRACT_REQUIRED_SECTIONS:
+        section = _markdown_section(contract_text, heading)
+        if not _section_has_substantive_text(section):
+            issues.append(
+                f"{EPIC_CONTRACT_FILENAME} section `## {heading}` is missing or placeholder."
+            )
+
+    owner_rows = _epic_contract_proof_owner_rows(contract_text)
+    if not owner_rows:
+        issues.append(
+            f"{EPIC_CONTRACT_FILENAME} must include parent AC proof owner rows."
+        )
+    else:
+        for row in owner_rows:
+            row_text = " ".join(row.values())
+            if _section_has_placeholder(row_text):
+                issues.append(
+                    f"{EPIC_CONTRACT_FILENAME} proof owner row for "
+                    f"{row.get('Parent AC', 'unknown AC')} is placeholder."
+                )
+
+    parent_ac_ids = _extract_parent_ac_ids_from_requirements(requirements_text)
+    owned_ac_ids: set[str] = set()
+    for row in owner_rows:
+        owned_ac_ids.update(_extract_ac_ids(row.get("Parent AC", "")))
+    missing_owners = sorted(parent_ac_ids - owned_ac_ids, key=lambda ac_id: int(ac_id[2:]))
+    if missing_owners:
+        issues.append(
+            f"{EPIC_CONTRACT_FILENAME} lacks proof owners for parent ACs: "
+            + ", ".join(missing_owners)
+        )
+    return issues
+
+
+def _epic_contract_issues_for_path(epic_dir: Path) -> list[str]:
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    if not requirements_path.exists():
+        return [f"missing epic requirements file: {requirements_path}"]
+    return _epic_contract_issues(
+        epic_dir,
+        requirements_path.read_text(encoding="utf-8"),
+    )
+
+
+def _require_epic_contract(epic_dir: Path, epic_id: str) -> None:
+    issues = _epic_contract_issues_for_path(epic_dir)
+    if issues:
+        raise SystemExit(
+            f"{epic_id} is missing required epic contract authority:\n"
+            + "\n".join(f"- {issue}" for issue in issues)
+        )
+
+
+def _decomposition_plan_source_identity(requirements_text: str) -> str:
+    values = _parse_key_value_section(_markdown_section(requirements_text, OWNER_APPROVAL_HEADING))
+    identity = values.get("approved artifact identity", "").strip()
+    if identity.startswith(APPROVAL_IDENTITY_PREFIX):
+        return identity
+    return _approval_artifact_identity(requirements_text)
+
+
+def _format_decomposition_plan(
+    *,
+    epic_id: str,
+    requirements_text: str,
+    rows: list[dict[str, str]],
+) -> str:
+    source_identity = _decomposition_plan_source_identity(requirements_text)
+    lines = [
+        "# Decomposition Plan",
+        "",
+        "## Summary",
+        "",
+        f"- Epic: {epic_id}",
+        "- Status: Approved by parent requirements envelope",
+        "- Authority source: Parent REQUIREMENTS.md Owner Approval",
+        f"- Source requirements identity: {source_identity}",
+        f"- Last updated: {date.today().isoformat()}",
+        "",
+        "## Authorized Child Rows",
+        "",
+        "| ID | Title | Parent ACs | Source |",
+        "|---|---|---|---|",
+    ]
+    for row in rows:
+        lines.append(
+            "| {id} | {title} | {parent_acs} | {source} |".format(
+                id=row["ID"],
+                title=row["Title"],
+                parent_acs=_normalize_ac_list(row.get("Parent ACs", "")),
+                source=row.get("Source", "Decomposition plan"),
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "## Authority Rules",
+            "",
+            "- Matching rows inside this plan may be approved and scaffolded without separate per-row owner approval.",
+            "- Rows outside this plan require an approved amendment before gated lifecycle movement.",
+            "- Matching is by ID, title, and parent AC coverage.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _read_decomposition_plan_rows(plan_path: Path) -> list[dict[str, str]]:
+    if not plan_path.exists():
+        return []
+    return _markdown_table_rows_from_section(
+        plan_path.read_text(encoding="utf-8"),
+        "Authorized Child Rows",
+        expected_columns=DECOMPOSITION_PLAN_COLUMNS,
+    )
+
+
+def _read_epic_amendment_rows(amendments_path: Path) -> list[dict[str, str]]:
+    if not amendments_path.exists():
+        return []
+    return _markdown_table_rows_from_section(
+        amendments_path.read_text(encoding="utf-8"),
+        "Approved Child Row Amendments",
+        expected_columns=EPIC_AMENDMENT_COLUMNS,
+    )
+
+
+def _append_epic_amendment_row(amendments_path: Path, row: dict[str, str]) -> None:
+    if not amendments_path.exists():
+        amendments_path.write_text(_epic_amendments_template(), encoding="utf-8")
+    lines = amendments_path.read_text(encoding="utf-8").splitlines(keepends=True)
+    header_idx: int | None = None
+    for idx, line in enumerate(lines):
+        if _parse_markdown_table_cells(line) == list(EPIC_AMENDMENT_COLUMNS):
+            header_idx = idx
+            break
+    if header_idx is None:
+        raise SystemExit(
+            f"{EPIC_AMENDMENTS_FILENAME} schema mismatch. Expected amendment table header."
+        )
+    existing_rows = _read_epic_amendment_rows(amendments_path)
+    row_id = row.get("ID", "").strip()
+    if row_id in {existing.get("ID", "").strip() for existing in existing_rows}:
+        raise SystemExit(f"{row_id} is already recorded in {EPIC_AMENDMENTS_FILENAME}.")
+    insert_at = header_idx + 2 + len(existing_rows)
+    lines.insert(
+        insert_at,
+        "| "
+        + " | ".join(_markdown_cell(row.get(column, "")) for column in EPIC_AMENDMENT_COLUMNS)
+        + " |\n",
+    )
+    amendments_path.write_text("".join(lines), encoding="utf-8")
+
+
+def _amendment_row_authority_issues(
+    *,
+    amendment_row: dict[str, str],
+    tracker_row: dict[str, str],
+) -> list[str]:
+    row_id = tracker_row.get("ID", "").strip()
+    issues: list[str] = []
+    if amendment_row.get("Title", "").strip() != tracker_row.get("Title", "").strip():
+        issues.append(
+            f"{row_id} title differs from amendment "
+            f"('{amendment_row.get('Title', '').strip()}')."
+        )
+    amended_acs = _normalize_ac_list(amendment_row.get("Parent ACs", ""))
+    row_acs = _normalize_ac_list(_extract_parent_ac_coverage(tracker_row))
+    if amended_acs != row_acs:
+        issues.append(
+            f"{row_id} parent ACs differ from amendment ('{amended_acs}' != '{row_acs}')."
+        )
+    for column in ("Approved By", "Decision Date", "Reason", "Source"):
+        value = amendment_row.get(column, "").strip()
+        if _approval_source_invalid(value):
+            issues.append(f"{row_id} amendment column `{column}` is missing or placeholder.")
+    return issues
+
+
+def _amendment_authority_issues(
+    *,
+    epic_dir: Path,
+    row: dict[str, str],
+) -> list[str]:
+    amendments_path = _epic_amendments_path(epic_dir)
+    if not amendments_path.exists():
+        return [f"{EPIC_AMENDMENTS_FILENAME} is missing."]
+    row_id = row.get("ID", "").strip()
+    for amendment_row in _read_epic_amendment_rows(amendments_path):
+        if amendment_row.get("ID", "").strip() == row_id:
+            return _amendment_row_authority_issues(
+                amendment_row=amendment_row,
+                tracker_row=row,
+            )
+    return [f"{row_id} is not recorded in {EPIC_AMENDMENTS_FILENAME}."]
+
+
+def _decomposition_plan_authority_issues(
+    *,
+    epic_dir: Path,
+    row: dict[str, str],
+) -> list[str]:
+    plan_path = _decomposition_plan_path(epic_dir)
+    if not plan_path.exists():
+        return [
+            f"{DECOMPOSITION_PLAN_FILENAME} is missing; run `epic decompose` from "
+            "owner-approved requirements or record an approved amendment before this row advances."
+        ]
+
+    plan_rows = _read_decomposition_plan_rows(plan_path)
+    row_id = row.get("ID", "").strip()
+    for plan_row in plan_rows:
+        if plan_row.get("ID", "").strip() != row_id:
+            continue
+        issues: list[str] = []
+        if plan_row.get("Title", "").strip() != row.get("Title", "").strip():
+            issues.append(
+                f"{row_id} title differs from decomposition plan "
+                f"('{plan_row.get('Title', '').strip()}')."
+            )
+        planned_acs = _normalize_ac_list(plan_row.get("Parent ACs", ""))
+        row_acs = _normalize_ac_list(_extract_parent_ac_coverage(row))
+        if planned_acs != row_acs:
+            issues.append(
+                f"{row_id} parent ACs differ from decomposition plan "
+                f"('{planned_acs}' != '{row_acs}')."
+            )
+        return issues
+
+    amendment_issues = _amendment_authority_issues(epic_dir=epic_dir, row=row)
+    if not amendment_issues:
+        return []
+
+    return [
+        f"{row_id} is outside {DECOMPOSITION_PLAN_FILENAME}; record an approved "
+        "amendment before this row advances.",
+        *amendment_issues,
+    ]
+
+
+def _require_decomposition_plan_authority(epic_dir: Path, row: dict[str, str]) -> None:
+    issues = _decomposition_plan_authority_issues(epic_dir=epic_dir, row=row)
+    if issues:
+        row_id = row.get("ID", "child row")
+        raise SystemExit(
+            f"{row_id} is outside the approved decomposition authority:\n"
+            + "\n".join(f"- {issue}" for issue in issues)
+        )
 
 
 def _duplicate_backlog_ids(rows: list[dict[str, str]]) -> list[str]:
@@ -1198,6 +1806,267 @@ def _parent_ac_evidence_present(docs_text: str, ac_id: str) -> bool:
     return "pending" not in lowered and "____" not in evidence_section
 
 
+def _evidence_value_missing(value: object) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        stripped = value.strip()
+        return not stripped or stripped == "____" or stripped.lower() in {"pending", "todo"}
+    if isinstance(value, (list, tuple, set)):
+        return not value
+    return False
+
+
+def _extract_explicit_recipe_ids(text: str) -> set[str]:
+    recipes: set[str] = set()
+    for recipe_id in PROOF_RECIPE_REQUIRED_FIELDS:
+        if recipe_id in text:
+            recipes.add(recipe_id)
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("| ---"):
+            continue
+        for recipe_id in PROOF_RECIPE_REQUIRED_FIELDS:
+            if re.search(rf"\b{re.escape(recipe_id)}\b", stripped, flags=re.IGNORECASE):
+                recipes.add(recipe_id)
+    return recipes
+
+
+def _triggered_proof_recipes(*texts: str) -> set[str]:
+    combined = "\n".join(texts).lower()
+    triggered = _extract_explicit_recipe_ids(combined)
+    for recipe_id, patterns in PROOF_RECIPE_TRIGGER_PATTERNS.items():
+        if any(re.search(pattern, combined, flags=re.IGNORECASE) for pattern in patterns):
+            triggered.add(recipe_id)
+    return triggered
+
+
+def _load_structured_evidence(evidence_path: Path) -> tuple[list[dict[str, object]], list[str]]:
+    if not evidence_path.exists():
+        return [], [f"{STRUCTURED_EVIDENCE_FILENAME} is missing."]
+    try:
+        payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [], [f"{STRUCTURED_EVIDENCE_FILENAME} is not valid JSON: {exc}"]
+    records = payload.get("claims") if isinstance(payload, dict) else payload
+    if not isinstance(records, list):
+        return [], [f"{STRUCTURED_EVIDENCE_FILENAME} must contain a `claims` array."]
+    if not records:
+        return [], [f"{STRUCTURED_EVIDENCE_FILENAME} contains no claim records."]
+    typed_records: list[dict[str, object]] = []
+    issues: list[str] = []
+    for idx, record in enumerate(records, start=1):
+        if isinstance(record, dict):
+            typed_records.append(record)
+        else:
+            issues.append(f"claim record {idx} must be an object.")
+    return typed_records, issues
+
+
+def _evidence_artifact_exists(value: object, *, evidence_dir: Path) -> bool:
+    if _evidence_value_missing(value):
+        return False
+    if not isinstance(value, str):
+        return True
+    stripped = value.strip()
+    if re.match(r"^[a-z][a-z0-9+.-]*://", stripped, flags=re.IGNORECASE):
+        return True
+    artifact_path = Path(stripped)
+    if not artifact_path.is_absolute():
+        artifact_path = evidence_dir / artifact_path
+    return artifact_path.exists()
+
+
+def _local_evidence_artifact_path(value: object, *, evidence_dir: Path) -> Path | None:
+    if _evidence_value_missing(value) or not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    if re.match(r"^[a-z][a-z0-9+.-]*://", stripped, flags=re.IGNORECASE):
+        return None
+    artifact_path = Path(stripped)
+    if not artifact_path.is_absolute():
+        artifact_path = evidence_dir / artifact_path
+    return artifact_path if artifact_path.exists() else None
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return f"sha256:{digest.hexdigest()}"
+
+
+def _normalized_evidence_hash(value: object) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    if text.startswith("sha256:"):
+        return text
+    if re.fullmatch(r"[a-fA-F0-9]{64}", text):
+        return f"sha256:{text.lower()}"
+    return text
+
+
+def _structured_doc_claims(text: str) -> dict[str, set[str]]:
+    labels = {
+        "reference artifact": "reference_artifact",
+        "delivered artifact": "delivered_artifact",
+        "execution target": "execution_target",
+        "source artifact": "source_artifact",
+        "source/artifact under test": "source_artifact",
+        "artifact identity": "artifact_identity",
+    }
+    claims: dict[str, set[str]] = {}
+    for line in text.splitlines():
+        stripped = line.strip().lstrip("-*").strip()
+        if ":" not in stripped:
+            continue
+        key, value = stripped.split(":", 1)
+        field = labels.get(key.strip().lower())
+        if field and not _evidence_value_missing(value):
+            claims.setdefault(field, set()).add(value.strip())
+    return claims
+
+
+def _structured_evidence_contradiction_issues(
+    *, implementation_text: str, records: list[dict[str, object]]
+) -> list[str]:
+    doc_claims = _structured_doc_claims(implementation_text)
+    if not doc_claims:
+        return []
+    evidence_values: dict[str, set[str]] = {}
+    for record in records:
+        for field in doc_claims:
+            value = record.get(field)
+            if not _evidence_value_missing(value):
+                evidence_values.setdefault(field, set()).add(str(value).strip())
+    issues: list[str] = []
+    for field, claimed_values in sorted(doc_claims.items()):
+        proven_values = evidence_values.get(field, set())
+        contradictions = sorted(value for value in claimed_values if value not in proven_values)
+        if contradictions and proven_values:
+            issues.append(
+                f"structured evidence: prose claims {field} "
+                + ", ".join(contradictions)
+                + " but structured evidence proves "
+                + ", ".join(sorted(proven_values))
+                + "."
+            )
+    return issues
+
+
+def _structured_evidence_issues(
+    *,
+    requirements_path: Path,
+    implementation_path: Path,
+    parent_ac_ids: set[str] | None = None,
+) -> list[str]:
+    requirements_text = (
+        requirements_path.read_text(encoding="utf-8") if requirements_path.exists() else ""
+    )
+    implementation_text = (
+        implementation_path.read_text(encoding="utf-8") if implementation_path.exists() else ""
+    )
+    triggered_recipes = _triggered_proof_recipes(requirements_text, implementation_text)
+    evidence_path = implementation_path.parent / STRUCTURED_EVIDENCE_FILENAME
+    if not triggered_recipes:
+        return []
+
+    records, load_issues = _load_structured_evidence(evidence_path)
+    issues = [f"structured evidence: {issue}" for issue in load_issues]
+    if load_issues:
+        return issues
+
+    records_by_recipe: dict[str, list[dict[str, object]]] = {}
+    passing_parent_acs: set[str] = set()
+    for idx, record in enumerate(records, start=1):
+        recipe_id = str(record.get("recipe", "")).strip()
+        label = str(record.get("id", "")).strip() or f"claim record {idx}"
+        if recipe_id not in PROOF_RECIPE_REQUIRED_FIELDS:
+            issues.append(f"structured evidence: {label} has unknown recipe `{recipe_id}`.")
+            continue
+        records_by_recipe.setdefault(recipe_id, []).append(record)
+        for field in PROOF_RECIPE_REQUIRED_FIELDS[recipe_id]:
+            if _evidence_value_missing(record.get(field)):
+                issues.append(
+                    f"structured evidence: {label} missing required field `{field}` "
+                    f"for recipe `{recipe_id}`."
+                )
+        invalid_substitutes = record.get("invalid_substitutes", [])
+        if isinstance(invalid_substitutes, str):
+            invalid_values = (
+                []
+                if invalid_substitutes.strip().lower() in {"", "none", "[]"}
+                else [invalid_substitutes]
+            )
+        elif isinstance(invalid_substitutes, list):
+            invalid_values = [str(value) for value in invalid_substitutes if str(value).strip()]
+        else:
+            invalid_values = [str(invalid_substitutes)]
+        if invalid_values:
+            issues.append(
+                f"structured evidence: {label} records invalid substitute evidence: "
+                + ", ".join(invalid_values)
+            )
+        text_blob = " ".join(str(value).lower() for value in record.values())
+        for invalid_pattern in PROOF_RECIPE_INVALID_SUBSTITUTE_PATTERNS[recipe_id]:
+            if invalid_pattern in text_blob:
+                issues.append(
+                    f"structured evidence: {label} uses invalid substitute for "
+                    f"`{recipe_id}`: {invalid_pattern}."
+                )
+        if not _evidence_artifact_exists(
+            record.get("evidence_artifact"),
+            evidence_dir=implementation_path.parent,
+        ):
+            issues.append(
+                f"structured evidence: {label} evidence_artifact does not exist or is empty."
+            )
+        local_artifact = _local_evidence_artifact_path(
+            record.get("evidence_artifact"),
+            evidence_dir=implementation_path.parent,
+        )
+        expected_hash = _normalized_evidence_hash(record.get("evidence_artifact_hash"))
+        if local_artifact and expected_hash:
+            actual_hash = _sha256_file(local_artifact)
+            if expected_hash != actual_hash:
+                issues.append(
+                    f"structured evidence: {label} evidence_artifact_hash is stale "
+                    f"(expected {actual_hash})."
+                )
+        if str(record.get("status", "")).strip().lower() == "pass":
+            parent_ac = str(record.get("parent_ac", "")).strip()
+            if parent_ac:
+                passing_parent_acs.add(parent_ac)
+
+    for recipe_id in sorted(triggered_recipes):
+        passing_records = [
+            record
+            for record in records_by_recipe.get(recipe_id, [])
+            if str(record.get("status", "")).strip().lower() == "pass"
+        ]
+        if not passing_records:
+            issues.append(
+                f"structured evidence: triggered recipe `{recipe_id}` has no passing claim record."
+            )
+
+    if parent_ac_ids:
+        missing_parent_claims = sorted(parent_ac_ids - passing_parent_acs)
+        if triggered_recipes and missing_parent_claims:
+            issues.append(
+                "structured evidence: missing passing claim records for parent ACs: "
+                + ", ".join(missing_parent_claims)
+            )
+    issues.extend(
+        _structured_evidence_contradiction_issues(
+            implementation_text=implementation_text,
+            records=records,
+        )
+    )
+    return issues
+
+
 def _epic_audit_rows(root: Path, epic_id: str) -> tuple[Path, list[dict[str, str]], list[str]]:
     workflow_dir = root / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
@@ -1213,6 +2082,12 @@ def _epic_audit_rows(root: Path, epic_id: str) -> tuple[Path, list[dict[str, str
     ac_summaries = _extract_parent_ac_summaries(requirements_text)
     _lines, _header_idx, tracker_rows = _epic_tracker_rows(epic_tracker_path)
     deferrals = _epic_deferrals(epic_dir)
+    proof_owner_map: dict[str, set[str]] = {}
+    contract_path = _epic_contract_path(epic_dir)
+    if contract_path.exists() and not _epic_contract_issues(epic_dir, requirements_text):
+        proof_owner_map = _epic_contract_proof_owner_map(
+            contract_path.read_text(encoding="utf-8")
+        )
     audit_rows: list[dict[str, str]] = []
     gaps: list[str] = []
 
@@ -1252,13 +2127,29 @@ def _epic_audit_rows(root: Path, epic_id: str) -> tuple[Path, list[dict[str, str
                     gaps.append(f"{ac_id}: {row_id} docs path is missing")
                 continue
             docs_text = docs_path.read_text(encoding="utf-8")
+            requirements_path = docs_path.parent / "REQUIREMENTS.md"
+            proof_owners = proof_owner_map.get(ac_id)
+            if proof_owners is not None and row_id not in proof_owners:
+                if not has_approved_deferral:
+                    verdict = "Gap"
+                    gaps.append(f"{ac_id}: {row_id} is not assigned as proof owner")
+                continue
+            structured_issues = _structured_evidence_issues(
+                requirements_path=requirements_path,
+                implementation_path=docs_path,
+                parent_ac_ids={ac_id},
+            )
             evidence_present = _parent_ac_evidence_present(docs_text, ac_id)
             qa_passed = _qa_passed(docs_text)
-            if evidence_present:
+            if evidence_present and not structured_issues:
                 evidence_bits.append(f"{row_id}: parent AC evidence recorded")
             elif not has_approved_deferral:
                 verdict = "Gap"
-                gaps.append(f"{ac_id}: {row_id} lacks parent AC evidence")
+                if structured_issues:
+                    for issue in structured_issues:
+                        gaps.append(f"{ac_id}: {row_id} {issue}")
+                else:
+                    gaps.append(f"{ac_id}: {row_id} lacks parent AC evidence")
             if qa_passed:
                 evidence_bits.append(f"{row_id}: QA pass")
             elif not has_approved_deferral:
@@ -1396,6 +2287,11 @@ EPIC_GLOBAL_LIFECYCLE_STATUSES = (
     "Closeout",
     "Complete",
 )
+OWNER_APPROVAL_HEADING = "Owner Approval"
+LEGACY_ADOPTION_HEADING = "Legacy Adoption"
+APPROVAL_IDENTITY_PREFIX = "sha256:"
+APPROVAL_TRUE_VALUES = {"yes", "true", "approved"}
+APPROVAL_FALSE_VALUES = {"", "no", "false", "not approved", "pending"}
 
 
 def _epic_retro_issues(epic_dir: Path) -> list[str]:
@@ -1411,6 +2307,251 @@ def _epic_retro_issues(epic_dir: Path) -> list[str]:
     return issues
 
 
+def _parse_key_value_section(section: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for line in section.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("-", "*")):
+            stripped = stripped[1:].strip()
+        if ":" not in stripped:
+            continue
+        key, value = stripped.split(":", 1)
+        values[key.strip().lower()] = value.strip()
+    return values
+
+
+def _remove_markdown_section(text: str, heading: str) -> str:
+    target = f"## {heading}".lower()
+    lines = text.splitlines()
+    output: list[str] = []
+    skipping = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            if stripped.lower() == target:
+                skipping = True
+                continue
+            skipping = False
+        if not skipping:
+            output.append(line)
+    return "\n".join(output).strip() + "\n"
+
+
+def _approval_artifact_identity(requirements_text: str) -> str:
+    comparable_text = _remove_markdown_section(requirements_text, OWNER_APPROVAL_HEADING)
+    comparable_text = _remove_markdown_section(comparable_text, LEGACY_ADOPTION_HEADING)
+    comparable_text = re.sub(r"\n{3,}", "\n\n", comparable_text).strip() + "\n"
+    return APPROVAL_IDENTITY_PREFIX + hashlib.sha256(
+        comparable_text.encode("utf-8")
+    ).hexdigest()
+
+
+def _approval_value_is_yes(value: str) -> bool:
+    return value.strip().lower() in APPROVAL_TRUE_VALUES
+
+
+def _approval_value_is_no(value: str) -> bool:
+    return value.strip().lower() in APPROVAL_FALSE_VALUES
+
+
+def _approval_source_invalid(source: str) -> bool:
+    lowered = source.strip().lower()
+    invalid_fragments = (
+        "____",
+        "pending",
+        "not approved",
+        "awaiting owner",
+        "agent-only",
+        "agent approved",
+        "approved by agent",
+    )
+    return not lowered or any(fragment in lowered for fragment in invalid_fragments)
+
+
+def _approval_envelope_issues(
+    requirements_text: str,
+    *,
+    require_decomposition: bool = False,
+    require_implementation: bool = False,
+) -> list[str]:
+    section = _markdown_section(requirements_text, OWNER_APPROVAL_HEADING)
+    if not section:
+        return [
+            "owner input required: add `## Owner Approval` with an approved scope envelope."
+        ]
+
+    values = _parse_key_value_section(section)
+    issues: list[str] = []
+
+    if not _approval_value_is_yes(values.get("requirements reviewed by owner", "")):
+        issues.append("owner input required: requirements have not been reviewed by the owner.")
+    if not _approval_value_is_yes(values.get("acceptance criteria reviewed by owner", "")):
+        issues.append(
+            "owner input required: acceptance criteria have not been reviewed by the owner."
+        )
+
+    approved_for_decomposition = _approval_value_is_yes(
+        values.get("approved for decomposition", "")
+    )
+    approved_for_implementation = _approval_value_is_yes(
+        values.get("approved for implementation", "")
+    )
+    approved_for_envelope = _approval_value_is_yes(values.get("approved scope envelope", ""))
+
+    if require_decomposition and not (approved_for_decomposition or approved_for_envelope):
+        issues.append("owner input required: decomposition is outside the approved scope envelope.")
+    if require_implementation and not (approved_for_implementation or approved_for_envelope):
+        issues.append("owner input required: implementation is outside the approved scope envelope.")
+    if (
+        not require_decomposition
+        and not require_implementation
+        and not (approved_for_decomposition or approved_for_implementation or approved_for_envelope)
+    ):
+        issues.append("owner input required: no approved scope envelope is recorded.")
+
+    if _approval_source_invalid(values.get("approved by", "")):
+        issues.append("owner input required: approval must name the owner who approved it.")
+    if _approval_source_invalid(values.get("approval date", "")):
+        issues.append("owner input required: approval must include an approval date.")
+    if _approval_source_invalid(values.get("approval note / source", "")):
+        issues.append("owner input required: approval must include a non-agent approval source.")
+
+    recorded_identity = values.get("approved artifact identity", "").strip()
+    expected_identity = _approval_artifact_identity(requirements_text)
+    if not recorded_identity:
+        issues.append("owner input required: approval is missing approved artifact identity.")
+    elif recorded_identity != expected_identity:
+        issues.append(
+            "owner input required: approval is stale because requirements or ACs changed "
+            f"after approval (expected {expected_identity})."
+        )
+    return issues
+
+
+def _approval_block(
+    *,
+    approved_by: str,
+    source: str,
+    approval_date: str,
+    decomposition: bool,
+    implementation: bool,
+    artifact_identity: str,
+) -> str:
+    return (
+        "## Owner Approval\n\n"
+        "- Requirements reviewed by owner: Yes\n"
+        "- Acceptance criteria reviewed by owner: Yes\n"
+        f"- Approved for decomposition: {'Yes' if decomposition else 'No'}\n"
+        f"- Approved for implementation: {'Yes' if implementation else 'No'}\n"
+        "- Approved scope envelope: Yes\n"
+        f"- Approved by: {approved_by.strip()}\n"
+        f"- Approval date: {approval_date.strip()}\n"
+        f"- Approval note / source: {source.strip()}\n"
+        f"- Approved artifact identity: {artifact_identity}\n"
+    )
+
+
+def _requirements_with_approval_envelope(
+    requirements_text: str,
+    *,
+    approved_by: str,
+    source: str,
+    decomposition: bool,
+    implementation: bool,
+) -> str:
+    if _approval_source_invalid(approved_by):
+        raise SystemExit("--approved-by must name the owner who approved the requirements.")
+    if _approval_source_invalid(source):
+        raise SystemExit("--source must describe the non-agent owner approval source.")
+    without_approval = _remove_markdown_section(requirements_text, OWNER_APPROVAL_HEADING)
+    artifact_identity = _approval_artifact_identity(without_approval)
+    block = _approval_block(
+        approved_by=approved_by,
+        source=source,
+        approval_date=date.today().isoformat(),
+        decomposition=decomposition,
+        implementation=implementation,
+        artifact_identity=artifact_identity,
+    )
+    marker = "\n## Goal\n"
+    if marker in without_approval:
+        return without_approval.replace(marker, f"\n{block}{marker}", 1)
+    return f"{without_approval.rstrip()}\n\n{block}"
+
+
+def _legacy_adoption_block(
+    *,
+    approved_by: str,
+    source: str,
+    evidence_refreshed: bool,
+) -> str:
+    return (
+        f"## {LEGACY_ADOPTION_HEADING}\n\n"
+        "- Adopted legacy work: Yes\n"
+        f"- Adopted by: {approved_by.strip()}\n"
+        f"- Adoption date: {date.today().isoformat()}\n"
+        f"- Adoption source: {source.strip()}\n"
+        f"- Evidence refreshed after adoption: {'Yes' if evidence_refreshed else 'No'}\n"
+        "- Evidence trust note: "
+        + (
+            "Existing evidence was refreshed after adoption."
+            if evidence_refreshed
+            else "Pre-adoption inferred evidence is untrusted until refreshed."
+        )
+        + "\n"
+    )
+
+
+def _requirements_with_legacy_adoption(
+    requirements_text: str,
+    *,
+    approved_by: str,
+    source: str,
+    decomposition: bool,
+    implementation: bool,
+    evidence_refreshed: bool,
+) -> str:
+    requirements_text = _remove_markdown_section(requirements_text, LEGACY_ADOPTION_HEADING)
+    approved_text = _requirements_with_approval_envelope(
+        requirements_text,
+        approved_by=approved_by,
+        source=source,
+        decomposition=decomposition,
+        implementation=implementation,
+    )
+    without_adoption = _remove_markdown_section(approved_text, LEGACY_ADOPTION_HEADING)
+    return (
+        f"{without_adoption.rstrip()}\n\n"
+        f"{_legacy_adoption_block(approved_by=approved_by, source=source, evidence_refreshed=evidence_refreshed)}"
+    )
+
+
+def _legacy_adoption_evidence_untrusted(requirements_text: str) -> bool:
+    section = _markdown_section(requirements_text, LEGACY_ADOPTION_HEADING)
+    if not section:
+        return False
+    values = _parse_key_value_section(section)
+    adopted = _approval_value_is_yes(values.get("adopted legacy work", ""))
+    refreshed = _approval_value_is_yes(values.get("evidence refreshed after adoption", ""))
+    return adopted and not refreshed
+
+
+def _requirements_approval_issues_for_path(
+    requirements_path: Path,
+    *,
+    require_decomposition: bool = False,
+    require_implementation: bool = False,
+) -> list[str]:
+    if not requirements_path.exists():
+        return [f"missing requirements file: {requirements_path}"]
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    return _approval_envelope_issues(
+        requirements_text,
+        require_decomposition=require_decomposition,
+        require_implementation=require_implementation,
+    )
+
+
 def _epic_lifecycle_gate_issues(root: Path, epic_id: str, target_status: str) -> list[str]:
     workflow_dir = root / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
@@ -1424,8 +2565,13 @@ def _epic_lifecycle_gate_issues(root: Path, epic_id: str, target_status: str) ->
         return [f"missing epic requirements file: {requirements_path}"]
     requirements_text = requirements_path.read_text(encoding="utf-8")
     readiness_issues = _epic_requirements_readiness_issues(requirements_text)
+    approval_issues = _approval_envelope_issues(
+        requirements_text,
+        require_decomposition=True,
+    )
+    contract_issues = _epic_contract_issues(epic_dir, requirements_text)
     if target_status == "Ready":
-        return readiness_issues
+        return [*readiness_issues, *approval_issues, *contract_issues]
 
     epic_dir, audit_rows, audit_gaps = _epic_audit_rows(root, epic_id)
     mapping_gaps = [
@@ -1434,7 +2580,7 @@ def _epic_lifecycle_gate_issues(root: Path, epic_id: str, target_status: str) ->
         if row["Child Rows"] == "None" and row["Deferral"] == "None"
     ]
     if target_status == "In Progress":
-        return [*readiness_issues, *mapping_gaps]
+        return [*readiness_issues, *approval_issues, *contract_issues, *mapping_gaps]
     if target_status == "Closeout":
         return [*audit_gaps, *_epic_retro_issues(epic_dir)]
     return [f"unsupported epic lifecycle status: {target_status}"]
@@ -1506,7 +2652,7 @@ def _update_global_epic_status(
 
 
 def _epic_child_implementation_template(
-    task_id: str, title: str, parent_ac_coverage: str
+    task_id: str, title: str, parent_ac_coverage: str, child_charter: str = ""
 ) -> str:
     parent_ac_value = parent_ac_coverage or "____"
     return (
@@ -1514,6 +2660,7 @@ def _epic_child_implementation_template(
         f"As a ____, I want ____, so that ____.\n\n"
         f"## Parent AC Coverage\n\n"
         f"- {parent_ac_value}\n\n"
+        f"{child_charter}"
         f"## Acceptance Criteria\n\n"
         f"- [ ] AC1: Covers parent AC(s) {parent_ac_value}: ____\n\n"
         f"## Validation\n\n"
@@ -1523,7 +2670,8 @@ def _epic_child_implementation_template(
         f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ |\n"
         f"| 1 | ____ | ____ | AC1 / parent AC(s) {parent_ac_value}: ____ | ____ | To Do |\n\n"
         f"## Parent AC Evidence\n\n"
-        f"- {parent_ac_value}: Pending implementation evidence.\n\n"
+        f"- {parent_ac_value}: Pending implementation evidence. Recipe-triggered claims must "
+        f"also be backed by `{STRUCTURED_EVIDENCE_FILENAME}`.\n\n"
         f"## QA & Code Review\n\n"
         f"- Verdict: ____\n"
         f"- Evidence: ____\n"
@@ -1539,8 +2687,41 @@ def _epic_child_implementation_template(
     )
 
 
+def _structured_evidence_template(task_id: str, parent_ac_coverage: str) -> str:
+    parent_ac_ids = sorted(
+        _extract_ac_ids(parent_ac_coverage),
+        key=lambda ac_id: int(ac_id[2:]),
+    )
+    if not parent_ac_ids:
+        parent_ac_ids = [parent_ac_coverage or "____"]
+    return json.dumps(
+        {
+            "task_id": task_id,
+            "claims": [
+                {
+                    "id": f"CLM-{index:03d}",
+                    "parent_ac": parent_ac,
+                    "claim": "____",
+                    "recipe": "visual-reference-fidelity",
+                    "status": "pending",
+                    "commit": "____",
+                    "timestamp": "____",
+                    "reference_artifact": "____",
+                    "delivered_artifact": "____",
+                    "comparison_method": "____",
+                    "evidence_artifact": "____",
+                    "evidence_artifact_hash": "____",
+                    "invalid_substitutes": [],
+                }
+                for index, parent_ac in enumerate(parent_ac_ids, start=1)
+            ],
+        },
+        indent=2,
+    ) + "\n"
+
+
 def _epic_child_requirements_template(
-    task_id: str, title: str, parent_ac_coverage: str
+    task_id: str, title: str, parent_ac_coverage: str, child_charter: str = ""
 ) -> str:
     parent_ac_value = parent_ac_coverage or "____"
     return (
@@ -1550,6 +2731,17 @@ def _epic_child_requirements_template(
         f"- Title: {title}\n"
         f"- Parent AC Coverage: {parent_ac_value}\n"
         f"- Last updated: {date.today().isoformat()}\n\n"
+        f"## Owner Approval\n\n"
+        f"- Requirements reviewed by owner: No\n"
+        f"- Acceptance criteria reviewed by owner: No\n"
+        f"- Approved for decomposition: No\n"
+        f"- Approved for implementation: No\n"
+        f"- Approved scope envelope: No\n"
+        f"- Approved by: Inherited from parent epic envelope when unchanged\n"
+        f"- Approval date: Inherited from parent epic envelope when unchanged\n"
+        f"- Approval note / source: Inherited from parent epic envelope when unchanged\n"
+        f"- Approved artifact identity: Inherited from parent epic envelope when unchanged\n\n"
+        f"{child_charter}"
         f"## Goal\n\n"
         f"Describe the user outcome this epic child must deliver for its parent AC coverage.\n\n"
         f"## Non-Goals\n\n"
@@ -2100,11 +3292,28 @@ def _update_global_tracker_row_status(
             raise SystemExit(f"{row_id} docs path does not exist: {docs_path}")
 
         docs_text = docs_path.read_text(encoding="utf-8")
+        requirements_path = docs_path.parent / "REQUIREMENTS.md"
+        requirements_text = (
+            requirements_path.read_text(encoding="utf-8") if requirements_path.exists() else ""
+        )
+        if new_status in {"Review", "Complete"}:
+            structured_issues = _structured_evidence_issues(
+                requirements_path=requirements_path,
+                implementation_path=docs_path,
+            )
+            if structured_issues:
+                raise SystemExit(_format_readiness_block(row_id, structured_issues))
         if new_status == "Complete":
             if current_status != "Review":
                 raise SystemExit(
                     f"{row_id} can only move to Complete from Review; "
                     f"current status is '{current_status}'."
+                )
+            if _legacy_adoption_evidence_untrusted(requirements_text):
+                raise SystemExit(
+                    f"{row_id} cannot move to Complete because legacy adoption marks "
+                    "pre-adoption evidence as untrusted; refresh evidence or re-adopt with "
+                    "--evidence-refreshed."
                 )
             if not _has_qa_review_evidence(docs_text):
                 raise SystemExit(
@@ -2121,7 +3330,13 @@ def _update_global_tracker_row_status(
                 )
 
         if _status_requires_task_readiness(new_status) and not force:
-            requirements_path = docs_path.parent / "REQUIREMENTS.md"
+            if not _is_discovery_work(requirements_text, docs_text):
+                approval_issues = _approval_envelope_issues(
+                    requirements_text,
+                    require_implementation=True,
+                )
+                if approval_issues:
+                    raise SystemExit(_format_readiness_block(row_id, approval_issues))
             readiness_issues = _task_ready_issues_for_paths(
                 requirements_path=requirements_path,
                 implementation_path=docs_path,
@@ -2235,6 +3450,14 @@ def _update_epic_tracker_row_status(
     raise SystemExit(f"No epic tracker row found for ID '{row_id}' in {epic_tracker_path}.")
 
 
+def _epic_tracker_row_by_id(epic_tracker_path: Path, row_id: str) -> dict[str, str]:
+    _lines, _header_idx, rows = _epic_tracker_rows(epic_tracker_path)
+    for row in rows:
+        if row["ID"] == row_id:
+            return row
+    raise SystemExit(f"No epic tracker row found for ID '{row_id}' in {epic_tracker_path}.")
+
+
 def _epic_status_transition_allowed(current_status: str, new_status: str) -> bool:
     if current_status == new_status:
         return True
@@ -2295,6 +3518,13 @@ def _update_epic_child_status(
                 )
                 if readiness_issues:
                     raise SystemExit(_format_readiness_block(row_id, readiness_issues))
+            structured_issues = _structured_evidence_issues(
+                requirements_path=requirements_path,
+                implementation_path=docs_path,
+                parent_ac_ids=parent_ac_ids,
+            )
+            if structured_issues:
+                raise SystemExit(_format_readiness_block(row_id, structured_issues))
             if not _has_qa_review_evidence(docs_text):
                 raise SystemExit(
                     f"{row_id} cannot move to Complete without non-placeholder "
@@ -2328,6 +3558,14 @@ def _update_epic_child_status(
                 implementation_path=docs_path,
                 parent_ac_ids=parent_ac_ids,
             )
+            if new_status == "Review":
+                readiness_issues.extend(
+                    _structured_evidence_issues(
+                        requirements_path=requirements_path,
+                        implementation_path=docs_path,
+                        parent_ac_ids=parent_ac_ids,
+                    )
+                )
             if readiness_issues:
                 raise SystemExit(_format_readiness_block(row_id, readiness_issues))
         row["Status"] = new_status
@@ -2896,6 +4134,7 @@ def _doctor_check_task_doc(
     status: str,
     row_id: str,
     issues: list[DoctorIssue],
+    parent_requirements_path: Path | None = None,
 ) -> None:
     if not docs_rel:
         _add_issue(issues, "warning", ".project-workflow/TRACKER.md", f"{row_id} has no docs path.")
@@ -2927,6 +4166,72 @@ def _doctor_check_task_doc(
     requirements_text: str | None = None
     if requirements_path.exists():
         requirements_text = requirements_path.read_text(encoding="utf-8")
+    if requirements_text is not None and status in ("Review", "Complete"):
+        if _legacy_adoption_evidence_untrusted(requirements_text):
+            _add_issue(
+                issues,
+                "warning",
+                requirements_path,
+                f"{row_id} adopted legacy evidence is untrusted until refreshed.",
+            )
+    if requirements_path.exists() and docs_path.name == "IMPLEMENTATION.md" and status in (
+        "Review",
+        "Complete",
+    ):
+        parent_ac_ids: set[str] | None = None
+        if parent_requirements_path is not None:
+            parent_section = _markdown_section(docs_text, "Parent AC Coverage")
+            parent_ac_ids = _extract_ac_ids(parent_section)
+        for evidence_issue in _structured_evidence_issues(
+            requirements_path=requirements_path,
+            implementation_path=docs_path,
+            parent_ac_ids=parent_ac_ids,
+        ):
+            _add_issue(
+                issues,
+                "error",
+                docs_path,
+                f"{row_id} {evidence_issue}",
+            )
+    if parent_requirements_path is not None and status in (
+        "Approved",
+        "In Progress",
+        "Testing",
+        "Review",
+        "Complete",
+    ):
+        for approval_issue in _requirements_approval_issues_for_path(
+            parent_requirements_path,
+            require_decomposition=True,
+        ):
+            _add_issue(
+                issues,
+                "warning",
+                parent_requirements_path,
+                f"{row_id} parent approval envelope: {approval_issue}",
+            )
+    elif requirements_text is not None and not _is_discovery_work(requirements_text, docs_text):
+        approval_required = False
+        require_decomposition = False
+        require_implementation = False
+        if row_id.startswith(f"{EPIC_ID_PREFIX}-"):
+            approval_required = status in ("Ready", "In Progress", "Closeout", "Complete")
+            require_decomposition = approval_required
+        else:
+            approval_required = _status_requires_task_readiness(status)
+            require_implementation = approval_required
+        if approval_required:
+            for approval_issue in _approval_envelope_issues(
+                requirements_text,
+                require_decomposition=require_decomposition,
+                require_implementation=require_implementation,
+            ):
+                _add_issue(
+                    issues,
+                    "warning",
+                    requirements_path,
+                    f"{row_id} approval envelope: {approval_issue}",
+                )
     if status not in ("To Do", "N/A") and requirements_text is not None:
         if "____" in requirements_text:
             _add_issue(
@@ -3030,6 +4335,19 @@ def _doctor_check_epic_trackers(
         except SystemExit as exc:
             _add_issue(issues, "error", epic_tracker_path, str(exc))
             continue
+        parent_requirements_path = epic_tracker_path.parent / "REQUIREMENTS.md"
+        parent_approval_issues = _requirements_approval_issues_for_path(
+            parent_requirements_path,
+            require_decomposition=True,
+        )
+        authority_severity = "warning" if parent_approval_issues else "error"
+        for contract_issue in _epic_contract_issues_for_path(epic_tracker_path.parent):
+            _add_issue(
+                issues,
+                authority_severity,
+                _epic_contract_path(epic_tracker_path.parent),
+                f"{epic_tracker_path.parent.name} epic contract: {contract_issue}",
+            )
         for row in rows:
             row_id = row["ID"]
             _doctor_check_row_id_format(
@@ -3050,7 +4368,32 @@ def _doctor_check_epic_trackers(
                     epic_tracker_path,
                     f"{row_id} has invalid epic status '{status}'.",
                 )
+            if status in EPIC_CHILD_GATED_STATUSES:
+                for authority_issue in _decomposition_plan_authority_issues(
+                    epic_dir=epic_tracker_path.parent,
+                    row=row,
+                ):
+                    _add_issue(
+                        issues,
+                        authority_severity,
+                        _decomposition_plan_path(epic_tracker_path.parent),
+                        f"{row_id} decomposition authority: {authority_issue}",
+                    )
             docs_rel = _clean_markdown_cell_path(row["Docs"])
+            if not docs_rel and status in (
+                "Approved",
+                "In Progress",
+                "Testing",
+                "Review",
+                "Complete",
+            ):
+                for approval_issue in parent_approval_issues:
+                    _add_issue(
+                        issues,
+                        "warning",
+                        parent_requirements_path,
+                        f"{row_id} parent approval envelope: {approval_issue}",
+                    )
             if docs_rel:
                 _doctor_check_task_doc(
                     root=root,
@@ -3058,6 +4401,7 @@ def _doctor_check_epic_trackers(
                     status=status,
                     row_id=row_id,
                     issues=issues,
+                    parent_requirements_path=epic_tracker_path.parent / "REQUIREMENTS.md",
                 )
 
 
@@ -3418,6 +4762,7 @@ def cmd_backlog_promote(args: argparse.Namespace) -> None:
         )
         _write_file(epic_dir / "TRACKER.md", _epic_tracker_template(), overwrite=True)
         _write_file(epic_dir / "DEFERRALS.md", _epic_deferrals_template(), overwrite=True)
+        _write_file(epic_dir / EPIC_AMENDMENTS_FILENAME, _epic_amendments_template(), overwrite=True)
         _write_file(epic_dir / "RETRO.md", _epic_retro_template(spec.task_id, spec.title), overwrite=True)
         _write_acceptance_map(root, spec.task_id)
         docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
@@ -3685,6 +5030,76 @@ def cmd_task_status(args: argparse.Namespace) -> None:
             print(f"Forced transition reason: {args.reason.strip()}")
 
 
+def cmd_task_approve_requirements(args: argparse.Namespace) -> None:
+    """Record an owner approval envelope for one standalone task."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+    if not tracker_path.exists():
+        raise SystemExit(
+            f"Missing tracker file: {tracker_path}\n"
+            f"Run `{CANONICAL_INIT_COMMAND}` from the repository root first to bootstrap "
+            f"the project workflow."
+        )
+
+    task_id = _normalize_task_status_id(args.id, root=cwd)
+    requirements_path, _implementation_path, _row = _resolve_global_task_docs(
+        root=cwd,
+        tracker_path=tracker_path,
+        task_id=task_id,
+    )
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    implementation_text = _implementation_path.read_text(encoding="utf-8")
+    readiness_issues = _task_readiness_issues(
+        requirements_text=requirements_text,
+        implementation_text=implementation_text,
+    )
+    if readiness_issues:
+        raise SystemExit(_format_readiness_block(task_id, readiness_issues))
+    updated = _requirements_with_approval_envelope(
+        requirements_text,
+        approved_by=args.approved_by,
+        source=args.source,
+        decomposition=False,
+        implementation=True,
+    )
+    requirements_path.write_text(updated, encoding="utf-8")
+    print(f"Recorded owner approval envelope for {task_id}: {requirements_path}")
+
+
+def cmd_task_adopt(args: argparse.Namespace) -> None:
+    """Adopt one pre-existing standalone task into current approval gates."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+    if not tracker_path.exists():
+        raise SystemExit(
+            f"Missing tracker file: {tracker_path}\n"
+            f"Run `{CANONICAL_INIT_COMMAND}` from the repository root first to bootstrap "
+            f"the project workflow."
+        )
+
+    task_id = _normalize_task_status_id(args.id, root=cwd)
+    requirements_path, _implementation_path, _row = _resolve_global_task_docs(
+        root=cwd,
+        tracker_path=tracker_path,
+        task_id=task_id,
+    )
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    updated = _requirements_with_legacy_adoption(
+        requirements_text,
+        approved_by=args.approved_by,
+        source=args.source,
+        decomposition=False,
+        implementation=True,
+        evidence_refreshed=args.evidence_refreshed,
+    )
+    requirements_path.write_text(updated, encoding="utf-8")
+    print(f"Adopted legacy task requirements for {task_id}: {requirements_path}")
+    if not args.evidence_refreshed:
+        print("Pre-adoption inferred evidence remains untrusted until refreshed.")
+
+
 def cmd_task_ready(args: argparse.Namespace) -> None:
     """Validate standalone task implementation readiness."""
     cwd = Path.cwd()
@@ -3703,12 +5118,21 @@ def cmd_task_ready(args: argparse.Namespace) -> None:
         tracker_path=tracker_path,
         task_id=task_id,
     )
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    implementation_text = implementation_path.read_text(encoding="utf-8")
+    approval_issues: list[str] = []
+    if not _is_discovery_work(requirements_text, implementation_text):
+        approval_issues = _approval_envelope_issues(
+            requirements_text,
+            require_implementation=True,
+        )
     readiness_issues = _task_ready_issues_for_paths(
         requirements_path=requirements_path,
         implementation_path=implementation_path,
     )
-    if readiness_issues:
-        raise SystemExit(_format_readiness_block(task_id, readiness_issues))
+    issues = [*approval_issues, *readiness_issues]
+    if issues:
+        raise SystemExit(_format_readiness_block(task_id, issues))
     print(f"{task_id} readiness gate passed.")
 
 
@@ -3745,17 +5169,27 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
 
     epic_dir = tasks_dir / spec.task_folder_name
     reqs_path = epic_dir / "REQUIREMENTS.md"
+    contract_path = epic_dir / EPIC_CONTRACT_FILENAME
     epic_tracker_path = epic_dir / "TRACKER.md"
     deferrals_path = epic_dir / "DEFERRALS.md"
+    amendments_path = epic_dir / EPIC_AMENDMENTS_FILENAME
     retro_path = epic_dir / "RETRO.md"
 
     epic_dir.mkdir(parents=True, exist_ok=True)
     if args.overwrite or not reqs_path.exists():
         _write_file(reqs_path, _requirements_template(spec.task_id, spec.title), overwrite=True)
+    if args.overwrite or not contract_path.exists():
+        _write_file(
+            contract_path,
+            _epic_contract_template(spec.task_id, spec.title),
+            overwrite=True,
+        )
     if args.overwrite or not epic_tracker_path.exists():
         _write_file(epic_tracker_path, _epic_tracker_template(), overwrite=True)
     if args.overwrite or not deferrals_path.exists():
         _write_file(deferrals_path, _epic_deferrals_template(), overwrite=True)
+    if args.overwrite or not amendments_path.exists():
+        _write_file(amendments_path, _epic_amendments_template(), overwrite=True)
     if args.overwrite or not retro_path.exists():
         _write_file(retro_path, _epic_retro_template(spec.task_id, spec.title), overwrite=True)
     map_path = _write_acceptance_map(cwd, spec.task_id)
@@ -3778,6 +5212,66 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
     print(f"Assigned ID: {spec.task_id}")
 
 
+def cmd_epic_amend(args: argparse.Namespace) -> None:
+    """Record an approved epic amendment and append its proposed child row."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    config = _load_workflow_config(cwd)
+
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    requirements_issues = _requirements_approval_issues_for_path(
+        epic_dir / "REQUIREMENTS.md",
+        require_decomposition=True,
+    )
+    if requirements_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, requirements_issues))
+    contract_issues = _epic_contract_issues_for_path(epic_dir)
+    if contract_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, contract_issues))
+
+    if _approval_source_invalid(args.approved_by):
+        raise SystemExit("--approved-by must name the owner who approved the amendment.")
+    if _approval_source_invalid(args.reason):
+        raise SystemExit("--reason must describe the material scope/provenance decision.")
+    if _approval_source_invalid(args.source):
+        raise SystemExit("--source must identify the non-agent amendment approval source.")
+    if not _valid_workflow_ref_id(args.id, config=config):
+        raise SystemExit(f"{args.id} is not a valid configured workflow ID.")
+    if not _extract_ac_ids(args.parent_acs):
+        raise SystemExit("--parent-acs must include one or more parent AC IDs.")
+
+    epic_tracker_path = epic_dir / "TRACKER.md"
+    amendments_path = _epic_amendments_path(epic_dir)
+    parent_acs = _normalize_ac_list(args.parent_acs)
+    amendment_row = {
+        "ID": args.id,
+        "Title": args.title,
+        "Parent ACs": parent_acs,
+        "Approved By": args.approved_by,
+        "Decision Date": date.today().isoformat(),
+        "Reason": args.reason,
+        "Source": args.source,
+    }
+    tracker_row = {
+        "ID": args.id,
+        "Title": args.title,
+        "Status": "Proposed",
+        "Type": args.type,
+        "Parent ACs": parent_acs,
+        "Docs": "",
+        "Branch": "",
+        "Notes": f"Amendment: {args.reason}",
+    }
+
+    _append_epic_amendment_row(amendments_path, amendment_row)
+    _append_epic_tracker_rows(epic_tracker_path, [tracker_row])
+    map_path = _write_acceptance_map(cwd, args.epic_id)
+    print(f"Recorded amendment for {args.id}: {amendments_path}")
+    print(f"Added Proposed child row to {epic_tracker_path}")
+    print(f"Refreshed acceptance map: {map_path}")
+
+
 def cmd_epic_approve(args: argparse.Namespace) -> None:
     """Approve a proposed epic child row by updating Status to Approved."""
     cwd = Path.cwd()
@@ -3788,7 +5282,19 @@ def cmd_epic_approve(args: argparse.Namespace) -> None:
     epic_tracker_path = epic_dir / "TRACKER.md"
     if not epic_tracker_path.exists():
         raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    approval_issues = _requirements_approval_issues_for_path(
+        requirements_path,
+        require_decomposition=True,
+    )
+    if approval_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, approval_issues))
+    contract_issues = _epic_contract_issues_for_path(epic_dir)
+    if contract_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, contract_issues))
 
+    target = _epic_tracker_row_by_id(epic_tracker_path, args.id)
+    _require_decomposition_plan_authority(epic_dir, target)
     _update_epic_tracker_row_status(
         epic_tracker_path,
         row_id=args.id,
@@ -3798,6 +5304,61 @@ def cmd_epic_approve(args: argparse.Namespace) -> None:
     map_path = _write_acceptance_map(cwd, args.epic_id)
     print(f"Approved epic row {args.id} in {epic_tracker_path}")
     print(f"Refreshed acceptance map: {map_path}")
+
+
+def cmd_epic_approve_requirements(args: argparse.Namespace) -> None:
+    """Record an owner approval envelope for one epic."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    if not requirements_path.exists():
+        raise SystemExit(f"Missing epic requirements file: {requirements_path}")
+
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    readiness_issues = _epic_requirements_readiness_issues(requirements_text)
+    if readiness_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, readiness_issues))
+    updated = _requirements_with_approval_envelope(
+        requirements_text,
+        approved_by=args.approved_by,
+        source=args.source,
+        decomposition=True,
+        implementation=False,
+    )
+    requirements_path.write_text(updated, encoding="utf-8")
+    print(f"Recorded owner approval envelope for {args.epic_id}: {requirements_path}")
+
+
+def cmd_epic_adopt(args: argparse.Namespace) -> None:
+    """Adopt one pre-existing epic into current approval gates."""
+    cwd = Path.cwd()
+    workflow_dir = cwd / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    if not requirements_path.exists():
+        raise SystemExit(f"Missing epic requirements file: {requirements_path}")
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    updated = _requirements_with_legacy_adoption(
+        requirements_text,
+        approved_by=args.approved_by,
+        source=args.source,
+        decomposition=True,
+        implementation=False,
+        evidence_refreshed=args.evidence_refreshed,
+    )
+    requirements_path.write_text(updated, encoding="utf-8")
+    amendments_path = _epic_amendments_path(epic_dir)
+    if not amendments_path.exists():
+        amendments_path.write_text(_epic_amendments_template(), encoding="utf-8")
+    print(f"Adopted legacy epic requirements for {args.epic_id}: {requirements_path}")
+    print(f"Ensured amendment log exists: {amendments_path}")
+    if not args.evidence_refreshed:
+        print("Pre-adoption inferred evidence remains untrusted until refreshed.")
 
 
 def cmd_epic_ready(args: argparse.Namespace) -> None:
@@ -3810,7 +5371,11 @@ def cmd_epic_ready(args: argparse.Namespace) -> None:
     if not requirements_path.exists():
         raise SystemExit(f"Missing epic requirements file: {requirements_path}")
     requirements_text = requirements_path.read_text(encoding="utf-8")
-    readiness_issues = _epic_requirements_readiness_issues(requirements_text)
+    readiness_issues = [
+        *_epic_requirements_readiness_issues(requirements_text),
+        *_approval_envelope_issues(requirements_text, require_decomposition=True),
+        *_epic_contract_issues(epic_dir, requirements_text),
+    ]
     if readiness_issues:
         raise SystemExit(_format_readiness_block(args.epic_id, readiness_issues))
     print(f"{args.epic_id} epic readiness gate passed.")
@@ -3825,12 +5390,19 @@ def cmd_epic_ready_child(args: argparse.Namespace) -> None:
     epic_tracker_path = epic_dir / "TRACKER.md"
     if not epic_tracker_path.exists():
         raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
+    parent_approval_issues = _requirements_approval_issues_for_path(
+        epic_dir / "REQUIREMENTS.md",
+        require_decomposition=True,
+    )
+    if parent_approval_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, parent_approval_issues))
 
     requirements_path, implementation_path, row = _resolve_epic_child_docs(
         root=cwd,
         epic_tracker_path=epic_tracker_path,
         row_id=args.id,
     )
+    _require_decomposition_plan_authority(epic_dir, row)
     parent_ac_ids = _extract_ac_ids(_extract_parent_ac_coverage(row))
     readiness_issues = _task_ready_issues_for_paths(
         requirements_path=requirements_path,
@@ -3851,6 +5423,18 @@ def cmd_epic_status(args: argparse.Namespace) -> None:
     epic_tracker_path = epic_dir / "TRACKER.md"
     if not epic_tracker_path.exists():
         raise SystemExit(f"Missing epic tracker: {epic_tracker_path}")
+    parent_approval_issues = _requirements_approval_issues_for_path(
+        epic_dir / "REQUIREMENTS.md",
+        require_decomposition=True,
+    )
+    if parent_approval_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, parent_approval_issues))
+    target = _epic_tracker_row_by_id(epic_tracker_path, args.id)
+    if target["Status"] in EPIC_CHILD_GATED_STATUSES or args.to in EPIC_CHILD_GATED_STATUSES:
+        contract_issues = _epic_contract_issues_for_path(epic_dir)
+        if contract_issues:
+            raise SystemExit(_format_readiness_block(args.epic_id, contract_issues))
+        _require_decomposition_plan_authority(epic_dir, target)
     previous, current = _update_epic_child_status(
         root=cwd,
         epic_tracker_path=epic_tracker_path,
@@ -3897,7 +5481,7 @@ def cmd_epic_lifecycle(args: argparse.Namespace) -> None:
 
 
 def cmd_epic_decompose(args: argparse.Namespace) -> None:
-    """Generate Proposed child rows from epic REQUIREMENTS.md without scaffolding child folders."""
+    """Generate Proposed child rows and DECOMPOSITION.md without scaffolding child folders."""
     cwd = Path.cwd()
     workflow_dir = cwd / ".project-workflow"
     tasks_dir = workflow_dir / "tasks"
@@ -3916,9 +5500,34 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
 
     requirements_text = requirements_path.read_text(encoding="utf-8")
     readiness_issues = _epic_requirements_readiness_issues(requirements_text)
+    approval_issues = _approval_envelope_issues(
+        requirements_text,
+        require_decomposition=True,
+    )
+    if approval_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, approval_issues))
     if readiness_issues:
         raise SystemExit(_format_readiness_block(args.epic_id, readiness_issues))
-    candidates = _decompose_epic_requirements_to_titles(requirements_text, limit=args.limit)
+    contract_issues = _epic_contract_issues(epic_dir, requirements_text)
+    if contract_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, contract_issues))
+    proposed_child_rows = _proposed_child_work_rows(requirements_text)
+    if proposed_child_rows:
+        candidates = [
+            (
+                row["Proposed Child"].rstrip("."),
+                _normalize_ac_list(row["Parent ACs"]),
+                "Proposed Child Work",
+            )
+            for row in proposed_child_rows[: args.limit]
+        ]
+    else:
+        candidates = [
+            (title, ac_id, "Generated from REQUIREMENTS.md")
+            for title, ac_id in _decompose_epic_requirements_to_titles(
+                requirements_text, limit=args.limit
+            )
+        ]
     if not candidates:
         raise SystemExit(
             "No decomposition candidates found in epic REQUIREMENTS.md. "
@@ -3935,7 +5544,8 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
     _lines, _header_idx, epic_rows = _epic_tracker_rows(epic_tracker_path)
 
     rows_to_add: list[dict[str, str]] = []
-    for title, ac_id in candidates:
+    plan_rows: list[dict[str, str]] = []
+    for title, ac_id, source in candidates:
         if forced_prefix:
             child_prefix = forced_prefix
             classification_note = f"Prefix {child_prefix}: forced by --prefix"
@@ -3952,9 +5562,17 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
             kind="tasks",
         )
         occupied_ids.add(next_id)
-        notes = f"{classification_note}; Generated from {requirements_path.name}"
+        notes = f"{classification_note}; Decomposition plan: {source}"
         if ac_id:
             notes = f"Covers {ac_id}; {notes}"
+        plan_rows.append(
+            {
+                "ID": next_id,
+                "Title": title,
+                "Parent ACs": ac_id or "",
+                "Source": source,
+            }
+        )
         rows_to_add.append(
             {
                 "ID": next_id,
@@ -3968,9 +5586,19 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
             }
         )
 
+    plan_path = _decomposition_plan_path(epic_dir)
+    plan_path.write_text(
+        _format_decomposition_plan(
+            epic_id=args.epic_id,
+            requirements_text=requirements_text,
+            rows=plan_rows,
+        ),
+        encoding="utf-8",
+    )
     _append_epic_tracker_rows(epic_tracker_path, rows_to_add)
     map_path = _write_acceptance_map(cwd, args.epic_id)
     print(f"Added {len(rows_to_add)} Proposed row(s) to {epic_tracker_path}")
+    print(f"Wrote decomposition plan: {plan_path}")
     print(f"Refreshed acceptance map: {map_path}")
     print("No child task folders were created in this decomposition step.")
     parent_ac_ids = _extract_parent_ac_ids_from_requirements(requirements_text)
@@ -4010,6 +5638,16 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
             f"Row {args.id} is '{target['Status']}'. "
             "Only rows with status 'Approved' can be scaffolded."
         )
+    parent_approval_issues = _requirements_approval_issues_for_path(
+        epic_dir / "REQUIREMENTS.md",
+        require_decomposition=True,
+    )
+    if parent_approval_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, parent_approval_issues))
+    contract_issues = _epic_contract_issues_for_path(epic_dir)
+    if contract_issues:
+        raise SystemExit(_format_readiness_block(args.epic_id, contract_issues))
+    _require_decomposition_plan_authority(epic_dir, target)
 
     child_spec = TaskSpec(
         task_id=target["ID"],
@@ -4040,7 +5678,12 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
     child_dir = epic_dir / child_spec.task_folder_name
     impl_path = child_dir / "IMPLEMENTATION.md"
     reqs_path = child_dir / "REQUIREMENTS.md"
+    evidence_path = child_dir / STRUCTURED_EVIDENCE_FILENAME
     parent_ac_coverage = _extract_parent_ac_coverage(target)
+    child_charter = _format_child_charter_from_contract(
+        epic_dir=epic_dir,
+        parent_ac_coverage=parent_ac_coverage,
+    )
 
     child_dir.mkdir(parents=True, exist_ok=True)
     if args.overwrite or not impl_path.exists():
@@ -4050,6 +5693,7 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
                 child_spec.task_id,
                 child_spec.title,
                 parent_ac_coverage,
+                child_charter,
             ),
             overwrite=True,
         )
@@ -4060,7 +5704,14 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
                 child_spec.task_id,
                 child_spec.title,
                 parent_ac_coverage,
+                child_charter,
             ),
+            overwrite=True,
+        )
+    if args.overwrite or not evidence_path.exists():
+        _write_file(
+            evidence_path,
+            _structured_evidence_template(child_spec.task_id, parent_ac_coverage),
             overwrite=True,
         )
 
@@ -4103,6 +5754,13 @@ def cmd_epic_closeout(args: argparse.Namespace) -> None:
     workflow_dir = cwd / ".project-workflow"
     tracker_path = workflow_dir / "TRACKER.md"
     epic_dir, audit_rows, gaps = _epic_audit_rows(cwd, args.epic_id)
+    gaps = [
+        *_requirements_approval_issues_for_path(
+            epic_dir / "REQUIREMENTS.md",
+            require_decomposition=True,
+        ),
+        *gaps,
+    ]
     gaps = [*gaps, *_epic_retro_issues(epic_dir)]
     audit_path = epic_dir / "ACCEPTANCE-AUDIT.md"
     audit_path.write_text(_format_acceptance_audit(args.epic_id, audit_rows), encoding="utf-8")
@@ -4352,6 +6010,39 @@ def build_parser() -> argparse.ArgumentParser:
     )
     task_status_parser.set_defaults(func=cmd_task_status)
 
+    task_approve_requirements_parser = task_sub.add_parser(
+        "approve-requirements",
+        help="Record owner approval for one task requirements/AC envelope",
+    )
+    task_approve_requirements_parser.add_argument(
+        "--id", required=True, help="Task ID (e.g. TASK-001)"
+    )
+    task_approve_requirements_parser.add_argument(
+        "--approved-by", required=True, help="Owner who approved the requirements"
+    )
+    task_approve_requirements_parser.add_argument(
+        "--source", required=True, help="Approval source, such as a Codex thread quote"
+    )
+    task_approve_requirements_parser.set_defaults(func=cmd_task_approve_requirements)
+
+    task_adopt_parser = task_sub.add_parser(
+        "adopt",
+        help="Adopt a pre-existing task into current approval gates",
+    )
+    task_adopt_parser.add_argument("--id", required=True, help="Task ID (e.g. TASK-001)")
+    task_adopt_parser.add_argument(
+        "--approved-by", required=True, help="Owner who approved this legacy adoption"
+    )
+    task_adopt_parser.add_argument(
+        "--source", required=True, help="Non-agent source of legacy adoption approval"
+    )
+    task_adopt_parser.add_argument(
+        "--evidence-refreshed",
+        action="store_true",
+        help="Mark pre-existing evidence as refreshed after adoption",
+    )
+    task_adopt_parser.set_defaults(func=cmd_task_adopt)
+
     task_ready_parser = task_sub.add_parser(
         "ready",
         help="Validate standalone task readiness before implementation",
@@ -4387,6 +6078,41 @@ def build_parser() -> argparse.ArgumentParser:
     )
     epic_init_parser.set_defaults(func=cmd_epic_init)
 
+    epic_amend_parser = epic_sub.add_parser(
+        "amend",
+        help="Record an approved amendment and add a Proposed epic child row",
+    )
+    epic_amend_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
+    epic_amend_parser.add_argument("--id", required=True, help="New child row ID")
+    epic_amend_parser.add_argument("--title", required=True, help="New child row title")
+    epic_amend_parser.add_argument(
+        "--parent-acs",
+        required=True,
+        help="Parent AC coverage for the amended child row (e.g. AC1, AC3)",
+    )
+    epic_amend_parser.add_argument(
+        "--type",
+        default="Task",
+        choices=("Task", "Epic", "Milestone"),
+        help="Epic child row type (default: Task)",
+    )
+    epic_amend_parser.add_argument(
+        "--approved-by",
+        required=True,
+        help="Owner who approved this amendment",
+    )
+    epic_amend_parser.add_argument(
+        "--reason",
+        required=True,
+        help="Material scope/provenance reason for the amendment",
+    )
+    epic_amend_parser.add_argument(
+        "--source",
+        required=True,
+        help="Non-agent source of amendment approval",
+    )
+    epic_amend_parser.set_defaults(func=cmd_epic_amend)
+
     epic_approve_parser = epic_sub.add_parser(
         "approve",
         help="Move one epic tracker row from Proposed to Approved",
@@ -4394,6 +6120,39 @@ def build_parser() -> argparse.ArgumentParser:
     epic_approve_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
     epic_approve_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
     epic_approve_parser.set_defaults(func=cmd_epic_approve)
+
+    epic_approve_requirements_parser = epic_sub.add_parser(
+        "approve-requirements",
+        help="Record owner approval for one epic requirements/AC envelope",
+    )
+    epic_approve_requirements_parser.add_argument(
+        "--epic-id", required=True, help="Epic ID (e.g. EPIC-001)"
+    )
+    epic_approve_requirements_parser.add_argument(
+        "--approved-by", required=True, help="Owner who approved the requirements"
+    )
+    epic_approve_requirements_parser.add_argument(
+        "--source", required=True, help="Approval source, such as a Codex thread quote"
+    )
+    epic_approve_requirements_parser.set_defaults(func=cmd_epic_approve_requirements)
+
+    epic_adopt_parser = epic_sub.add_parser(
+        "adopt",
+        help="Adopt a pre-existing epic into current approval gates",
+    )
+    epic_adopt_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
+    epic_adopt_parser.add_argument(
+        "--approved-by", required=True, help="Owner who approved this legacy adoption"
+    )
+    epic_adopt_parser.add_argument(
+        "--source", required=True, help="Non-agent source of legacy adoption approval"
+    )
+    epic_adopt_parser.add_argument(
+        "--evidence-refreshed",
+        action="store_true",
+        help="Mark pre-existing evidence as refreshed after adoption",
+    )
+    epic_adopt_parser.set_defaults(func=cmd_epic_adopt)
 
     epic_ready_parser = epic_sub.add_parser(
         "ready",
@@ -4452,7 +6211,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     epic_decompose_parser = epic_sub.add_parser(
         "decompose",
-        help="Generate Proposed child rows only (no child scaffolding)",
+        help="Generate Proposed child rows and DECOMPOSITION.md (no child scaffolding)",
     )
     epic_decompose_parser.add_argument(
         "--epic-id", required=True, help="Epic ID (e.g. EPIC-001)"

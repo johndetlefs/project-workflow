@@ -1,0 +1,13 @@
+Focused artifact identity and contradiction tests:
+
+.venv/bin/python -m pytest tests/test_doctor.py -k "stale_evidence or runtime_target_source or structured or recipe or visual_reference or invalid_substitute or valid_structured"
+
+Result:
+5 passed, 58 deselected
+
+Covered regressions:
+- missing visual/reference structured evidence blocks Review;
+- invalid substitute visual proof blocks doctor and audit;
+- valid structured visual proof satisfies audit;
+- stale local evidence_artifact_hash blocks doctor and audit;
+- runtime target/source prose contradiction blocks doctor.

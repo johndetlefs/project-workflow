@@ -1,0 +1,105 @@
+{
+  "task_id": "TASK-030",
+  "claims": [
+    {
+      "id": "CLM-001",
+      "parent_ac": "AC5",
+      "claim": "Structured evidence records exist with recipe-specific artifact identity fields.",
+      "recipe": "visual-reference-fidelity",
+      "status": "pass",
+      "commit": "working-tree",
+      "timestamp": "2026-07-09T00:00:00Z",
+      "reference_artifact": "tests/test_doctor.py visual proof regression fixtures",
+      "delivered_artifact": ".project-workflow/cli/workflow.py structured evidence validator",
+      "comparison_method": "pytest regression validates missing and valid visual-reference evidence gates",
+      "evidence_artifact": "evidence/pytest-structured-evidence.txt",
+      "invalid_substitutes": [],
+      "evidence_artifact_hash": "sha256:295c682f9038c0d5ae020e996e001abd8a2eb22c7a2eebdcce9212d812307715"
+    },
+    {
+      "id": "CLM-002",
+      "parent_ac": "AC6",
+      "claim": "Proof-recipe trigger rules select required structured evidence and reject invalid substitutes.",
+      "recipe": "external-contract-alignment",
+      "status": "pass",
+      "commit": "working-tree",
+      "timestamp": "2026-07-09T00:00:00Z",
+      "contract_artifact": "EPIC-006 REQUIREMENTS.md AC6",
+      "implementation_artifact": ".project-workflow/cli/workflow.py PROOF_RECIPE_TRIGGER_PATTERNS",
+      "comparison_method": "pytest regression validates trigger and invalid-substitute behavior",
+      "evidence_artifact": "evidence/pytest-structured-evidence.txt",
+      "invalid_substitutes": [],
+      "evidence_artifact_hash": "sha256:295c682f9038c0d5ae020e996e001abd8a2eb22c7a2eebdcce9212d812307715"
+    },
+    {
+      "id": "CLM-003",
+      "parent_ac": "AC7",
+      "claim": "Doctor and audit gates reject missing, invalid, and substitute structured evidence for triggered claims.",
+      "recipe": "runtime-target-source",
+      "status": "pass",
+      "commit": "working-tree",
+      "timestamp": "2026-07-09T00:00:00Z",
+      "execution_target": "project workflow status, doctor, and epic audit command paths",
+      "source_artifact": ".project-workflow/cli/workflow.py structured evidence gate functions",
+      "observation_method": "pytest command-path regression tests",
+      "target_used_source_proof": "full suite imports packaged project_workflow.cli after generated CLI sync",
+      "evidence_artifact": "evidence/pytest-structured-evidence.txt",
+      "invalid_substitutes": [],
+      "evidence_artifact_hash": "sha256:295c682f9038c0d5ae020e996e001abd8a2eb22c7a2eebdcce9212d812307715"
+    },
+    {
+      "id": "CLM-004",
+      "parent_ac": "AC12",
+      "claim": "Automated tests cover generalized drift failures for missing, invalid-substitute, and valid structured visual proof.",
+      "recipe": "deployed-artifact-alignment",
+      "status": "pass",
+      "commit": "working-tree",
+      "timestamp": "2026-07-09T00:00:00Z",
+      "execution_target": "pytest test suite",
+      "source_artifact": "tests/test_doctor.py",
+      "artifact_identity": "61-test full suite after TASK-030 changes",
+      "observation_method": "pytest result captured in evidence artifact",
+      "evidence_artifact": "evidence/pytest-structured-evidence.txt",
+      "invalid_substitutes": [],
+      "evidence_artifact_hash": "sha256:295c682f9038c0d5ae020e996e001abd8a2eb22c7a2eebdcce9212d812307715"
+    },
+    {
+      "id": "CLM-005",
+      "parent_ac": "AC15",
+      "claim": "Visual/reference-fidelity work requires structured proof against delivered artifact claims before Review or Complete.",
+      "recipe": "responsive-visual-behavior",
+      "status": "pass",
+      "commit": "working-tree",
+      "timestamp": "2026-07-09T00:00:00Z",
+      "reference_artifact": "visual/reference-fidelity recipe fixture",
+      "delivered_artifact": "epic child Review status gate",
+      "viewports": [
+        "recipe support is represented as required structured evidence fields"
+      ],
+      "contexts": [
+        "Review gate",
+        "doctor gate",
+        "epic audit gate"
+      ],
+      "comparison_method": "pytest validates recipe-triggered proof is required before Review",
+      "evidence_artifact": "evidence/pytest-structured-evidence.txt",
+      "invalid_substitutes": [],
+      "evidence_artifact_hash": "sha256:295c682f9038c0d5ae020e996e001abd8a2eb22c7a2eebdcce9212d812307715"
+    },
+    {
+      "id": "CLM-006",
+      "parent_ac": "AC17",
+      "claim": "Material parent AC credit depends on structured claim-to-evidence records when recipes are triggered.",
+      "recipe": "visual-reference-fidelity",
+      "status": "pass",
+      "commit": "working-tree",
+      "timestamp": "2026-07-09T00:00:00Z",
+      "reference_artifact": "EPIC-006 AC17 structured claim-to-evidence requirement",
+      "delivered_artifact": "epic audit structured evidence integration",
+      "comparison_method": "pytest validates invalid substitute evidence blocks audit credit and valid evidence satisfies audit",
+      "evidence_artifact": "evidence/pytest-structured-evidence.txt",
+      "invalid_substitutes": [],
+      "evidence_artifact_hash": "sha256:295c682f9038c0d5ae020e996e001abd8a2eb22c7a2eebdcce9212d812307715"
+    }
+  ]
+}

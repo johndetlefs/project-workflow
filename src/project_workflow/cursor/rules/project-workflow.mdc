@@ -16,11 +16,12 @@ Project Workflow is owner-directed and agent-operated. The owner supplies produc
 2. Backlog: optionally capture future intent in `.project-workflow/BACKLOG.md` before it becomes committed task or epic workflow state.
 3. Task: create one task folder under `.project-workflow/tasks/TASK-<NNN>-<Suffix>/`, with `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and a tracker row.
 4. Requirements: capture the user story, scope, acceptance criteria, open questions, decisions, and validation plan in `REQUIREMENTS.md`.
-5. Planner: turn confirmed requirements into testable work items in `IMPLEMENTATION.md`.
-6. Clarify: resolve inconsistencies between requirements, plan, repo constraints, and product outcomes before implementation.
-7. Implement: make the smallest scoped code change for one work item, validate it, and move it to testing.
-8. QA & Code Review: independently verify acceptance criteria and review code before completion.
-9. Retro: after completion, update durable conventions, agent guidance, and follow-up tasks.
+5. Owner approval: after requirements and ACs are confirmed once, record the approved envelope with `task approve-requirements` or `epic approve-requirements`.
+6. Planner: turn confirmed requirements into testable work items in `IMPLEMENTATION.md`.
+7. Clarify: resolve inconsistencies between requirements, plan, repo constraints, and product outcomes before implementation.
+8. Implement: make the smallest scoped code change for one work item, validate it, and move it to testing.
+9. QA & Code Review: independently verify acceptance criteria and review code before completion.
+10. Retro: after completion, update durable conventions, agent guidance, and follow-up tasks.
 
 ## Cursor Usage
 
@@ -35,8 +36,10 @@ Project Workflow is owner-directed and agent-operated. The owner supplies produc
 - Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.
 - When planning, make every implementation task row map to one or more stable acceptance criteria IDs (`AC1`, `AC2`, etc.) from the task requirements or implementation acceptance criteria section.
+- If requirements, acceptance criteria, child charters, epic contracts, or material claims trigger a proof recipe, record structured evidence in `EVIDENCE.json` and verify the referenced artifact. Visual/reference fidelity needs rendered comparison against the delivered user-facing artifact; runtime target/source proof needs the exact execution target, source/artifact under test, observation method, and positive proof that the target used that source.
 - For epic-managed work, keep parent epic AC coverage visible from the epic tracker through child requirements, implementation, QA evidence, and closeout. New epic trackers use `Parent ACs`; legacy trackers may carry coverage in `Notes` as `Covers AC1, AC3`.
-- Before implementation-oriented status transitions, run `task ready`, `epic ready`, or `epic ready-child` where applicable. If a gate fails, fix repo-gatherable gaps directly and ask the owner only for missing product decisions or context.
+- Before implementation-oriented status transitions, run `task ready`, `epic ready`, or `epic ready-child` where applicable. If a gate fails, fix repo-gatherable gaps directly and ask the owner only for missing product decisions, initial requirements/AC approval, amendments, deviations, changed artifact identity, changed proof obligations, or deferrals. Do not ask for repeated approval when the work remains inside the unchanged approved envelope.
+- For new/adopted epics, `EPIC-CONTRACT.md` and `DECOMPOSITION.md` are authority artifacts. Child rows must come from the approved decomposition plan or an `AMENDMENTS.md` record; direct tracker edits outside that authority cannot advance through gated transitions.
 - The global tracker summarizes epic rows; each epic `TRACKER.md` owns child rows. Proposed child rows stay in the epic tracker until approved and scaffolded.
 - Keep `.project-workflow/TRACKER.md` status aligned with the current workflow state using `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` when the command is available.
 - Do not mark a task or work item `Complete` unless implementation validation and QA/code review have passed and the user explicitly asks for completion.

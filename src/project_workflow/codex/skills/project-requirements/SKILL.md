@@ -9,6 +9,8 @@ Capture what is being built before planning or coding.
 
 Project Workflow is owner-directed and agent-operated. The owner provides product context and decisions conversationally; the agent extracts them into workflow artifacts and asks focused questions only when needed.
 
+Requirements capture must end with one explicit owner confirmation of requirements and acceptance criteria before implementation-oriented work begins. Record that authority with `task approve-requirements` or `epic approve-requirements` after confirmation. Do not treat an agent draft, silence, or implementation request as approval.
+
 ## Invocation Rules
 
 - Use this skill whenever the user asks for requirements, scope, acceptance criteria, open questions, decisions, or a validation plan, even if they ask in natural language.
@@ -42,7 +44,9 @@ Project Workflow is owner-directed and agent-operated. The owner provides produc
    - Validation plan
 5. Preserve existing AC IDs when requirements change. Do not renumber existing
    ACs unless the user explicitly approves the requirements change.
-6. Keep only the `## User Story` section in `IMPLEMENTATION.md` synced with `REQUIREMENTS.md`. Do not add implementation tasks here.
-7. If critical requirements are ambiguous, record them as open questions in `REQUIREMENTS.md`, then ask the user the minimum questions needed.
-8. Do not proceed to planning or implementation until open questions are resolved or explicitly accepted as risks and recorded.
-9. If the work is intentionally exploratory, record it as discovery with a question, decision enabled, boundary, output artifact, and validation signal.
+6. If requirements mention matching a visual/reference, deployed/runtime behavior, external contract, or responsive/multi-context behavior, record the relevant proof recipe, artifact identity, and invalid substitutes in the validation plan.
+7. Keep only the `## User Story` section in `IMPLEMENTATION.md` synced with `REQUIREMENTS.md`. Do not add implementation tasks here.
+8. If critical requirements are ambiguous, record them as open questions in `REQUIREMENTS.md`, then ask the user the minimum questions needed.
+9. Do not proceed to planning or implementation until open questions are resolved or explicitly accepted as risks and recorded.
+10. After requirements and ACs are complete, ask the owner to confirm that exact requirements/AC envelope once, then record approval with the workflow CLI. Downstream work inside that unchanged envelope should not ask for repeated approval.
+11. If the work is intentionally exploratory, record it as discovery with a question, decision enabled, boundary, output artifact, and validation signal.

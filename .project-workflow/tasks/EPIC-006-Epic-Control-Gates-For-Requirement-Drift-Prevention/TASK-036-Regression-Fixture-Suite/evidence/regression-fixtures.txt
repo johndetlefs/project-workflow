@@ -1,0 +1,24 @@
+TASK-036 regression fixture evidence
+
+Focused validation command:
+.venv/bin/python -m pytest tests/test_doctor.py::test_epic_child_scaffold_carries_parent_ac_sections tests/test_doctor.py::test_multi_parent_ac_structured_evidence_requires_one_claim_per_ac tests/test_doctor.py::test_visual_reference_recipe_requires_structured_evidence_before_review
+
+Result:
+3 passed in 1.02s
+
+Regression classes covered by this slice:
+- Epic child scaffold preserves parent AC sections, child charter sections, and parent evidence sections.
+- Scaffolded EVIDENCE.json now creates one placeholder claim per inherited parent AC instead of one comma-separated parent_ac value.
+- Structured evidence validation rejects comma-separated parent_ac records for multi-AC proof because they cannot be credited to individual parent ACs.
+- Structured evidence validation accepts separate passing claim records for each parent AC.
+- Visual/reference-fidelity work remains blocked before Review when triggered recipe evidence is missing.
+
+Previously covered in the wider suite:
+- Owner approval envelope and stale approval detection.
+- Epic contract requirement and proof ownership gates.
+- Decomposition/amendment authority gates.
+- Invalid substitute evidence rejection.
+- Stale evidence artifact hash rejection.
+- Runtime target/source contradiction rejection.
+- Legacy adoption and untrusted pre-adoption evidence.
+- State-based doctor failures for manual invalid tracker/doc edits.

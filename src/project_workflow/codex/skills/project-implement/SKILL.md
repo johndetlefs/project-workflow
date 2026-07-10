@@ -27,11 +27,11 @@ Implement one scoped work item from a project-workflow task and move it to testi
 1. Infer the task ID from the user prompt or current branch if possible. Ask only if it cannot be inferred.
 2. Infer the work item from the user prompt or the next `To Do` task in `IMPLEMENTATION.md`. Ask only if ambiguous.
 3. Read `REQUIREMENTS.md` and `IMPLEMENTATION.md` before editing code.
-4. Run `./.project-workflow/cli/workflow task ready --id <TASK-ID>` before coding. If it fails, remediate the listed gaps or ask the owner for required decisions; do not code.
+4. Run `./.project-workflow/cli/workflow task ready --id <TASK-ID>` before coding. If approval is missing or stale after requirements are ready, record the single owner approval envelope with `task approve-requirements`; for pre-existing legacy tasks use `task adopt` and treat pre-adoption evidence as untrusted until refreshed. Otherwise remediate the listed drift/evidence gaps without asking for generic approval.
 5. Restate the selected work item and scope boundary.
 6. Map each planned change to the relevant AC IDs. If a change does not map,
    stop and ask for direction.
-7. Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to "In Progress"` before coding.
+7. Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to "In Progress"` before coding. Do not ask for repeated approval for unchanged work inside the approved envelope.
 8. Make the smallest safe code change that satisfies the selected work item.
 9. Add or update tests when appropriate.
 10. Run relevant automated checks and any required manual verification steps.

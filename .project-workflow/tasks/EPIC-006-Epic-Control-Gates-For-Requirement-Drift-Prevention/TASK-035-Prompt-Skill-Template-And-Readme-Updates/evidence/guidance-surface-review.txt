@@ -1,0 +1,29 @@
+TASK-035 guidance surface review
+
+Scope reviewed:
+- README.md
+- .project-workflow/cli/README.md
+- src/project_workflow/prompts/Epic.prompt.md
+- src/project_workflow/prompts/Task.prompt.md
+- src/project_workflow/prompts/Requirements.prompt.md
+- src/project_workflow/prompts/Planner.prompt.md
+- src/project_workflow/prompts/Implement.prompt.md
+- src/project_workflow/prompts/QAReview.prompt.md
+- src/project_workflow/codex/skills/project-epic/SKILL.md
+- src/project_workflow/codex/skills/project-task/SKILL.md
+- src/project_workflow/codex/skills/project-requirements/SKILL.md
+- src/project_workflow/codex/skills/project-planner/SKILL.md
+- src/project_workflow/codex/skills/project-implement/SKILL.md
+- src/project_workflow/codex/skills/project-qa-review/SKILL.md
+- src/project_workflow/cursor/rules/project-workflow.mdc
+
+Findings:
+- Owner approval is described as a single requirements/AC authority envelope, not repeated approval for unchanged work.
+- Epic guidance routes through EPIC-CONTRACT.md, DECOMPOSITION.md, AMENDMENTS.md, adoption, child charters, proof recipes, and closeout gates.
+- Task guidance routes new tasks through requirements confirmation and task approve-requirements before implementation-oriented work.
+- Requirements and planner guidance require proof-recipe selection when work claims visual/reference fidelity, runtime/deployment/source proof, external contract alignment, or multi-context behavior.
+- Implement and QA guidance require recipe-triggered structured evidence in EVIDENCE.json and reject prose, code review, tests, builds, surrogate artifacts, and wrong target/source pairs as substitutes where recipes require stronger proof.
+- Cursor rules mirror the same gates for non-Codex entry points.
+
+Review command:
+rg -n "task approve-requirements|epic approve-requirements|EVIDENCE\\.json|visual/reference|DECOMPOSITION|EPIC-CONTRACT|AMENDMENTS|adopt" src/project_workflow/prompts src/project_workflow/codex/skills src/project_workflow/cursor/rules README.md .project-workflow/cli/README.md

@@ -141,3 +141,15 @@ Use this sequence unless user direction overrides it:
 9. `/project.retro`
 
 Do not mark work `Complete` from implementation alone. Use `./.project-workflow/cli/workflow task status ...` for tracker lifecycle moves: implementation moves work to `Testing`; QA/code review moves it to `Review` and may complete only after passing review and explicit user approval. Retro runs after completion and updates durable conventions or agent guidance only when there is a reusable lesson.
+
+## Drift Gate Requirements
+
+- Before implementation-oriented work, record one owner-approved requirements/AC envelope with `task approve-requirements` or `epic approve-requirements`. Do not treat an agent draft, silence, or implementation request as approval.
+- Do not ask for repeated generic approval when work remains inside the unchanged approved envelope. Fix concrete drift/evidence gaps directly, and ask the owner only for material scope changes, amendments, deviations, deferrals, artifact identity changes, or proof-obligation changes.
+- For pre-existing work, use `task adopt` or `epic adopt`; pre-adoption inferred evidence remains untrusted until refreshed.
+- New/adopted epics require non-placeholder `EPIC-CONTRACT.md` before decomposition, child approval/scaffolding, or movement into `Ready`/`In Progress`.
+- Epic child rows must come from `DECOMPOSITION.md` or an approved `AMENDMENTS.md` record. Direct tracker edits outside that authority cannot advance through approval, scaffold, readiness, Review, or Complete gates.
+- Scaffolded epic children inherit parent AC coverage, child charters, proof ownership, artifact targets, invalid substitutes, and child-local `EVIDENCE.json`.
+- If requirements, acceptance criteria, child charters, epic contracts, or material claims trigger a proof recipe, structured evidence is required. QA prose, code review, tests, builds, surrogate surfaces, and wrong target/source pairs are invalid substitutes where the recipe requires stronger proof.
+- Visual/reference fidelity requires calibration before implementation and rendered comparison against the delivered user-facing artifact before Review/Complete. Runtime target/source proof requires the exact execution target, source/artifact under test, observation method, and positive proof that the target used that source.
+- Run `./.project-workflow/cli/workflow doctor` after tracker/task-doc changes and before closeout.

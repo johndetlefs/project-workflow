@@ -57,6 +57,242 @@
     {
       "fingerprint": "8997732e20ff9d79",
       "reason": "Accepted legacy EPIC-002 implementation AC reference drift."
+    },
+    {
+      "fingerprint": "b634b4537906b33a",
+      "reason": "Accepted historical TASK-001 approval-envelope warning from completed pre-EPIC-006 work."
+    },
+    {
+      "fingerprint": "a84cc458cb87ef03",
+      "reason": "Accepted historical TASK-002 approval-envelope warning from completed pre-EPIC-006 work."
+    },
+    {
+      "fingerprint": "76e2b71b9e81dcaa",
+      "reason": "Accepted historical TASK-003 approval-envelope warning from completed pre-EPIC-006 work."
+    },
+    {
+      "fingerprint": "57939dd03cf4277f",
+      "reason": "Accepted historical EPIC-004 approval-envelope warning from completed pre-EPIC-006 work."
+    },
+    {
+      "fingerprint": "bd69ade75ed1ab32",
+      "reason": "Accepted historical EPIC-005 approval-envelope warning from completed pre-EPIC-006 work."
+    },
+    {
+      "fingerprint": "9a2c112ad8f38b4e",
+      "reason": "Accepted historical TASK-026 approval-envelope warning from old testing-state work outside current EPIC-006 scope."
+    },
+    {
+      "fingerprint": "5e4a36e52e4d45b1",
+      "reason": "Accepted historical TASK-027 approval-envelope warning from old testing-state work outside current EPIC-006 scope."
+    },
+    {
+      "fingerprint": "ef04b44f5be54295",
+      "reason": "Accepted historical EPIC-003 missing contract warning from completed pre-contract epic."
+    },
+    {
+      "fingerprint": "6753c1c0142bd6df",
+      "reason": "Accepted historical TASK-010 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "2d9320d4402e71d7",
+      "reason": "Accepted historical TASK-010 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "81cd1a18e49995b3",
+      "reason": "Accepted historical TASK-011 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "067bcf2e157e5095",
+      "reason": "Accepted historical TASK-011 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "f76fe6c07b06f0ec",
+      "reason": "Accepted historical TASK-012 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "15bac449e7786ccf",
+      "reason": "Accepted historical TASK-012 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "e8efab974f48d885",
+      "reason": "Accepted historical TASK-013 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "1e81d294797758f5",
+      "reason": "Accepted historical TASK-013 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "16cb5d5e8a77cd5c",
+      "reason": "Accepted historical TASK-014 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "edde88b90804a621",
+      "reason": "Accepted historical TASK-014 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "90d27115f2d1581e",
+      "reason": "Accepted historical EPIC-004 missing contract warning from completed pre-contract epic."
+    },
+    {
+      "fingerprint": "4df4b47fe647e002",
+      "reason": "Accepted historical TASK-015 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "b76279c71fbe3807",
+      "reason": "Accepted historical TASK-015 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "bf70b7d99879d8dc",
+      "reason": "Accepted historical TASK-016 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "5e8214642ea738bc",
+      "reason": "Accepted historical TASK-016 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "5038c0da53326d2f",
+      "reason": "Accepted historical TASK-017 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "9ea00d37a87ceba9",
+      "reason": "Accepted historical TASK-017 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "05e1434e03db3a83",
+      "reason": "Accepted historical TASK-018 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "191c84c86fe486d7",
+      "reason": "Accepted historical TASK-018 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "681a4c621d40408e",
+      "reason": "Accepted historical TASK-019 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "04667a3b28a3f5dc",
+      "reason": "Accepted historical TASK-019 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "0fd26502568d4272",
+      "reason": "Accepted historical EPIC-005 missing contract warning from completed pre-contract epic."
+    },
+    {
+      "fingerprint": "9da4b053ef3cd0f0",
+      "reason": "Accepted historical TASK-020 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "1d0d2d32dd7a1f73",
+      "reason": "Accepted historical TASK-020 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "7e7b2b9de8767089",
+      "reason": "Accepted historical TASK-021 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "77b04cfa8921e439",
+      "reason": "Accepted historical TASK-021 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "59dd6264ee88f6b1",
+      "reason": "Accepted historical TASK-022 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "f238cd1d01374814",
+      "reason": "Accepted historical TASK-022 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "d730559304d9c97e",
+      "reason": "Accepted historical TASK-023 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "5c0cc2b4656e5152",
+      "reason": "Accepted historical TASK-023 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "b1fc762a17497d43",
+      "reason": "Accepted historical TASK-024 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "385f58dda2809e15",
+      "reason": "Accepted historical TASK-024 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "512c306d3419c1eb",
+      "reason": "Accepted historical TASK-025 decomposition-authority warning from completed pre-decomposition epic child."
+    },
+    {
+      "fingerprint": "e218226316781fba",
+      "reason": "Accepted historical TASK-025 parent approval-envelope warning from completed pre-EPIC-006 epic child."
+    },
+    {
+      "fingerprint": "87262ab4d90401fb",
+      "reason": "Accepted legacy APP-001 approval-envelope warning from pre-EPIC-006 workflow state."
+    },
+    {
+      "fingerprint": "1fe038c360c62ecd",
+      "reason": "Accepted legacy APP-002 approval-envelope warning from pre-EPIC-006 workflow state."
+    },
+    {
+      "fingerprint": "0cfdee1962a93d07",
+      "reason": "Accepted legacy APP-003 approval-envelope warning from pre-EPIC-006 workflow state."
+    },
+    {
+      "fingerprint": "74c8e933ca524deb",
+      "reason": "Accepted legacy EPIC-002 approval-envelope warning from pre-EPIC-006 workflow state."
+    },
+    {
+      "fingerprint": "abdfc58150a0dbaf",
+      "reason": "Accepted legacy EPIC-002 missing contract warning from pre-contract workflow state."
+    },
+    {
+      "fingerprint": "fab7f62b6de991a2",
+      "reason": "Accepted legacy TASK-004 decomposition-authority warning from pre-decomposition workflow state."
+    },
+    {
+      "fingerprint": "87be820b82d28468",
+      "reason": "Accepted legacy TASK-004 parent approval-envelope warning from pre-EPIC-006 workflow state."
+    },
+    {
+      "fingerprint": "5650d0c4c01387d4",
+      "reason": "Accepted legacy TASK-005 decomposition-authority warning from pre-decomposition workflow state."
+    },
+    {
+      "fingerprint": "18efaf549576da8f",
+      "reason": "Accepted legacy TASK-005 parent approval-envelope warning from pre-EPIC-006 workflow state."
+    },
+    {
+      "fingerprint": "8dfe8cc89b0a97d8",
+      "reason": "Accepted legacy TASK-006 decomposition-authority warning from pre-decomposition workflow state."
+    },
+    {
+      "fingerprint": "ea2613b0d7132bc2",
+      "reason": "Accepted legacy TASK-006 parent approval-envelope warning from pre-EPIC-006 workflow state."
+    },
+    {
+      "fingerprint": "9474c3237724be9e",
+      "reason": "Accepted legacy TASK-007 decomposition-authority warning from pre-decomposition workflow state."
+    },
+    {
+      "fingerprint": "68e028784a2659af",
+      "reason": "Accepted legacy TASK-007 parent approval-envelope warning from pre-EPIC-006 workflow state."
+    },
+    {
+      "fingerprint": "ea38190a72aa63d3",
+      "reason": "Accepted legacy TASK-008 decomposition-authority warning from pre-decomposition workflow state."
+    },
+    {
+      "fingerprint": "1a43c6ca161987f9",
+      "reason": "Accepted legacy TASK-008 parent approval-envelope warning from pre-EPIC-006 workflow state."
+    },
+    {
+      "fingerprint": "1be798710d84a586",
+      "reason": "Accepted legacy TASK-009 decomposition-authority warning from pre-decomposition workflow state."
+    },
+    {
+      "fingerprint": "453657e85f273423",
+      "reason": "Accepted legacy TASK-009 parent approval-envelope warning from pre-EPIC-006 workflow state."
     }
   ],
   "prefix_guidance": {

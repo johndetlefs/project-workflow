@@ -34,9 +34,13 @@ Defaults and inference:
 
 Required workflow:
 
-- Before coding, run `./.project-workflow/cli/workflow task ready --id ${input:taskId}`. If it fails, remediate the listed requirements/planning/clarification gaps or ask the owner for the required decisions; do not code.
-- Before coding, run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to "In Progress"`.
-- After implementation, run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to Testing`.
+- Before coding, run the relevant ready gate:
+  - standalone task: `./.project-workflow/cli/workflow task ready --id ${input:taskId}`
+  - epic child: `./.project-workflow/cli/workflow epic ready-child --epic-id <EPIC_ID> --id ${input:taskId}`
+- If the ready gate fails, remediate the listed requirements/planning/clarification/approval/evidence gaps or ask the owner only for the specific material decision required. Do not code from an unapproved or stale requirements/AC envelope.
+- If approval is missing or stale after requirements and ACs are ready, record the one owner-approved envelope with `task approve-requirements` or `epic approve-requirements` as applicable; do not treat the implementation request itself as approval.
+- Before coding, move the relevant row to `In Progress` with the workflow CLI. For unchanged work inside an approved envelope, do not ask for repeated owner approval.
+- After implementation, run the relevant status command to move the row to `Testing`.
 - Do not set it to `Complete`; completion is owned by `project.qa-review` after QA/code review passes and the user explicitly approves completion.
 
 Sequence enforcement:
@@ -49,10 +53,12 @@ Sequence enforcement:
 Requirements guardrails:
 
 - Before coding, read `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` and treat it as the source of truth for outcomes and expectations.
+- If the task is an epic child, also read the parent epic `EPIC-CONTRACT.md`, `DECOMPOSITION.md`, `AMENDMENTS.md`, and the child `Child Charter`; those define inherited invariants, invalid substitutes, artifact targets, and proof ownership.
 - If `REQUIREMENTS.md` does not exist yet, stop and instruct the user to run the `project.requirements` prompt to create it.
 - If you discover a conflict between the current codebase constraints and `REQUIREMENTS.md` (or the `## User Story` in `IMPLEMENTATION.md`), stop and route to the `project.clarify` prompt; after the user chooses an option, ensure the decision is recorded in `REQUIREMENTS.md` before continuing.
 - Before coding, list the AC IDs in the inferred `workItem` and map each planned change to them. If any change does not map to an AC ID, do not proceed.
 - Before coding, cross-check the inferred work-item acceptance criteria against `REQUIREMENTS.md` and `IMPLEMENTATION.md`; if they conflict, stop and route to `project.clarify` and record the decision in `REQUIREMENTS.md`.
+- Before coding, identify any triggered proof recipes. Visual/reference-fidelity work must have calibration before implementation; runtime/deployment/source work must identify the exact target/source pair to prove. If the required recipe or artifact identity is missing, stop and fix the workflow artifacts before coding.
 
 User story tracker workflow:
 
@@ -69,6 +75,7 @@ Output expectations:
 
 - Make the smallest safe change that satisfies the requirement.
 - Add or update tests when appropriate.
+- If requirements or material claims trigger a proof recipe, create or update child-local `EVIDENCE.json` with the structured claim record and evidence artifact path. Do not rely on implementation prose, tests, builds, or a surrogate artifact for recipe-specific proof.
 - Provide a short validation checklist (commands + manual steps) and call out any risks.
 - Tell the user that QA/code review is the next required step before completion.
 

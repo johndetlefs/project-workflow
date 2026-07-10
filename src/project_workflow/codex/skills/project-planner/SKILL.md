@@ -39,6 +39,11 @@ Turn confirmed requirements into a safe, incremental implementation plan.
 5. Make every task independently testable and outcome-based.
 6. Map every task row to one or more AC IDs, and ensure every AC ID is covered
    by at least one task row.
+   If a row claims visual/reference fidelity, external contract alignment,
+   deployed/published artifact alignment, runtime target/source verification,
+   or responsive/multi-context behavior, include the matching proof recipe and
+   evidence artifact expectation in the row. Do not use code review, tests,
+   builds, surrogate surfaces, or related environments as recipe substitutes.
 7. Use this table shape for tasks:
 
 ```md
@@ -50,7 +55,7 @@ Turn confirmed requirements into a safe, incremental implementation plan.
 8. Keep each table row on one physical line. Use `<br>` for multiple items
    inside a cell and escape literal `|` characters.
 9. Include validation steps for each phase.
-10. Run `./.project-workflow/cli/workflow task ready --id <TASK-ID>` after planning and before moving to `Plan Confirmed`; if it fails, fix the listed gaps or route to `project-clarify`.
+10. Run `./.project-workflow/cli/workflow task ready --id <TASK-ID>` after planning and before moving to `Plan Confirmed`; if it fails, fix the listed gaps or route to `project-clarify`. If requirements/AC approval is missing or stale after requirements are ready, record the one owner-approved envelope with `task approve-requirements`.
 11. Include QA/code review as the required gate after implementation validation
     and before completion.
 12. Do not implement code during planning.

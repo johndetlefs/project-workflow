@@ -56,6 +56,7 @@ Task quality rules (must follow):
 - Each task must map to explicit **Acceptance Criteria IDs** from `REQUIREMENTS.md` or the `## Acceptance Criteria` section in `IMPLEMENTATION.md` (`AC1`, `AC2`, etc.).
 - Each task must include a **User Verification** step that a non-developer user can perform (or a precise dev command if it’s inherently technical).
 - Every acceptance criterion must be covered by at least one task row.
+- If a row claims visual/reference fidelity, external contract alignment, deployed/published artifact alignment, runtime target/source verification, or responsive/multi-context behavior, include the matching proof recipe and expected evidence artifact. Do not plan to satisfy those claims with code review, tests, build output, surrogate surfaces, or a related environment.
 - A task row may map to multiple ACs, for example `AC1, AC3: <criteria summary>`.
 - Avoid vague tasks like “ensure X works” or “verify Y” without stating what to check and how.
 - Prefer vertical slices when possible (deliver value incrementally), but don’t mix unrelated concerns in one task.
@@ -119,6 +120,7 @@ Planning guardrails:
 - If `REQUIREMENTS.md` is missing, stop and instruct the user to run the `project.requirements` prompt first.
 - If `REQUIREMENTS.md` has any unresolved `## Open Questions`, stop and instruct the user to run the `project.clarify` prompt (or answer directly) and ensure the outcomes/decisions are recorded back into `REQUIREMENTS.md` before planning.
 - Exception: you may proceed with a plan only if the user explicitly accepts the unresolved items as risks AND that acceptance is recorded in `REQUIREMENTS.md` (e.g., in `## Decisions Log`).
+- Planning is not implementation authority by itself. Before moving to `Plan Confirmed` or implementation, run `./.project-workflow/cli/workflow task ready --id ${input:taskId}` and remediate the concrete gate output. If owner approval is missing or stale after requirements are ready, record the one approved requirements/AC envelope with `task approve-requirements`.
 - If you detect conflicts between `REQUIREMENTS.md`, the `## User Story` in `IMPLEMENTATION.md`, and repo constraints, stop and instruct the user to run the `project.clarify` prompt to resolve them and record decisions back into `REQUIREMENTS.md`.
 
 Task list guardrails:

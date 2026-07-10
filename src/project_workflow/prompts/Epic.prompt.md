@@ -1,7 +1,7 @@
 ---
 name: project.epic
-description: Manage epic lifecycle (init, lifecycle, decompose, approve, scaffold child, status, audit, closeout).
-argument-hint: action=setup|init|lifecycle|decompose|approve|scaffold-child|status|audit|closeout title="..." epicId=EPIC-001 id=TASK-001
+description: Manage epic lifecycle (init, approval, contract, decomposition, amendment, adoption, scaffold child, status, audit, closeout).
+argument-hint: action=setup|init|approve-requirements|lifecycle|decompose|amend|approve|scaffold-child|status|audit|closeout title="..." epicId=EPIC-001 id=TASK-001
 agent: agent
 ---
 
@@ -11,7 +11,7 @@ Read `/.project-workflow/guidance.md` if present before changing workflow state.
 
 Inputs:
 
-- Action: `${input:action:setup|init|ready|lifecycle|decompose|approve|scaffold-child|ready-child|status|audit|closeout}`
+- Action: `${input:action:setup|init|ready|approve-requirements|lifecycle|decompose|amend|adopt|approve|scaffold-child|ready-child|status|audit|closeout}`
 - Epic title (required for `init`): `${input:title:}`
 - Epic ID (required for all non-init actions): `${input:epicId:EPIC-001}`
 - Row ID (required for `approve` and `scaffold-child`): `${input:id:TASK-014}`
@@ -47,9 +47,11 @@ Guided setup mode (`action=setup`):
 - Drive the complete lifecycle so users do not miss gates:
   1. Initialize epic.
   2. Verify epic requirements are ready for decomposition.
-  3. Decompose into Proposed rows.
-  4. Ask user which rows to approve.
-  5. Optionally scaffold approved children.
+  3. Ask the owner to confirm the drafted requirements, acceptance criteria, and authority envelope once.
+  4. Record that approval with `epic approve-requirements`.
+  5. Confirm `EPIC-CONTRACT.md` has concrete sources of truth, invalid substitutes, invariants, artifact targets, and proof owners.
+  6. Decompose into Proposed rows and `DECOMPOSITION.md`.
+  7. Approve/scaffold matching rows inside the approved decomposition plan as needed; do not ask for repeated owner approval unless the row is outside the plan or changes material scope.
 - Ask at most one clarifying question at a time.
 - After each completed step, explicitly state the next required step and offer to run it.
 
@@ -85,12 +87,14 @@ Requirements interview flow (when requirements are missing/skeletal):
 - Keep source fidelity: preserve critical terms, links, and proper nouns from the pasted text.
 - If the pasted block includes desktop/mobile/backend variants, keep those distinctions explicit in the normalized bullets.
 - Read back the drafted `## Requirements` and `## Acceptance Criteria` bullets and ask for confirmation before decomposition.
-- Only proceed to `decompose` after user confirms the drafted requirements content.
+- Only proceed after the owner confirms the drafted requirements and acceptance criteria, then record that confirmation with `epic approve-requirements`.
+- If requirements, acceptance criteria, `EPIC-CONTRACT.md`, or `DECOMPOSITION.md` materially change after approval, re-run the relevant gate and seek owner confirmation only for the changed authority envelope.
 
 Readiness minimums for decomposition:
 
 - `## Requirements` has at least 3 non-placeholder bullet items, or `## Acceptance Criteria` has at least 3 non-placeholder bullet items.
 - At least one acceptance bullet is objectively testable (contains a measurable or observable outcome).
+- `EPIC-CONTRACT.md` has non-placeholder sources of truth, invalid substitutes, invariants, artifact targets, and proof owners before decomposition or child lifecycle movement.
 
 Execution:
 
@@ -102,6 +106,8 @@ Execution:
   - `setup` (orchestrated flow):
 
 `./.project-workflow/cli/workflow epic init --title "<TITLE>"`
+
+`./.project-workflow/cli/workflow epic approve-requirements --epic-id <EPIC_ID> --approved-by "<OWNER>" --source "<OWNER CONFIRMATION SOURCE>"`
 
 `./.project-workflow/cli/workflow epic decompose --epic-id <EPIC_ID> --limit <LIMIT> --type <TYPE>`
 
@@ -121,6 +127,18 @@ child row into one configured namespace.
 - `decompose`:
 
 `./.project-workflow/cli/workflow epic decompose --epic-id <EPIC_ID> --limit <LIMIT> --type <TYPE>`
+
+- `approve-requirements`:
+
+`./.project-workflow/cli/workflow epic approve-requirements --epic-id <EPIC_ID> --approved-by "<OWNER>" --source "<OWNER CONFIRMATION SOURCE>"`
+
+- `amend`:
+
+`./.project-workflow/cli/workflow epic amend --epic-id <EPIC_ID> --id <ROW_ID> --title "<TITLE>" --parent-acs "<AC1, AC2>" --reason "<OWNER-APPROVED REASON>"`
+
+- `adopt`:
+
+`./.project-workflow/cli/workflow epic adopt --epic-id <EPIC_ID> --approved-by "<OWNER>" --source "<ADOPTION SOURCE>"`
 
 - `ready`:
 
@@ -160,6 +178,12 @@ child row into one configured namespace.
 
 Constraints to enforce in responses:
 
+- Requirements/AC approval is an authority envelope, not a recurring ceremony. Ask the owner to confirm requirements and ACs once before decomposition or implementation; after that, use gates to detect drift and ask again only for material changes, amendments, deviations, artifact identity changes, proof-obligation changes, or deferrals.
+- New/adopted epics require non-placeholder `EPIC-CONTRACT.md` before decomposition, child approval/scaffolding, or `In Progress`.
+- `DECOMPOSITION.md` is the child-row authority source. Matching rows inside it may be approved/scaffolded by the agent without repeated owner approval; rows outside it require `epic amend`.
+- For pre-existing epics, use `epic adopt`; inferred legacy evidence is not trusted for closeout until refreshed.
+- Proof recipes triggered by requirements, ACs, contracts, child charters, or material claims require child-local `EVIDENCE.json`. QA prose, code review, tests, build output, surrogate artifacts, and wrong target/source pairs are invalid substitutes where the recipe says so.
+- Visual/reference-fidelity work requires calibration before implementation and delivered-artifact comparison before Review/Complete.
 - Decomposition is proposal-first: it writes Proposed rows and does not scaffold child folders.
 - `ACCEPTANCE-MAP.md` is the in-progress parent AC coverage view. It is created on `epic init` and refreshed by epic lifecycle commands from requirements, tracker rows, deferrals, and child evidence.
 - Proposed child rows should preserve source AC IDs in the epic tracker `Parent ACs` field when they come from numbered acceptance criteria. Legacy trackers may still carry coverage in `Notes` as `Covers AC1, AC3`.

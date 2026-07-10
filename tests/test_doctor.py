@@ -79,7 +79,7 @@ def assert_unique_id(value: str, prefix: str) -> None:
 
 def ready_requirements(task_id: str, title: str, ac_lines: list[str] | None = None) -> str:
     criteria = "\n".join(ac_lines or ["- AC1: Ready outcome is delivered."])
-    return (
+    requirements_text = (
         "# Requirements\n\n"
         "## Summary\n\n"
         f"- Task: {task_id}\n"
@@ -100,6 +100,153 @@ def ready_requirements(task_id: str, title: str, ac_lines: list[str] | None = No
         "- Proceed with the ready fixture.\n\n"
         "## Validation Plan\n\n"
         "- Run targeted workflow validation.\n"
+    )
+    return workflow_cli._requirements_with_approval_envelope(
+        requirements_text,
+        approved_by="Test Owner",
+        source="Owner approved fixture requirements.",
+        decomposition=task_id.startswith("EPIC-"),
+        implementation=not task_id.startswith("EPIC-"),
+    )
+
+
+def write_decomposition_plan(
+    epic_dir: Path,
+    *,
+    epic_id: str = "EPIC-001",
+    rows: list[dict[str, str]],
+) -> None:
+    requirements_text = (epic_dir / "REQUIREMENTS.md").read_text(encoding="utf-8")
+    (epic_dir / workflow_cli.DECOMPOSITION_PLAN_FILENAME).write_text(
+        workflow_cli._format_decomposition_plan(
+            epic_id=epic_id,
+            requirements_text=requirements_text,
+            rows=[
+                {
+                    "ID": row["ID"],
+                    "Title": row["Title"],
+                    "Parent ACs": row.get("Parent ACs", ""),
+                    "Source": row.get("Source", "Test decomposition plan"),
+                }
+                for row in rows
+            ],
+        ),
+        encoding="utf-8",
+    )
+
+
+def write_epic_contract(
+    epic_dir: Path,
+    *,
+    epic_id: str = "EPIC-001",
+    title: str = "Ready Epic",
+    ac_ids: list[str] | None = None,
+) -> None:
+    ac_ids = ac_ids or ["AC1"]
+    rows = "\n".join(
+        f"| {ac_id} | TASK-001 | Parent AC evidence plus QA pass |" for ac_id in ac_ids
+    )
+    (epic_dir / workflow_cli.EPIC_CONTRACT_FILENAME).write_text(
+        "# Epic Contract\n\n"
+        "## Summary\n\n"
+        f"- Epic: {epic_id}\n"
+        f"- Title: {title}\n"
+        "- Last updated: 2026-07-09\n\n"
+        "## Sources of Truth\n\n"
+        "- Owner-approved requirements and acceptance criteria.\n\n"
+        "## Invalid Substitutes\n\n"
+        "- Tracker rows without matching contract and decomposition authority.\n\n"
+        "## Invariants\n\n"
+        "- Parent AC IDs remain stable across child work.\n\n"
+        "## Artifact Targets\n\n"
+        "- Workflow markdown artifacts in this epic folder.\n\n"
+        "## Parent AC Proof Ownership\n\n"
+        "| Parent AC | Proof Owner | Required Evidence |\n"
+        "| --- | --- | --- |\n"
+        f"{rows}\n",
+        encoding="utf-8",
+    )
+
+
+def write_structured_evidence(
+    child_dir: Path,
+    *,
+    recipe: str = "visual-reference-fidelity",
+    parent_ac: str = "AC1",
+    invalid_substitutes: list[str] | None = None,
+    evidence_artifact_hash: str | None = None,
+) -> None:
+    evidence_dir = child_dir / "evidence"
+    evidence_dir.mkdir(exist_ok=True)
+    artifact = evidence_dir / "visual-comparison.txt"
+    artifact.write_text("rendered comparison evidence", encoding="utf-8")
+    artifact_hash = evidence_artifact_hash or workflow_cli._sha256_file(artifact)
+    child_dir.joinpath(workflow_cli.STRUCTURED_EVIDENCE_FILENAME).write_text(
+        json.dumps(
+            {
+                "task_id": "TASK-001",
+                "claims": [
+                    {
+                        "id": "CLM-001",
+                        "parent_ac": parent_ac,
+                        "claim": "Delivered surface matches the reference visual.",
+                        "recipe": recipe,
+                        "status": "pass",
+                        "commit": "abc123",
+                        "timestamp": "2026-07-09T00:00:00Z",
+                        "reference_artifact": "reference/playground.png",
+                        "delivered_artifact": "http://localhost:3000/widget",
+                        "comparison_method": "browser screenshot comparison",
+                        "evidence_artifact": "evidence/visual-comparison.txt",
+                        "evidence_artifact_hash": artifact_hash,
+                        "invalid_substitutes": invalid_substitutes or [],
+                    }
+                ],
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def write_runtime_structured_evidence(
+    child_dir: Path,
+    *,
+    execution_target: str = "working/local",
+    source_artifact: str = "local checkout",
+) -> None:
+    evidence_dir = child_dir / "evidence"
+    evidence_dir.mkdir(exist_ok=True)
+    artifact = evidence_dir / "runtime-target-source.txt"
+    artifact.write_text("runtime target used local checkout", encoding="utf-8")
+    child_dir.joinpath(workflow_cli.STRUCTURED_EVIDENCE_FILENAME).write_text(
+        json.dumps(
+            {
+                "task_id": "TASK-001",
+                "claims": [
+                    {
+                        "id": "CLM-001",
+                        "parent_ac": "AC1",
+                        "claim": "Runtime target used the expected source.",
+                        "recipe": "runtime-target-source",
+                        "status": "pass",
+                        "commit": "abc123",
+                        "timestamp": "2026-07-09T00:00:00Z",
+                        "execution_target": execution_target,
+                        "source_artifact": source_artifact,
+                        "observation_method": "browser proof plus process inspection",
+                        "target_used_source_proof": "runtime response included local checkout marker",
+                        "evidence_artifact": "evidence/runtime-target-source.txt",
+                        "evidence_artifact_hash": workflow_cli._sha256_file(artifact),
+                        "invalid_substitutes": [],
+                    }
+                ],
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
     )
 
 
@@ -634,6 +781,7 @@ def test_epic_decompose_allocates_after_all_epic_child_ids(tmp_path: Path) -> No
         ),
         encoding="utf-8",
     )
+    write_epic_contract(new_epic_dir, epic_id="EPIC-002", title="New Children")
 
     decompose = run_project(["epic", "decompose", "--epic-id", "EPIC-002"], cwd=tmp_path)
     assert decompose.returncode == 0, decompose.stdout + decompose.stderr
@@ -893,6 +1041,12 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert ".project-workflow/BACKLOG.md" in codex_agents
     assert "Promoted rows stay in the backlog" in codex_agents
     assert "task status" in codex_agents
+    assert "task approve-requirements" in codex_agents
+    assert "epic approve-requirements" in codex_agents
+    assert "EPIC-CONTRACT.md" in codex_agents
+    assert "DECOMPOSITION.md" in codex_agents
+    assert "EVIDENCE.json" in codex_agents
+    assert "invalid substitutes" in codex_agents
     assert "workflow doctor" in (
         codex_root / ".agents" / "skills" / "project-implement" / "SKILL.md"
     ).read_text(encoding="utf-8")
@@ -901,11 +1055,15 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     ).read_text(encoding="utf-8")
     assert "task status" in implement_skill
     assert "task ready" in implement_skill
+    assert "task approve-requirements" in implement_skill
+    assert "approved envelope" in implement_skill
     qa_skill = (
         codex_root / ".agents" / "skills" / "project-qa-review" / "SKILL.md"
     ).read_text(encoding="utf-8")
     assert "Do not ask the user to manually test behavior" in qa_skill
     assert "separate verified evidence from deferred setup" in qa_skill
+    assert "EVIDENCE.json" in qa_skill
+    assert "visual/reference fidelity" in qa_skill
     assert ".project-workflow/guidance.md" in (
         codex_root / ".agents" / "skills" / "project-implement" / "SKILL.md"
     ).read_text(encoding="utf-8")
@@ -928,6 +1086,11 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "task ready" in cursor_rules
     assert ".project-workflow/BACKLOG.md" in cursor_rules
     assert "Existing roadmap/backlog documents" in cursor_rules
+    assert "task approve-requirements" in cursor_rules
+    assert "epic approve-requirements" in cursor_rules
+    assert "EPIC-CONTRACT.md" in cursor_rules
+    assert "DECOMPOSITION.md" in cursor_rules
+    assert "EVIDENCE.json" in cursor_rules
     assert (
         cursor_root / ".cursor" / "agents" / "project-backlog.md"
     ).exists()
@@ -942,6 +1105,12 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert (
         claude_root / ".claude" / "agents" / "project-backlog.md"
     ).exists()
+    claude_implement = (
+        claude_root / ".claude" / "agents" / "project-implement.md"
+    ).read_text(encoding="utf-8")
+    assert "task approve-requirements" in claude_implement
+    assert "approved envelope" in claude_implement
+    assert "EVIDENCE.json" in claude_implement
 
 
 def test_init_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path) -> None:
@@ -985,6 +1154,12 @@ def test_init_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path
     assert "old managed block" not in instructions_text
     assert ".project-workflow/guidance.md" in instructions_text
     assert "task status" in instructions_text
+    assert "task approve-requirements" in instructions_text
+    assert "epic approve-requirements" in instructions_text
+    assert "EPIC-CONTRACT.md" in instructions_text
+    assert "DECOMPOSITION.md" in instructions_text
+    assert "EVIDENCE.json" in instructions_text
+    assert "invalid substitutes" in instructions_text
 
 
 def test_init_does_not_treat_inline_marker_mentions_as_managed_blocks(tmp_path: Path) -> None:
@@ -1359,6 +1534,7 @@ def test_epic_decompose_preserves_source_ac_ids_in_notes(tmp_path: Path) -> None
     epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
     initialized_tracker = (epic_dir / "TRACKER.md").read_text(encoding="utf-8")
     assert "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |" in initialized_tracker
+    assert (epic_dir / "EPIC-CONTRACT.md").exists()
     initialized_map = (epic_dir / "ACCEPTANCE-MAP.md").read_text(encoding="utf-8")
     assert "| AC1 | ____ | None | None | None | Unmapped |" in initialized_map
     initialized_retro = (epic_dir / "RETRO.md").read_text(encoding="utf-8")
@@ -1376,6 +1552,7 @@ def test_epic_decompose_preserves_source_ac_ids_in_notes(tmp_path: Path) -> None
         ),
         encoding="utf-8",
     )
+    write_epic_contract(epic_dir, title="Mapped Epic", ac_ids=["AC1", "AC2"])
 
     decompose = run_project(
         ["epic", "decompose", "--epic-id", "EPIC-001", "--limit", "2"],
@@ -1390,9 +1567,230 @@ def test_epic_decompose_preserves_source_ac_ids_in_notes(tmp_path: Path) -> None
     assert "Covers AC1; Prefix TASK:" in epic_tracker
     assert "Covers AC2; Prefix TASK:" in epic_tracker
     assert "Generated from REQUIREMENTS.md" in epic_tracker
+    decomposition_plan = (epic_dir / "DECOMPOSITION.md").read_text(encoding="utf-8")
+    assert "| TASK-001 | First epic outcome is delivered | AC1 | Generated from REQUIREMENTS.md |" in decomposition_plan
+    assert "| TASK-002 | Second epic outcome is delivered | AC2 | Generated from REQUIREMENTS.md |" in decomposition_plan
     acceptance_map = (epic_dir / "ACCEPTANCE-MAP.md").read_text(encoding="utf-8")
     assert "| AC1 | First epic outcome is delivered. | TASK-001 (Proposed) | None | None | Mapped - evidence pending |" in acceptance_map
     assert "| AC2 | Second epic outcome is delivered. | TASK-002 (Proposed) | None | None | Mapped - evidence pending |" in acceptance_map
+
+
+def test_epic_decompose_requires_ready_epic_contract(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Contract Required"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Contract Required",
+            ["- AC1: Contract gate blocks decomposition."],
+        ),
+        encoding="utf-8",
+    )
+
+    decompose = run_project(["epic", "decompose", "--epic-id", "EPIC-001"], cwd=tmp_path)
+    assert decompose.returncode != 0
+    assert "EPIC-CONTRACT.md" in decompose.stderr
+    assert "placeholder" in decompose.stderr
+
+
+def test_doctor_fails_approved_epic_missing_contract(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Missing Contract"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Missing Contract",
+            ["- AC1: Contract doctor failure is reported."],
+        ),
+        encoding="utf-8",
+    )
+    (epic_dir / "EPIC-CONTRACT.md").unlink()
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode != 0
+    assert "epic contract: EPIC-CONTRACT.md is missing" in doctor.stdout
+
+
+def test_epic_decompose_prefers_owner_proposed_child_work_plan(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Owner Plan"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+
+    requirements_text = workflow_cli._remove_markdown_section(
+        ready_requirements(
+            "EPIC-001",
+            "Owner Plan",
+            ["- AC1: Owner-planned child work is authorized."],
+        ),
+        workflow_cli.OWNER_APPROVAL_HEADING,
+    )
+    requirements_text = (
+        requirements_text
+        + "\n## Proposed Child Work\n\n"
+        "| Proposed Child | Parent ACs | Purpose |\n"
+        "| --- | --- | --- |\n"
+        "| Owner Named Child | AC1 | Use the owner-reviewed child title. |\n"
+    )
+    requirements_text = workflow_cli._requirements_with_approval_envelope(
+        requirements_text,
+        approved_by="Test Owner",
+        source="Owner approved fixture requirements with decomposition plan.",
+        decomposition=True,
+        implementation=False,
+    )
+    (epic_dir / "REQUIREMENTS.md").write_text(requirements_text, encoding="utf-8")
+    write_epic_contract(epic_dir, title="Owner Plan")
+
+    decompose = run_project(["epic", "decompose", "--epic-id", "EPIC-001"], cwd=tmp_path)
+    assert decompose.returncode == 0, decompose.stdout + decompose.stderr
+
+    epic_tracker = (epic_dir / "TRACKER.md").read_text(encoding="utf-8")
+    decomposition_plan = (epic_dir / "DECOMPOSITION.md").read_text(encoding="utf-8")
+    assert "| TASK-001 | Owner Named Child | Proposed | Task | AC1 |" in epic_tracker
+    assert "| TASK-001 | Owner Named Child | AC1 | Proposed Child Work |" in decomposition_plan
+
+
+def test_epic_approve_blocks_child_outside_decomposition_plan(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Manual Drift"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Manual Drift",
+            ["- AC1: Planned child work is enforced."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Manual Drift")
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Planned Child", "Parent ACs": "AC1"}],
+    )
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-002 | Invented Child | Proposed | Task | AC1 |  |  | Manually invented row |\n",
+        encoding="utf-8",
+    )
+
+    approve = run_project(
+        ["epic", "approve", "--epic-id", "EPIC-001", "--id", "TASK-002"],
+        cwd=tmp_path,
+    )
+    assert approve.returncode != 0
+    assert "outside the approved decomposition authority" in approve.stderr
+    assert "TASK-002 is outside DECOMPOSITION.md" in approve.stderr
+
+
+def test_epic_amend_authorizes_child_outside_decomposition_plan(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Approved Amendment"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    assert (epic_dir / workflow_cli.EPIC_AMENDMENTS_FILENAME).exists()
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Approved Amendment",
+            ["- AC1: Planned child work is enforced."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Approved Amendment")
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Planned Child", "Parent ACs": "AC1"}],
+    )
+
+    amend = run_project(
+        [
+            "epic",
+            "amend",
+            "--epic-id",
+            "EPIC-001",
+            "--id",
+            "TASK-002",
+            "--title",
+            "Reactive Fix",
+            "--parent-acs",
+            "AC1",
+            "--approved-by",
+            "Test Owner",
+            "--reason",
+            "Owner approved reactive fix after drift audit.",
+            "--source",
+            "Owner approval in test thread.",
+        ],
+        cwd=tmp_path,
+    )
+    assert amend.returncode == 0, amend.stdout + amend.stderr
+    amendments_text = (epic_dir / workflow_cli.EPIC_AMENDMENTS_FILENAME).read_text(
+        encoding="utf-8"
+    )
+    assert "| TASK-002 | Reactive Fix | AC1 | Test Owner |" in amendments_text
+    tracker_text = (epic_dir / "TRACKER.md").read_text(encoding="utf-8")
+    assert "| TASK-002 | Reactive Fix | Proposed | Task | AC1 |" in tracker_text
+
+    approve = run_project(
+        ["epic", "approve", "--epic-id", "EPIC-001", "--id", "TASK-002"],
+        cwd=tmp_path,
+    )
+    assert approve.returncode == 0, approve.stdout + approve.stderr
+
+    scaffold = run_project(
+        ["epic", "scaffold-child", "--epic-id", "EPIC-001", "--id", "TASK-002"],
+        cwd=tmp_path,
+    )
+    assert scaffold.returncode == 0, scaffold.stdout + scaffold.stderr
+
+
+def test_doctor_fails_active_epic_child_without_decomposition_authority(
+    tmp_path: Path,
+) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Manual Active Drift"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Manual Active Drift",
+            ["- AC1: Active child rows are plan-authorized."],
+        ),
+        encoding="utf-8",
+    )
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-001 | Manual Active Child | In Progress | Task | AC1 |  |  | Manual row |\n",
+        encoding="utf-8",
+    )
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode != 0
+    assert "TASK-001 decomposition authority" in doctor.stdout
+    assert "DECOMPOSITION.md is missing" in doctor.stdout
 
 
 def test_epic_decompose_uses_configured_mixed_prefixes_and_prefix_override(
@@ -1417,6 +1815,7 @@ def test_epic_decompose_uses_configured_mixed_prefixes_and_prefix_override(
         ),
         encoding="utf-8",
     )
+    write_epic_contract(epic_dir, title="Mixed App Work", ac_ids=["AC1", "AC2"])
 
     decompose = run_project(
         ["epic", "decompose", "--epic-id", "EPIC-001", "--limit", "2"],
@@ -1443,6 +1842,12 @@ def test_epic_decompose_uses_configured_mixed_prefixes_and_prefix_override(
             ],
         ),
         encoding="utf-8",
+    )
+    write_epic_contract(
+        second_epic_dir,
+        epic_id="EPIC-002",
+        title="Forced Mcp Work",
+        ac_ids=["AC1", "AC2"],
     )
 
     forced = run_project(
@@ -1476,6 +1881,7 @@ def test_epic_decompose_reports_unmapped_parent_ac_ids(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
+    write_epic_contract(epic_dir, title="Coverage Gap", ac_ids=["AC1", "AC2", "AC3"])
 
     decompose = run_project(
         ["epic", "decompose", "--epic-id", "EPIC-001", "--limit", "2"],
@@ -1493,12 +1899,28 @@ def test_epic_child_scaffold_carries_parent_ac_sections(tmp_path: Path) -> None:
     assert epic.returncode == 0, epic.stdout + epic.stderr
 
     epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Parent Evidence",
+            [
+                "- AC1: First parent evidence path is scaffolded.",
+                "- AC3: Third parent evidence path is scaffolded.",
+            ],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Parent Evidence", ac_ids=["AC1", "AC3"])
     (epic_dir / "TRACKER.md").write_text(
         "# Stories\n\n"
         "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
         "|---|---|---|---|---|---|---|---|\n"
         "| TASK-001 | Child Evidence | Approved | Task | AC1, AC3 |  |  | Covers AC1, AC3 |\n",
         encoding="utf-8",
+    )
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Child Evidence", "Parent ACs": "AC1, AC3"}],
     )
 
     scaffold = run_project(
@@ -1514,8 +1936,14 @@ def test_epic_child_scaffold_carries_parent_ac_sections(tmp_path: Path) -> None:
     assert "- Parent AC Coverage: AC1, AC3" in requirements_text
     assert "## Parent AC Coverage" in implementation_text
     assert "- AC1, AC3" in implementation_text
+    assert "## Child Charter" in requirements_text
+    assert "### Invalid Substitutes" in requirements_text
+    assert "### Parent AC Proof Ownership" in requirements_text
+    assert "## Child Charter" in implementation_text
     assert "## Parent AC Evidence" in implementation_text
     assert "AC1 / parent AC(s) AC1, AC3" in implementation_text
+    evidence = json.loads((child_dir / workflow_cli.STRUCTURED_EVIDENCE_FILENAME).read_text(encoding="utf-8"))
+    assert [record["parent_ac"] for record in evidence["claims"]] == ["AC1", "AC3"]
 
     standalone = run_project(
         ["task", "init", "--title", "Standalone Quiet", "--update-tracker"],
@@ -1541,12 +1969,25 @@ def test_epic_child_scaffold_preserves_configured_task_prefix(tmp_path: Path) ->
     assert epic.returncode == 0, epic.stdout + epic.stderr
 
     epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Custom Prefix Child",
+            ["- AC1: Custom prefix child is scaffolded."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Custom Prefix Child")
     (epic_dir / "TRACKER.md").write_text(
         "# Stories\n\n"
         "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
         "|---|---|---|---|---|---|---|---|\n"
         "| UI-008 | Widget Interaction | Approved | Task | AC1 |  |  | Prefix UI: owner selected UI child |\n",
         encoding="utf-8",
+    )
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "UI-008", "Title": "Widget Interaction", "Parent ACs": "AC1"}],
     )
 
     scaffold = run_project(
@@ -1603,6 +2044,7 @@ def test_epic_audit_and_closeout_complete_only_when_gates_pass(tmp_path: Path) -
         ),
         encoding="utf-8",
     )
+    write_epic_contract(epic_dir, title="Closeout Ready")
     child_dir = epic_dir / "TASK-001-Ready-Child"
     child_dir.mkdir()
     child_impl = child_dir / "IMPLEMENTATION.md"
@@ -1623,6 +2065,10 @@ def test_epic_audit_and_closeout_complete_only_when_gates_pass(tmp_path: Path) -
         "|---|---|---|---|---|---|---|---|\n"
         "| TASK-001 | Ready Child | Complete | Task | AC1 | tasks/EPIC-001-Closeout-Ready/TASK-001-Ready-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
         encoding="utf-8",
+    )
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Ready Child", "Parent ACs": "AC1"}],
     )
     (epic_dir / "RETRO.md").write_text(
         ready_epic_retro("EPIC-001", "Closeout Ready"),
@@ -1658,6 +2104,425 @@ def test_epic_audit_and_closeout_complete_only_when_gates_pass(tmp_path: Path) -
     doctor = run_project(["doctor", "--strict"], cwd=tmp_path)
     assert doctor.returncode == 0, doctor.stdout + doctor.stderr
     assert "EPIC-001 is Complete but lacks non-placeholder QA/code-review evidence" not in doctor.stdout
+
+
+def test_epic_audit_rejects_parent_evidence_from_unassigned_proof_owner(
+    tmp_path: Path,
+) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Proof Owner"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Proof Owner",
+            ["- AC1: Parent evidence must come from assigned proof owner."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(
+        epic_dir,
+        title="Proof Owner",
+        ac_ids=["AC1"],
+    )
+    contract_text = (epic_dir / "EPIC-CONTRACT.md").read_text(encoding="utf-8")
+    (epic_dir / "EPIC-CONTRACT.md").write_text(
+        contract_text.replace("| AC1 | TASK-001 |", "| AC1 | TASK-999 |"),
+        encoding="utf-8",
+    )
+    child_dir = epic_dir / "TASK-001-Wrong-Owner"
+    child_dir.mkdir()
+    (child_dir / "IMPLEMENTATION.md").write_text(
+        ready_implementation("AC1", qa=True),
+        encoding="utf-8",
+    )
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-001 | Wrong Owner | Complete | Task | AC1 | tasks/EPIC-001-Proof-Owner/TASK-001-Wrong-Owner/IMPLEMENTATION.md |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Wrong Owner", "Parent ACs": "AC1"}],
+    )
+
+    audit = run_project(["epic", "audit", "--epic-id", "EPIC-001"], cwd=tmp_path)
+    assert audit.returncode == 0, audit.stdout + audit.stderr
+    assert "TASK-001 is not assigned as proof owner" in audit.stdout
+    audit_text = (epic_dir / "ACCEPTANCE-AUDIT.md").read_text(encoding="utf-8")
+    assert "| Gap |" in audit_text
+
+
+def test_visual_reference_recipe_requires_structured_evidence_before_review(
+    tmp_path: Path,
+) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Visual Proof"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Visual Proof",
+            ["- AC1: Production surface matches the reference visual exactly."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Visual Proof", ac_ids=["AC1"])
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Visual Child", "Parent ACs": "AC1"}],
+    )
+    child_dir = epic_dir / "TASK-001-Visual-Child"
+    child_dir.mkdir()
+    (child_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "TASK-001",
+            "Visual Child",
+            ["- AC1: Delivered UI matches the reference visual exactly."],
+        ),
+        encoding="utf-8",
+    )
+    (child_dir / "IMPLEMENTATION.md").write_text(
+        ready_implementation("AC1", qa=True),
+        encoding="utf-8",
+    )
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-001 | Visual Child | Testing | Task | AC1 | tasks/EPIC-001-Visual-Proof/TASK-001-Visual-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+
+    blocked = run_project(
+        ["epic", "status", "--epic-id", "EPIC-001", "--id", "TASK-001", "--to", "Review"],
+        cwd=tmp_path,
+    )
+    assert blocked.returncode != 0
+    assert "structured evidence: EVIDENCE.json is missing" in blocked.stderr
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    assert "structured evidence" not in doctor.stdout
+
+
+def test_multi_parent_ac_structured_evidence_requires_one_claim_per_ac(
+    tmp_path: Path,
+) -> None:
+    child_dir = tmp_path / "TASK-001-Multi-Ac"
+    child_dir.mkdir()
+    requirements_path = child_dir / "REQUIREMENTS.md"
+    implementation_path = child_dir / "IMPLEMENTATION.md"
+    requirements_path.write_text(
+            ready_requirements(
+                "TASK-001",
+                "Multi AC",
+                [
+                    "- AC1: Delivered UI matches the reference visual exactly.",
+                    "- AC2: Delivered UI matches the second reference visual exactly.",
+                ],
+            ),
+            encoding="utf-8",
+        )
+    implementation_path.write_text(
+        "## User Story\n\n"
+        "As a maintainer, I want visual/reference fidelity proof, so that drift is caught.\n\n"
+        "## Parent AC Coverage\n\n"
+        "- AC1, AC2\n\n"
+        "## Parent AC Evidence\n\n"
+        "- AC1: Structured evidence recorded.\n"
+        "- AC2: Structured evidence recorded.\n\n"
+        "## QA & Code Review\n\n"
+        "- Verdict: Pass\n"
+        "- Evidence: Visual/reference fidelity evidence recorded.\n"
+        "- Findings: None.\n",
+        encoding="utf-8",
+    )
+    evidence_dir = child_dir / "evidence"
+    evidence_dir.mkdir()
+    artifact = evidence_dir / "visual-comparison.txt"
+    artifact.write_text("rendered comparison evidence", encoding="utf-8")
+    artifact_hash = workflow_cli._sha256_file(artifact)
+
+    base_record = {
+        "id": "CLM-001",
+        "claim": "Delivered surface matches the reference visual.",
+        "recipe": "visual-reference-fidelity",
+        "status": "pass",
+        "commit": "abc123",
+        "timestamp": "2026-07-09T00:00:00Z",
+        "reference_artifact": "reference/playground.png",
+        "delivered_artifact": "http://localhost:3000/widget",
+        "comparison_method": "browser screenshot comparison",
+        "evidence_artifact": "evidence/visual-comparison.txt",
+        "evidence_artifact_hash": artifact_hash,
+        "invalid_substitutes": [],
+    }
+    (child_dir / workflow_cli.STRUCTURED_EVIDENCE_FILENAME).write_text(
+        json.dumps(
+            {
+                "task_id": "TASK-001",
+                "claims": [{**base_record, "parent_ac": "AC1, AC2"}],
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    comma_issues = workflow_cli._structured_evidence_issues(
+        requirements_path=requirements_path,
+        implementation_path=implementation_path,
+        parent_ac_ids={"AC1", "AC2"},
+    )
+    assert "structured evidence: missing passing claim records for parent ACs: AC1, AC2" in comma_issues
+
+    (child_dir / workflow_cli.STRUCTURED_EVIDENCE_FILENAME).write_text(
+        json.dumps(
+            {
+                "task_id": "TASK-001",
+                "claims": [
+                    {**base_record, "id": "CLM-001", "parent_ac": "AC1"},
+                    {**base_record, "id": "CLM-002", "parent_ac": "AC2"},
+                ],
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    split_issues = workflow_cli._structured_evidence_issues(
+        requirements_path=requirements_path,
+        implementation_path=implementation_path,
+        parent_ac_ids={"AC1", "AC2"},
+    )
+    assert split_issues == []
+
+
+def test_invalid_substitute_structured_evidence_blocks_doctor_and_audit(
+    tmp_path: Path,
+) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Invalid Proof"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Invalid Proof",
+            ["- AC1: Production surface matches the reference visual exactly."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Invalid Proof", ac_ids=["AC1"])
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Invalid Visual Child", "Parent ACs": "AC1"}],
+    )
+    child_dir = epic_dir / "TASK-001-Invalid-Visual-Child"
+    child_dir.mkdir()
+    (child_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "TASK-001",
+            "Invalid Visual Child",
+            ["- AC1: Delivered UI matches the reference visual exactly."],
+        ),
+        encoding="utf-8",
+    )
+    (child_dir / "IMPLEMENTATION.md").write_text(
+        ready_implementation("AC1", qa=True),
+        encoding="utf-8",
+    )
+    write_structured_evidence(child_dir, invalid_substitutes=["unit tests"])
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-001 | Invalid Visual Child | Complete | Task | AC1 | tasks/EPIC-001-Invalid-Proof/TASK-001-Invalid-Visual-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode != 0
+    assert "records invalid substitute evidence: unit tests" in doctor.stdout
+
+    audit = run_project(["epic", "audit", "--epic-id", "EPIC-001"], cwd=tmp_path)
+    assert audit.returncode == 0, audit.stdout + audit.stderr
+    assert "uses invalid substitute for `visual-reference-fidelity`: unit test" in audit.stdout
+    audit_text = (epic_dir / "ACCEPTANCE-AUDIT.md").read_text(encoding="utf-8")
+    assert "| Gap |" in audit_text
+
+
+def test_valid_structured_visual_evidence_satisfies_epic_audit(
+    tmp_path: Path,
+) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Valid Proof"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Valid Proof",
+            ["- AC1: Production surface matches the reference visual exactly."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Valid Proof", ac_ids=["AC1"])
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Valid Visual Child", "Parent ACs": "AC1"}],
+    )
+    child_dir = epic_dir / "TASK-001-Valid-Visual-Child"
+    child_dir.mkdir()
+    (child_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "TASK-001",
+            "Valid Visual Child",
+            ["- AC1: Delivered UI matches the reference visual exactly."],
+        ),
+        encoding="utf-8",
+    )
+    (child_dir / "IMPLEMENTATION.md").write_text(
+        ready_implementation("AC1", qa=True),
+        encoding="utf-8",
+    )
+    write_structured_evidence(child_dir)
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-001 | Valid Visual Child | Complete | Task | AC1 | tasks/EPIC-001-Valid-Proof/TASK-001-Valid-Visual-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+
+    audit = run_project(["epic", "audit", "--epic-id", "EPIC-001"], cwd=tmp_path)
+    assert audit.returncode == 0, audit.stdout + audit.stderr
+    assert "Epic acceptance audit passed." in audit.stdout
+
+
+def test_stale_evidence_artifact_hash_blocks_doctor_and_audit(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Stale Evidence"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Stale Evidence",
+            ["- AC1: Production surface matches the reference visual exactly."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Stale Evidence", ac_ids=["AC1"])
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Stale Visual Child", "Parent ACs": "AC1"}],
+    )
+    child_dir = epic_dir / "TASK-001-Stale-Visual-Child"
+    child_dir.mkdir()
+    (child_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "TASK-001",
+            "Stale Visual Child",
+            ["- AC1: Delivered UI matches the reference visual exactly."],
+        ),
+        encoding="utf-8",
+    )
+    (child_dir / "IMPLEMENTATION.md").write_text(
+        ready_implementation("AC1", qa=True),
+        encoding="utf-8",
+    )
+    write_structured_evidence(
+        child_dir,
+        evidence_artifact_hash="sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    )
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-001 | Stale Visual Child | Complete | Task | AC1 | tasks/EPIC-001-Stale-Evidence/TASK-001-Stale-Visual-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode != 0
+    assert "evidence_artifact_hash is stale" in doctor.stdout
+
+    audit = run_project(["epic", "audit", "--epic-id", "EPIC-001"], cwd=tmp_path)
+    assert audit.returncode == 0, audit.stdout + audit.stderr
+    assert "evidence_artifact_hash is stale" in audit.stdout
+
+
+def test_runtime_target_source_prose_contradiction_blocks_doctor(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Runtime Proof"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Runtime Proof",
+            ["- AC1: Runtime target/source proof identifies the exact execution target."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Runtime Proof", ac_ids=["AC1"])
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Runtime Child", "Parent ACs": "AC1"}],
+    )
+    child_dir = epic_dir / "TASK-001-Runtime-Child"
+    child_dir.mkdir()
+    (child_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "TASK-001",
+            "Runtime Child",
+            ["- AC1: Runtime target/source proof identifies the exact execution target."],
+        ),
+        encoding="utf-8",
+    )
+    impl_text = (
+        ready_implementation("AC1", qa=True)
+        + "\n## Runtime Proof Notes\n\n"
+        "- Execution target: release/deployed\n"
+        "- Source artifact: release bundle\n"
+    )
+    (child_dir / "IMPLEMENTATION.md").write_text(impl_text, encoding="utf-8")
+    write_runtime_structured_evidence(
+        child_dir,
+        execution_target="working/local",
+        source_artifact="local checkout",
+    )
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-001 | Runtime Child | Complete | Task | AC1 | tasks/EPIC-001-Runtime-Proof/TASK-001-Runtime-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode != 0
+    assert "prose claims execution_target release/deployed" in doctor.stdout
+    assert "structured evidence proves working/local" in doctor.stdout
 
 
 def test_epic_closeout_blocks_missing_parent_ac_evidence(tmp_path: Path) -> None:
@@ -1719,12 +2584,11 @@ def test_epic_closeout_accepts_approved_deferral_with_follow_up(tmp_path: Path) 
     epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
     assert (epic_dir / "DEFERRALS.md").exists()
     (epic_dir / "REQUIREMENTS.md").write_text(
-        "# Requirements\n\n"
-        "## Summary\n\n"
-        "- Task: EPIC-001\n"
-        "- Title: Deferred Epic\n\n"
-        "## Acceptance Criteria (Verifiable)\n\n"
-        "- AC1: Deferred parent outcome is explicitly tracked.\n",
+        ready_requirements(
+            "EPIC-001",
+            "Deferred Epic",
+            ["- AC1: Deferred parent outcome is explicitly tracked."],
+        ),
         encoding="utf-8",
     )
     (epic_dir / "DEFERRALS.md").write_text(
@@ -1786,6 +2650,15 @@ def test_epic_status_requires_parent_ac_evidence_before_complete(tmp_path: Path)
     assert epic.returncode == 0, epic.stdout + epic.stderr
 
     epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Epic Status",
+            ["- AC1: Status gates enforce parent evidence."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Epic Status")
     child_dir = epic_dir / "TASK-001-Status-Child"
     child_dir.mkdir()
     (child_dir / "REQUIREMENTS.md").write_text(
@@ -1811,6 +2684,10 @@ def test_epic_status_requires_parent_ac_evidence_before_complete(tmp_path: Path)
         "|---|---|---|---|---|---|---|---|\n"
         "| TASK-001 | Status Child | In Progress | Task | AC1 | tasks/EPIC-001-Epic-Status/TASK-001-Status-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
         encoding="utf-8",
+    )
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Status Child", "Parent ACs": "AC1"}],
     )
 
     testing = run_project(
@@ -1874,6 +2751,334 @@ def test_task_ready_blocks_placeholders_and_allows_ready_docs(tmp_path: Path) ->
     assert "TASK-001 readiness gate passed." in ready.stdout
 
 
+def test_task_approval_envelope_command_and_stale_detection(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(
+        ["task", "init", "--title", "Approval Envelope", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    requirements_path = task_dir / "REQUIREMENTS.md"
+    requirements_path.write_text(
+        ready_requirements("TASK-001", "Approval Envelope"),
+        encoding="utf-8",
+    )
+    implementation_path = task_dir / "IMPLEMENTATION.md"
+    implementation_path.write_text(ready_implementation(), encoding="utf-8")
+
+    # Simulate requirements drafted before command-written approval existed.
+    requirements_path.write_text(
+        workflow_cli._remove_markdown_section(
+            requirements_path.read_text(encoding="utf-8"),
+            workflow_cli.OWNER_APPROVAL_HEADING,
+        ),
+        encoding="utf-8",
+    )
+
+    blocked = run_project(["task", "status", "--id", "TASK-001", "--to", "Analysing"], cwd=tmp_path)
+    assert blocked.returncode == 0, blocked.stdout + blocked.stderr
+    blocked = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Plan Confirmed"],
+        cwd=tmp_path,
+    )
+    assert blocked.returncode != 0
+    assert "add `## Owner Approval`" in blocked.stderr
+
+    approved = run_project(
+        [
+            "task",
+            "approve-requirements",
+            "--id",
+            "TASK-001",
+            "--approved-by",
+            "Product Owner",
+            "--source",
+            "Owner approved TASK-001 requirements in planning thread.",
+        ],
+        cwd=tmp_path,
+    )
+    assert approved.returncode == 0, approved.stdout + approved.stderr
+    approved_text = requirements_path.read_text(encoding="utf-8")
+    assert "- Approved scope envelope: Yes" in approved_text
+    assert "- Approved artifact identity: sha256:" in approved_text
+
+    confirmed = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Plan Confirmed"],
+        cwd=tmp_path,
+    )
+    assert confirmed.returncode == 0, confirmed.stdout + confirmed.stderr
+
+    requirements_path.write_text(
+        approved_text + "\n## Added Scope\n\n- This changes the approved requirements.\n",
+        encoding="utf-8",
+    )
+    stale = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "In Progress"],
+        cwd=tmp_path,
+    )
+    assert stale.returncode != 0
+    assert "approval is stale because requirements or ACs changed" in stale.stderr
+
+
+def test_task_adopt_records_approval_and_untrusted_evidence_gate(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(["task", "init", "--title", "Legacy Task", "--update-tracker"], cwd=tmp_path)
+    assert task.returncode == 0, task.stdout + task.stderr
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    (task_dir / "REQUIREMENTS.md").write_text(
+        "# Requirements\n\n"
+        "## Summary\n\n"
+        "- Task: TASK-001\n"
+        "- Title: Legacy Task\n\n"
+        "## Goal\n\n"
+        "- Adopt old work.\n\n"
+        "## Non-Goals\n\n"
+        "- Do not change product scope.\n\n"
+        "## Users & Context\n\n"
+        "- Maintainers need old work under gates.\n\n"
+        "## Requirements (Outcome-Focused)\n\n"
+        "- The old task can continue only after adoption.\n\n"
+        "## Acceptance Criteria (Verifiable)\n\n"
+        "- AC1: Legacy adoption is recorded.\n\n"
+        "## Open Questions (Answer Needed)\n\n"
+        "- None.\n\n"
+        "## Decisions (Resolved)\n\n"
+        "- Adopt explicitly.\n\n"
+        "## Validation Plan\n\n"
+        "- Run workflow status gates.\n",
+        encoding="utf-8",
+    )
+    (task_dir / "IMPLEMENTATION.md").write_text(
+        ready_implementation(qa=True),
+        encoding="utf-8",
+    )
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace(
+            "| TASK-001 | Legacy Task | To Do |",
+            "| TASK-001 | Legacy Task | Analysing |",
+        ),
+        encoding="utf-8",
+    )
+
+    blocked = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Plan Confirmed"],
+        cwd=tmp_path,
+    )
+    assert blocked.returncode != 0
+    assert "Owner Approval" in blocked.stderr
+
+    adopt = run_project(
+        [
+            "task",
+            "adopt",
+            "--id",
+            "TASK-001",
+            "--approved-by",
+            "Test Owner",
+            "--source",
+            "Owner approved legacy adoption.",
+        ],
+        cwd=tmp_path,
+    )
+    assert adopt.returncode == 0, adopt.stdout + adopt.stderr
+    requirements_text = (task_dir / "REQUIREMENTS.md").read_text(encoding="utf-8")
+    assert "## Legacy Adoption" in requirements_text
+    assert "Evidence refreshed after adoption: No" in requirements_text
+
+    confirmed = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Plan Confirmed"],
+        cwd=tmp_path,
+    )
+    assert confirmed.returncode == 0, confirmed.stdout + confirmed.stderr
+
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace(
+            "| TASK-001 | Legacy Task | Plan Confirmed |",
+            "| TASK-001 | Legacy Task | Review |",
+        ),
+        encoding="utf-8",
+    )
+    complete_blocked = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Complete"],
+        cwd=tmp_path,
+    )
+    assert complete_blocked.returncode != 0
+    assert "pre-adoption evidence as untrusted" in complete_blocked.stderr
+
+    refreshed = run_project(
+        [
+            "task",
+            "adopt",
+            "--id",
+            "TASK-001",
+            "--approved-by",
+            "Test Owner",
+            "--source",
+            "Owner approved refreshed legacy evidence.",
+            "--evidence-refreshed",
+        ],
+        cwd=tmp_path,
+    )
+    assert refreshed.returncode == 0, refreshed.stdout + refreshed.stderr
+    completed = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Complete"],
+        cwd=tmp_path,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_epic_adopt_records_approval_and_amendments_file(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Legacy Epic"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / workflow_cli.EPIC_AMENDMENTS_FILENAME).unlink()
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        "# Requirements\n\n"
+        "## Summary\n\n"
+        "- Task: EPIC-001\n"
+        "- Title: Legacy Epic\n\n"
+        "## Goal\n\n"
+        "- Adopt old epic.\n\n"
+        "## Non-Goals\n\n"
+        "- Do not infer closeout evidence.\n\n"
+        "## Users & Context\n\n"
+        "- Maintainers need old epic under gates.\n\n"
+        "## Requirements (Outcome-Focused)\n\n"
+        "- The old epic has explicit adoption metadata.\n\n"
+        "## Acceptance Criteria (Verifiable)\n\n"
+        "- AC1: Legacy epic adoption is recorded.\n\n"
+        "## Open Questions (Answer Needed)\n\n"
+        "- None.\n\n"
+        "## Decisions (Resolved)\n\n"
+        "- Adopt explicitly.\n\n"
+        "## Validation Plan\n\n"
+        "- Run workflow status gates.\n",
+        encoding="utf-8",
+    )
+
+    adopt = run_project(
+        [
+            "epic",
+            "adopt",
+            "--epic-id",
+            "EPIC-001",
+            "--approved-by",
+            "Test Owner",
+            "--source",
+            "Owner approved legacy epic adoption.",
+        ],
+        cwd=tmp_path,
+    )
+    assert adopt.returncode == 0, adopt.stdout + adopt.stderr
+    requirements_text = (epic_dir / "REQUIREMENTS.md").read_text(encoding="utf-8")
+    assert "## Owner Approval" in requirements_text
+    assert "## Legacy Adoption" in requirements_text
+    assert "Evidence refreshed after adoption: No" in requirements_text
+    assert (epic_dir / workflow_cli.EPIC_AMENDMENTS_FILENAME).exists()
+
+
+def test_doctor_flags_manual_active_task_without_approval_envelope(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    task = run_project(
+        ["task", "init", "--title", "Manual Bypass", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    requirements_text = workflow_cli._remove_markdown_section(
+        ready_requirements("TASK-001", "Manual Bypass"),
+        workflow_cli.OWNER_APPROVAL_HEADING,
+    )
+    (task_dir / "REQUIREMENTS.md").write_text(requirements_text, encoding="utf-8")
+    (task_dir / "IMPLEMENTATION.md").write_text(ready_implementation(), encoding="utf-8")
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace(" | To Do | ", " | In Progress | "),
+        encoding="utf-8",
+    )
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    assert "TASK-001 approval envelope" in doctor.stdout
+    assert "add `## Owner Approval`" in doctor.stdout
+
+
+def test_epic_child_ready_uses_parent_approval_envelope_without_child_approval(
+    tmp_path: Path,
+) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Envelope Parent"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Envelope Parent",
+            ["- AC1: In-envelope child work can proceed."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Envelope Parent")
+    child_dir = epic_dir / "TASK-001-In-Envelope-Child"
+    child_dir.mkdir()
+    child_requirements = ready_requirements(
+        "TASK-001",
+        "In Envelope Child",
+        ["- AC1: Child work is ready inside the parent envelope."],
+    )
+    child_requirements = workflow_cli._remove_markdown_section(
+        child_requirements,
+        workflow_cli.OWNER_APPROVAL_HEADING,
+    )
+    child_requirements = child_requirements.replace(
+        "## Goal\n\n",
+        "## Owner Approval\n\n"
+        "- Requirements reviewed by owner: No\n"
+        "- Acceptance criteria reviewed by owner: No\n"
+        "- Approved for decomposition: No\n"
+        "- Approved for implementation: No\n"
+        "- Approved scope envelope: No\n"
+        "- Approved by: Inherited from parent epic envelope when unchanged\n"
+        "- Approval date: Inherited from parent epic envelope when unchanged\n"
+        "- Approval note / source: Inherited from parent epic envelope when unchanged\n"
+        "- Approved artifact identity: Inherited from parent epic envelope when unchanged\n\n"
+        "## Goal\n\n",
+    )
+    (child_dir / "REQUIREMENTS.md").write_text(child_requirements, encoding="utf-8")
+    (child_dir / "IMPLEMENTATION.md").write_text(ready_implementation("AC1"), encoding="utf-8")
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-001 | In Envelope Child | In Progress | Task | AC1 | tasks/EPIC-001-Envelope-Parent/TASK-001-In-Envelope-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "In Envelope Child", "Parent ACs": "AC1"}],
+    )
+
+    ready_child = run_project(
+        ["epic", "ready-child", "--epic-id", "EPIC-001", "--id", "TASK-001"],
+        cwd=tmp_path,
+    )
+    assert ready_child.returncode == 0, ready_child.stdout + ready_child.stderr
+    assert "TASK-001 readiness gate passed" in ready_child.stdout
+
+
 def test_epic_ready_blocks_vague_epic_and_decomposition(tmp_path: Path) -> None:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
@@ -1920,6 +3125,7 @@ def test_epic_lifecycle_gates_global_epic_status(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
+    write_epic_contract(epic_dir, title="Lifecycle Epic")
 
     ready = run_project(
         ["epic", "lifecycle", "--epic-id", "EPIC-001", "--to", "Ready"],
@@ -1971,12 +3177,25 @@ def test_epic_ready_child_blocks_shallow_child_status(tmp_path: Path) -> None:
     epic = run_project(["epic", "init", "--title", "Child Readiness"], cwd=tmp_path)
     assert epic.returncode == 0, epic.stdout + epic.stderr
     epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Child Readiness",
+            ["- AC1: Shallow child readiness is enforced."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Child Readiness")
     (epic_dir / "TRACKER.md").write_text(
         "# Stories\n\n"
         "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
         "|---|---|---|---|---|---|---|---|\n"
         "| TASK-001 | Shallow Child | In Progress | Task | AC1 | tasks/EPIC-001-Child-Readiness/TASK-001-Shallow-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
         encoding="utf-8",
+    )
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Shallow Child", "Parent ACs": "AC1"}],
     )
     child_dir = epic_dir / "TASK-001-Shallow-Child"
     child_dir.mkdir()

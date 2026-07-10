@@ -1,0 +1,13 @@
+Focused recipe evidence tests:
+
+.venv/bin/python -m pytest tests/test_doctor.py -k "structured or recipe or visual_reference or invalid_substitute or valid_structured"
+
+Result:
+3 passed, 58 deselected
+
+Full workflow regression suite:
+
+.venv/bin/python -m pytest
+
+Result:
+61 passed

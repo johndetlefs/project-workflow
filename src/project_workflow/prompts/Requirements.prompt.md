@@ -14,6 +14,8 @@ This is an iterative prompt. Expect to run it multiple times:
 
 Operating model: the owner/PM/BA provides product intent and decisions conversationally; the agent extracts, drafts, records, and validates workflow artifacts. Do not ask the owner to manually fill templates as the normal path.
 
+Approval model: requirements capture ends with one explicit owner review of requirements and acceptance criteria. Record that approval with `task approve-requirements` or `epic approve-requirements` only after the owner confirms the drafted requirements/ACs. Do not treat the agent's draft, implementation intent, or silence as approval.
+
 Minimum intake context to gather before downstream planning:
 
 - Problem or opportunity
@@ -80,6 +82,7 @@ Process:
 - Update `REQUIREMENTS.md` to be internally consistent.
 - If any critical requirement is ambiguous, untestable, or missing, write it as an open question and then ask the user the minimum set of questions to resolve it.
 - Stop after asking questions. Do not proceed to planning/implementation until open questions are resolved or explicitly accepted as risks and recorded.
+- Once open questions are resolved and the owner confirms the final requirements/ACs, record the approval envelope with the workflow CLI. After that, downstream agents should not ask for repeated approval unless the requirements/ACs, artifact identity, source-of-truth interpretation, proof obligations, or scope materially change.
 
 ## Overview
 
@@ -156,6 +159,8 @@ Capture resolved questions and selected options from the Clarify step.
 
 - How the user will verify “done”:
 - Rollout notes (if any):
+- Required proof recipes, if triggered by requirements/claims:
+- Invalid substitutes for those proof recipes:
 
 ## Review Questions (Answer Needed)
 
@@ -183,9 +188,10 @@ Guardrails:
 - The requirements must be internally consistent (no contradictions across sections).
 - Every item in `## Acceptance Criteria` must have a stable ID (`AC1`, `AC2`, etc.) and be verifiable in `## Validation Plan (User-Facing)`.
 - In `## Validation Plan (User-Facing)`, include an explicit AC-by-AC mapping (`AC1 -> verification step`, `AC2 -> verification step`, etc.).
+- If the owner says the work must match a design, reference, screenshot, visual state, deployed/runtime behavior, external contract, or multi-context behavior, explicitly name the required proof recipe and the invalid substitutes. Examples: visual fidelity requires rendered comparison against the delivered user-facing artifact; runtime target/source proof requires the exact target, source/artifact under test, observation method, and positive proof that target used that source.
 - Preserve existing AC IDs when revising requirements. Do not renumber existing ACs unless the user explicitly approves the requirements change.
 - If this story includes delegated execution (`project.delegate`), ensure requirements, acceptance criteria, and decisions explicitly cover: execution modes, default `sequential` behavior, dependency-map input + strict validation (unknown IDs, self-dependencies, cycles), default parallel worker limit (`4`), fail-fast semantics (stop new launches, allow in-flight completion), and final status reporting (including halted items).
 - If delegated-execution decisions evolve, update both `## Acceptance Criteria` and `## Decisions Log` in the same pass so downstream planning/implementation stay aligned.
 - Do not create or update implementation task lists in `IMPLEMENTATION.md` from this prompt; the `project.planner` prompt owns tasks.
 - Do not move the story status past `Analysing` from this prompt.
-- After requirements and implementation planning are complete, the agent must use `./.project-workflow/cli/workflow task ready --id ${input:taskId}` before implementation-oriented status transitions.
+- After requirements and implementation planning are complete, the agent must use `./.project-workflow/cli/workflow task ready --id ${input:taskId}` before implementation-oriented status transitions. If it reports missing or stale owner approval, collect the specific owner confirmation once and record it with `task approve-requirements`; do not continue into implementation from an unapproved envelope.

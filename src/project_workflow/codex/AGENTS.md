@@ -46,6 +46,17 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 - If a task-specific workflow is requested but the task folder does not exist, run `project-task` first before requirements, planning, clarification, implementation, review, or retro.
 - Do not skip directly to planning or implementation when requirements are missing, ambiguous, or not accepted as explicit risks.
 
+## Drift Gate Requirements
+
+- Before implementation-oriented work, record one owner-approved requirements/AC envelope with `task approve-requirements` or `epic approve-requirements`. Do not treat an agent draft, silence, or implementation request as approval.
+- Do not ask for repeated generic approval when work remains inside the unchanged approved envelope. Fix concrete drift/evidence gaps directly, and ask the owner only for material scope changes, amendments, deviations, deferrals, artifact identity changes, or proof-obligation changes.
+- For pre-existing work, use `task adopt` or `epic adopt`; pre-adoption inferred evidence remains untrusted until refreshed.
+- New/adopted epics require non-placeholder `EPIC-CONTRACT.md` before decomposition, child approval/scaffolding, or movement into `Ready`/`In Progress`.
+- Epic child rows must come from `DECOMPOSITION.md` or an approved `AMENDMENTS.md` record. Direct tracker edits outside that authority cannot advance through approval, scaffold, readiness, Review, or Complete gates.
+- Scaffolded epic children inherit parent AC coverage, child charters, proof ownership, artifact targets, invalid substitutes, and child-local `EVIDENCE.json`.
+- If requirements, acceptance criteria, child charters, epic contracts, or material claims trigger a proof recipe, structured evidence is required. QA prose, code review, tests, builds, surrogate surfaces, and wrong target/source pairs are invalid substitutes where the recipe requires stronger proof.
+- Visual/reference fidelity requires calibration before implementation and rendered comparison against the delivered user-facing artifact before Review/Complete. Runtime target/source proof requires the exact execution target, source/artifact under test, observation method, and positive proof that the target used that source.
+
 ## CLI Requirements
 
 - Treat `.project-workflow/cli/workflow` as the authoritative way to perform operations it supports.
@@ -69,7 +80,7 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.
 - When planning, make every implementation task row map to one or more stable acceptance criteria IDs (`AC1`, `AC2`, etc.) from the task requirements or implementation acceptance criteria section.
 - When planning epic-managed child tasks, keep both the child AC IDs and parent epic AC coverage visible in requirements, implementation rows, validation evidence, and QA notes.
-- Before implementation-oriented status transitions, run readiness gates where available: `task ready`, `epic ready`, or `epic ready-child`. If a gate fails, remediate repo-gatherable gaps directly and ask the owner only for decisions or missing product context.
+- Before implementation-oriented status transitions, run readiness gates where available: `task ready`, `epic ready`, or `epic ready-child`. If a gate fails, remediate repo-gatherable gaps directly and ask the owner only for decisions, missing product context, or material authority changes listed above.
 - Keep `.project-workflow/TRACKER.md` status aligned with the current workflow state using `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` when the command is available.
 - Do not mark a task or work item `Complete` unless implementation validation and QA/code review have passed and the user explicitly asks for completion.
 

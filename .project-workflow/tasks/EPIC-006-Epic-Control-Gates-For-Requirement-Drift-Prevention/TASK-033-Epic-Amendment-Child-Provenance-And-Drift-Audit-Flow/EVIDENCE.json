@@ -1,0 +1,20 @@
+{
+  "task_id": "TASK-033",
+  "claims": [
+    {
+      "id": "CLM-001",
+      "parent_ac": "AC8, AC9, AC12, AC14",
+      "claim": "____",
+      "recipe": "visual-reference-fidelity",
+      "status": "pending",
+      "commit": "____",
+      "timestamp": "____",
+      "reference_artifact": "____",
+      "delivered_artifact": "____",
+      "comparison_method": "____",
+      "evidence_artifact": "____",
+      "evidence_artifact_hash": "____",
+      "invalid_substitutes": []
+    }
+  ]
+}
