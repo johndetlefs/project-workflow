@@ -39,6 +39,8 @@ Required workflow:
   - epic child: `./.project-workflow/cli/workflow epic ready-child --epic-id <EPIC_ID> --id ${input:taskId}`
 - If the ready gate fails, remediate the listed requirements/planning/clarification/approval/evidence gaps or ask the owner only for the specific material decision required. Do not code from an unapproved or stale requirements/AC envelope.
 - If approval is missing or stale after requirements and ACs are ready, record the one owner-approved envelope with `task approve-requirements` or `epic approve-requirements` as applicable; do not treat the implementation request itself as approval.
+- For a new standalone task, require `Ready` after Planner, post-plan Clarify, and `task ready`.
+  `Plan Confirmed` is accepted only as a legacy-compatible predecessor.
 - Before coding, move the relevant row to `In Progress` with the workflow CLI. For unchanged work inside an approved envelope, do not ask for repeated owner approval.
 - After implementation, run the relevant status command to move the row to `Testing`.
 - Do not set it to `Complete`; completion is owned by `project.qa-review` after QA/code review passes and the user explicitly approves completion.

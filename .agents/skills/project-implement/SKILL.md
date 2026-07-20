@@ -2,6 +2,7 @@
 name: project-implement
 description: Use when implementing one project-workflow work item with requirements alignment, tracker updates, validation, and concise reporting.
 ---
+<!-- project-workflow:generated -->
 
 # Project Implement
 

@@ -5,7 +5,9 @@ argument-hint: taskId=TASK-330-Superuser planFocus="..."
 agent: agent
 ---
 
-Use this prompt to propose a safe, incremental plan.
+Use this prompt to produce a safe, incremental plan after the owner has approved the
+requirements/acceptance-criteria envelope. The plan is agent-owned execution detail inside that
+authority; a second generic human plan-approval ceremony is not required by default.
 
 Reference docs:
 
@@ -120,7 +122,12 @@ Planning guardrails:
 - If `REQUIREMENTS.md` is missing, stop and instruct the user to run the `project.requirements` prompt first.
 - If `REQUIREMENTS.md` has any unresolved `## Open Questions`, stop and instruct the user to run the `project.clarify` prompt (or answer directly) and ensure the outcomes/decisions are recorded back into `REQUIREMENTS.md` before planning.
 - Exception: you may proceed with a plan only if the user explicitly accepts the unresolved items as risks AND that acceptance is recorded in `REQUIREMENTS.md` (e.g., in `## Decisions Log`).
-- Planning is not implementation authority by itself. Before moving to `Plan Confirmed` or implementation, run `./.project-workflow/cli/workflow task ready --id ${input:taskId}` and remediate the concrete gate output. If owner approval is missing or stale after requirements are ready, record the one approved requirements/AC envelope with `task approve-requirements`.
+- Before planning, verify the requirements approval envelope. If approval is missing or stale,
+  stop and return to owner review; do not ask an agent to self-approve it.
+- After approval, move the task to `Analysing`, write the plan, run a post-plan clarification pass
+  against requirements and repo constraints, then run `task ready`. Remediate repo-gatherable plan
+  gaps autonomously. Return to the owner only for material scope drift, new product decisions,
+  exceptional authority, or a deliberately requested/high-risk plan review.
 - If you detect conflicts between `REQUIREMENTS.md`, the `## User Story` in `IMPLEMENTATION.md`, and repo constraints, stop and instruct the user to run the `project.clarify` prompt to resolve them and record decisions back into `REQUIREMENTS.md`.
 
 Task list guardrails:
@@ -135,7 +142,7 @@ Task list guardrails:
 
 Tracker rules:
 
-- Use statuses: `To Do`, `Analysing`, `Plan Confirmed`, `In Progress`, `Blocked`, `Testing`, `Review`, `Complete`, `N/A`.
+- Use statuses: `To Do`, `Analysing`, `Ready`, `Plan Confirmed` (legacy-compatible), `In Progress`, `Blocked`, `Testing`, `Review`, `Complete`, `N/A`.
 - Only mark `Complete` after implementation validation and QA/code review have passed AND the user explicitly instructs you to mark it `Complete`.
 
 User story tracker rules:
@@ -143,5 +150,8 @@ User story tracker rules:
 - `/.project-workflow/TRACKER.md` is part of the process. When moving into planning for a story/task, ensure there is a row for `${input:taskId}` and use the lifecycle command to update its `Status`.
 - Use the same status vocabulary as above.
 - During planning, run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to Analysing`.
-- Only run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to "Plan Confirmed"` after the user explicitly confirms the plan and `./.project-workflow/cli/workflow task ready --id ${input:taskId}` passes.
+- When the post-plan clarification pass and `task ready` succeed, run
+  `./.project-workflow/cli/workflow task status --id ${input:taskId} --to Ready` and continue inside
+  the approved envelope. `Plan Confirmed` remains valid for legacy tasks but is not the default
+  human checkpoint for new work.
 - Do not set story `Status` to `Complete` unless QA/code review has passed AND the user explicitly instructs you to mark it `Complete`.

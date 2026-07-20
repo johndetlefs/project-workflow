@@ -1,5 +1,5 @@
 ---
-description: Project Workflow spec-driven development process for task scaffolding, requirements, planning, clarification, implementation, QA review, retro, and validation.
+description: Project Workflow for routing, Fix/task/epic scaffolding, requirements authority, planning, implementation, QA, and validation.
 globs:
 alwaysApply: true
 ---
@@ -14,14 +14,19 @@ Project Workflow is owner-directed and agent-operated. The owner supplies produc
 
 1. Constitution: establish or update `.project-workflow/CONSTITUTION.md` for product outcomes.
 2. Backlog: optionally capture future intent in `.project-workflow/BACKLOG.md` before it becomes committed task or epic workflow state.
-3. Task: create one task folder under `.project-workflow/tasks/TASK-<NNN>-<Suffix>/`, with `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and a tracker row.
-4. Requirements: capture the user story, scope, acceptance criteria, open questions, decisions, and validation plan in `REQUIREMENTS.md`.
-5. Owner approval: after requirements and ACs are confirmed once, record the approved envelope with `task approve-requirements` or `epic approve-requirements`.
-6. Planner: turn confirmed requirements into testable work items in `IMPLEMENTATION.md`.
-7. Clarify: resolve inconsistencies between requirements, plan, repo constraints, and product outcomes before implementation.
-8. Implement: make the smallest scoped code change for one work item, validate it, and move it to testing.
-9. QA & Code Review: independently verify acceptance criteria and review code before completion.
-10. Retro: after completion, update durable conventions, agent guidance, and follow-up tasks.
+3. Route: keep in-scope corrections in active work; use one lightweight Fix for a bounded
+   post-completion correction, a Task for a new outcome/multiple independent items, and an Epic for
+   coordinated workstreams. The agent recommends the route from evidence; the user's label is not
+   binding.
+4. Requirements: capture the task outcome, scope, acceptance criteria, decisions, and validation.
+5. Owner approval: record the requirements/AC envelope before planning with
+   `task approve-requirements` or `epic approve-requirements`.
+6. Planner: autonomously turn the approved envelope into testable work items.
+7. Clarify: run a post-plan consistency pass; return to the owner only for material drift.
+8. Ready: run `task ready` and move new tasks to `Ready`; `Plan Confirmed` is legacy-compatible.
+9. Implement: make the smallest scoped change, validate it, and move it to testing.
+10. QA & Code Review: independently verify acceptance criteria and review code before completion.
+11. Retro: after completion, record reusable lessons or follow-up work when present.
 
 ## Cursor Usage
 
@@ -33,12 +38,18 @@ Project Workflow is owner-directed and agent-operated. The owner supplies produc
 - Read `.project-workflow/config.json` for repo-owned task ID namespaces, ID generation, and accepted doctor warning fingerprints when it exists. Sequential IDs look like `TASK-001`; unique IDs keep the prefix and use a 5-character base36 suffix by default, such as `WF-K7F3Q`.
 - Do not report accepted doctor warnings as active issues after `doctor` hides them. Use `doctor --show-accepted` only when auditing accepted workflow debt.
 - If a task folder does not exist, run `./.project-workflow/cli/workflow task init --title "<TITLE>" --update-tracker` from the repo root and let the CLI assign the next configured task ID. Add `--prefix <PREFIX>` only when the user or repo guidance calls for a configured non-default prefix.
+- For one bounded correction against delivered/accepted behavior, run
+  `./.project-workflow/cli/workflow fix init --title "<TITLE>"`. Fixes use one `FIX.md`, the shared
+  tasks directory, and the global tracker. Do not create a separate fixes directory/tracker.
 - Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
 - Read `.project-workflow/tasks/<ID>-*/IMPLEMENTATION.md` before implementing, reviewing, or running retro for a work item.
 - When planning, make every implementation task row map to one or more stable acceptance criteria IDs (`AC1`, `AC2`, etc.) from the task requirements or implementation acceptance criteria section.
 - If requirements, acceptance criteria, child charters, epic contracts, or material claims trigger a proof recipe, record structured evidence in `EVIDENCE.json` and verify the referenced artifact. Visual/reference fidelity needs rendered comparison against the delivered user-facing artifact; runtime target/source proof needs the exact execution target, source/artifact under test, observation method, and positive proof that the target used that source.
 - For epic-managed work, keep parent epic AC coverage visible from the epic tracker through child requirements, implementation, QA evidence, and closeout. New epic trackers use `Parent ACs`; legacy trackers may carry coverage in `Notes` as `Covers AC1, AC3`.
 - Before implementation-oriented status transitions, run `task ready`, `epic ready`, or `epic ready-child` where applicable. If a gate fails, fix repo-gatherable gaps directly and ask the owner only for missing product decisions, initial requirements/AC approval, amendments, deviations, changed artifact identity, changed proof obligations, or deferrals. Do not ask for repeated approval when the work remains inside the unchanged approved envelope.
+- For new tasks, owner approval comes before planning. After approval, run Planner, post-plan
+  Clarify, `task ready`, and move to `Ready` autonomously unless material drift or exceptional risk
+  requires owner input.
 - For new/adopted epics, `EPIC-CONTRACT.md` and `DECOMPOSITION.md` are authority artifacts. Child rows must come from the approved decomposition plan or an `AMENDMENTS.md` record; direct tracker edits outside that authority cannot advance through gated transitions.
 - The global tracker summarizes epic rows; each epic `TRACKER.md` owns child rows. Proposed child rows stay in the epic tracker until approved and scaffolded.
 - Keep `.project-workflow/TRACKER.md` status aligned with the current workflow state using `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` when the command is available.
@@ -47,6 +58,8 @@ Project Workflow is owner-directed and agent-operated. The owner supplies produc
 ## Status Rules
 
 - New scaffolded tasks start as `To Do`.
+- Move new tasks to `Analysing` only after requirements/AC approval; move them to `Ready` after
+  planning, clarification, and `task ready` pass.
 - Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to "In Progress"` before implementation work begins.
 - Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to Testing` after implementation and validation have been run.
 - Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to Review` while QA/code review is running.

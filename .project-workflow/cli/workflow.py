@@ -30,6 +30,7 @@ PROMPT_FILES = [
     "Clarify.prompt.md",
     "Delegate.prompt.md",
     "Epic.prompt.md",
+    "Fix.prompt.md",
     "Implement.prompt.md",
     "Planner.prompt.md",
     "QAReview.prompt.md",
@@ -43,6 +44,7 @@ CODEX_SKILL_NAMES = [
     "project-constitution",
     "project-task",
     "project-epic",
+    "project-fix",
     "project-requirements",
     "project-planner",
     "project-clarify",
@@ -54,6 +56,7 @@ CODEX_SKILL_NAMES = [
 
 TASK_ID_PREFIX = "TASK"
 EPIC_ID_PREFIX = "EPIC"
+FIX_ID_PREFIX = "FIX"
 BACKLOG_ID_PREFIX = "BL"
 ID_PADDING = 3
 WORKFLOW_CONFIG_FILENAME = "config.json"
@@ -61,11 +64,12 @@ EPIC_CONTRACT_FILENAME = "EPIC-CONTRACT.md"
 DECOMPOSITION_PLAN_FILENAME = "DECOMPOSITION.md"
 EPIC_AMENDMENTS_FILENAME = "AMENDMENTS.md"
 STRUCTURED_EVIDENCE_FILENAME = "EVIDENCE.json"
-ID_GENERATION_KINDS = ("tasks", "epics", "backlog")
+ID_GENERATION_KINDS = ("tasks", "epics", "fixes", "backlog")
 ID_GENERATION_MODES = ("sequential", "unique")
 DEFAULT_ID_GENERATION = {
     "tasks": "sequential",
     "epics": "sequential",
+    "fixes": "sequential",
     "backlog": "sequential",
 }
 UNIQUE_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -115,6 +119,23 @@ TRACKER_STATUSES = (
     "Complete",
     "N/A",
 )
+FIX_CLASSIFICATIONS = ("Defect", "Regression", "Change Request", "Incident")
+FIX_MODES = ("Normal", "Hotfix")
+FIX_SEVERITIES = ("Low", "Medium", "High", "Critical")
+FIX_RISK_LEVELS = ("Low", "Medium", "High", "Critical")
+FIX_ACTIVE_DISPOSITION = "Pending"
+FIX_TERMINAL_DISPOSITIONS = ("Fixed", "Duplicate", "Rejected", "Deferred", "Promoted")
+FIX_REPOSITORY_LINK_COLUMNS = ("Repo", "Branch", "PR", "Evidence")
+FIX_STATUS_TRANSITIONS = {
+    "To Do": {"Ready", "In Progress", "Blocked", "N/A"},
+    "Ready": {"In Progress", "Blocked", "N/A"},
+    "In Progress": {"Testing", "Blocked"},
+    "Testing": {"Review", "In Progress", "Blocked"},
+    "Review": {"Complete", "In Progress", "Blocked"},
+    "Blocked": {"To Do", "Ready", "In Progress", "Testing", "Review", "N/A"},
+    "Complete": set(),
+    "N/A": set(),
+}
 EPIC_TRACKER_COLUMNS = (
     "ID",
     "Title",
@@ -318,12 +339,13 @@ AC_MAPPED_IMPLEMENTATION_STATUSES = (
 )
 TASK_STATUS_TRANSITIONS = {
     "To Do": {"Analysing", "Blocked", "N/A"},
-    "Analysing": {"Plan Confirmed", "Blocked"},
+    "Analysing": {"Ready", "Plan Confirmed", "Blocked"},
+    "Ready": {"In Progress", "Blocked"},
     "Plan Confirmed": {"In Progress", "Blocked"},
     "In Progress": {"Testing", "Blocked"},
     "Testing": {"Review", "In Progress", "Blocked"},
     "Review": {"Complete", "In Progress", "Blocked"},
-    "Blocked": {"In Progress", "Analysing", "Plan Confirmed", "Testing", "Review"},
+    "Blocked": {"Ready", "In Progress", "Analysing", "Plan Confirmed", "Testing", "Review"},
     "Complete": set(),
     "N/A": set(),
 }
@@ -529,11 +551,19 @@ def _managed_project_workflow_block() -> str:
         "`--agent claude-code`, or `--agent github-copilot` when selecting a mode. "
         "Do not use bare `project init` unless the package is intentionally installed "
         "and known to be current.\n"
-        "- Use `./.project-workflow/cli/workflow` for supported backlog, task, and validation commands.\n"
-        "- Before implementation, record one owner approval envelope with "
+        "- Use `./.project-workflow/cli/workflow` for supported backlog, Fix, task, epic, "
+        "and validation commands.\n"
+        "- Route one bounded post-completion correction to a Fix, new outcomes or multiple "
+        "independent items to a Task, and coordinated workstreams to an Epic. The user's label "
+        "is evidence, not a binding classification. Fixes use one `FIX.md`, the shared tasks "
+        "directory, and the global tracker; do not create a separate Fix tracker.\n"
+        "- Before planning, record one owner approval envelope with "
         "`task approve-requirements` or `epic approve-requirements`; unchanged work inside "
         "that envelope should proceed without repeated approval prompts, while drift, stale "
         "requirements, or evidence gaps must be fixed or amended.\n"
+        "- After requirements approval, run Planner, post-plan Clarify, `task ready`, and move "
+        "new tasks to `Ready` autonomously unless material drift or exceptional risk requires "
+        "owner input. `Plan Confirmed` remains legacy-compatible.\n"
         "- For pre-existing work, use `task adopt` or `epic adopt`; pre-adoption inferred "
         "evidence stays untrusted until refreshed.\n"
         "- For epics, `epic decompose` writes `DECOMPOSITION.md`; child rows must match "
@@ -631,8 +661,14 @@ def _normalize_task_id_prefix(prefix: str) -> str:
             f"Invalid task ID prefix '{prefix}'. "
             "Use uppercase letters/numbers, starting with a letter."
         )
-    if normalized == EPIC_ID_PREFIX:
-        raise SystemExit(f"Task ID prefix '{EPIC_ID_PREFIX}' is reserved for epics.")
+    reserved = {
+        EPIC_ID_PREFIX: "epics",
+        FIX_ID_PREFIX: "fixes",
+    }
+    if normalized in reserved:
+        raise SystemExit(
+            f"Task ID prefix '{normalized}' is reserved for {reserved[normalized]}."
+        )
     return normalized
 
 
@@ -819,6 +855,10 @@ def _valid_epic_id(row_id: str, *, config: WorkflowConfig) -> bool:
     return _valid_id_for_prefix(row_id, prefix=EPIC_ID_PREFIX, config=config, kind="epics")
 
 
+def _valid_fix_id(row_id: str, *, config: WorkflowConfig) -> bool:
+    return _valid_id_for_prefix(row_id, prefix=FIX_ID_PREFIX, config=config, kind="fixes")
+
+
 def _valid_backlog_id(row_id: str, *, config: WorkflowConfig) -> bool:
     return _valid_id_for_prefix(
         row_id,
@@ -829,7 +869,22 @@ def _valid_backlog_id(row_id: str, *, config: WorkflowConfig) -> bool:
 
 
 def _valid_workflow_ref_id(row_id: str, *, config: WorkflowConfig) -> bool:
-    return _valid_epic_id(row_id, config=config) or _valid_task_id(row_id, config=config)
+    return (
+        _valid_epic_id(row_id, config=config)
+        or _valid_fix_id(row_id, config=config)
+        or _valid_task_id(row_id, config=config)
+    )
+
+
+def _normalize_fix_id(row_id: str, *, root: Path) -> str:
+    config = _load_workflow_config(root)
+    match = re.match(
+        rf"^({FIX_ID_PREFIX}-{_configured_suffix_pattern(config, 'fixes')})(?:-.+)?$",
+        row_id,
+    )
+    if not match:
+        raise SystemExit(f"Fix commands require a {FIX_ID_PREFIX}-### ID; got '{row_id}'.")
+    return match.group(1)
 
 
 def _resolve_task_id_prefix(root: Path, requested_prefix: str | None) -> str:
@@ -936,6 +991,100 @@ def _requirements_template(task_id: str, title: str) -> str:
         f"## Validation Plan\n\n"
         f"- How we will verify acceptance criteria: ____\n"
     )
+
+
+def _fix_template(fix_id: str, title: str) -> str:
+    return (
+        f"# Fix\n\n"
+        f"## Summary\n\n"
+        f"- Fix: {fix_id}\n"
+        f"- Title: {title}\n"
+        f"- Status: To Do\n"
+        f"- Created: {date.today().isoformat()}\n\n"
+        f"## Report\n\n"
+        f"- Observed or requested: ____\n"
+        f"- Expected: ____\n"
+        f"- Affected users or systems: ____\n"
+        f"- Delivered baseline: ____\n"
+        f"- Report evidence: ____\n\n"
+        f"## Routing\n\n"
+        f"- Decision: Fix\n"
+        f"- Rationale: ____\n"
+        f"- Related work state: Not identified\n"
+        f"- Bounded correction: ____\n"
+        f"- New outcome or material decisions: No\n"
+        f"- Independent work items: One\n\n"
+        f"## Classification\n\n"
+        f"- Type: ____\n"
+        f"- Mode: Normal\n"
+        f"- Severity: ____\n"
+        f"- Impact: ____\n"
+        f"- Urgency: ____\n"
+        f"- Owner: ____\n\n"
+        f"## Related Work\n\n"
+        f"- Originating work: Not identified\n"
+        f"- External links: None\n\n"
+        f"## Risk\n\n"
+        f"- Risk level: ____\n"
+        f"- Risks: ____\n"
+        f"- Rollback or containment: ____\n\n"
+        f"## Fix Plan\n\n"
+        f"- Scope: ____\n"
+        f"- Non-goals: ____\n"
+        f"- Affected target: ____\n"
+        f"- Primary repo: .\n"
+        f"- Repos touched: .\n"
+        f"- Branch, PR, and evidence links: ____\n"
+        f"- Verification plan: ____\n\n"
+        f"### Repository Links\n\n"
+        f"| Repo | Branch | PR | Evidence |\n"
+        f"|---|---|---|---|\n"
+        f"| . | ____ | ____ | ____ |\n\n"
+        f"## Verification\n\n"
+        f"- Delivered scope: ____\n"
+        f"- Verification result: ____\n"
+        f"- Adjacent behavior checked: ____\n"
+        f"- Original acceptance criteria result: Not applicable\n"
+        f"- Regression evidence: ____\n"
+        f"- Residual risk: ____\n\n"
+        f"## Outcome\n\n"
+        f"- Disposition: {FIX_ACTIVE_DISPOSITION}\n"
+        f"- Decision: ____\n"
+        f"- Closed by: ____\n"
+        f"- Closed date: ____\n"
+        f"- Promoted to: None\n"
+    )
+
+
+def _fix_values(text: str, heading: str) -> dict[str, str]:
+    return _parse_key_value_section(_markdown_section(text, heading))
+
+
+def _fix_value_missing(value: str | None) -> bool:
+    normalized = (value or "").strip().lower()
+    return not normalized or normalized in {"____", "pending", "tbd", "unknown"}
+
+
+def _replace_fix_field(text: str, heading: str, key: str, value: str) -> str:
+    lines = text.splitlines(keepends=True)
+    target_heading = f"## {heading}".lower()
+    in_section = False
+    field_re = re.compile(rf"^(\s*[-*]\s*{re.escape(key)}\s*:\s*).*$", re.IGNORECASE)
+    for idx, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            if in_section:
+                break
+            in_section = stripped.lower() == target_heading
+            continue
+        if not in_section:
+            continue
+        match = field_re.match(line.rstrip("\n"))
+        if match:
+            newline = "\n" if line.endswith("\n") else ""
+            lines[idx] = f"{match.group(1)}{value}{newline}"
+            return "".join(lines)
+    raise SystemExit(f"FIX.md is missing field '{key}' under '## {heading}'.")
 
 
 def _tracker_template() -> str:
@@ -1063,6 +1212,13 @@ def _extract_ac_ids(text: str) -> set[str]:
     return {
         f"AC{match.group(1)}"
         for match in re.finditer(r"\bAC\s*(\d+)\b", text, flags=re.IGNORECASE)
+    }
+
+
+def _extract_workflow_ref_ids(text: str) -> set[str]:
+    return {
+        match.group(0).upper()
+        for match in re.finditer(r"\b[A-Z][A-Z0-9]*-[A-Z0-9]+\b", text, re.IGNORECASE)
     }
 
 
@@ -3190,7 +3346,7 @@ def _format_readiness_block(label: str, issues: list[str]) -> str:
 
 
 def _status_requires_task_readiness(new_status: str) -> bool:
-    return new_status in {"Plan Confirmed", "In Progress", "Testing", "Review", "Complete"}
+    return new_status in {"Ready", "Plan Confirmed", "In Progress", "Testing", "Review", "Complete"}
 
 
 def _status_requires_epic_child_readiness(new_status: str) -> bool:
@@ -3254,6 +3410,255 @@ def _task_ready_issues_for_paths(
     )
 
 
+def _resolve_fix_doc(
+    *, root: Path, tracker_path: Path, fix_id: str
+) -> tuple[Path, dict[str, str]]:
+    normalized_fix_id = _normalize_fix_id(fix_id, root=root)
+    _lines, _header_idx, rows = _global_tracker_rows(tracker_path)
+    for row in rows:
+        if row["ID"] != normalized_fix_id:
+            continue
+        docs_rel = _clean_markdown_cell_path(row["Docs"])
+        if not docs_rel:
+            raise SystemExit(f"{fix_id} has no docs path in {tracker_path}.")
+        fix_path = root / ".project-workflow" / docs_rel
+        if fix_path.name != "FIX.md" or not fix_path.exists():
+            raise SystemExit(f"{fix_id} must point to an existing FIX.md: {fix_path}")
+        return fix_path, row
+    raise SystemExit(f"No global tracker row found for ID '{fix_id}' in {tracker_path}.")
+
+
+def _fix_workspace_targets(root: Path) -> set[str] | None:
+    workspace_path = root / ".project-workflow" / "workspace.json"
+    if not workspace_path.exists():
+        return None
+    try:
+        raw = json.loads(workspace_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"Invalid workspace metadata in {workspace_path}: {exc}") from exc
+    components = raw.get("components", []) if isinstance(raw, dict) else []
+    targets = {"."}
+    if isinstance(components, dict):
+        for component_id, component in components.items():
+            targets.add(str(component_id))
+            if isinstance(component, dict) and component.get("path"):
+                targets.add(str(component["path"]))
+    elif isinstance(components, list):
+        for component in components:
+            if not isinstance(component, dict):
+                continue
+            for field in ("id", "name", "path"):
+                if component.get(field):
+                    targets.add(str(component[field]))
+    return targets
+
+
+def _split_fix_repos(value: str) -> list[str]:
+    return [part.strip() for part in re.split(r"[,\n]", value) if part.strip()]
+
+
+def _fix_triage_issues(
+    root: Path, fix_text: str, *, require_active_disposition: bool = True
+) -> list[str]:
+    issues: list[str] = []
+    required_fields = {
+        "Report": (
+            "observed or requested",
+            "expected",
+            "affected users or systems",
+            "delivered baseline",
+            "report evidence",
+        ),
+        "Routing": ("rationale", "bounded correction"),
+        "Classification": ("type", "mode", "severity", "impact", "urgency", "owner"),
+        "Risk": ("risk level", "risks", "rollback or containment"),
+        "Fix Plan": (
+            "scope",
+            "non-goals",
+            "affected target",
+            "primary repo",
+            "repos touched",
+            "branch, pr, and evidence links",
+            "verification plan",
+        ),
+    }
+    parsed: dict[str, dict[str, str]] = {}
+    for heading, fields in required_fields.items():
+        values = _fix_values(fix_text, heading)
+        parsed[heading] = values
+        for field in fields:
+            if _fix_value_missing(values.get(field)):
+                issues.append(f"complete `{field}` under `## {heading}`")
+
+    classification = parsed.get("Classification", {})
+    if classification.get("type") not in FIX_CLASSIFICATIONS:
+        issues.append("set classification `Type` to " + ", ".join(FIX_CLASSIFICATIONS))
+    if classification.get("mode") not in FIX_MODES:
+        issues.append("set classification `Mode` to Normal or Hotfix")
+    if classification.get("severity") not in FIX_SEVERITIES:
+        issues.append("set classification `Severity` to " + ", ".join(FIX_SEVERITIES))
+    risk = parsed.get("Risk", {})
+    if risk.get("risk level") not in FIX_RISK_LEVELS:
+        issues.append("set `Risk level` to " + ", ".join(FIX_RISK_LEVELS))
+
+    routing = _fix_values(fix_text, "Routing")
+    if routing.get("decision", "").lower() != "fix":
+        issues.append("record routing `Decision: Fix`")
+    if routing.get("new outcome or material decisions", "").lower() not in {"no", "none"}:
+        issues.append("promote work that requires a new outcome or material decision")
+    if routing.get("independent work items", "").lower() not in {"one", "1"}:
+        issues.append("promote work containing multiple independent work items")
+
+    outcome = _fix_values(fix_text, "Outcome")
+    if require_active_disposition and outcome.get("disposition") != FIX_ACTIVE_DISPOSITION:
+        issues.append(f"keep active triage `Disposition: {FIX_ACTIVE_DISPOSITION}`")
+
+    workspace_targets = _fix_workspace_targets(root)
+    if workspace_targets is not None:
+        plan = parsed.get("Fix Plan", {})
+        primary_repo = plan.get("primary repo", "")
+        repos_touched = _split_fix_repos(plan.get("repos touched", ""))
+        invalid = [repo for repo in [primary_repo, *repos_touched] if repo not in workspace_targets]
+        if invalid:
+            issues.append(
+                "use workspace component identities/paths for repo metadata; unknown: "
+                + ", ".join(sorted(set(invalid)))
+            )
+        repo_rows = _markdown_table_rows_from_section(
+            fix_text,
+            "Fix Plan",
+            expected_columns=FIX_REPOSITORY_LINK_COLUMNS,
+        )
+        rows_by_repo = {row["Repo"]: row for row in repo_rows}
+        for repo in repos_touched:
+            row = rows_by_repo.get(repo)
+            if row is None:
+                issues.append(f"add a repository-links row for workspace repo `{repo}`")
+                continue
+            for field in ("Branch", "PR", "Evidence"):
+                if _fix_value_missing(row.get(field)):
+                    issues.append(
+                        f"record `{field}` (or an explicit None/N/A) for workspace repo `{repo}`"
+                    )
+    return issues
+
+
+def _fix_hotfix_safety_issues(root: Path, fix_text: str) -> list[str]:
+    issues = _fix_triage_issues(root, fix_text)
+    classification = _fix_values(fix_text, "Classification")
+    if classification.get("mode") != "Hotfix":
+        issues.append("set classification `Mode: Hotfix` for emergency bypass")
+    for heading, field in (
+        ("Report", "report evidence"),
+        ("Risk", "rollback or containment"),
+        ("Fix Plan", "verification plan"),
+    ):
+        if _fix_value_missing(_fix_values(fix_text, heading).get(field)):
+            issues.append(f"record emergency safety field `{field}`")
+    return list(dict.fromkeys(issues))
+
+
+def _fix_closeout_issues(fix_text: str) -> list[str]:
+    issues: list[str] = []
+    verification = _fix_values(fix_text, "Verification")
+    for field in (
+        "delivered scope",
+        "verification result",
+        "adjacent behavior checked",
+        "regression evidence",
+        "residual risk",
+    ):
+        if _fix_value_missing(verification.get(field)):
+            issues.append(f"complete `{field}` under `## Verification`")
+    original_result = verification.get("original acceptance criteria result", "")
+    if _fix_value_missing(original_result):
+        issues.append("complete `original acceptance criteria result` under `## Verification`")
+    originating_work = _fix_values(fix_text, "Related Work").get("originating work", "")
+    if (
+        _extract_workflow_ref_ids(originating_work)
+        and original_result.strip().lower() in {"not applicable", "n/a", "none"}
+    ):
+        issues.append(
+            "record linked original acceptance-criteria results or an explicit reason "
+            "they do not apply"
+        )
+    outcome = _fix_values(fix_text, "Outcome")
+    if outcome.get("disposition") not in FIX_TERMINAL_DISPOSITIONS:
+        issues.append("set a terminal Outcome disposition")
+    for field in ("decision", "closed by", "closed date"):
+        if _fix_value_missing(outcome.get(field)):
+            issues.append(f"complete `{field}` under `## Outcome`")
+    return issues
+
+
+def _fix_non_delivery_closeout_issues(fix_text: str) -> list[str]:
+    issues: list[str] = []
+    outcome = _fix_values(fix_text, "Outcome")
+    if outcome.get("disposition") not in {"Duplicate", "Rejected", "Deferred", "Promoted"}:
+        issues.append("set a non-delivery terminal Outcome disposition")
+    for field in ("decision", "closed by", "closed date"):
+        if _fix_value_missing(outcome.get(field)):
+            issues.append(f"complete `{field}` under `## Outcome`")
+    if outcome.get("disposition") == "Promoted" and _fix_value_missing(
+        outcome.get("promoted to")
+    ):
+        issues.append("complete `promoted to` under `## Outcome`")
+    return issues
+
+
+def _update_fix_tracker_status(
+    *, root: Path, tracker_path: Path, fix_id: str, new_status: str
+) -> tuple[str, str]:
+    normalized_fix_id = _normalize_fix_id(fix_id, root=root)
+    lines, _header_idx, rows = _global_tracker_rows(tracker_path)
+    for row in rows:
+        if row["ID"] != normalized_fix_id:
+            continue
+        current_status = row["Status"]
+        if new_status not in FIX_STATUS_TRANSITIONS:
+            raise SystemExit(f"Invalid Fix status '{new_status}'.")
+        if new_status != current_status and new_status not in FIX_STATUS_TRANSITIONS.get(
+            current_status, set()
+        ):
+            raise SystemExit(
+                f"Illegal Fix status transition for {fix_id}: {current_status} -> {new_status}."
+            )
+        fix_path, _row = _resolve_fix_doc(
+            root=root, tracker_path=tracker_path, fix_id=normalized_fix_id
+        )
+        fix_text = fix_path.read_text(encoding="utf-8")
+        if current_status == "To Do" and new_status == "In Progress":
+            issues = _fix_hotfix_safety_issues(root, fix_text)
+            if issues:
+                raise SystemExit(_format_readiness_block(fix_id, issues))
+        if new_status == "Ready":
+            issues = _fix_triage_issues(root, fix_text)
+            if issues:
+                raise SystemExit(_format_readiness_block(fix_id, issues))
+        if new_status in {"In Progress", "Testing", "Review"} and current_status != "To Do":
+            issues = _fix_triage_issues(root, fix_text)
+            if issues:
+                raise SystemExit(_format_readiness_block(fix_id, issues))
+        if new_status == "Complete":
+            raise SystemExit("Use `project fix close` to complete a Fix.")
+        if new_status == "N/A":
+            raise SystemExit(
+                "Use `project fix close` for Duplicate/Rejected/Deferred or "
+                "`project fix promote` for Promoted."
+            )
+        if current_status == new_status:
+            return current_status, new_status
+        row["Status"] = new_status
+        lines[int(row["_line_idx"])] = _format_global_tracker_row(row)
+        tracker_path.write_text("".join(lines), encoding="utf-8")
+        fix_path.write_text(
+            _replace_fix_field(fix_text, "Summary", "Status", new_status),
+            encoding="utf-8",
+        )
+        return current_status, new_status
+    raise SystemExit(f"No global tracker row found for ID '{fix_id}' in {tracker_path}.")
+
+
 def _update_global_tracker_row_status(
     *,
     root: Path,
@@ -3296,6 +3701,13 @@ def _update_global_tracker_row_status(
         requirements_text = (
             requirements_path.read_text(encoding="utf-8") if requirements_path.exists() else ""
         )
+        if new_status == "Analysing" and not force and not _is_discovery_work(requirements_text):
+            approval_issues = _approval_envelope_issues(
+                requirements_text,
+                require_implementation=True,
+            )
+            if approval_issues:
+                raise SystemExit(_format_readiness_block(row_id, approval_issues))
         if new_status in {"Review", "Complete"}:
             structured_issues = _structured_evidence_issues(
                 requirements_path=requirements_path,
@@ -4057,7 +4469,7 @@ def _doctor_check_row_namespace(
     if config is None:
         return
     prefix = _task_prefix_from_id(row_id)
-    if prefix is None or prefix == EPIC_ID_PREFIX:
+    if prefix is None or prefix in {EPIC_ID_PREFIX, FIX_ID_PREFIX}:
         return
     if prefix not in config.task_id_prefixes:
         _add_issue(
@@ -4082,6 +4494,10 @@ def _doctor_check_row_id_format(
     if not task_only and row_id.startswith(f"{EPIC_ID_PREFIX}-"):
         if not _valid_epic_id(row_id, config=config):
             _add_issue(issues, "error", path, f"{row_id} has invalid epic ID format.")
+        return
+    if not task_only and row_id.startswith(f"{FIX_ID_PREFIX}-"):
+        if not _valid_fix_id(row_id, config=config):
+            _add_issue(issues, "error", path, f"{row_id} has invalid Fix ID format.")
         return
 
     prefix = _task_prefix_from_id(row_id)
@@ -4275,6 +4691,94 @@ def _doctor_check_task_doc(
     )
 
 
+def _doctor_check_fix_doc(
+    *, root: Path, docs_rel: str, status: str, row_id: str, issues: list[DoctorIssue]
+) -> None:
+    fix_path = root / ".project-workflow" / docs_rel
+    if fix_path.name != "FIX.md" or not fix_path.exists():
+        _add_issue(issues, "error", fix_path, f"{row_id} must point to an existing FIX.md.")
+        return
+    try:
+        fix_text = fix_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        _add_issue(issues, "error", fix_path, f"Could not read {row_id}: {exc}")
+        return
+    summary = _fix_values(fix_text, "Summary")
+    for heading in (
+        "Summary",
+        "Report",
+        "Routing",
+        "Classification",
+        "Related Work",
+        "Risk",
+        "Fix Plan",
+        "Verification",
+        "Outcome",
+    ):
+        if not _markdown_section(fix_text, heading):
+            _add_issue(issues, "error", fix_path, f"{row_id} is missing `## {heading}`.")
+    if summary.get("fix") != row_id:
+        _add_issue(issues, "error", fix_path, f"Summary Fix ID does not match {row_id}.")
+    if summary.get("status") != status:
+        _add_issue(
+            issues,
+            "error",
+            fix_path,
+            f"Summary status '{summary.get('status', '')}' does not match tracker '{status}'.",
+        )
+    classification = _fix_values(fix_text, "Classification")
+    classification_type = classification.get("type")
+    if (
+        not _fix_value_missing(classification_type)
+        and classification_type not in FIX_CLASSIFICATIONS
+    ):
+        _add_issue(
+            issues,
+            "error",
+            fix_path,
+            f"{row_id} has invalid classification Type '{classification_type}'.",
+        )
+    mode = classification.get("mode")
+    if not _fix_value_missing(mode) and mode not in FIX_MODES:
+        _add_issue(issues, "error", fix_path, f"{row_id} has invalid Mode '{mode}'.")
+    severity = classification.get("severity")
+    if not _fix_value_missing(severity) and severity not in FIX_SEVERITIES:
+        _add_issue(issues, "error", fix_path, f"{row_id} has invalid Severity '{severity}'.")
+    if status in {"Ready", "In Progress", "Testing", "Review", "Complete"}:
+        try:
+            triage_issues = _fix_triage_issues(
+                root,
+                fix_text,
+                require_active_disposition=status != "Complete",
+            )
+        except SystemExit as exc:
+            triage_issues = [str(exc)]
+        for triage_issue in triage_issues:
+            _add_issue(issues, "error", fix_path, f"{row_id} triage: {triage_issue}.")
+    if status == "Complete":
+        for closeout_issue in _fix_closeout_issues(fix_text):
+            _add_issue(issues, "error", fix_path, f"{row_id} closeout: {closeout_issue}.")
+    if status == "N/A":
+        for closeout_issue in _fix_non_delivery_closeout_issues(fix_text):
+            _add_issue(issues, "error", fix_path, f"{row_id} closeout: {closeout_issue}.")
+    related = _fix_values(fix_text, "Related Work")
+    refs = _extract_workflow_ref_ids(" ".join(related.values()))
+    if refs:
+        tracker_path = root / ".project-workflow" / "TRACKER.md"
+        try:
+            _lines, _header_idx, tracker_rows = _global_tracker_rows(tracker_path)
+            known_ids = {row["ID"] for row in tracker_rows}
+        except SystemExit:
+            known_ids = set()
+        for ref in sorted(refs - known_ids):
+            _add_issue(
+                issues,
+                "warning",
+                fix_path,
+                f"{row_id} related work reference '{ref}' is not in the local global tracker.",
+            )
+
+
 def _doctor_check_global_tracker(
     root: Path, issues: list[DoctorIssue], *, config: WorkflowConfig | None
 ) -> None:
@@ -4303,13 +4807,22 @@ def _doctor_check_global_tracker(
                 f"{row_id} has invalid status '{status}'.",
             )
         docs_rel = _clean_markdown_cell_path(row["Docs"])
-        _doctor_check_task_doc(
-            root=root,
-            docs_rel=docs_rel,
-            status=status,
-            row_id=row_id,
-            issues=issues,
-        )
+        if row_id.startswith(f"{FIX_ID_PREFIX}-"):
+            _doctor_check_fix_doc(
+                root=root,
+                docs_rel=docs_rel,
+                status=status,
+                row_id=row_id,
+                issues=issues,
+            )
+        else:
+            _doctor_check_task_doc(
+                root=root,
+                docs_rel=docs_rel,
+                status=status,
+                row_id=row_id,
+                issues=issues,
+            )
 
 def _doctor_check_backlog(
     root: Path, issues: list[DoctorIssue], *, config: WorkflowConfig | None
@@ -4921,7 +5434,234 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     print(f"  • Customize user guidance: .project-workflow/guidance.md")
     print(f"  • Review generated agent assets: {customize_path_hint}")
     print(f"  • Create tasks: ./.project-workflow/cli/workflow task init --help")
+    print("  • Create fixes: ./.project-workflow/cli/workflow fix init --help")
     print("  • Validate workflow state: ./.project-workflow/cli/workflow doctor")
+
+
+def cmd_fix_init(args: argparse.Namespace) -> None:
+    """Scaffold one lightweight Fix record in the shared task namespace."""
+    root = Path.cwd()
+    workflow_dir = root / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    tracker_path = workflow_dir / "TRACKER.md"
+    if not tracker_path.exists():
+        raise SystemExit(f"Missing global tracker file: {tracker_path}. Run `project init`.")
+    fix_id = _next_workflow_id(
+        root,
+        tasks_dir,
+        tracker_path,
+        prefix=FIX_ID_PREFIX,
+        kind="fixes",
+    )
+    spec = TaskSpec(
+        task_id=fix_id,
+        title=args.title,
+        folder_suffix=slug_titlecase_dashes(args.title),
+    )
+    fix_dir = tasks_dir / spec.task_folder_name
+    if fix_dir.exists():
+        raise SystemExit(f"Fix folder already exists: {fix_dir}")
+    fix_dir.mkdir(parents=True, exist_ok=False)
+    fix_text = _fix_template(fix_id, args.title)
+    if args.classification:
+        fix_text = _replace_fix_field(
+            fix_text, "Classification", "Type", args.classification
+        )
+    if args.mode:
+        fix_text = _replace_fix_field(fix_text, "Classification", "Mode", args.mode)
+    fix_path = fix_dir / "FIX.md"
+    _write_file(fix_path, fix_text, overwrite=True)
+    docs_rel = f"tasks/{spec.task_folder_name}/FIX.md"
+    _update_tracker(
+        tracker_path,
+        spec=spec,
+        status="To Do",
+        docs_rel_path=docs_rel,
+    )
+    print(f"Created Fix: {fix_dir}")
+    print(f"Updated tracker: {tracker_path}")
+    print(f"Assigned ID: {fix_id}")
+
+
+def cmd_fix_triage(args: argparse.Namespace) -> None:
+    root = Path.cwd()
+    tracker_path = root / ".project-workflow" / "TRACKER.md"
+    fix_id = _normalize_fix_id(args.id, root=root)
+    fix_path, row = _resolve_fix_doc(root=root, tracker_path=tracker_path, fix_id=fix_id)
+    if row["Status"] == "Ready":
+        issues = _fix_triage_issues(root, fix_path.read_text(encoding="utf-8"))
+        if issues:
+            raise SystemExit(_format_readiness_block(fix_id, issues))
+        print(f"{fix_id} triage gate already passed; status is Ready.")
+        return
+    previous, current = _update_fix_tracker_status(
+        root=root,
+        tracker_path=tracker_path,
+        fix_id=fix_id,
+        new_status="Ready",
+    )
+    print(f"Triaged {fix_id}: {previous} -> {current}")
+
+
+def cmd_fix_status(args: argparse.Namespace) -> None:
+    root = Path.cwd()
+    tracker_path = root / ".project-workflow" / "TRACKER.md"
+    fix_id = _normalize_fix_id(args.id, root=root)
+    previous, current = _update_fix_tracker_status(
+        root=root,
+        tracker_path=tracker_path,
+        fix_id=fix_id,
+        new_status=args.to,
+    )
+    if previous == current:
+        print(f"{fix_id} already has status '{current}'.")
+    else:
+        print(f"Updated {fix_id}: {previous} -> {current}")
+
+
+def cmd_fix_close(args: argparse.Namespace) -> None:
+    root = Path.cwd()
+    tracker_path = root / ".project-workflow" / "TRACKER.md"
+    fix_id = _normalize_fix_id(args.id, root=root)
+    fix_path, row = _resolve_fix_doc(root=root, tracker_path=tracker_path, fix_id=fix_id)
+    delivering_fix = args.disposition == "Fixed"
+    if delivering_fix and row["Status"] != "Review":
+        raise SystemExit(
+            f"{fix_id} can only close from Review; current status is '{row['Status']}'."
+        )
+    if not delivering_fix and row["Status"] in {"Complete", "N/A"}:
+        raise SystemExit(f"{fix_id} is already terminal with status '{row['Status']}'.")
+    fix_text = fix_path.read_text(encoding="utf-8")
+    triage_issues = (
+        _fix_triage_issues(root, fix_text)
+        if delivering_fix or row["Status"] not in {"To Do", "Blocked"}
+        else []
+    )
+    fix_text = _replace_fix_field(fix_text, "Outcome", "Disposition", args.disposition)
+    fix_text = _replace_fix_field(fix_text, "Outcome", "Decision", args.decision)
+    fix_text = _replace_fix_field(fix_text, "Outcome", "Closed by", args.closed_by)
+    fix_text = _replace_fix_field(
+        fix_text, "Outcome", "Closed date", args.closed_date or date.today().isoformat()
+    )
+    closeout_issues = (
+        _fix_closeout_issues(fix_text)
+        if delivering_fix
+        else _fix_non_delivery_closeout_issues(fix_text)
+    )
+    issues = [*triage_issues, *closeout_issues]
+    if issues:
+        raise SystemExit(_format_readiness_block(fix_id, list(dict.fromkeys(issues))))
+    lines, _header_idx, rows = _global_tracker_rows(tracker_path)
+    tracker_row = next(row_item for row_item in rows if row_item["ID"] == fix_id)
+    terminal_status = "Complete" if delivering_fix else "N/A"
+    tracker_row["Status"] = terminal_status
+    lines[int(tracker_row["_line_idx"])] = _format_global_tracker_row(tracker_row)
+    tracker_path.write_text("".join(lines), encoding="utf-8")
+    fix_path.write_text(
+        _replace_fix_field(fix_text, "Summary", "Status", terminal_status),
+        encoding="utf-8",
+    )
+    print(f"Closed {fix_id} with disposition {args.disposition}.")
+
+
+def _requirements_with_fix_source(text: str, fix_id: str, reason: str) -> str:
+    return (
+        text.rstrip()
+        + "\n\n## Promotion Source\n\n"
+        + f"- Promoted from Fix: {fix_id}\n"
+        + f"- Reason: {reason}\n"
+    )
+
+
+def cmd_fix_promote(args: argparse.Namespace) -> None:
+    root = Path.cwd()
+    workflow_dir = root / ".project-workflow"
+    tasks_dir = workflow_dir / "tasks"
+    tracker_path = workflow_dir / "TRACKER.md"
+    fix_id = _normalize_fix_id(args.id, root=root)
+    fix_path, source_row = _resolve_fix_doc(
+        root=root, tracker_path=tracker_path, fix_id=fix_id
+    )
+    if source_row["Status"] in {"Complete", "N/A"}:
+        raise SystemExit(f"{fix_id} is already terminal and cannot be promoted.")
+    title = args.title or source_row["Title"]
+    if args.to == "task":
+        prefix = _resolve_task_id_prefix(root, None)
+        promoted_id = _next_workflow_id(
+            root, tasks_dir, tracker_path, prefix=prefix, kind="tasks"
+        )
+        spec = TaskSpec(promoted_id, title, slug_titlecase_dashes(title))
+        promoted_dir = tasks_dir / spec.task_folder_name
+        promoted_dir.mkdir(parents=True, exist_ok=False)
+        _write_file(
+            promoted_dir / "IMPLEMENTATION.md",
+            _implementation_template(promoted_id, title),
+            overwrite=True,
+        )
+        _write_file(
+            promoted_dir / "REQUIREMENTS.md",
+            _requirements_with_fix_source(
+                _requirements_template(promoted_id, title), fix_id, args.reason
+            ),
+            overwrite=True,
+        )
+        docs_rel = f"tasks/{spec.task_folder_name}/IMPLEMENTATION.md"
+    else:
+        promoted_id = _next_workflow_id(
+            root, tasks_dir, tracker_path, prefix=EPIC_ID_PREFIX, kind="epics"
+        )
+        spec = TaskSpec(promoted_id, title, slug_titlecase_dashes(title))
+        promoted_dir = tasks_dir / spec.task_folder_name
+        promoted_dir.mkdir(parents=True, exist_ok=False)
+        _write_file(
+            promoted_dir / "REQUIREMENTS.md",
+            _requirements_with_fix_source(
+                _requirements_template(promoted_id, title), fix_id, args.reason
+            ),
+            overwrite=True,
+        )
+        _write_file(
+            promoted_dir / EPIC_CONTRACT_FILENAME,
+            _epic_contract_template(promoted_id, title),
+            overwrite=True,
+        )
+        _write_file(promoted_dir / "TRACKER.md", _epic_tracker_template(), overwrite=True)
+        _write_file(promoted_dir / "DEFERRALS.md", _epic_deferrals_template(), overwrite=True)
+        _write_file(
+            promoted_dir / EPIC_AMENDMENTS_FILENAME,
+            _epic_amendments_template(),
+            overwrite=True,
+        )
+        _write_file(
+            promoted_dir / "RETRO.md",
+            _epic_retro_template(promoted_id, title),
+            overwrite=True,
+        )
+        _write_acceptance_map(root, promoted_id)
+        docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
+    _update_tracker(
+        tracker_path,
+        spec=spec,
+        status="To Do",
+        docs_rel_path=docs_rel,
+    )
+    fix_text = fix_path.read_text(encoding="utf-8")
+    for heading, key, value in (
+        ("Outcome", "Disposition", "Promoted"),
+        ("Outcome", "Decision", args.reason),
+        ("Outcome", "Closed by", args.promoted_by),
+        ("Outcome", "Closed date", date.today().isoformat()),
+        ("Outcome", "Promoted to", promoted_id),
+        ("Summary", "Status", "N/A"),
+    ):
+        fix_text = _replace_fix_field(fix_text, heading, key, value)
+    fix_path.write_text(fix_text, encoding="utf-8")
+    lines, _header_idx, rows = _global_tracker_rows(tracker_path)
+    fix_row = next(row_item for row_item in rows if row_item["ID"] == fix_id)
+    fix_row["Status"] = "N/A"
+    lines[int(fix_row["_line_idx"])] = _format_global_tracker_row(fix_row)
+    tracker_path.write_text("".join(lines), encoding="utf-8")
+    print(f"Promoted {fix_id} to {args.to} {promoted_id}: {promoted_dir}")
 
 
 def cmd_task_init(args: argparse.Namespace) -> None:
@@ -5049,10 +5789,10 @@ def cmd_task_approve_requirements(args: argparse.Namespace) -> None:
         task_id=task_id,
     )
     requirements_text = requirements_path.read_text(encoding="utf-8")
-    implementation_text = _implementation_path.read_text(encoding="utf-8")
-    readiness_issues = _task_readiness_issues(
-        requirements_text=requirements_text,
-        implementation_text=implementation_text,
+    readiness_issues = (
+        _discovery_readiness_issues(requirements_text)
+        if _is_discovery_work(requirements_text)
+        else _requirements_readiness_issues(requirements_text)
     )
     if readiness_issues:
         raise SystemExit(_format_readiness_block(task_id, readiness_issues))
@@ -5931,6 +6671,82 @@ def build_parser() -> argparse.ArgumentParser:
         help="Validate backlog structure and promoted references",
     )
     backlog_validate_parser.set_defaults(func=cmd_backlog_validate)
+
+    # ===== project fix ... =====
+    fix_parser = subparsers.add_parser(
+        "fix",
+        help="Lightweight post-completion correction commands",
+        description=(
+            "Manage bounded defects, regressions, change requests, and incidents as "
+            "lightweight work items in the shared global tracker."
+        ),
+    )
+    fix_sub = fix_parser.add_subparsers(dest="fix_command", required=True)
+
+    fix_init_parser = fix_sub.add_parser("init", help="Scaffold a FIX.md and tracker row")
+    fix_init_parser.add_argument("--title", required=True, help="Human title")
+    fix_init_parser.add_argument(
+        "--classification",
+        choices=FIX_CLASSIFICATIONS,
+        help="Optional initial classification; may be completed during triage",
+    )
+    fix_init_parser.add_argument(
+        "--mode",
+        choices=FIX_MODES,
+        help="Optional Normal or Hotfix mode (default in FIX.md: Normal)",
+    )
+    fix_init_parser.set_defaults(func=cmd_fix_init)
+
+    fix_triage_parser = fix_sub.add_parser(
+        "triage", help="Validate triage and move a Fix from To Do to Ready"
+    )
+    fix_triage_parser.add_argument("--id", required=True, help="Fix ID (e.g. FIX-001)")
+    fix_triage_parser.set_defaults(func=cmd_fix_triage)
+
+    fix_status_parser = fix_sub.add_parser(
+        "status", help="Safely update a Fix lifecycle status"
+    )
+    fix_status_parser.add_argument("--id", required=True, help="Fix ID (e.g. FIX-001)")
+    fix_status_parser.add_argument(
+        "--to",
+        required=True,
+        choices=tuple(FIX_STATUS_TRANSITIONS),
+        help="Target Fix status",
+    )
+    fix_status_parser.set_defaults(func=cmd_fix_status)
+
+    fix_close_parser = fix_sub.add_parser(
+        "close", help="Validate evidence and close a reviewed Fix"
+    )
+    fix_close_parser.add_argument("--id", required=True, help="Fix ID (e.g. FIX-001)")
+    fix_close_parser.add_argument(
+        "--disposition",
+        required=True,
+        choices=tuple(value for value in FIX_TERMINAL_DISPOSITIONS if value != "Promoted"),
+        help="Final closeout disposition",
+    )
+    fix_close_parser.add_argument("--decision", required=True, help="Closeout decision summary")
+    fix_close_parser.add_argument("--closed-by", required=True, help="Closer identity")
+    fix_close_parser.add_argument(
+        "--closed-date", help="ISO close date (default: today)"
+    )
+    fix_close_parser.set_defaults(func=cmd_fix_close)
+
+    fix_promote_parser = fix_sub.add_parser(
+        "promote", help="Promote an oversized Fix to a full task or epic"
+    )
+    fix_promote_parser.add_argument("--id", required=True, help="Fix ID (e.g. FIX-001)")
+    fix_promote_parser.add_argument(
+        "--to", required=True, choices=("task", "epic"), help="Promotion target"
+    )
+    fix_promote_parser.add_argument("--title", help="Override promoted work title")
+    fix_promote_parser.add_argument(
+        "--reason", required=True, help="Why the lightweight Fix envelope is insufficient"
+    )
+    fix_promote_parser.add_argument(
+        "--promoted-by", required=True, help="Owner or agent recording the promotion"
+    )
+    fix_promote_parser.set_defaults(func=cmd_fix_promote)
 
     # ===== project task ... =====
     task_parser = subparsers.add_parser("task", help="Task-related commands")

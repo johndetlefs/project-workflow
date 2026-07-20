@@ -16,6 +16,11 @@ Operating model: the owner/PM/BA provides product intent and decisions conversat
 
 Approval model: requirements capture ends with one explicit owner review of requirements and acceptance criteria. Record that approval with `task approve-requirements` or `epic approve-requirements` only after the owner confirms the drafted requirements/ACs. Do not treat the agent's draft, implementation intent, or silence as approval.
 
+After that approval, the agent normally continues autonomously through Planner, a post-plan
+Clarify pass, `task ready`, and `Ready`. Pause after requirements only when the user requests a
+setup/review-only boundary, a material product decision remains, or the plan is exceptional/high
+risk enough to justify an explicit review.
+
 Minimum intake context to gather before downstream planning:
 
 - Problem or opportunity
@@ -177,7 +182,9 @@ Rules:
 
 Also:
 
-- Ensure `/.project-workflow/TRACKER.md` has a row for `${input:taskId}` and run `./.project-workflow/cli/workflow task status --id ${input:taskId} --to Analysing` while requirements are being captured.
+- Ensure `/.project-workflow/TRACKER.md` has a row for `${input:taskId}`. Keep a new task at `To Do`
+  while requirements are being drafted. Move to `Analysing` only after the owner approval envelope
+  is recorded and planning begins.
 - Ensure `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md` exists and begins with a `## User Story` section at the very top.
   - If you need to create the file, keep it minimal (user story only, plus placeholders if required by repo convention).
   - Do not generate or populate any task list here.
@@ -193,5 +200,6 @@ Guardrails:
 - If this story includes delegated execution (`project.delegate`), ensure requirements, acceptance criteria, and decisions explicitly cover: execution modes, default `sequential` behavior, dependency-map input + strict validation (unknown IDs, self-dependencies, cycles), default parallel worker limit (`4`), fail-fast semantics (stop new launches, allow in-flight completion), and final status reporting (including halted items).
 - If delegated-execution decisions evolve, update both `## Acceptance Criteria` and `## Decisions Log` in the same pass so downstream planning/implementation stay aligned.
 - Do not create or update implementation task lists in `IMPLEMENTATION.md` from this prompt; the `project.planner` prompt owns tasks.
-- Do not move the story status past `Analysing` from this prompt.
+- Do not move the story to `Analysing` before owner approval. After approval, hand off directly to
+  Planner unless the user requested a pause.
 - After requirements and implementation planning are complete, the agent must use `./.project-workflow/cli/workflow task ready --id ${input:taskId}` before implementation-oriented status transitions. If it reports missing or stale owner approval, collect the specific owner confirmation once and record it with `task approve-requirements`; do not continue into implementation from an unapproved envelope.

@@ -5,7 +5,9 @@ argument-hint: topic="..." taskId=TASK-330-Superuser
 agent: agent
 ---
 
-Use this prompt when requirements or constraints are unclear.
+Use this prompt when requirements, a generated plan, or repo constraints are unclear. It may run
+before owner approval to resolve product questions or immediately after Planner as an autonomous
+consistency pass.
 
 Reference docs:
 
@@ -125,4 +127,11 @@ Also keep the implementation tracker up to date:
 
 -
 
-Guardrail: don’t start implementation until unresolved questions are cleared (or explicitly accepted as risks) and decisions are recorded in `REQUIREMENTS.md`.
+Guardrail: don't start implementation until unresolved questions are cleared (or explicitly accepted as risks) and decisions are recorded in `REQUIREMENTS.md`.
+
+Post-plan clarification guardrail: fix implementation-detail inconsistencies inside the approved
+envelope without another generic approval request. If resolution would change requirements, ACs,
+proof obligations, artifact identity, or scope materially, stop, update the proposed requirements,
+and return the changed envelope to the owner for review/re-approval. When no such drift remains,
+run `task ready`, move the task to `Ready`, and continue autonomously if implementation was
+authorized.

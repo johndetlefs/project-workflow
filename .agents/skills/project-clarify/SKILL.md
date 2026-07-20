@@ -2,6 +2,7 @@
 name: project-clarify
 description: Use when project-workflow requirements, implementation plan, repo constraints, or user intent conflict or need clarification.
 ---
+<!-- project-workflow:generated -->
 
 # Project Clarify
 

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 from project_workflow import cli as workflow_cli
 
@@ -49,6 +52,7 @@ def write_unique_id_config(root: Path) -> None:
         '  "id_generation": {\n'
         '    "tasks": "unique",\n'
         '    "epics": "unique",\n'
+        '    "fixes": "unique",\n'
         '    "backlog": "unique"\n'
         "  },\n"
         '  "unique_id_length": 5,\n'
@@ -108,6 +112,50 @@ def ready_requirements(task_id: str, title: str, ac_lines: list[str] | None = No
         decomposition=task_id.startswith("EPIC-"),
         implementation=not task_id.startswith("EPIC-"),
     )
+
+
+def ready_fix_text(fix_path: Path, *, hotfix: bool = False) -> str:
+    text = fix_path.read_text(encoding="utf-8")
+    values = (
+        ("Report", "Observed or requested", "Export fails after the delivered release."),
+        ("Report", "Expected", "Export completes for supported accounts."),
+        ("Report", "Affected users or systems", "Users of account export."),
+        ("Report", "Delivered baseline", "The accepted export release."),
+        ("Report", "Report evidence", "Reproduction log in the report."),
+        ("Routing", "Rationale", "One bounded correction to delivered behavior."),
+        ("Routing", "Bounded correction", "Yes; no new product outcome."),
+        ("Classification", "Type", "Regression"),
+        ("Classification", "Mode", "Hotfix" if hotfix else "Normal"),
+        ("Classification", "Severity", "High"),
+        ("Classification", "Impact", "Affected users cannot export."),
+        ("Classification", "Urgency", "Resolve before the next release."),
+        ("Classification", "Owner", "Workflow maintainer"),
+        ("Risk", "Risk level", "Medium"),
+        ("Risk", "Risks", "Export behavior could regress for adjacent account shapes."),
+        ("Risk", "Rollback or containment", "Revert the bounded patch."),
+        ("Fix Plan", "Scope", "Restore the delivered export behavior."),
+        ("Fix Plan", "Non-goals", "No new export formats."),
+        ("Fix Plan", "Affected target", "Packaged and local workflow CLI."),
+        ("Fix Plan", "Branch, PR, and evidence links", "Branch plus targeted test evidence."),
+        ("Fix Plan", "Verification plan", "Run targeted regression and doctor checks."),
+    )
+    for heading, key, value in values:
+        text = workflow_cli._replace_fix_field(text, heading, key, value)
+    return text
+
+
+def verified_fix_text(fix_path: Path) -> str:
+    text = fix_path.read_text(encoding="utf-8")
+    values = (
+        ("Verification", "Delivered scope", "Bounded export correction only."),
+        ("Verification", "Verification result", "Targeted checks passed."),
+        ("Verification", "Adjacent behavior checked", "Small and large accounts passed."),
+        ("Verification", "Regression evidence", "Automated regression test passed."),
+        ("Verification", "Residual risk", "Low; rollback remains available."),
+    )
+    for heading, key, value in values:
+        text = workflow_cli._replace_fix_field(text, heading, key, value)
+    return text
 
 
 def write_decomposition_plan(
@@ -496,6 +544,14 @@ def test_unique_id_generation_for_task_epic_backlog_and_promotion(tmp_path: Path
     assert_unique_id(epic_id, "EPIC")
     assert next((tmp_path / ".project-workflow" / "tasks").glob(f"{epic_id}-Unique-Epic"))
 
+    fix = run_project(["fix", "init", "--title", "Unique Fix"], cwd=tmp_path)
+    assert fix.returncode == 0, fix.stdout + fix.stderr
+    fix_match = re.search(r"Assigned ID: (FIX-[0-9A-Z]{5})", fix.stdout)
+    assert fix_match, fix.stdout
+    fix_id = fix_match.group(1)
+    assert_unique_id(fix_id, "FIX")
+    assert next((tmp_path / ".project-workflow" / "tasks").glob(f"{fix_id}-Unique-Fix"))
+
     promote = run_project(["backlog", "promote", "--id", backlog_id, "--to", "task"], cwd=tmp_path)
     assert promote.returncode == 0, promote.stdout + promote.stderr
     promoted_match = re.search(r"Promoted .* to task (WF-[0-9A-Z]{5})", promote.stdout)
@@ -799,6 +855,11 @@ def test_task_status_updates_packaged_and_local_workflow(tmp_path: Path) -> None
     )
     assert task.returncode == 0, task.stdout + task.stderr
     task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    (task_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements("TASK-001", "Lifecycle Status"),
+        encoding="utf-8",
+    )
+    (task_dir / "IMPLEMENTATION.md").write_text(ready_implementation(), encoding="utf-8")
 
     packaged_status = run_project(
         ["task", "status", "--id", "TASK-001", "--to", "Analysing"],
@@ -806,11 +867,6 @@ def test_task_status_updates_packaged_and_local_workflow(tmp_path: Path) -> None
     )
     assert packaged_status.returncode == 0, packaged_status.stdout + packaged_status.stderr
     assert "Updated TASK-001: To Do -> Analysing" in packaged_status.stdout
-    (task_dir / "REQUIREMENTS.md").write_text(
-        ready_requirements("TASK-001", "Lifecycle Status"),
-        encoding="utf-8",
-    )
-    (task_dir / "IMPLEMENTATION.md").write_text(ready_implementation(), encoding="utf-8")
 
     local_workflow = tmp_path / ".project-workflow" / "cli" / "workflow.py"
     local_status = subprocess.run(
@@ -822,7 +878,7 @@ def test_task_status_updates_packaged_and_local_workflow(tmp_path: Path) -> None
             "--id",
             "TASK-001-Lifecycle-Status",
             "--to",
-            "Plan Confirmed",
+            "Ready",
         ],
         cwd=tmp_path,
         check=False,
@@ -830,10 +886,10 @@ def test_task_status_updates_packaged_and_local_workflow(tmp_path: Path) -> None
         text=True,
     )
     assert local_status.returncode == 0, local_status.stdout + local_status.stderr
-    assert "Updated TASK-001: Analysing -> Plan Confirmed" in local_status.stdout
+    assert "Updated TASK-001: Analysing -> Ready" in local_status.stdout
 
     tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(encoding="utf-8")
-    assert "| TASK-001 | Lifecycle Status | Plan Confirmed |" in tracker_text
+    assert "| TASK-001 | Lifecycle Status | Ready |" in tracker_text
 
 
 def test_configured_task_prefixes_work_for_packaged_and_local_workflow(tmp_path: Path) -> None:
@@ -851,7 +907,15 @@ def test_configured_task_prefixes_work_for_packaged_and_local_workflow(tmp_path:
     )
     assert packaged_task.returncode == 0, packaged_task.stdout + packaged_task.stderr
     assert "Assigned ID: WF-001" in packaged_task.stdout
-    assert (tmp_path / ".project-workflow" / "tasks" / "WF-001-Workflow-Status").exists()
+    workflow_task_dir = tmp_path / ".project-workflow" / "tasks" / "WF-001-Workflow-Status"
+    assert workflow_task_dir.exists()
+    (workflow_task_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements("WF-001", "Workflow Status"),
+        encoding="utf-8",
+    )
+    (workflow_task_dir / "IMPLEMENTATION.md").write_text(
+        ready_implementation(), encoding="utf-8"
+    )
 
     status = run_project(
         ["task", "status", "--id", "WF-001-Workflow-Status", "--to", "Analysing"],
@@ -1023,10 +1087,362 @@ def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
     assert "docs path does not exist" in missing_docs.stderr
 
 
+def test_fix_lifecycle_uses_shared_tracker_and_single_document(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+
+    created = run_project(
+        ["fix", "init", "--title", "Export Regression", "--classification", "Regression"],
+        cwd=tmp_path,
+    )
+    assert created.returncode == 0, created.stdout + created.stderr
+    assert "Assigned ID: FIX-001" in created.stdout
+    fix_dir = tmp_path / ".project-workflow" / "tasks" / "FIX-001-Export-Regression"
+    fix_path = fix_dir / "FIX.md"
+    assert fix_path.exists()
+    assert sorted(path.name for path in fix_dir.iterdir()) == ["FIX.md"]
+    assert not (tmp_path / ".project-workflow" / "fixes").exists()
+    assert not (tmp_path / ".project-workflow" / "FIXES.md").exists()
+    tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(
+        encoding="utf-8"
+    )
+    assert "| FIX-001 | Export Regression | To Do |" in tracker_text
+
+    invalid_text = workflow_cli._replace_fix_field(
+        fix_path.read_text(encoding="utf-8"), "Classification", "Type", "Bug"
+    )
+    fix_path.write_text(invalid_text, encoding="utf-8")
+    invalid_doctor = run_project(["doctor"], cwd=tmp_path)
+    assert invalid_doctor.returncode != 0
+    assert "invalid classification Type 'Bug'" in invalid_doctor.stdout
+    fix_path.write_text(
+        workflow_cli._replace_fix_field(invalid_text, "Classification", "Type", "Regression"),
+        encoding="utf-8",
+    )
+
+    blocked_triage = run_project(["fix", "triage", "--id", "FIX-001"], cwd=tmp_path)
+    assert blocked_triage.returncode != 0
+    assert "complete `observed or requested`" in blocked_triage.stderr
+
+    fix_path.write_text(ready_fix_text(fix_path), encoding="utf-8")
+    triaged = run_project(["fix", "triage", "--id", "FIX-001"], cwd=tmp_path)
+    assert triaged.returncode == 0, triaged.stdout + triaged.stderr
+    assert "To Do -> Ready" in triaged.stdout
+
+    for status in ("In Progress", "Testing", "Review"):
+        moved = run_project(
+            ["fix", "status", "--id", "FIX-001", "--to", status], cwd=tmp_path
+        )
+        assert moved.returncode == 0, moved.stdout + moved.stderr
+
+    direct_complete = run_project(
+        ["fix", "status", "--id", "FIX-001", "--to", "Complete"], cwd=tmp_path
+    )
+    assert direct_complete.returncode != 0
+    assert "Use `project fix close`" in direct_complete.stderr
+
+    fix_path.write_text(verified_fix_text(fix_path), encoding="utf-8")
+    closed = run_project(
+        [
+            "fix",
+            "close",
+            "--id",
+            "FIX-001",
+            "--disposition",
+            "Fixed",
+            "--decision",
+            "Regression correction verified.",
+            "--closed-by",
+            "Test Owner",
+        ],
+        cwd=tmp_path,
+    )
+    assert closed.returncode == 0, closed.stdout + closed.stderr
+    assert "Closed FIX-001 with disposition Fixed" in closed.stdout
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    assert "no issues found" in doctor.stdout
+
+
+def test_fix_init_preserves_supported_classification_taxonomy(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    for index, classification in enumerate(workflow_cli.FIX_CLASSIFICATIONS, start=1):
+        created = run_project(
+            [
+                "fix",
+                "init",
+                "--title",
+                f"{classification} Example",
+                "--classification",
+                classification,
+            ],
+            cwd=tmp_path,
+        )
+        assert created.returncode == 0, created.stdout + created.stderr
+        fix_path = next(
+            (tmp_path / ".project-workflow" / "tasks").glob(f"FIX-{index:03d}-*")
+        ) / "FIX.md"
+        assert f"- Type: {classification}" in fix_path.read_text(encoding="utf-8")
+        assert "- Mode: Normal" in fix_path.read_text(encoding="utf-8")
+
+
+def test_fix_link_does_not_mutate_completed_task_history(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    task = run_project(
+        ["task", "init", "--title", "Delivered Export", "--update-tracker"], cwd=tmp_path
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+    task_dir = tmp_path / ".project-workflow" / "tasks" / "TASK-001-Delivered-Export"
+    requirements_path = task_dir / "REQUIREMENTS.md"
+    implementation_path = task_dir / "IMPLEMENTATION.md"
+    requirements_path.write_text(
+        ready_requirements("TASK-001", "Delivered Export"), encoding="utf-8"
+    )
+    implementation_path.write_text(ready_implementation(qa=True), encoding="utf-8")
+    for status in ("Analysing", "Ready", "In Progress", "Testing", "Review", "Complete"):
+        moved = run_project(
+            ["task", "status", "--id", "TASK-001", "--to", status], cwd=tmp_path
+        )
+        assert moved.returncode == 0, moved.stdout + moved.stderr
+    requirements_before = requirements_path.read_bytes()
+    implementation_before = implementation_path.read_bytes()
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    source_row_before = next(
+        line
+        for line in tracker_path.read_text(encoding="utf-8").splitlines()
+        if line.startswith("| TASK-001 |")
+    )
+
+    created = run_project(["fix", "init", "--title", "Delivered Export Regression"], cwd=tmp_path)
+    assert created.returncode == 0, created.stdout + created.stderr
+    fix_path = (
+        tmp_path
+        / ".project-workflow"
+        / "tasks"
+        / "FIX-001-Delivered-Export-Regression"
+        / "FIX.md"
+    )
+    fix_text = ready_fix_text(fix_path)
+    fix_text = workflow_cli._replace_fix_field(
+        fix_text, "Related Work", "Originating work", "TASK-001"
+    )
+    fix_path.write_text(fix_text, encoding="utf-8")
+    triaged = run_project(["fix", "triage", "--id", "FIX-001"], cwd=tmp_path)
+    assert triaged.returncode == 0, triaged.stdout + triaged.stderr
+    for status in ("In Progress", "Testing", "Review"):
+        assert (
+            run_project(
+                ["fix", "status", "--id", "FIX-001", "--to", status], cwd=tmp_path
+            ).returncode
+            == 0
+        )
+    verified_text = verified_fix_text(fix_path)
+    verified_text = workflow_cli._replace_fix_field(
+        verified_text,
+        "Verification",
+        "Original acceptance criteria result",
+        "TASK-001 AC1 passed its targeted regression check.",
+    )
+    fix_path.write_text(verified_text, encoding="utf-8")
+    closed = run_project(
+        [
+            "fix",
+            "close",
+            "--id",
+            "FIX-001",
+            "--disposition",
+            "Fixed",
+            "--decision",
+            "Linked regression verified.",
+            "--closed-by",
+            "Test Owner",
+        ],
+        cwd=tmp_path,
+    )
+    assert closed.returncode == 0, closed.stdout + closed.stderr
+
+    assert requirements_path.read_bytes() == requirements_before
+    assert implementation_path.read_bytes() == implementation_before
+    source_row_after = next(
+        line
+        for line in tracker_path.read_text(encoding="utf-8").splitlines()
+        if line.startswith("| TASK-001 |")
+    )
+    assert source_row_after == source_row_before
+
+
+def test_fix_hotfix_bypass_and_promotion(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+
+    created = run_project(
+        ["fix", "init", "--title", "Production Incident", "--mode", "Hotfix"],
+        cwd=tmp_path,
+    )
+    assert created.returncode == 0, created.stdout + created.stderr
+    fix_path = (
+        tmp_path
+        / ".project-workflow"
+        / "tasks"
+        / "FIX-001-Production-Incident"
+        / "FIX.md"
+    )
+    bypass_blocked = run_project(
+        ["fix", "status", "--id", "FIX-001", "--to", "In Progress"], cwd=tmp_path
+    )
+    assert bypass_blocked.returncode != 0
+    fix_path.write_text(ready_fix_text(fix_path, hotfix=True), encoding="utf-8")
+    bypass = run_project(
+        ["fix", "status", "--id", "FIX-001", "--to", "In Progress"], cwd=tmp_path
+    )
+    assert bypass.returncode == 0, bypass.stdout + bypass.stderr
+
+    second = run_project(["fix", "init", "--title", "Expanded Outcome"], cwd=tmp_path)
+    assert second.returncode == 0, second.stdout + second.stderr
+    promoted = run_project(
+        [
+            "fix",
+            "promote",
+            "--id",
+            "FIX-002",
+            "--to",
+            "task",
+            "--reason",
+            "The request now needs a new product outcome.",
+            "--promoted-by",
+            "Test Owner",
+        ],
+        cwd=tmp_path,
+    )
+    assert promoted.returncode == 0, promoted.stdout + promoted.stderr
+    assert "Promoted FIX-002 to task TASK-001" in promoted.stdout
+    promoted_requirements = (
+        tmp_path
+        / ".project-workflow"
+        / "tasks"
+        / "TASK-001-Expanded-Outcome"
+        / "REQUIREMENTS.md"
+    ).read_text(encoding="utf-8")
+    assert "- Promoted from Fix: FIX-002" in promoted_requirements
+    promoted_fix = (
+        tmp_path
+        / ".project-workflow"
+        / "tasks"
+        / "FIX-002-Expanded-Outcome"
+        / "FIX.md"
+    ).read_text(encoding="utf-8")
+    assert "- Status: N/A" in promoted_fix
+    assert "- Disposition: Promoted" in promoted_fix
+    assert "- Promoted to: TASK-001" in promoted_fix
+
+    third = run_project(["fix", "init", "--title", "Coordinated Outcomes"], cwd=tmp_path)
+    assert third.returncode == 0, third.stdout + third.stderr
+    promoted_epic = run_project(
+        [
+            "fix",
+            "promote",
+            "--id",
+            "FIX-003",
+            "--to",
+            "epic",
+            "--reason",
+            "Several coordinated outcomes are now required.",
+            "--promoted-by",
+            "Test Owner",
+        ],
+        cwd=tmp_path,
+    )
+    assert promoted_epic.returncode == 0, promoted_epic.stdout + promoted_epic.stderr
+    assert "Promoted FIX-003 to epic EPIC-001" in promoted_epic.stdout
+    epic_requirements = (
+        tmp_path
+        / ".project-workflow"
+        / "tasks"
+        / "EPIC-001-Coordinated-Outcomes"
+        / "REQUIREMENTS.md"
+    ).read_text(encoding="utf-8")
+    assert "- Promoted from Fix: FIX-003" in epic_requirements
+
+
+def test_fix_workspace_metadata_and_non_delivery_disposition(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    workspace_path = tmp_path / ".project-workflow" / "workspace.json"
+    workspace_path.write_text(
+        json.dumps(
+            {
+                "components": [
+                    {"id": "api", "path": "services/api"},
+                    {"id": "web", "path": "apps/web"},
+                ]
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    created = run_project(["fix", "init", "--title", "Workspace Regression"], cwd=tmp_path)
+    assert created.returncode == 0, created.stdout + created.stderr
+    fix_path = (
+        tmp_path
+        / ".project-workflow"
+        / "tasks"
+        / "FIX-001-Workspace-Regression"
+        / "FIX.md"
+    )
+    text = ready_fix_text(fix_path)
+    text = workflow_cli._replace_fix_field(text, "Fix Plan", "Primary repo", "api")
+    text = workflow_cli._replace_fix_field(text, "Fix Plan", "Repos touched", "api, web")
+    fix_path.write_text(text, encoding="utf-8")
+    missing_rows = run_project(["fix", "triage", "--id", "FIX-001"], cwd=tmp_path)
+    assert missing_rows.returncode != 0
+    assert "repository-links row for workspace repo `api`" in missing_rows.stderr
+
+    text = text.replace(
+        "| . | ____ | ____ | ____ |",
+        "| api | fix/api | PR-101 | evidence/api.txt |\n"
+        "| web | fix/web | None | evidence/web.txt |",
+    )
+    fix_path.write_text(text, encoding="utf-8")
+    triaged = run_project(["fix", "triage", "--id", "FIX-001"], cwd=tmp_path)
+    assert triaged.returncode == 0, triaged.stdout + triaged.stderr
+
+    for index, disposition in enumerate(("Duplicate", "Rejected", "Deferred"), start=2):
+        title = f"{disposition} Report"
+        created_terminal = run_project(["fix", "init", "--title", title], cwd=tmp_path)
+        assert created_terminal.returncode == 0, created_terminal.stdout + created_terminal.stderr
+        closed = run_project(
+            [
+                "fix",
+                "close",
+                "--id",
+                f"FIX-{index:03d}",
+                "--disposition",
+                disposition,
+                "--decision",
+                f"Triage disposition: {disposition}.",
+                "--closed-by",
+                "Triage Owner",
+            ],
+            cwd=tmp_path,
+        )
+        assert closed.returncode == 0, closed.stdout + closed.stderr
+        terminal_text = next(
+            (tmp_path / ".project-workflow" / "tasks").glob(f"FIX-{index:03d}-*")
+        ).joinpath("FIX.md").read_text(encoding="utf-8")
+        assert "- Status: N/A" in terminal_text
+        assert f"- Disposition: {disposition}" in terminal_text
+
+
 def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     codex_root = tmp_path / "codex"
     codex_root.mkdir()
-    (codex_root / "AGENTS.md").write_text("# Existing Agent Notes\n\nKeep this.\n", encoding="utf-8")
+    (codex_root / "AGENTS.md").write_text(
+        "# Existing Agent Notes\n\nKeep this.\n", encoding="utf-8"
+    )
     codex_init = run_project(["init", "--agent", "codex"], cwd=codex_root)
     assert codex_init.returncode == 0, codex_init.stderr
     codex_agents = (codex_root / "AGENTS.md").read_text(encoding="utf-8")
@@ -1047,6 +1463,11 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "DECOMPOSITION.md" in codex_agents
     assert "EVIDENCE.json" in codex_agents
     assert "invalid substitutes" in codex_agents
+    assert "bounded post-completion correction" in codex_agents
+    assert "move new tasks to `Ready`" in codex_agents
+    fix_skill_path = codex_root / ".agents" / "skills" / "project-fix" / "SKILL.md"
+    assert fix_skill_path.exists()
+    assert ".project-workflow/TRACKER.md" in fix_skill_path.read_text(encoding="utf-8")
     assert "workflow doctor" in (
         codex_root / ".agents" / "skills" / "project-implement" / "SKILL.md"
     ).read_text(encoding="utf-8")
@@ -1091,6 +1512,8 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "EPIC-CONTRACT.md" in cursor_rules
     assert "DECOMPOSITION.md" in cursor_rules
     assert "EVIDENCE.json" in cursor_rules
+    assert "one lightweight Fix" in cursor_rules
+    assert (cursor_root / ".cursor" / "agents" / "project-fix.md").exists()
     assert (
         cursor_root / ".cursor" / "agents" / "project-backlog.md"
     ).exists()
@@ -1105,6 +1528,7 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert (
         claude_root / ".claude" / "agents" / "project-backlog.md"
     ).exists()
+    assert (claude_root / ".claude" / "agents" / "project-fix.md").exists()
     claude_implement = (
         claude_root / ".claude" / "agents" / "project-implement.md"
     ).read_text(encoding="utf-8")
@@ -1118,7 +1542,10 @@ def test_init_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path
     assert init.returncode == 0, init.stderr
 
     local_workflow = tmp_path / ".project-workflow" / "cli" / "workflow.py"
-    local_workflow.write_text("# project-workflow:generated\n# old generated workflow helper\n", encoding="utf-8")
+    local_workflow.write_text(
+        "# project-workflow:generated\n# old generated workflow helper\n",
+        encoding="utf-8",
+    )
     instructions = tmp_path / ".github" / "copilot-instructions.md"
     instructions.write_text(
         "# Local Copilot Notes\n\n"
@@ -1160,6 +1587,103 @@ def test_init_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path
     assert "DECOMPOSITION.md" in instructions_text
     assert "EVIDENCE.json" in instructions_text
     assert "invalid substitutes" in instructions_text
+    fix_help = subprocess.run(
+        [sys.executable, str(local_workflow), "fix", "--help"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert fix_help.returncode == 0, fix_help.stdout + fix_help.stderr
+    assert "Manage bounded defects" in fix_help.stdout
+
+
+def test_uvx_fresh_install_and_legacy_refresh_deliver_fix_assets(tmp_path: Path) -> None:
+    uvx = shutil.which("uvx")
+    if uvx is None:
+        pytest.skip("uvx is not installed")
+    target = tmp_path / "uvx-target"
+    target.mkdir()
+    command = [uvx, "--from", str(REPO_ROOT), "project", "init", "--agent", "codex"]
+    uv_env = os.environ.copy()
+    uv_env["UV_CACHE_DIR"] = str(tmp_path / "uv-cache")
+    uv_env["UV_TOOL_DIR"] = str(tmp_path / "uv-tools")
+
+    fresh = subprocess.run(
+        command,
+        cwd=target,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=uv_env,
+    )
+    assert fresh.returncode == 0, fresh.stdout + fresh.stderr
+    local_workflow = target / ".project-workflow" / "cli" / "workflow.py"
+    fix_skill = target / ".agents" / "skills" / "project-fix" / "SKILL.md"
+    assert fix_skill.exists()
+    fix_help = subprocess.run(
+        [sys.executable, str(local_workflow), "fix", "--help"],
+        cwd=target,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=uv_env,
+    )
+    assert fix_help.returncode == 0, fix_help.stdout + fix_help.stderr
+
+    local_workflow.write_text(
+        "# project-workflow:generated\n# legacy workflow helper\n", encoding="utf-8"
+    )
+    agents_path = target / "AGENTS.md"
+    agents_path.write_text(
+        "# User Notes\n\n"
+        "<!-- project-workflow:start -->\nlegacy managed block\n"
+        "<!-- project-workflow:end -->\n",
+        encoding="utf-8",
+    )
+    fix_skill.write_text("# User-owned Fix guidance\n", encoding="utf-8")
+
+    refreshed = subprocess.run(
+        command,
+        cwd=target,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=uv_env,
+    )
+    assert refreshed.returncode == 0, refreshed.stdout + refreshed.stderr
+    refreshed_help = subprocess.run(
+        [sys.executable, str(local_workflow), "fix", "--help"],
+        cwd=target,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert refreshed_help.returncode == 0, refreshed_help.stdout + refreshed_help.stderr
+    assert fix_skill.read_text(encoding="utf-8") == "# User-owned Fix guidance\n"
+    fix_skill_new = fix_skill.with_name("SKILL.md.new")
+    assert fix_skill_new.exists()
+    assert "Project Fix" in fix_skill_new.read_text(encoding="utf-8")
+    agents_text = agents_path.read_text(encoding="utf-8")
+    assert "# User Notes" in agents_text
+    assert "legacy managed block" not in agents_text
+    assert "bounded post-completion correction" in agents_text
+
+    workflow_after_refresh = local_workflow.read_text(encoding="utf-8")
+    skill_new_after_refresh = fix_skill_new.read_text(encoding="utf-8")
+    repeated = subprocess.run(
+        command,
+        cwd=target,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=uv_env,
+    )
+    assert repeated.returncode == 0, repeated.stdout + repeated.stderr
+    assert local_workflow.read_text(encoding="utf-8") == workflow_after_refresh
+    assert fix_skill.read_text(encoding="utf-8") == "# User-owned Fix guidance\n"
+    assert fix_skill_new.read_text(encoding="utf-8") == skill_new_after_refresh
+    assert not fix_skill.with_name("SKILL.md.new.2").exists()
 
 
 def test_init_does_not_treat_inline_marker_mentions_as_managed_blocks(tmp_path: Path) -> None:
@@ -2767,7 +3291,7 @@ def test_task_approval_envelope_command_and_stale_detection(tmp_path: Path) -> N
         encoding="utf-8",
     )
     implementation_path = task_dir / "IMPLEMENTATION.md"
-    implementation_path.write_text(ready_implementation(), encoding="utf-8")
+    assert "____" in implementation_path.read_text(encoding="utf-8")
 
     # Simulate requirements drafted before command-written approval existed.
     requirements_path.write_text(
@@ -2779,11 +3303,6 @@ def test_task_approval_envelope_command_and_stale_detection(tmp_path: Path) -> N
     )
 
     blocked = run_project(["task", "status", "--id", "TASK-001", "--to", "Analysing"], cwd=tmp_path)
-    assert blocked.returncode == 0, blocked.stdout + blocked.stderr
-    blocked = run_project(
-        ["task", "status", "--id", "TASK-001", "--to", "Plan Confirmed"],
-        cwd=tmp_path,
-    )
     assert blocked.returncode != 0
     assert "add `## Owner Approval`" in blocked.stderr
 
@@ -2805,11 +3324,17 @@ def test_task_approval_envelope_command_and_stale_detection(tmp_path: Path) -> N
     assert "- Approved scope envelope: Yes" in approved_text
     assert "- Approved artifact identity: sha256:" in approved_text
 
-    confirmed = run_project(
-        ["task", "status", "--id", "TASK-001", "--to", "Plan Confirmed"],
+    analysing = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Analysing"],
         cwd=tmp_path,
     )
-    assert confirmed.returncode == 0, confirmed.stdout + confirmed.stderr
+    assert analysing.returncode == 0, analysing.stdout + analysing.stderr
+    implementation_path.write_text(ready_implementation(), encoding="utf-8")
+    ready = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Ready"],
+        cwd=tmp_path,
+    )
+    assert ready.returncode == 0, ready.stdout + ready.stderr
 
     requirements_path.write_text(
         approved_text + "\n## Added Scope\n\n- This changes the approved requirements.\n",

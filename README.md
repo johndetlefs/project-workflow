@@ -68,7 +68,7 @@ This creates:
 - `.project-workflow/config.json` — User-owned task ID namespace and generation configuration
 - `.github/copilot-instructions.md` — A managed Project Workflow block for GitHub Copilot mode
 
-Re-running is **idempotent** and safe. The canonical refresh command is `uvx --from git+https://github.com/johndetlefs/project-workflow.git project init`; it refreshes files that carry the `project-workflow:generated` marker, appends or refreshes only the managed block in host-owned files such as `AGENTS.md` and `.github/copilot-instructions.md`, and preserves unmarked existing files by writing the new generated content beside them as `*.new`.
+Re-running is **idempotent** and safe. The canonical refresh command is `uvx --from git+https://github.com/johndetlefs/project-workflow.git project init`; it refreshes the packaged CLI, templates, prompts, Codex skills, Cursor rule, and managed guidance (including the Fix workflow), appends or refreshes only the managed block in host-owned files such as `AGENTS.md` and `.github/copilot-instructions.md`, and preserves unmarked existing files by writing the new generated content beside them as `*.new`.
 
 ### Refresh an Existing Install
 
@@ -138,8 +138,8 @@ In repositories initialized with project-workflow, the local dependency-free hel
 
 Repos can choose task ID prefixes and ID generation in
 `.project-workflow/config.json`. If the file is missing, project-workflow keeps
-the compatibility default: sequential `TASK-###` IDs for tasks, `EPIC-###` IDs
-for epics, and `BL-###` IDs for backlog rows.
+the compatibility default: sequential `TASK-###` IDs for tasks, reserved `FIX-###` IDs for
+lightweight fixes, `EPIC-###` IDs for epics, and `BL-###` IDs for backlog rows.
 
 Example:
 
@@ -150,6 +150,7 @@ Example:
   "id_generation": {
     "tasks": "sequential",
     "epics": "sequential",
+    "fixes": "sequential",
     "backlog": "sequential"
   },
   "unique_id_length": 5,
@@ -172,7 +173,7 @@ only for a deliberately homogeneous batch.
 For team repos with multiple active branches, set `id_generation` values to
 `unique` to avoid merge-time collisions from independent `max+1` allocation.
 Unique IDs keep the prefix and use a short uppercase base36 suffix, for example
-`WF-K7F3Q`, `EPIC-R5M8T`, and `BL-Q6P4V`. The default unique suffix length is
+`WF-K7F3Q`, `FIX-H4T2P`, `EPIC-R5M8T`, and `BL-Q6P4V`. The default unique suffix length is
 `5`; the CLI checks existing tracker rows, epic trackers, backlog rows, and
 workflow task folders before accepting a generated ID.
 
@@ -245,6 +246,33 @@ the created task or epic ID. Execution status then belongs in
 
 Existing roadmap or backlog documents outside `.project-workflow/BACKLOG.md` are preserved. If you want to normalize them into the canonical backlog, create a repo-local project-workflow task and review the proposed rows before changing source documents.
 
+### Route Active Work: Fix, Task, or Epic
+
+The agent recommends the route from the evidence; a user's label is useful context but is not
+binding:
+
+- Keep an in-scope correction in an active task or epic child.
+- Use a **Fix** for one bounded defect, regression, change request, or incident against a delivered
+  or accepted baseline.
+- Use a **Task** for a new outcome, material product decision/discovery, or multiple independent
+  work items.
+- Use an **Epic** for several coordinated outcomes or workstreams.
+
+Fixes do not create another tracking system. They use the same `.project-workflow/tasks/` directory
+and global `TRACKER.md`, with one lightweight `FIX.md`:
+
+```bash
+./.project-workflow/cli/workflow fix init --title "Export fails for large accounts"
+./.project-workflow/cli/workflow fix triage --id FIX-001
+./.project-workflow/cli/workflow fix status --id FIX-001 --to "In Progress"
+./.project-workflow/cli/workflow fix status --id FIX-001 --to Testing
+./.project-workflow/cli/workflow fix status --id FIX-001 --to Review
+./.project-workflow/cli/workflow fix close --id FIX-001 --disposition Fixed --decision "Verified bounded correction" --closed-by "Owner"
+```
+
+Completed work remains historically accurate and is linked rather than reopened by default. If a
+Fix grows beyond its lightweight envelope, use `fix promote --to task|epic`.
+
 ### 1. **Create a Task** (5 min)
 
 Run `project.task` and answer the quick questions:
@@ -276,11 +304,16 @@ The agent will:
 
 Answer each question iteratively. The agent updates `.project-workflow/tasks/TASK-001-*/REQUIREMENTS.md` as you go.
 
-**Stop when:** REQUIREMENTS.md is drafted (even if it has open questions).
+Resolve or explicitly accept open questions, review the requirements and ACs once, and let the
+agent record that exact owner-approved envelope with `task approve-requirements`.
+
+**Human checkpoint:** requirements/AC approval occurs here, before planning. After approval, the
+agent normally runs Planner, post-plan Clarify, `task ready`, and moves the task to `Ready`
+autonomously. A separate plan approval is optional for requested or exceptional high-risk work.
 
 ### 3. **Create a Plan** (15 min)
 
-Run `project.planner`:
+The agent runs `project.planner` after requirements approval:
 
 ```
 Task: TASK-001
@@ -299,7 +332,7 @@ It updates `.project-workflow/tasks/TASK-001-*/IMPLEMENTATION.md` with a task ta
 
 ### 4. **Clarify for Internal Consistency** (10–20 min, always)
 
-After planning, run `project.clarify` to make sure REQUIREMENTS.md and IMPLEMENTATION.md are internally consistent:
+After planning, the agent runs `project.clarify` to make sure REQUIREMENTS.md and IMPLEMENTATION.md are internally consistent:
 
 ```
 Task: TASK-001
@@ -313,7 +346,8 @@ The agent will:
 - Record chosen decisions in REQUIREMENTS.md
 - Keep IMPLEMENTATION.md aligned with confirmed decisions
 
-Run Clarify until there are no unresolved questions or conflicts.
+The agent resolves implementation-detail gaps inside the approved envelope, runs `task ready`, and
+moves the task to `Ready`. Material scope or product-decision drift returns to the owner.
 
 ### 5. **Implement & Validate** (varies)
 
@@ -327,7 +361,7 @@ Work item: 1
 The agent will:
 
 - Read your requirements and plan
-- Confirm the task is inside an approved requirements/AC envelope; if approval is missing or stale, record owner approval once with `task approve-requirements` after requirements are ready
+- Confirm the task is `Ready` inside an approved requirements/AC envelope
 - Run `./.project-workflow/cli/workflow task ready --id TASK-001` before coding
 - Make code changes incrementally
 - Run validation (tests, type checks, manual verification)
@@ -464,6 +498,8 @@ your-project/
 │       ├── TASK-001-User-Export/
 │       │   ├── IMPLEMENTATION.md      # ← User story, tasks, QA, retro
 │       │   └── REQUIREMENTS.md        # ← Goals, specs, decisions (auto-updated)
+│       ├── FIX-001-Export-Regression/
+│       │   └── FIX.md                 # ← Lightweight report, triage, plan, evidence, closeout
 │       └── TASK-002-*/
 │           └── ...
 ├── .github/
@@ -473,6 +509,7 @@ your-project/
 │       ├── Backlog.prompt.md         # /project.backlog
 │       ├── Task.prompt.md            # /project.task
 │       ├── Epic.prompt.md            # /project.epic
+│       ├── Fix.prompt.md             # /project.fix
 │       ├── Requirements.prompt.md    # /project.requirements
 │       ├── Clarify.prompt.md         # /project.clarify
 │       ├── Planner.prompt.md         # /project.planner
@@ -502,6 +539,7 @@ your-project/
 │       ├── project-backlog.md
 │       ├── project-task.md
 │       ├── project-epic.md
+│       ├── project-fix.md
 │       ├── project-requirements.md
 │       ├── project-clarify.md
 │       ├── project-planner.md
@@ -532,6 +570,7 @@ your-project/
 │       ├── project-backlog/
 │       ├── project-task/
 │       ├── project-epic/
+│       ├── project-fix/
 │       ├── project-requirements/
 │       ├── project-clarify/
 │       ├── project-planner/
@@ -561,6 +600,7 @@ your-project/
 │   │   ├── project-backlog.md
 │   │   ├── project-task.md
 │   │   ├── project-epic.md
+│   │   ├── project-fix.md
 │   │   ├── project-requirements.md
 │   │   ├── project-clarify.md
 │   │   ├── project-planner.md
@@ -581,7 +621,7 @@ your-project/
 
 The agents are designed to be used **in order**. Skipping steps = ambiguous code and rework.
 
-1. **Constitution (once)** → 2. **Backlog (optional)** → 3. **Task/Epic** → 4. **Requirements** → 5. **Planner** → 6. **Clarify** → 7. **Implement** → 8. **QA & Code Review** → 9. **Retro**
+1. **Constitution (once)** → 2. **Backlog (optional)** → 3. **Route Fix/Task/Epic** → 4. **Requirements + owner approval (Task/Epic)** → 5. **Planner** → 6. **Clarify + Ready** → 7. **Implement** → 8. **QA & Code Review** → 9. **Retro when reusable**
 
 Always run Clarify after Planner to verify internal consistency before implementation.
 Use **Delegate** as an execution option when a task has multiple work items with dependencies.

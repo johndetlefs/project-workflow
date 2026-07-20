@@ -6,19 +6,31 @@ This repository uses project-workflow for spec-driven development. Keep workflow
 
 1. Constitution: use `project-constitution` to establish or update `.project-workflow/CONSTITUTION.md` for product outcomes.
 2. Backlog: use `project-backlog` when future intent should be captured before it becomes committed task or epic workflow state.
-3. Task: use `project-task` to create one task folder under `.project-workflow/tasks/TASK-<NNN>-<Suffix>/`, with `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and a tracker row.
-4. Requirements: use `project-requirements` to capture the user story, scope, acceptance criteria, open questions, decisions, and validation plan in `REQUIREMENTS.md`.
-5. Planner: use `project-planner` to turn confirmed requirements into testable work items in `IMPLEMENTATION.md`.
-6. Clarify: use `project-clarify` to resolve inconsistencies between requirements, plan, repo constraints, and product outcomes before implementation.
-7. Implement: use `project-implement` to make the smallest scoped code change for one work item, validate it, and move it to testing.
-8. QA & Code Review: use `project-qa-review` to independently verify acceptance criteria and review the code before completion.
-9. Retro: use `project-retro` after completion to update durable conventions, agent guidance, and follow-up tasks.
+3. Route: keep in-scope corrections in active work; use `project-fix` for one bounded correction
+   against delivered/accepted behavior, `project-task` for a new outcome or multiple independent
+   items, and `project-epic` for coordinated workstreams.
+4. Requirements: use `project-requirements` to capture the user story, scope, acceptance criteria,
+   open questions, decisions, and validation plan. The owner approves this envelope before planning.
+5. Planner: after approval, use `project-planner` to turn requirements into testable work items.
+6. Clarify: run `project-clarify` after planning to reconcile the plan with requirements, repo
+   constraints, and product outcomes; return to the owner only for material drift.
+7. Ready: run `task ready` and move new tasks to `Ready`. `Plan Confirmed` remains a legacy status,
+   not the default human checkpoint.
+8. Implement: use `project-implement` to make the smallest scoped code change for one work item,
+   validate it, and move it to testing.
+9. QA & Code Review: use `project-qa-review` to independently verify acceptance criteria and review
+   the code before completion.
+10. Retro: use `project-retro` after completion when there is a reusable lesson or follow-up.
 
 For multi-item orchestration, use `project-delegate` after planning. For large bodies of work, use `project-epic` to create proposal-first epic trackers and approved child tasks.
 
 Backlog is optional and sits between constitution and tracker state. Keep `.project-workflow/BACKLOG.md` for future intent, rough priority, options, and promotion history. Promoted rows remain in the backlog with `Promoted To` pointing at the created task or epic ID; active execution status belongs only in `.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
 
 Project Workflow is owner-directed and agent-operated. The owner supplies intent, constraints, examples, decisions, and approvals; the agent runs commands, drafts artifacts, asks focused questions, validates readiness, implements, reviews, and records evidence. Do not make manual template completion the normal user path.
+
+The user's work-item label is non-binding. The agent must make and state an evidence-based routing
+recommendation. Clear authorized cases may proceed; genuinely ambiguous or materially different
+cases require one focused question. Do not reopen or rewrite completed work by default.
 
 For epic-managed work, preserve parent epic acceptance criteria coverage from the epic tracker through child requirements, child implementation, QA evidence, and closeout. New epic trackers use a `Parent ACs` field; legacy trackers may carry coverage in `Notes` as `Covers AC1, AC3`. The global tracker summarizes epic rows; epic `TRACKER.md` files own child rows, including Proposed rows.
 
@@ -35,6 +47,8 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 - If the user asks to create, update, review, or align the product constitution, use `.agents/skills/project-constitution/SKILL.md`.
 - If the user asks to capture, refine, validate, accept, defer, reject, supersede, or promote future project intent before task/epic execution, use `.agents/skills/project-backlog/SKILL.md`.
 - If the user asks to create a task, story, feature folder, tracker row, or new project-workflow item, use `.agents/skills/project-task/SKILL.md`.
+- If the user reports a bounded post-completion defect, regression, change request, incident, or
+  hotfix, or asks whether work should be a Fix, use `.agents/skills/project-fix/SKILL.md`.
 - If the user asks to create, decompose, approve, or scaffold epic-managed work, use `.agents/skills/project-epic/SKILL.md`.
 - If the user asks to capture requirements, define scope, write acceptance criteria, record open questions, or prepare a validation plan, use `.agents/skills/project-requirements/SKILL.md`.
 - If the user asks to plan implementation, break requirements into phases, or create testable work items, use `.agents/skills/project-planner/SKILL.md`.
@@ -62,6 +76,9 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 - Treat `.project-workflow/cli/workflow` as the authoritative way to perform operations it supports.
 - Use the CLI for backlog row creation, status changes, validation, and promotion. Do not hand-edit backlog lifecycle state when the CLI can do it.
 - Use the CLI for task scaffolding and tracker-safe task creation. Do not manually create task folders, starter `REQUIREMENTS.md`, starter `IMPLEMENTATION.md`, or tracker rows when the CLI can do it.
+- Use the CLI for Fix scaffolding, triage, lifecycle, promotion, and closeout. Keep Fix records under
+  `.project-workflow/tasks/FIX-<ID>-<Suffix>/FIX.md` and in the one global tracker; do not create a
+  separate Fix tracker or top-level fixes directory.
 - Run project-workflow CLI commands from the repository root.
 - If a selected project-workflow skill documents a CLI command, run that command instead of recreating its behavior manually.
 - If the CLI does not support the selected workflow step, follow the selected skill and update the relevant Markdown files directly.
@@ -81,12 +98,18 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 - When planning, make every implementation task row map to one or more stable acceptance criteria IDs (`AC1`, `AC2`, etc.) from the task requirements or implementation acceptance criteria section.
 - When planning epic-managed child tasks, keep both the child AC IDs and parent epic AC coverage visible in requirements, implementation rows, validation evidence, and QA notes.
 - Before implementation-oriented status transitions, run readiness gates where available: `task ready`, `epic ready`, or `epic ready-child`. If a gate fails, remediate repo-gatherable gaps directly and ask the owner only for decisions, missing product context, or material authority changes listed above.
+- Owner approval of requirements/ACs occurs before planning. After approval, run Planner,
+  post-plan Clarify, `task ready`, and move to `Ready` autonomously unless setup-only scope,
+  material drift, exceptional authority, or optional requested/high-risk plan review requires a pause.
 - Keep `.project-workflow/TRACKER.md` status aligned with the current workflow state using `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` when the command is available.
 - Do not mark a task or work item `Complete` unless implementation validation and QA/code review have passed and the user explicitly asks for completion.
 
 ## Status Rules
 
 - New scaffolded tasks start as `To Do`.
+- Move a new task to `Analysing` only after its requirements/AC approval envelope is recorded.
+- Move a planned and clarified new task to `Ready` after `task ready` passes. `Plan Confirmed` is
+  supported for legacy tasks.
 - Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to "In Progress"` before implementation work begins.
 - Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to Testing` after implementation and validation have been run.
 - Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to Review` while QA/code review is running.

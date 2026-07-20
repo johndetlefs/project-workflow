@@ -2,6 +2,7 @@
 name: project-planner
 description: Use when turning confirmed project-workflow requirements into a phased implementation plan and testable work-item table.
 ---
+<!-- project-workflow:generated -->
 
 # Project Planner
 

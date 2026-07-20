@@ -49,7 +49,10 @@ Minimum intake context before downstream work:
 
 If the user has not provided this context, create the scaffold only as a requirements/clarification artifact. Do not proceed to planning or implementation until `task ready` passes or the owner explicitly records discovery/accepted risk.
 
-Owner approval is required before implementation-oriented work, but it is not a repeated per-step ceremony. After requirements and ACs are drafted, use `project.requirements`/`project.clarify` to get one explicit owner confirmation and record it with `task approve-requirements`. Downstream work inside that approved envelope should proceed through gates without asking for generic re-approval.
+Owner approval is required for the requirements/AC envelope before planning, but it is not a
+repeated per-step ceremony. After that approval, the agent normally runs Planner, post-plan
+Clarify, `task ready`, and moves to `Ready` autonomously. Pause only for material drift,
+exceptional authority, requested/high-risk plan review, or an explicit setup-only boundary.
 
 ## Safety checks
 
@@ -90,4 +93,7 @@ After running:
 
 ## Next step
 
-Immediately proceed to `.github/prompts/Requirements.prompt.md` (prompt name: `project.requirements`) for the new task (iteratively). Do not proceed to planning or implementation until requirements/ACs are confirmed, approval is recorded, and `task ready` passes. Then use `project.clarify` / `project.planner` / `project.implement` / `project.qa-review` / `project.retro` as needed.
+Immediately proceed to `.github/prompts/Requirements.prompt.md` (prompt name:
+`project.requirements`) for the new task (iteratively). Once requirements/ACs are confirmed and
+approval is recorded, run `project.planner`, a post-plan `project.clarify` pass, `task ready`, and
+move to `Ready`; then implement within the approved envelope when authorized.

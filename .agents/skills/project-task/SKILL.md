@@ -2,6 +2,7 @@
 name: project-task
 description: Use when creating a new project-workflow task folder, tracker row, and optional branch for a feature or bugfix.
 ---
+<!-- project-workflow:generated -->
 
 # Project Task
 

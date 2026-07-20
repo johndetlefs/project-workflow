@@ -2,6 +2,7 @@
 name: project-requirements
 description: Use when drafting or updating project-workflow REQUIREMENTS.md with user story, scope, acceptance criteria, decisions, and open questions.
 ---
+<!-- project-workflow:generated -->
 
 # Project Requirements
 
