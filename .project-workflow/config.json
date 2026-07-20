@@ -6,6 +6,7 @@
   "id_generation": {
     "tasks": "sequential",
     "epics": "sequential",
+    "fixes": "sequential",
     "backlog": "sequential"
   },
   "unique_id_length": 5,
