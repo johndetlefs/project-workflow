@@ -17,3 +17,4 @@
 | EPIC-006 | Epic Control Gates For Requirement Drift Prevention | Complete | `tasks/EPIC-006-Epic-Control-Gates-For-Requirement-Drift-Prevention/REQUIREMENTS.md` |
 | TASK-038 | Lightweight Fix And Defect Workflow | Complete | `tasks/TASK-038-Lightweight-Fix-And-Defect-Workflow/IMPLEMENTATION.md` |
 | FIX-001 | Explicit Fix ID Generation Configuration | Complete | `tasks/FIX-001-Explicit-Fix-Id-Generation-Configuration/FIX.md` |
+| FIX-002 | Avoid False Workflow References In URLs | Complete | `tasks/FIX-002-Avoid-False-Workflow-References-In-Urls/FIX.md` |

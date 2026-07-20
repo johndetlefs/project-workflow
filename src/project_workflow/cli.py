@@ -1215,10 +1215,15 @@ def _extract_ac_ids(text: str) -> set[str]:
     }
 
 
-def _extract_workflow_ref_ids(text: str) -> set[str]:
-    return {
+def _extract_workflow_ref_ids(text: str, *, config: WorkflowConfig) -> set[str]:
+    candidates = {
         match.group(0).upper()
         for match in re.finditer(r"\b[A-Z][A-Z0-9]*-[A-Z0-9]+\b", text, re.IGNORECASE)
+    }
+    return {
+        candidate
+        for candidate in candidates
+        if _valid_workflow_ref_id(candidate, config=config)
     }
 
 
@@ -3558,7 +3563,7 @@ def _fix_hotfix_safety_issues(root: Path, fix_text: str) -> list[str]:
     return list(dict.fromkeys(issues))
 
 
-def _fix_closeout_issues(fix_text: str) -> list[str]:
+def _fix_closeout_issues(root: Path, fix_text: str) -> list[str]:
     issues: list[str] = []
     verification = _fix_values(fix_text, "Verification")
     for field in (
@@ -3575,7 +3580,7 @@ def _fix_closeout_issues(fix_text: str) -> list[str]:
         issues.append("complete `original acceptance criteria result` under `## Verification`")
     originating_work = _fix_values(fix_text, "Related Work").get("originating work", "")
     if (
-        _extract_workflow_ref_ids(originating_work)
+        _extract_workflow_ref_ids(originating_work, config=_load_workflow_config(root))
         and original_result.strip().lower() in {"not applicable", "n/a", "none"}
     ):
         issues.append(
@@ -4692,7 +4697,13 @@ def _doctor_check_task_doc(
 
 
 def _doctor_check_fix_doc(
-    *, root: Path, docs_rel: str, status: str, row_id: str, issues: list[DoctorIssue]
+    *,
+    root: Path,
+    docs_rel: str,
+    status: str,
+    row_id: str,
+    config: WorkflowConfig | None,
+    issues: list[DoctorIssue],
 ) -> None:
     fix_path = root / ".project-workflow" / docs_rel
     if fix_path.name != "FIX.md" or not fix_path.exists():
@@ -4756,13 +4767,17 @@ def _doctor_check_fix_doc(
         for triage_issue in triage_issues:
             _add_issue(issues, "error", fix_path, f"{row_id} triage: {triage_issue}.")
     if status == "Complete":
-        for closeout_issue in _fix_closeout_issues(fix_text):
+        for closeout_issue in _fix_closeout_issues(root, fix_text):
             _add_issue(issues, "error", fix_path, f"{row_id} closeout: {closeout_issue}.")
     if status == "N/A":
         for closeout_issue in _fix_non_delivery_closeout_issues(fix_text):
             _add_issue(issues, "error", fix_path, f"{row_id} closeout: {closeout_issue}.")
     related = _fix_values(fix_text, "Related Work")
-    refs = _extract_workflow_ref_ids(" ".join(related.values()))
+    refs = (
+        _extract_workflow_ref_ids(related.get("originating work", ""), config=config)
+        if config is not None
+        else set()
+    )
     if refs:
         tracker_path = root / ".project-workflow" / "TRACKER.md"
         try:
@@ -4813,6 +4828,7 @@ def _doctor_check_global_tracker(
                 docs_rel=docs_rel,
                 status=status,
                 row_id=row_id,
+                config=config,
                 issues=issues,
             )
         else:
@@ -5544,7 +5560,7 @@ def cmd_fix_close(args: argparse.Namespace) -> None:
         fix_text, "Outcome", "Closed date", args.closed_date or date.today().isoformat()
     )
     closeout_issues = (
-        _fix_closeout_issues(fix_text)
+        _fix_closeout_issues(root, fix_text)
         if delivering_fix
         else _fix_non_delivery_closeout_issues(fix_text)
     )

@@ -1273,6 +1273,68 @@ def test_fix_link_does_not_mutate_completed_task_history(tmp_path: Path) -> None
     assert source_row_after == source_row_before
 
 
+def test_fix_related_work_ignores_external_urls_and_checks_configured_ids(
+    tmp_path: Path,
+) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    write_unique_id_config(tmp_path)
+
+    task = run_project(
+        ["task", "init", "--title", "Delivered Baseline", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+    task_match = re.search(r"Assigned ID: (WF-[0-9A-Z]{5})", task.stdout)
+    assert task_match, task.stdout
+    task_id = task_match.group(1)
+
+    created = run_project(["fix", "init", "--title", "Related Link Parsing"], cwd=tmp_path)
+    assert created.returncode == 0, created.stdout + created.stderr
+    fix_match = re.search(r"Assigned ID: (FIX-[0-9A-Z]{5})", created.stdout)
+    assert fix_match, created.stdout
+    fix_id = fix_match.group(1)
+    fix_path = next(
+        (tmp_path / ".project-workflow" / "tasks").glob(f"{fix_id}-Related-Link-Parsing")
+    ) / "FIX.md"
+
+    missing_id = next(
+        candidate for candidate in ("WF-ZZZZZ", "WF-YYYYY") if candidate != task_id
+    )
+    fix_text = workflow_cli._replace_fix_field(
+        fix_path.read_text(encoding="utf-8"),
+        "Related Work",
+        "Originating work",
+        task_id,
+    )
+    fix_text = workflow_cli._replace_fix_field(
+        fix_text,
+        "Related Work",
+        "External links",
+        f"https://github.com/example/project-workflow/issues/{missing_id}",
+    )
+    fix_path.write_text(fix_text, encoding="utf-8")
+
+    valid = run_project(["doctor", "--strict"], cwd=tmp_path)
+    assert valid.returncode == 0, valid.stdout + valid.stderr
+    assert "PROJECT-WORKFLOW" not in valid.stdout
+    assert missing_id not in valid.stdout
+
+    fix_path.write_text(
+        workflow_cli._replace_fix_field(
+            fix_text,
+            "Related Work",
+            "Originating work",
+            missing_id,
+        ),
+        encoding="utf-8",
+    )
+    missing = run_project(["doctor", "--strict"], cwd=tmp_path)
+    assert missing.returncode != 0
+    assert f"related work reference '{missing_id}' is not in the local global tracker" in missing.stdout
+    assert "PROJECT-WORKFLOW" not in missing.stdout
+
+
 def test_fix_hotfix_bypass_and_promotion(tmp_path: Path) -> None:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stdout + init.stderr
