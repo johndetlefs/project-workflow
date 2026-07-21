@@ -582,6 +582,143 @@ def test_compatibility_policy_retains_legacy_and_current_schema() -> None:
     assert "Refreshing generated assets does not by itself upgrade" in policy
 
 
+def test_project_init_creates_and_preserves_current_manifest(tmp_path: Path) -> None:
+    first = run_project(["init"], cwd=tmp_path)
+    assert first.returncode == 0, first.stdout + first.stderr
+    manifest_path = tmp_path / ".project-workflow" / workflow_cli.WORKFLOW_MANIFEST_FILENAME
+    expected = workflow_cli._serialize_workflow_manifest(
+        workflow_cli._current_workflow_manifest()
+    )
+    assert manifest_path.read_text(encoding="utf-8") == expected
+    assert "Repository state before init: not-initialized" in first.stdout
+    assert "Repository state after init: current" in first.stdout
+
+    second = run_project(["init"], cwd=tmp_path)
+    assert second.returncode == 0, second.stdout + second.stderr
+    assert manifest_path.read_text(encoding="utf-8") == expected
+    assert "Repository state before init: current" in second.stdout
+
+
+def test_project_init_preserves_legacy_state_and_directs_upgrade(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    backlog_path = workflow_dir / "BACKLOG.md"
+    backlog_path.write_text("# Historical backlog\n", encoding="utf-8")
+    canary_path = tmp_path / "UNMARKED.txt"
+    canary_path.write_text("owner content\n", encoding="utf-8")
+
+    result = run_project(["init"], cwd=tmp_path)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert backlog_path.read_text(encoding="utf-8") == "# Historical backlog\n"
+    assert canary_path.read_text(encoding="utf-8") == "owner content\n"
+    assert not (workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME).exists()
+    assert "Repository state before init: legacy-unversioned" in result.stdout
+    assert "Repository schema was not migrated" in result.stdout
+    assert "`project upgrade`" in result.stdout
+
+
+def test_project_init_refreshes_assets_without_advancing_schema(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    manifest_path = workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME
+    behind = workflow_cli.WorkflowManifest(
+        manifest_version=1,
+        package_version="0.1.0",
+        asset_version=1,
+        schema_version=0,
+        applied_migrations=("LEGACY-ACK",),
+    )
+    workflow_cli._write_workflow_manifest(manifest_path, behind)
+
+    result = run_project(["init"], cwd=tmp_path)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    refreshed = workflow_cli._parse_workflow_manifest(
+        json.loads(manifest_path.read_text(encoding="utf-8"))
+    )
+    assert refreshed.package_version == workflow_cli.CURRENT_PACKAGE_VERSION
+    assert refreshed.asset_version == workflow_cli.CURRENT_ASSET_VERSION
+    assert refreshed.schema_version == 0
+    assert refreshed.applied_migrations == ("LEGACY-ACK",)
+    assert "Repository state after init: upgradeable" in result.stdout
+    assert "Repository schema was not migrated" in result.stdout
+
+
+@pytest.mark.parametrize("state", ["invalid", "future"])
+def test_project_init_does_not_rewrite_invalid_or_future_manifest(
+    tmp_path: Path,
+    state: str,
+) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    manifest_path = workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME
+    content = b"{not-json}\n" if state == "invalid" else json.dumps(
+        {
+            "manifest_version": 2,
+            "package_version": "9.0.0",
+            "asset_version": 9,
+            "schema_version": 9,
+            "applied_migrations": [],
+        }
+    ).encode("utf-8")
+    manifest_path.write_bytes(content)
+
+    result = run_project(["init"], cwd=tmp_path)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert manifest_path.read_bytes() == content
+    assert "Repository manifest was not changed" in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("setup", "expected_code", "owner", "mechanical"),
+    [
+        ("legacy", "PW_REPOSITORY_LEGACY_UNVERSIONED", "project-workflow", True),
+        ("behind", "PW_REPOSITORY_SCHEMA_BEHIND", "project-workflow", True),
+        ("invalid", "PW_REPOSITORY_INVALID", "owner", False),
+        ("future", "PW_REPOSITORY_UNSUPPORTED_FUTURE", "owner", False),
+    ],
+)
+def test_doctor_emits_structured_repository_version_findings(
+    tmp_path: Path,
+    setup: str,
+    expected_code: str,
+    owner: str,
+    mechanical: bool,
+) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    (workflow_dir / "TRACKER.md").write_text("# Tracker\n", encoding="utf-8")
+    manifest_path = workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME
+    if setup == "behind":
+        workflow_cli._write_workflow_manifest(
+            manifest_path,
+            workflow_cli.WorkflowManifest(1, "0.1.0", 1, 0, ()),
+        )
+    elif setup == "invalid":
+        manifest_path.write_text("{bad}\n", encoding="utf-8")
+    elif setup == "future":
+        workflow_cli._write_workflow_manifest(
+            manifest_path,
+            workflow_cli.WorkflowManifest(1, "9.0.0", 1, 9, ()),
+        )
+
+    finding = next(
+        issue for issue in workflow_cli.run_doctor(tmp_path) if issue.code == expected_code
+    )
+    assert finding.remediation_owner == owner
+    assert finding.mechanically_upgradeable is mechanical
+    record = workflow_cli._doctor_issue_record(
+        finding,
+        root=tmp_path,
+        strict=False,
+        accepted_fingerprints={},
+    )
+    assert record["code"] == expected_code
+    assert record["artifact"] == ".project-workflow/manifest.json"
+
+
 def test_doctor_findings_classify_remediation_ownership() -> None:
     issues: list[workflow_cli.DoctorIssue] = []
     workflow_cli._add_issue(
@@ -934,8 +1071,9 @@ def test_upgrade_plan_preserves_owner_decisions_without_mutation(tmp_path: Path)
 
 
 def test_upgrade_command_blocks_unregistered_legacy_without_mutation(tmp_path: Path) -> None:
-    init = run_project(["init"], cwd=tmp_path)
-    assert init.returncode == 0, init.stderr
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    (workflow_dir / "TRACKER.md").write_text("# Legacy tracker\n", encoding="utf-8")
     before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
 
     result = run_project(["upgrade", "--format", "json"], cwd=tmp_path)
