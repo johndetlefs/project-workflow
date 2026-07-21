@@ -12,8 +12,8 @@
 | EPIC-003 | Workflow Discipline Gates | Complete | `tasks/EPIC-003-Workflow-Discipline-Gates/REQUIREMENTS.md` |
 | EPIC-004 | Epic Lifecycle Polish | Complete | `tasks/EPIC-004-Epic-Lifecycle-Polish/REQUIREMENTS.md` |
 | EPIC-005 | Project Backlog Support | Complete | `tasks/EPIC-005-Project-Backlog-Support/REQUIREMENTS.md` |
-| TASK-026 | Collision-Resistant ID Generation | Testing | `tasks/TASK-026-Collision-Resistant-Id-Generation/IMPLEMENTATION.md` |
-| TASK-027 | Accepted Doctor Warning Suppression | Testing | `tasks/TASK-027-Accepted-Doctor-Warning-Suppression/IMPLEMENTATION.md` |
+| TASK-026 | Collision-Resistant ID Generation | Complete | `tasks/TASK-026-Collision-Resistant-Id-Generation/IMPLEMENTATION.md` |
+| TASK-027 | Accepted Doctor Warning Suppression | Complete | `tasks/TASK-027-Accepted-Doctor-Warning-Suppression/IMPLEMENTATION.md` |
 | EPIC-006 | Epic Control Gates For Requirement Drift Prevention | Complete | `tasks/EPIC-006-Epic-Control-Gates-For-Requirement-Drift-Prevention/REQUIREMENTS.md` |
 | TASK-038 | Lightweight Fix And Defect Workflow | Complete | `tasks/TASK-038-Lightweight-Fix-And-Defect-Workflow/IMPLEMENTATION.md` |
 | FIX-001 | Explicit Fix ID Generation Configuration | Complete | `tasks/FIX-001-Explicit-Fix-Id-Generation-Configuration/FIX.md` |

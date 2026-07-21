@@ -6,6 +6,18 @@
 - Title: Accepted Doctor Warning Suppression
 - Last updated: 2026-06-25
 
+## Owner Approval
+
+- Requirements reviewed by owner: Yes
+- Acceptance criteria reviewed by owner: Yes
+- Approved for decomposition: No
+- Approved for implementation: Yes
+- Approved scope envelope: Yes
+- Approved by: John Detlefs
+- Approval date: 2026-07-21
+- Approval note / source: Owner message on 2026-07-21: both 26 and 27 are verified as working; complete and push through to main.
+- Approved artifact identity: sha256:14b9dfe49a000e3b2fc5ce06abc51b64e8919af7e52eb7adf87175b075c6fd07
+
 ## Goal
 
 Allow repositories to permanently acknowledge known doctor warnings so accepted
@@ -82,3 +94,12 @@ legacy or intentional workflow debt no longer appears in normal doctor output.
   and unmatched warning visibility.
 - Run the full test suite.
 - Run `project doctor` after workflow/task-doc changes.
+
+## Legacy Adoption
+
+- Adopted legacy work: Yes
+- Adopted by: John Detlefs
+- Adoption date: 2026-07-21
+- Adoption source: Owner message on 2026-07-21: both 26 and 27 are verified as working; complete and push through to main.
+- Evidence refreshed after adoption: Yes
+- Evidence trust note: Existing evidence was refreshed after adoption.

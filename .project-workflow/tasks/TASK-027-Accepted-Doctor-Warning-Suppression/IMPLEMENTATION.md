@@ -29,15 +29,25 @@ validation output stays focused on new or actionable issues.
 
 ## QA & Code Review
 
-- Verdict: Pending.
-- Evidence: Pending implementation and validation.
-- Findings: Pending.
+- Review date: 2026-07-21
+- Reviewed areas: Accepted-warning config parsing, exact fingerprint matching, default suppression, strict-mode behavior, `--show-accepted` audit output, unmatched-warning visibility, and documentation.
+- AC1 evidence: `test_doctor_hides_accepted_warning_fingerprints_and_shows_on_request` confirms exact accepted warnings are hidden by default and do not fail strict mode.
+- AC2 evidence: The same focused test confirms `doctor --show-accepted` reports accepted warnings separately.
+- AC3 evidence: `test_doctor_string_accepted_fingerprint_does_not_hide_different_warning` confirms changed or unmatched warnings remain visible.
+- AC4 evidence: Focused tests cover both string and object accepted-warning entries, including optional human-readable reasons.
+- AC5 evidence: Current README and generated guidance document accepted warning fingerprints, reasons, strict behavior, and audit review.
+- Owner verification: John Detlefs confirmed on 2026-07-21 that TASK-027 is working and explicitly requested completion.
+- Automated evidence: `.venv/bin/python -m pytest` passed 73 tests with one pre-existing UVX/network integration test skipped; `task adopt --evidence-refreshed` recorded the current approval envelope.
+- Findings: None.
+- Verdict: Pass
 
 ## Retro
 
-- Reusable lessons: Pending.
-- Conventions or agent assets updated: Pending.
-- Follow-up tasks: Pending.
+- Retro date: 2026-07-21
+- Reusable lessons: Accepted warnings must remain exact, reviewable acknowledgements rather than broad suppression rules; changed warning content should deliberately reappear.
+- Conventions or agent assets updated: Config parsing, doctor behavior, tests, README, and generated guidance already carry the durable exact-fingerprint convention. No further asset change was required during closeout.
+- Follow-up suggestions: Batch warning review and acceptance remains separately tracked by BL-006 and EPIC-007 AC5.
+- Missed in-scope work: None.
 
 ## Notes
 

@@ -6,6 +6,18 @@
 - Title: Collision-Resistant ID Generation
 - Last updated: 2026-06-25
 
+## Owner Approval
+
+- Requirements reviewed by owner: Yes
+- Acceptance criteria reviewed by owner: Yes
+- Approved for decomposition: No
+- Approved for implementation: Yes
+- Approved scope envelope: Yes
+- Approved by: John Detlefs
+- Approval date: 2026-07-21
+- Approval note / source: Owner message on 2026-07-21: both 26 and 27 are verified as working; complete and push through to main.
+- Approved artifact identity: sha256:5b96a88af043cce02a774ad2847969356410b3277fd92ef19c783d588be06a7f
+
 ## Goal
 
 Allow team repos to opt into branch-friendly workflow IDs so parallel task, epic,
@@ -69,3 +81,12 @@ and backlog creation does not routinely collide during merges.
   retry behavior, backlog promotion references, and doctor validation.
 - Run the full test suite if feasible.
 - Run `project doctor` after tracker and task-doc changes.
+
+## Legacy Adoption
+
+- Adopted legacy work: Yes
+- Adopted by: John Detlefs
+- Adoption date: 2026-07-21
+- Adoption source: Owner message on 2026-07-21: both 26 and 27 are verified as working; complete and push through to main.
+- Evidence refreshed after adoption: Yes
+- Evidence trust note: Existing evidence was refreshed after adoption.
