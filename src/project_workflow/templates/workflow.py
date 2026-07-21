@@ -6,10 +6,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import secrets
 import shutil
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from datetime import date
 from importlib.resources import files
@@ -95,9 +97,12 @@ DOCTOR_FINDING_CODES = (
     "PW_WORKFLOW_INVALID",
 )
 UPGRADE_PLAN_SCHEMA_VERSION = 1
+UPGRADE_APPLY_RESULT_SCHEMA_VERSION = 1
 ABSENT_FILE_HASH = "absent"
 UPGRADE_BLOCKER_CODES = (
     "PW_UPGRADE_INVALID_REPOSITORY",
+    "PW_UPGRADE_HANDLER_INVALID",
+    "PW_UPGRADE_HANDLER_MISSING",
     "PW_UPGRADE_NOT_INITIALIZED",
     "PW_UPGRADE_REGISTRY_AMBIGUOUS",
     "PW_UPGRADE_REGISTRY_CYCLE",
@@ -107,6 +112,18 @@ UPGRADE_BLOCKER_CODES = (
     "PW_UPGRADE_REGISTRY_INVALID_TARGET",
     "PW_UPGRADE_REGISTRY_PATH_MISSING",
     "PW_UPGRADE_UNSUPPORTED_FUTURE",
+)
+UPGRADE_APPLY_FAILURE_CODES = (
+    "PW_UPGRADE_APPLY_BLOCKED",
+    "PW_UPGRADE_APPLY_DIRTY_WORKTREE",
+    "PW_UPGRADE_APPLY_FINAL_MANIFEST_INVALID",
+    "PW_UPGRADE_APPLY_HANDLER_INVALID",
+    "PW_UPGRADE_APPLY_HANDLER_MISSING",
+    "PW_UPGRADE_APPLY_NOT_GIT",
+    "PW_UPGRADE_APPLY_REPLACEMENT_FAILED",
+    "PW_UPGRADE_APPLY_STALE_FILE",
+    "PW_UPGRADE_APPLY_STALE_PLAN",
+    "PW_UPGRADE_APPLY_STALE_STATE",
 )
 RECOGNIZED_WORKFLOW_PATHS = (
     "TRACKER.md",
@@ -781,6 +798,16 @@ class UpgradeBlocker:
 
 
 PRODUCTION_MIGRATIONS: tuple[MigrationDefinition, ...] = ()
+PRODUCTION_MIGRATION_HANDLERS: dict[str, object] = {}
+
+
+class UpgradeApplyFailure(RuntimeError):
+    def __init__(self, code: str, message: str) -> None:
+        if code not in UPGRADE_APPLY_FAILURE_CODES:
+            raise ValueError(f"Unknown upgrade apply failure code: {code}")
+        super().__init__(message)
+        self.code = code
+        self.message = message
 
 
 def _workflow_config_path(root: Path) -> Path:
@@ -1155,6 +1182,7 @@ def _build_upgrade_plan(
     root: Path,
     *,
     migrations: tuple[MigrationDefinition, ...] = PRODUCTION_MIGRATIONS,
+    handlers: dict[str, object] | None = None,
 ) -> dict[str, object]:
     compatibility = _repository_compatibility(root)
     source = _upgrade_source_versions(compatibility)
@@ -1234,7 +1262,31 @@ def _build_upgrade_plan(
             {"code": blocker.code, "message": blocker.message} for blocker in blockers
         ],
         "owner_decisions": _upgrade_owner_decisions(root),
+        "expected_outputs": [],
     }
+    if steps and handlers is not None and not blockers:
+        try:
+            outputs = _compute_upgrade_outputs(root, payload, handlers)
+        except UpgradeApplyFailure as failure:
+            code = (
+                "PW_UPGRADE_HANDLER_MISSING"
+                if failure.code == "PW_UPGRADE_APPLY_HANDLER_MISSING"
+                else "PW_UPGRADE_HANDLER_INVALID"
+            )
+            blockers.append(UpgradeBlocker(code, failure.message))
+            payload["blockers"] = [
+                {"code": blocker.code, "message": blocker.message} for blocker in blockers
+            ]
+        else:
+            payload["expected_outputs"] = [
+                {
+                    "artifact": target,
+                    "expected": ABSENT_FILE_HASH
+                    if content is None
+                    else "sha256:" + hashlib.sha256(content).hexdigest(),
+                }
+                for target, content in outputs.items()
+            ]
     return {"plan_fingerprint": _upgrade_plan_fingerprint(payload), **payload}
 
 
@@ -1266,6 +1318,12 @@ def _format_upgrade_plan_human(plan: dict[str, object]) -> str:
             )
     else:
         lines.append("migrations: none")
+    expected_outputs = plan.get("expected_outputs", [])
+    if expected_outputs:
+        lines.append("expected outputs:")
+        lines.extend(
+            f"- {output['artifact']}: {output['expected']}" for output in expected_outputs
+        )
     if blockers:
         lines.append("blockers:")
         lines.extend(f"- {blocker['code']}: {blocker['message']}" for blocker in blockers)
@@ -1280,9 +1338,273 @@ def _format_upgrade_plan_human(plan: dict[str, object]) -> str:
     return "\n".join(lines)
 
 
+def _require_clean_git_worktree(root: Path) -> None:
+    try:
+        inside = _run_git(["rev-parse", "--is-inside-work-tree"], cwd=root)
+    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
+        raise UpgradeApplyFailure(
+            "PW_UPGRADE_APPLY_NOT_GIT",
+            "Upgrade apply requires a Git worktree.",
+        ) from exc
+    if inside != "true":
+        raise UpgradeApplyFailure(
+            "PW_UPGRADE_APPLY_NOT_GIT",
+            "Upgrade apply requires a Git worktree.",
+        )
+    if _run_git(["status", "--porcelain"], cwd=root):
+        raise UpgradeApplyFailure(
+            "PW_UPGRADE_APPLY_DIRTY_WORKTREE",
+            "Upgrade apply requires a clean worktree, including no untracked files.",
+        )
+
+
+def _validate_upgrade_apply_plan(
+    root: Path,
+    plan: dict[str, object],
+    supplied_fingerprint: str,
+) -> None:
+    if supplied_fingerprint != plan["plan_fingerprint"]:
+        raise UpgradeApplyFailure(
+            "PW_UPGRADE_APPLY_STALE_PLAN",
+            "Supplied plan fingerprint does not match the current deterministic plan.",
+        )
+    if plan["blockers"]:
+        raise UpgradeApplyFailure(
+            "PW_UPGRADE_APPLY_BLOCKED",
+            "The current upgrade plan contains blockers.",
+        )
+    for precondition in plan["preconditions"]:
+        if precondition["kind"] == "repository-state":
+            actual_state = _repository_compatibility(root).state
+            if actual_state != precondition["expected"]:
+                raise UpgradeApplyFailure(
+                    "PW_UPGRADE_APPLY_STALE_STATE",
+                    f"Repository state changed from {precondition['expected']} to {actual_state}.",
+                )
+        elif precondition["kind"] == "file-hash":
+            actual_hash = _upgrade_file_hash(root, precondition["artifact"])
+            if actual_hash != precondition["expected"]:
+                raise UpgradeApplyFailure(
+                    "PW_UPGRADE_APPLY_STALE_FILE",
+                    f"Planned input changed: {precondition['artifact']}.",
+                )
+
+
+def _compute_upgrade_outputs(
+    root: Path,
+    plan: dict[str, object],
+    handlers: dict[str, object],
+) -> dict[str, bytes | None]:
+    target_files = plan["target_files"]
+    assert isinstance(target_files, list)
+    declared_targets = set(target_files)
+    outputs: dict[str, bytes | None] = {}
+    for target in target_files:
+        path = root / target
+        outputs[target] = path.read_bytes() if path.exists() else None
+
+    for step in plan["steps"]:
+        migration_id = step["migration_id"]
+        handler = handlers.get(migration_id)
+        if not callable(handler):
+            raise UpgradeApplyFailure(
+                "PW_UPGRADE_APPLY_HANDLER_MISSING",
+                f"No migration handler is registered for {migration_id}.",
+            )
+        handler_targets = set(step["target_files"])
+        handler_inputs = {target: outputs[target] for target in step["target_files"]}
+        result = handler(dict(handler_inputs))
+        if not isinstance(result, dict) or set(result) != handler_targets:
+            raise UpgradeApplyFailure(
+                "PW_UPGRADE_APPLY_HANDLER_INVALID",
+                f"Migration {migration_id} must return exactly its declared targets.",
+            )
+        if not set(result).issubset(declared_targets) or any(
+            value is not None and not isinstance(value, bytes) for value in result.values()
+        ):
+            raise UpgradeApplyFailure(
+                "PW_UPGRADE_APPLY_HANDLER_INVALID",
+                f"Migration {migration_id} returned undeclared or non-bytes output.",
+            )
+        outputs.update(result)
+
+    if plan["steps"]:
+        manifest_target = ".project-workflow/manifest.json"
+        manifest_bytes = outputs.get(manifest_target)
+        if manifest_bytes is None:
+            raise UpgradeApplyFailure(
+                "PW_UPGRADE_APPLY_FINAL_MANIFEST_INVALID",
+                "A schema migration must produce the version manifest.",
+            )
+        try:
+            manifest_raw = json.loads(manifest_bytes.decode("utf-8"))
+            manifest = _parse_workflow_manifest(manifest_raw)
+        except (UnicodeDecodeError, json.JSONDecodeError, ManifestValidationError) as exc:
+            raise UpgradeApplyFailure(
+                "PW_UPGRADE_APPLY_FINAL_MANIFEST_INVALID",
+                "Migration output contains an invalid final manifest.",
+            ) from exc
+        if manifest.schema_version != plan["target"]["schema"]:
+            raise UpgradeApplyFailure(
+                "PW_UPGRADE_APPLY_FINAL_MANIFEST_INVALID",
+                "Migration output manifest does not match the target schema.",
+            )
+    return outputs
+
+
+def _atomic_replace_target(path: Path, content: bytes | None) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if content is None:
+        if path.exists():
+            path.unlink()
+        return
+    descriptor, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    temp_path = Path(temp_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, path)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+def _apply_upgrade_outputs(
+    root: Path,
+    outputs: dict[str, bytes | None],
+    *,
+    fail_after_replacements: int | None = None,
+) -> list[str]:
+    originals: dict[str, bytes | None] = {}
+    changed_files: list[str] = []
+    for target, content in outputs.items():
+        path = root / target
+        originals[target] = path.read_bytes() if path.exists() else None
+        if originals[target] != content:
+            changed_files.append(target)
+    replaced: list[str] = []
+    try:
+        if fail_after_replacements == 0:
+            raise OSError("injected replacement failure")
+        for target in changed_files:
+            _atomic_replace_target(root / target, outputs[target])
+            replaced.append(target)
+            if fail_after_replacements == len(replaced):
+                raise OSError("injected replacement failure")
+    except OSError as exc:
+        rollback_errors: list[str] = []
+        for target in reversed(replaced):
+            try:
+                _atomic_replace_target(root / target, originals[target])
+            except OSError:
+                rollback_errors.append(target)
+        detail = f" Failed to restore: {', '.join(rollback_errors)}." if rollback_errors else ""
+        raise UpgradeApplyFailure(
+            "PW_UPGRADE_APPLY_REPLACEMENT_FAILED",
+            "Upgrade replacement failed; touched targets were restored." + detail,
+        ) from exc
+    return changed_files
+
+
+def _upgrade_apply_result(
+    *,
+    plan: dict[str, object],
+    status: str,
+    changed_files: list[str] | None = None,
+    failure: UpgradeApplyFailure | None = None,
+) -> dict[str, object]:
+    return {
+        "schema_version": UPGRADE_APPLY_RESULT_SCHEMA_VERSION,
+        "status": status,
+        "plan_fingerprint": plan["plan_fingerprint"],
+        "applied_migrations": [step["migration_id"] for step in plan["steps"]]
+        if status == "applied"
+        else [],
+        "changed_files": changed_files or [],
+        "noop": status == "noop",
+        "failure": None
+        if failure is None
+        else {"code": failure.code, "message": failure.message},
+    }
+
+
+def _apply_upgrade_plan(
+    root: Path,
+    supplied_fingerprint: str,
+    *,
+    migrations: tuple[MigrationDefinition, ...] = PRODUCTION_MIGRATIONS,
+    handlers: dict[str, object] = PRODUCTION_MIGRATION_HANDLERS,
+    fail_after_replacements: int | None = None,
+) -> dict[str, object]:
+    plan = _build_upgrade_plan(root, migrations=migrations, handlers=handlers)
+    try:
+        _validate_upgrade_apply_plan(root, plan, supplied_fingerprint)
+        _require_clean_git_worktree(root)
+        if not plan["steps"]:
+            return _upgrade_apply_result(plan=plan, status="noop")
+        outputs = _compute_upgrade_outputs(root, plan, handlers)
+        actual_outputs = [
+            {
+                "artifact": target,
+                "expected": ABSENT_FILE_HASH
+                if content is None
+                else "sha256:" + hashlib.sha256(content).hexdigest(),
+            }
+            for target, content in outputs.items()
+        ]
+        if actual_outputs != plan["expected_outputs"]:
+            raise UpgradeApplyFailure(
+                "PW_UPGRADE_APPLY_STALE_PLAN",
+                "Computed migration outputs do not match the reviewed plan.",
+            )
+        _validate_upgrade_apply_plan(root, plan, supplied_fingerprint)
+        _require_clean_git_worktree(root)
+        changed_files = _apply_upgrade_outputs(
+            root,
+            outputs,
+            fail_after_replacements=fail_after_replacements,
+        )
+        return _upgrade_apply_result(
+            plan=plan,
+            status="applied",
+            changed_files=changed_files,
+        )
+    except UpgradeApplyFailure as failure:
+        return _upgrade_apply_result(plan=plan, status="failed", failure=failure)
+
+
+def _format_upgrade_apply_human(result: dict[str, object]) -> str:
+    lines = [
+        f"project upgrade apply: {result['status']}",
+        f"plan fingerprint: {result['plan_fingerprint']}",
+    ]
+    if result["applied_migrations"]:
+        lines.append("applied migrations: " + ", ".join(result["applied_migrations"]))
+    if result["changed_files"]:
+        lines.append("changed files: " + ", ".join(result["changed_files"]))
+    if result["noop"]:
+        lines.append("no changes required")
+    if result["failure"]:
+        lines.append(f"failure: {result['failure']['code']}: {result['failure']['message']}")
+    return "\n".join(lines)
+
+
 def cmd_upgrade(args: argparse.Namespace) -> None:
     root = Path(args.root).resolve() if args.root else Path.cwd()
-    plan = _build_upgrade_plan(root)
+    if args.apply:
+        if not args.plan_fingerprint:
+            raise SystemExit("--apply requires --plan-fingerprint <SHA256>.")
+        result = _apply_upgrade_plan(root, args.plan_fingerprint)
+        if args.format == "json":
+            print(json.dumps(result, indent=2))
+        else:
+            print(_format_upgrade_apply_human(result))
+        if result["status"] == "failed":
+            raise SystemExit(1)
+        return
+    plan = _build_upgrade_plan(root, handlers=PRODUCTION_MIGRATION_HANDLERS)
     if args.format == "json":
         print(json.dumps(plan, indent=2))
     else:
@@ -7447,6 +7769,15 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("human", "json"),
         default="human",
         help="Output format (default: human)",
+    )
+    upgrade_parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply the exact fresh plan (requires --plan-fingerprint)",
+    )
+    upgrade_parser.add_argument(
+        "--plan-fingerprint",
+        help="Exact plan fingerprint previously reviewed by the caller",
     )
     upgrade_parser.set_defaults(func=cmd_upgrade)
 

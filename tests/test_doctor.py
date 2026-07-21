@@ -29,6 +29,37 @@ def run_project(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def init_git_fixture(root: Path) -> None:
+    commands = (
+        ["git", "init"],
+        ["git", "config", "user.email", "tests@example.com"],
+        ["git", "config", "user.name", "Project Workflow Tests"],
+        ["git", "add", "."],
+        ["git", "commit", "-m", "fixture"],
+    )
+    for command in commands:
+        completed = subprocess.run(
+            command,
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def commit_git_fixture(root: Path, message: str) -> None:
+    for command in (["git", "add", "."], ["git", "commit", "-m", message]):
+        completed = subprocess.run(
+            command,
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
 def write_namespace_config(root: Path) -> None:
     (root / ".project-workflow" / "config.json").write_text(
         "{\n"
@@ -973,6 +1004,276 @@ def test_generated_local_workflow_exposes_upgrade_planner(tmp_path: Path) -> Non
     payload = json.loads(result.stdout)
     assert payload["repository_state"] == "current"
     assert payload["blockers"] == []
+
+
+def synthetic_manifest_migration() -> tuple[
+    tuple[workflow_cli.MigrationDefinition, ...],
+    dict[str, object],
+]:
+    migration = workflow_cli.MigrationDefinition(
+        "MIG-0001-manifest",
+        0,
+        1,
+        (
+            ".project-workflow/TRACKER.md",
+            ".project-workflow/manifest.json",
+        ),
+        ("normalize-tracker", "write-version-manifest"),
+    )
+
+    def handler(inputs: dict[str, bytes | None]) -> dict[str, bytes | None]:
+        tracker = inputs[".project-workflow/TRACKER.md"] or b""
+        return {
+            ".project-workflow/TRACKER.md": tracker + b"\n<!-- upgraded -->\n",
+            ".project-workflow/manifest.json": workflow_cli._serialize_workflow_manifest(
+                workflow_cli._current_workflow_manifest()
+            ).encode("utf-8"),
+        }
+
+    return (migration,), {migration.migration_id: handler}
+
+
+def test_upgrade_apply_succeeds_then_current_apply_noops(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    tracker_path = workflow_dir / "TRACKER.md"
+    tracker_path.write_text("# Legacy tracker\n", encoding="utf-8")
+    canary_path = tmp_path / "UNMARKED.txt"
+    canary_path.write_text("owner content\n", encoding="utf-8")
+    migrations, handlers = synthetic_manifest_migration()
+    init_git_fixture(tmp_path)
+    plan = workflow_cli._build_upgrade_plan(
+        tmp_path,
+        migrations=migrations,
+        handlers=handlers,
+    )
+
+    result = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        plan["plan_fingerprint"],
+        migrations=migrations,
+        handlers=handlers,
+    )
+
+    assert result["status"] == "applied"
+    assert result["applied_migrations"] == ["MIG-0001-manifest"]
+    assert result["changed_files"] == [
+        ".project-workflow/TRACKER.md",
+        ".project-workflow/manifest.json",
+    ]
+    assert len(plan["expected_outputs"]) == 2
+    human_plan = workflow_cli._format_upgrade_plan_human(plan)
+    assert "expected outputs:" in human_plan
+    assert plan["expected_outputs"][0]["expected"] in human_plan
+    assert "<!-- upgraded -->" in tracker_path.read_text(encoding="utf-8")
+    assert canary_path.read_text(encoding="utf-8") == "owner content\n"
+    assert workflow_cli._repository_compatibility(tmp_path).state == "current"
+
+    commit_git_fixture(tmp_path, "upgrade")
+    current_plan = workflow_cli._build_upgrade_plan(
+        tmp_path,
+        migrations=migrations,
+        handlers=handlers,
+    )
+    noop = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        current_plan["plan_fingerprint"],
+        migrations=migrations,
+        handlers=handlers,
+    )
+    assert noop["status"] == "noop"
+    assert noop["changed_files"] == []
+    assert noop["applied_migrations"] == []
+
+
+def test_upgrade_apply_rejects_changed_handler_fingerprint(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    (workflow_dir / "TRACKER.md").write_text("# Legacy tracker\n", encoding="utf-8")
+    migrations, handlers = synthetic_manifest_migration()
+    init_git_fixture(tmp_path)
+    plan = workflow_cli._build_upgrade_plan(
+        tmp_path,
+        migrations=migrations,
+        handlers=handlers,
+    )
+
+    def changed_handler(inputs: dict[str, bytes | None]) -> dict[str, bytes | None]:
+        original = handlers["MIG-0001-manifest"](inputs)
+        original[".project-workflow/TRACKER.md"] += b"changed handler\n"
+        return original
+
+    result = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        plan["plan_fingerprint"],
+        migrations=migrations,
+        handlers={"MIG-0001-manifest": changed_handler},
+    )
+
+    assert result["status"] == "failed"
+    assert result["failure"]["code"] == "PW_UPGRADE_APPLY_STALE_PLAN"
+
+
+def test_upgrade_apply_cli_requires_fingerprint_and_noops_current_repo(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    workflow_cli._write_workflow_manifest(
+        workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME,
+        workflow_cli._current_workflow_manifest(),
+    )
+    init_git_fixture(tmp_path)
+    plan_result = run_project(["upgrade", "--format", "json"], cwd=tmp_path)
+    assert plan_result.returncode == 0, plan_result.stdout + plan_result.stderr
+    fingerprint = json.loads(plan_result.stdout)["plan_fingerprint"]
+
+    missing = run_project(["upgrade", "--apply"], cwd=tmp_path)
+    assert missing.returncode == 1
+    assert "--apply requires --plan-fingerprint" in missing.stderr
+
+    applied = run_project(
+        ["upgrade", "--apply", "--plan-fingerprint", fingerprint, "--format", "json"],
+        cwd=tmp_path,
+    )
+    assert applied.returncode == 0, applied.stdout + applied.stderr
+    payload = json.loads(applied.stdout)
+    assert payload["status"] == "noop"
+    assert payload["noop"] is True
+
+
+@pytest.mark.parametrize("fail_after", [0, 1, 2])
+def test_upgrade_apply_failure_restores_all_targets(
+    tmp_path: Path,
+    fail_after: int,
+) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    tracker_path = workflow_dir / "TRACKER.md"
+    tracker_path.write_text("# Legacy tracker\n", encoding="utf-8")
+    migrations, handlers = synthetic_manifest_migration()
+    init_git_fixture(tmp_path)
+    plan = workflow_cli._build_upgrade_plan(
+        tmp_path,
+        migrations=migrations,
+        handlers=handlers,
+    )
+    before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file() and ".git" not in path.parts}
+
+    result = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        plan["plan_fingerprint"],
+        migrations=migrations,
+        handlers=handlers,
+        fail_after_replacements=fail_after,
+    )
+
+    after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file() and ".git" not in path.parts}
+    assert result["status"] == "failed"
+    assert result["failure"]["code"] == "PW_UPGRADE_APPLY_REPLACEMENT_FAILED"
+    assert after == before
+    assert not list(tmp_path.rglob("*.tmp"))
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert status.stdout == ""
+
+
+def test_upgrade_apply_rejects_stale_dirty_and_missing_handler(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    tracker_path = workflow_dir / "TRACKER.md"
+    tracker_path.write_text("# Legacy tracker\n", encoding="utf-8")
+    migrations, handlers = synthetic_manifest_migration()
+    init_git_fixture(tmp_path)
+    plan = workflow_cli._build_upgrade_plan(
+        tmp_path,
+        migrations=migrations,
+        handlers=handlers,
+    )
+
+    stale_plan = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        "sha256:" + "0" * 64,
+        migrations=migrations,
+        handlers=handlers,
+    )
+    assert stale_plan["failure"]["code"] == "PW_UPGRADE_APPLY_STALE_PLAN"
+
+    missing_handler_plan = workflow_cli._build_upgrade_plan(
+        tmp_path,
+        migrations=migrations,
+        handlers={},
+    )
+    assert missing_handler_plan["blockers"][0]["code"] == "PW_UPGRADE_HANDLER_MISSING"
+    missing_handler = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        missing_handler_plan["plan_fingerprint"],
+        migrations=migrations,
+        handlers={},
+    )
+    assert missing_handler["failure"]["code"] == "PW_UPGRADE_APPLY_BLOCKED"
+
+    (tmp_path / "UNTRACKED.txt").write_text("dirty\n", encoding="utf-8")
+    dirty_plan = workflow_cli._build_upgrade_plan(
+        tmp_path,
+        migrations=migrations,
+        handlers=handlers,
+    )
+    dirty = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        dirty_plan["plan_fingerprint"],
+        migrations=migrations,
+        handlers=handlers,
+    )
+    assert dirty["failure"]["code"] == "PW_UPGRADE_APPLY_DIRTY_WORKTREE"
+
+    (tmp_path / "UNTRACKED.txt").unlink()
+    tracker_path.write_text("changed after plan\n", encoding="utf-8")
+    stale_file = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        plan["plan_fingerprint"],
+        migrations=migrations,
+        handlers=handlers,
+    )
+    assert stale_file["failure"]["code"] in {
+        "PW_UPGRADE_APPLY_STALE_PLAN",
+        "PW_UPGRADE_APPLY_STALE_FILE",
+    }
+
+
+def test_upgrade_apply_rejects_invalid_handler_without_mutation(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    tracker_path = workflow_dir / "TRACKER.md"
+    tracker_path.write_text("# Legacy tracker\n", encoding="utf-8")
+    migrations, _handlers = synthetic_manifest_migration()
+    init_git_fixture(tmp_path)
+
+    def invalid_handler(_inputs: dict[str, bytes | None]) -> dict[str, bytes | None]:
+        return {"UNDECLARED.txt": b"invalid"}
+
+    plan = workflow_cli._build_upgrade_plan(
+        tmp_path,
+        migrations=migrations,
+        handlers={"MIG-0001-manifest": invalid_handler},
+    )
+    before = tracker_path.read_bytes()
+    assert plan["blockers"][0]["code"] == "PW_UPGRADE_HANDLER_INVALID"
+
+    result = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        plan["plan_fingerprint"],
+        migrations=migrations,
+        handlers={"MIG-0001-manifest": invalid_handler},
+    )
+
+    assert result["status"] == "failed"
+    assert result["failure"]["code"] == "PW_UPGRADE_APPLY_BLOCKED"
+    assert tracker_path.read_bytes() == before
+    assert not (tmp_path / "UNDECLARED.txt").exists()
 
 
 def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:
