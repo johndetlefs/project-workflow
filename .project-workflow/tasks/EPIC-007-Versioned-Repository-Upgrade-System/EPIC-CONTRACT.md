@@ -58,12 +58,12 @@
 
 | Parent AC | Proof Owner | Required Evidence |
 | --- | --- | --- |
-| AC1 | Define Repository Version Manifest And Compatibility Policy, Add Historical Migration Registry And Fixtures | Fixture inspection showing explicit package/asset/schema versions and deterministic classification of pre-versioned state. |
-| AC2 | Add Structured Doctor Findings, Align Documentation And Generated Agent Assets | Tests and captured output proving stable finding codes and equivalent human/machine-readable fields. |
-| AC3 | Build Deterministic Upgrade Planner, Add Historical Migration Registry And Fixtures | Before/after fixture hashes proving zero plan mutation plus complete ordered plan records for every supported source schema. |
-| AC4 | Build Deterministic Upgrade Planner, Build Safe Transactional Upgrade Apply | Dirty, stale, unsupported, and unrecognized failure tests plus a successful apply whose diff exactly matches the fresh plan. |
-| AC5 | Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction | Legacy/current init fixtures proving managed refresh and honest schema/upgrade direction without repository-state mutation. |
-| AC6 | Build Safe Transactional Upgrade Apply, Add Historical Migration Registry And Fixtures | Injected-failure evidence proving no partial writes and second-apply evidence proving no-op idempotency. |
-| AC7 | Build Safe Transactional Upgrade Apply, Add Historical Migration Registry And Fixtures | Preservation-canary diffs across tracker, docs, backlog, guidance, config, approvals, deferrals, evidence, and unmarked content. |
-| AC8 | Add Structured Doctor Findings, Build Deterministic Upgrade Planner, Build Safe Transactional Upgrade Apply | Fixtures proving owner-owned approval/evidence/decision gaps remain visible and unchanged after plan/apply. |
-| AC9 | Add Historical Migration Registry And Fixtures, Align Documentation And Generated Agent Assets | Passing targeted and full-suite output, strict doctor, backlog validation, and packaged/generated parity evidence. |
+| AC1 | TASK-040, TASK-044, TASK-045 | Fixture inspection showing explicit package/asset/schema versions and deterministic classification of pre-versioned state. |
+| AC2 | TASK-041, TASK-046 | Tests and captured output proving stable finding codes and equivalent human/machine-readable fields. |
+| AC3 | TASK-042, TASK-045, TASK-046 | Before/after fixture hashes proving zero plan mutation plus complete ordered plan records for every supported source schema. |
+| AC4 | TASK-042, TASK-043 | Dirty, stale, unsupported, and unrecognized failure tests plus a successful apply whose diff exactly matches the fresh plan. |
+| AC5 | TASK-040, TASK-041, TASK-044, TASK-046 | Legacy/current init fixtures proving managed refresh and honest schema/upgrade direction without repository-state mutation. |
+| AC6 | TASK-043, TASK-045 | Injected-failure evidence proving no partial writes and second-apply evidence proving no-op idempotency. |
+| AC7 | TASK-040, TASK-043, TASK-045 | Preservation-canary diffs across tracker, docs, backlog, guidance, config, approvals, deferrals, evidence, and unmarked content. |
+| AC8 | TASK-041, TASK-042, TASK-043, TASK-045 | Fixtures proving owner-owned approval/evidence/decision gaps remain visible and unchanged after plan/apply. |
+| AC9 | TASK-045, TASK-046 | Passing targeted and full-suite output, strict doctor, backlog validation, and packaged/generated parity evidence. |
