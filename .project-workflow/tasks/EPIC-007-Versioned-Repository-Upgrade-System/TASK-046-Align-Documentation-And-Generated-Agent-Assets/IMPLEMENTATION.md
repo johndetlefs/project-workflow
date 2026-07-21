@@ -82,7 +82,7 @@ As an owner or agent, I want one accurate upgrade operating guide, so that I can
 ## QA & Code Review
 
 - Verdict: Pass; completed under autonomous Epic continuation authority.
-- Evidence: Documentation contract test passed; the checked-in legacy fixture now proves mistaken init is a byte-identical no-op and canonical package upgrade with `--yes` installs managed Codex assets, migrates schema, validates, preserves owner findings, and becomes a current no-op in one invocation; final suite passed with 131 tests and 1 environment-gated UVX skip, plus generated refresh, source/template/local parity, backlog validation, compilation, and strict Doctor.
+- Evidence: Documentation contract test passed; the checked-in legacy fixture now proves mistaken init is a byte-identical no-op and canonical package upgrade with `--yes` installs managed Codex assets, migrates schema, validates, preserves owner findings, and becomes a current no-op in one invocation; final suite passed with 132 tests and no skips, including real UVX packaging execution, plus generated refresh, source/template/local parity, backlog validation, compilation, and strict Doctor.
 - Findings: A pre-merge review found that splitting managed-asset refresh into init made the public upgrade journey needlessly complex and allowed direct UVX schema upgrade to overstate asset currency. Canonical upgrade now owns both output sets in one deterministic transaction. Release publishing/version increment remains outside EPIC-007 under BL-010.
 
 ## Retro

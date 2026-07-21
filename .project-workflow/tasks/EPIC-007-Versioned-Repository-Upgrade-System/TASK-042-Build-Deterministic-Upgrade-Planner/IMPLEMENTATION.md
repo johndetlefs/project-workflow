@@ -90,7 +90,7 @@ As a maintainer, agent, or CI system, I want an exact non-mutating upgrade plan,
 
 - Verdict: Pass; completed under autonomous Epic continuation authority.
 - Evidence: Thirteen focused planner tests passed; full suite passed with 107 tests and 1 existing skip; live current-repository planning, generated local-helper invocation, Python compilation, source/template/local parity, and strict Doctor passed.
-- Pre-merge correction evidence: The repository plan now includes managed-asset targets and executable modes alongside schema steps; interactive, non-interactive, unsafe-target, historical-fixture, rollback, and documentation tests pass in the 131-test suite.
+- Pre-merge correction evidence: The repository plan now includes managed-asset targets and executable modes alongside schema steps; interactive, non-interactive, unsafe-target, historical-fixture, rollback, documentation, and real UVX packaging tests pass in the 132-test suite with no skips.
 - Findings: No blocking findings. Production migration registry intentionally remains empty until TASK-045 provides fixture-backed migrations, so unversioned legacy planning blocks honestly rather than guessing.
 
 ## Retro

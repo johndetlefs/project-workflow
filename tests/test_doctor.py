@@ -19,6 +19,19 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_CMD = [sys.executable, "-m", "project_workflow.cli"]
 
 
+def find_uvx_executable() -> str | None:
+    candidates = (
+        shutil.which("uvx"),
+        "/opt/homebrew/bin/uvx",
+        "/usr/local/bin/uvx",
+        str(Path.home() / ".local" / "bin" / "uvx"),
+    )
+    for candidate in candidates:
+        if candidate and Path(candidate).is_file() and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
 def run_project(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [*PROJECT_CMD, *args],
@@ -3065,16 +3078,38 @@ def test_upgrade_refreshes_marked_generated_files_and_managed_blocks(tmp_path: P
 
 
 def test_uvx_fresh_init_and_upgrade_deliver_fix_assets(tmp_path: Path) -> None:
-    uvx = shutil.which("uvx")
+    uvx = find_uvx_executable()
     if uvx is None:
-        pytest.skip("uvx is not installed")
+        pytest.skip("uvx was not found on PATH or in standard installation locations")
+    package_source = tmp_path / "package-source"
+    shutil.copytree(
+        REPO_ROOT,
+        package_source,
+        ignore=shutil.ignore_patterns(
+            ".git",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".venv",
+            "__pycache__",
+            "*.pyc",
+        ),
+    )
     target = tmp_path / "uvx-target"
     target.mkdir()
-    init_command = [uvx, "--from", str(REPO_ROOT), "project", "init", "--agent", "codex"]
+    init_command = [
+        uvx,
+        "--from",
+        str(package_source),
+        "project",
+        "init",
+        "--agent",
+        "codex",
+    ]
     upgrade_command = [
         uvx,
         "--from",
-        str(REPO_ROOT),
+        str(package_source),
         "project",
         "upgrade",
         "--agent",

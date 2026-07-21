@@ -262,6 +262,15 @@ When a requirement or material claim triggers one of these recipes, the relevant
 - `uvx`, or an intentional current package installation
 - GitHub Copilot, Claude Code, OpenAI Codex, or Cursor
 
+On Apple Silicon macOS, Homebrew installs `uvx` at `/opt/homebrew/bin/uvx`. Sandboxed agent
+processes may omit Homebrew from `PATH` even when `uvx` is installed. Before treating it as
+unavailable, check that path and expose it for the command or test run:
+
+```bash
+test -x /opt/homebrew/bin/uvx
+PATH="/opt/homebrew/bin:$PATH" uvx --version
+```
+
 Run the canonical init command from the repository root:
 
 ```bash

@@ -88,7 +88,7 @@ As a maintainer of a pre-versioned repository, I want a tested production migrat
 ## QA & Code Review
 
 - Verdict: Pass; completed under autonomous Epic continuation authority.
-- Evidence: Production legacy planning/apply tests prove mistaken init no-op, combined one-command upgrade, preservation, rollback, and current no-op behavior; final suite passed with 131 tests and 1 environment-gated UVX skip, plus local-helper parity, compilation, and strict Doctor.
+- Evidence: Production legacy planning/apply tests prove mistaken init no-op, combined one-command upgrade, preservation, rollback, and current no-op behavior; final suite passed with 132 tests and no skips, including real UVX packaging execution, plus local-helper parity, compilation, and strict Doctor.
 - Findings: No blocking findings. Schema 1 adopts the explicit version contract without falsifying historical document compliance.
 
 ## Retro

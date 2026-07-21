@@ -92,7 +92,7 @@ As a maintainer or automation system, I want to apply only the exact fresh upgra
 
 - Verdict: Pass; completed under autonomous Epic continuation authority.
 - Evidence: Eight focused apply tests and 21 combined planner/apply tests passed; full suite passed with 115 tests and 1 existing skip; compilation, source/template/local parity, generated helper refresh, and strict Doctor passed.
-- Pre-merge correction evidence: Managed assets, executable permissions, and schema outputs now share the same fingerprint-bound transaction and rollback path; final suite result is 131 passed with 1 environment-gated UVX skip.
+- Pre-merge correction evidence: Managed assets, executable permissions, and schema outputs now share the same fingerprint-bound transaction and rollback path; final suite result is 132 passed with no skips, including real UVX packaging execution.
 - Findings: No blocking findings. Production handlers intentionally remain empty until TASK-045 supplies fixture-proven migrations. Rollback failures are surfaced explicitly rather than concealed.
 
 ## Retro

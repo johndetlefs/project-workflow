@@ -1,3 +1,7 @@
+## Local Tooling
+
+- Homebrew `uvx` is installed at `/opt/homebrew/bin/uvx`. The Codex app may omit `/opt/homebrew/bin` from `PATH`; check the explicit path and prepend it before claiming UVX is unavailable or allowing the UVX packaging test to skip.
+
 <!-- project-workflow:start -->
 ## Project Workflow
 
