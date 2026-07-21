@@ -803,8 +803,36 @@ class UpgradeBlocker:
             raise ValueError(f"Unknown upgrade blocker code: {self.code}")
 
 
-PRODUCTION_MIGRATIONS: tuple[MigrationDefinition, ...] = ()
-PRODUCTION_MIGRATION_HANDLERS: dict[str, object] = {}
+LEGACY_MANIFEST_MIGRATION_ID = "PW-0001-legacy-manifest"
+LEGACY_MANIFEST_MIGRATION = MigrationDefinition(
+    migration_id=LEGACY_MANIFEST_MIGRATION_ID,
+    source_schema=0,
+    target_schema=1,
+    target_files=(".project-workflow/manifest.json",),
+    transformations=("create-version-manifest",),
+)
+
+
+def _apply_legacy_manifest_migration(
+    inputs: dict[str, bytes | None],
+) -> dict[str, bytes | None]:
+    target = ".project-workflow/manifest.json"
+    if inputs.get(target) is not None:
+        raise ValueError("Legacy manifest migration requires an absent manifest.")
+    manifest = WorkflowManifest(
+        manifest_version=CURRENT_MANIFEST_VERSION,
+        package_version=CURRENT_PACKAGE_VERSION,
+        asset_version=CURRENT_ASSET_VERSION,
+        schema_version=CURRENT_SCHEMA_VERSION,
+        applied_migrations=(LEGACY_MANIFEST_MIGRATION_ID,),
+    )
+    return {target: _serialize_workflow_manifest(manifest).encode("utf-8")}
+
+
+PRODUCTION_MIGRATIONS: tuple[MigrationDefinition, ...] = (LEGACY_MANIFEST_MIGRATION,)
+PRODUCTION_MIGRATION_HANDLERS: dict[str, object] = {
+    LEGACY_MANIFEST_MIGRATION_ID: _apply_legacy_manifest_migration,
+}
 
 
 class UpgradeApplyFailure(RuntimeError):
@@ -1419,7 +1447,13 @@ def _compute_upgrade_outputs(
             )
         handler_targets = set(step["target_files"])
         handler_inputs = {target: outputs[target] for target in step["target_files"]}
-        result = handler(dict(handler_inputs))
+        try:
+            result = handler(dict(handler_inputs))
+        except Exception as exc:
+            raise UpgradeApplyFailure(
+                "PW_UPGRADE_APPLY_HANDLER_INVALID",
+                f"Migration {migration_id} handler failed: {exc}",
+            ) from exc
         if not isinstance(result, dict) or set(result) != handler_targets:
             raise UpgradeApplyFailure(
                 "PW_UPGRADE_APPLY_HANDLER_INVALID",
