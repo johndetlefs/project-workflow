@@ -92,6 +92,12 @@ DOCTOR_FINDING_CODES = (
     "PW_GENERATED_ASSET_DRIFT",
     "PW_GENERATED_UPDATE_PENDING",
     "PW_OWNER_DECISION_REQUIRED",
+    "PW_REPOSITORY_ASSETS_BEHIND",
+    "PW_REPOSITORY_INVALID",
+    "PW_REPOSITORY_LEGACY_UNVERSIONED",
+    "PW_REPOSITORY_NOT_INITIALIZED",
+    "PW_REPOSITORY_SCHEMA_BEHIND",
+    "PW_REPOSITORY_UNSUPPORTED_FUTURE",
     "PW_TASK_DOCUMENT_INVALID",
     "PW_TRACKER_INVALID",
     "PW_WORKFLOW_INVALID",
@@ -4052,16 +4058,29 @@ def _doctor_issue_metadata(path: Path | str, message: str) -> tuple[str, str, bo
     return "PW_WORKFLOW_INVALID", "agent", False
 
 
-def _add_issue(issues: list[DoctorIssue], severity: str, path: Path | str, message: str) -> None:
-    code, remediation_owner, mechanically_upgradeable = _doctor_issue_metadata(path, message)
+def _add_issue(
+    issues: list[DoctorIssue],
+    severity: str,
+    path: Path | str,
+    message: str,
+    *,
+    code: str | None = None,
+    remediation_owner: str | None = None,
+    mechanically_upgradeable: bool | None = None,
+) -> None:
+    inferred_code, inferred_owner, inferred_mechanical = _doctor_issue_metadata(path, message)
     issues.append(
         DoctorIssue(
-            code=code,
+            code=code or inferred_code,
             severity=severity,
             path=str(path),
             message=message,
-            remediation_owner=remediation_owner,
-            mechanically_upgradeable=mechanically_upgradeable,
+            remediation_owner=remediation_owner or inferred_owner,
+            mechanically_upgradeable=(
+                inferred_mechanical
+                if mechanically_upgradeable is None
+                else mechanically_upgradeable
+            ),
         )
     )
 
@@ -5941,8 +5960,74 @@ def _doctor_check_epic_trackers(
                 )
 
 
+def _doctor_check_repository_compatibility(root: Path, issues: list[DoctorIssue]) -> None:
+    compatibility = _repository_compatibility(root)
+    manifest_path = _workflow_manifest_path(root)
+    if compatibility.state == "current":
+        return
+    if compatibility.state == "legacy-unversioned":
+        _add_issue(
+            issues,
+            "warning",
+            manifest_path,
+            "Repository is a recognized pre-versioned project-workflow installation; "
+            "run `project upgrade` to plan the schema migration.",
+            code="PW_REPOSITORY_LEGACY_UNVERSIONED",
+            remediation_owner="project-workflow",
+            mechanically_upgradeable=True,
+        )
+    elif compatibility.state == "upgradeable":
+        schema_behind = compatibility.reason in {"schema-behind", "assets-and-schema-behind"}
+        _add_issue(
+            issues,
+            "warning",
+            manifest_path,
+            "Repository schema is behind; run `project upgrade` to plan the migration."
+            if schema_behind
+            else "Generated assets are behind; run canonical `project init` to refresh them.",
+            code=(
+                "PW_REPOSITORY_SCHEMA_BEHIND"
+                if schema_behind
+                else "PW_REPOSITORY_ASSETS_BEHIND"
+            ),
+            remediation_owner="project-workflow",
+            mechanically_upgradeable=True,
+        )
+    elif compatibility.state == "unsupported-future":
+        _add_issue(
+            issues,
+            "error",
+            manifest_path,
+            f"Repository uses an unsupported future contract: {compatibility.reason}.",
+            code="PW_REPOSITORY_UNSUPPORTED_FUTURE",
+            remediation_owner="owner",
+            mechanically_upgradeable=False,
+        )
+    elif compatibility.state == "invalid":
+        _add_issue(
+            issues,
+            "error",
+            manifest_path,
+            f"Repository manifest is invalid: {compatibility.reason}.",
+            code="PW_REPOSITORY_INVALID",
+            remediation_owner="owner",
+            mechanically_upgradeable=False,
+        )
+    else:
+        _add_issue(
+            issues,
+            "error",
+            manifest_path,
+            "Repository is not initialized; run canonical `project init`.",
+            code="PW_REPOSITORY_NOT_INITIALIZED",
+            remediation_owner="project-workflow",
+            mechanically_upgradeable=True,
+        )
+
+
 def run_doctor(root: Path) -> list[DoctorIssue]:
     issues: list[DoctorIssue] = []
+    _doctor_check_repository_compatibility(root, issues)
     config = _doctor_check_namespace_config(root, issues)
     _doctor_check_source_mirrors(root, issues)
     _doctor_check_pending_generated_updates(root, issues)
@@ -6486,6 +6571,7 @@ def cmd_backlog_validate(args: argparse.Namespace) -> None:
 def cmd_project_init(args: argparse.Namespace) -> None:
     """Bootstrap project-workflow in the current directory."""
     cwd = Path.cwd()
+    initial_compatibility = _repository_compatibility(cwd)
     selected_agent = args.agent
     selected_agent_label = AGENT_CHOICES[selected_agent]
     managed_block = _managed_project_workflow_block()
@@ -6500,6 +6586,7 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     backlog_path = project_workflow_dir / "BACKLOG.md"
     guidance_path = project_workflow_dir / "guidance.md"
     config_path = project_workflow_dir / WORKFLOW_CONFIG_FILENAME
+    manifest_path = project_workflow_dir / WORKFLOW_MANIFEST_FILENAME
 
     # Create directories
     tasks_dir.mkdir(parents=True, exist_ok=True)
@@ -6596,6 +6683,39 @@ def cmd_project_init(args: argparse.Namespace) -> None:
             print(f"✓ {_ensure_generated_file(prompt_path, prompt_content)}")
 
         _remove_retired_project_workflow_path(prompts_dir / "Scaffold.prompt.md")
+
+    if initial_compatibility.state == "not-initialized":
+        _write_workflow_manifest(manifest_path, _current_workflow_manifest())
+        print(f"✓ Created: {manifest_path}")
+    elif initial_compatibility.manifest is not None and initial_compatibility.state in {
+        "current",
+        "upgradeable",
+    }:
+        existing_manifest = initial_compatibility.manifest
+        refreshed_manifest = WorkflowManifest(
+            manifest_version=existing_manifest.manifest_version,
+            package_version=CURRENT_PACKAGE_VERSION,
+            asset_version=CURRENT_ASSET_VERSION,
+            schema_version=existing_manifest.schema_version,
+            applied_migrations=existing_manifest.applied_migrations,
+        )
+        if refreshed_manifest != existing_manifest:
+            _write_workflow_manifest(manifest_path, refreshed_manifest)
+            print(f"✓ Refreshed managed version metadata: {manifest_path}")
+
+    resulting_compatibility = _repository_compatibility(cwd)
+    print(f"Repository state before init: {initial_compatibility.state}")
+    print(f"Repository state after init: {resulting_compatibility.state}")
+    if initial_compatibility.state == "legacy-unversioned" or (
+        resulting_compatibility.state == "upgradeable"
+        and resulting_compatibility.reason in {"schema-behind", "assets-and-schema-behind"}
+    ):
+        print("Repository schema was not migrated; run `project upgrade` to review the plan.")
+    elif initial_compatibility.state in {"invalid", "unsupported-future"}:
+        print(
+            "Repository manifest was not changed because its state is unsupported; "
+            "resolve the reported version state before upgrading."
+        )
 
     print(f"\n✅ Project workflow initialized in {cwd}")
     print(f"   Agent mode applied: {selected_agent_label}")
