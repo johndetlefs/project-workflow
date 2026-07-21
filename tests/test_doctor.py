@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -718,6 +719,260 @@ def test_generated_local_workflow_exposes_structured_doctor_output(tmp_path: Pat
     payload = json.loads(result.stdout)
     assert payload["schema_version"] == 1
     assert payload["status"] == "pass"
+
+
+def test_upgrade_plan_is_deterministic_for_current_repository(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    workflow_cli._write_workflow_manifest(
+        workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME,
+        workflow_cli._current_workflow_manifest(),
+    )
+
+    first = workflow_cli._build_upgrade_plan(tmp_path)
+    second = workflow_cli._build_upgrade_plan(tmp_path)
+    assert first == second
+    assert first["schema_version"] == 1
+    assert first["repository_state"] == "current"
+    assert first["steps"] == []
+    assert first["target_files"] == []
+    assert first["blockers"] == []
+    assert first["plan_fingerprint"].startswith("sha256:")
+    assert first["preconditions"] == [
+        {
+            "kind": "clean-worktree",
+            "artifact": ".",
+            "expected": "required-for-apply",
+        },
+        {
+            "kind": "repository-state",
+            "artifact": ".project-workflow/manifest.json",
+            "expected": "current",
+        },
+    ]
+
+
+def test_upgrade_plan_orders_synthetic_migrations_and_hashes_targets(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    tracker_path = workflow_dir / "TRACKER.md"
+    tracker_path.write_text("# Legacy tracker\n", encoding="utf-8")
+    migrations = (
+        workflow_cli.MigrationDefinition(
+            "MIG-0001-manifest",
+            0,
+            1,
+            (".project-workflow/TRACKER.md", ".project-workflow/manifest.json"),
+            ("normalize-tracker-header", "write-version-manifest"),
+        ),
+    )
+    before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+
+    plan = workflow_cli._build_upgrade_plan(tmp_path, migrations=migrations)
+
+    after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    assert after == before
+    assert [step["migration_id"] for step in plan["steps"]] == ["MIG-0001-manifest"]
+    assert plan["target_files"] == [
+        ".project-workflow/TRACKER.md",
+        ".project-workflow/manifest.json",
+    ]
+    hashes = {
+        item["artifact"]: item["expected"]
+        for item in plan["preconditions"]
+        if item["kind"] == "file-hash"
+    }
+    assert hashes[".project-workflow/TRACKER.md"] == (
+        "sha256:" + hashlib.sha256(b"# Legacy tracker\n").hexdigest()
+    )
+    assert hashes[".project-workflow/manifest.json"] == workflow_cli.ABSENT_FILE_HASH
+    assert plan["blockers"] == []
+
+
+@pytest.mark.parametrize(
+    ("migrations", "source", "target", "expected_code"),
+    [
+        (
+            (
+                workflow_cli.MigrationDefinition("DUP", 0, 1, ("a",), ("one",)),
+                workflow_cli.MigrationDefinition("DUP", 1, 2, ("b",), ("two",)),
+            ),
+            0,
+            2,
+            "PW_UPGRADE_REGISTRY_DUPLICATE_ID",
+        ),
+        (
+            (
+                workflow_cli.MigrationDefinition("A", 0, 1, ("a",), ("one",)),
+                workflow_cli.MigrationDefinition("B", 0, 2, ("b",), ("two",)),
+            ),
+            0,
+            2,
+            "PW_UPGRADE_REGISTRY_AMBIGUOUS",
+        ),
+        (
+            (
+                workflow_cli.MigrationDefinition("A", 0, 1, ("a",), ("one",)),
+                workflow_cli.MigrationDefinition("B", 1, 0, ("b",), ("two",)),
+            ),
+            0,
+            2,
+            "PW_UPGRADE_REGISTRY_CYCLE",
+        ),
+        (
+            (workflow_cli.MigrationDefinition("GAP", 1, 2, ("a",), ("one",)),),
+            0,
+            2,
+            "PW_UPGRADE_REGISTRY_PATH_MISSING",
+        ),
+        (
+            (workflow_cli.MigrationDefinition("DOWN", 1, 0, ("a",), ("one",)),),
+            1,
+            2,
+            "PW_UPGRADE_REGISTRY_DOWNGRADE",
+        ),
+        (
+            (workflow_cli.MigrationDefinition("UNSAFE", 0, 1, ("../secret",), ("one",)),),
+            0,
+            1,
+            "PW_UPGRADE_REGISTRY_INVALID_TARGET",
+        ),
+        (
+            (workflow_cli.MigrationDefinition("EMPTY", 0, 1, ("target",), ()),),
+            0,
+            1,
+            "PW_UPGRADE_REGISTRY_INVALID_MIGRATION",
+        ),
+    ],
+)
+def test_upgrade_planner_blocks_invalid_migration_registries(
+    migrations: tuple[workflow_cli.MigrationDefinition, ...],
+    source: int,
+    target: int,
+    expected_code: str,
+) -> None:
+    _steps, blockers = workflow_cli._resolve_migration_path(source, target, migrations)
+    assert expected_code in {blocker.code for blocker in blockers}
+
+
+def test_upgrade_plan_preserves_owner_decisions_without_mutation(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+    task = run_project(
+        ["task", "init", "--title", "Owner Decision", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stderr
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace("| To Do |", "| In Progress |", 1),
+        encoding="utf-8",
+    )
+    migrations = (
+        workflow_cli.MigrationDefinition(
+            "MIG-0001-manifest",
+            0,
+            1,
+            (".project-workflow/manifest.json",),
+            ("write-version-manifest",),
+        ),
+    )
+    before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    plan = workflow_cli._build_upgrade_plan(tmp_path, migrations=migrations)
+    after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+
+    assert after == before
+    assert plan["owner_decisions"]
+    expected_owner_issues = [
+        issue for issue in workflow_cli.run_doctor(tmp_path) if issue.remediation_owner == "owner"
+    ]
+    assert [decision["code"] for decision in plan["owner_decisions"]] == [
+        issue.code for issue in expected_owner_issues
+    ]
+    assert [decision["message"] for decision in plan["owner_decisions"]] == [
+        issue.message for issue in expected_owner_issues
+    ]
+    assert [decision["fingerprint"] for decision in plan["owner_decisions"]] == [
+        workflow_cli._doctor_issue_fingerprint(issue, tmp_path) for issue in expected_owner_issues
+    ]
+    human_plan = workflow_cli._format_upgrade_plan_human(plan)
+    for decision in plan["owner_decisions"]:
+        assert decision["code"] in human_plan
+        assert decision["artifact"] in human_plan
+        assert decision["message"] in human_plan
+
+
+def test_upgrade_command_blocks_unregistered_legacy_without_mutation(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+    before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+
+    result = run_project(["upgrade", "--format", "json"], cwd=tmp_path)
+    human = run_project(["upgrade"], cwd=tmp_path)
+
+    after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    assert result.returncode == 1
+    assert human.returncode == 1
+    assert after == before
+    payload = json.loads(result.stdout)
+    assert payload["repository_state"] == "legacy-unversioned"
+    assert payload["steps"] == []
+    assert payload["blockers"] == [
+        {
+            "code": "PW_UPGRADE_REGISTRY_PATH_MISSING",
+            "message": "No migration path from schema 0 to 1.",
+        }
+    ]
+
+
+def test_upgrade_plan_blocks_non_file_targets(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    target_dir = workflow_dir / "not-a-file"
+    target_dir.mkdir(parents=True)
+    (workflow_dir / "TRACKER.md").write_text("# Tracker\n", encoding="utf-8")
+    migrations = (
+        workflow_cli.MigrationDefinition(
+            "MIG-0001-invalid-target",
+            0,
+            1,
+            (".project-workflow/not-a-file",),
+            ("replace-target",),
+        ),
+    )
+
+    plan = workflow_cli._build_upgrade_plan(tmp_path, migrations=migrations)
+
+    assert "PW_UPGRADE_REGISTRY_INVALID_TARGET" in {
+        blocker["code"] for blocker in plan["blockers"]
+    }
+    assert not any(
+        precondition["artifact"] == ".project-workflow/not-a-file"
+        and precondition["kind"] == "file-hash"
+        for precondition in plan["preconditions"]
+    )
+
+
+def test_generated_local_workflow_exposes_upgrade_planner(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+    workflow_cli._write_workflow_manifest(
+        tmp_path / ".project-workflow" / workflow_cli.WORKFLOW_MANIFEST_FILENAME,
+        workflow_cli._current_workflow_manifest(),
+    )
+    local_workflow = tmp_path / ".project-workflow" / "cli" / "workflow.py"
+
+    result = subprocess.run(
+        [sys.executable, str(local_workflow), "upgrade", "--format", "json"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["repository_state"] == "current"
+    assert payload["blockers"] == []
 
 
 def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:

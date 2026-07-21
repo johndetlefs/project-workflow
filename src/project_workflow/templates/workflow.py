@@ -94,6 +94,20 @@ DOCTOR_FINDING_CODES = (
     "PW_TRACKER_INVALID",
     "PW_WORKFLOW_INVALID",
 )
+UPGRADE_PLAN_SCHEMA_VERSION = 1
+ABSENT_FILE_HASH = "absent"
+UPGRADE_BLOCKER_CODES = (
+    "PW_UPGRADE_INVALID_REPOSITORY",
+    "PW_UPGRADE_NOT_INITIALIZED",
+    "PW_UPGRADE_REGISTRY_AMBIGUOUS",
+    "PW_UPGRADE_REGISTRY_CYCLE",
+    "PW_UPGRADE_REGISTRY_DOWNGRADE",
+    "PW_UPGRADE_REGISTRY_DUPLICATE_ID",
+    "PW_UPGRADE_REGISTRY_INVALID_MIGRATION",
+    "PW_UPGRADE_REGISTRY_INVALID_TARGET",
+    "PW_UPGRADE_REGISTRY_PATH_MISSING",
+    "PW_UPGRADE_UNSUPPORTED_FUTURE",
+)
 RECOGNIZED_WORKFLOW_PATHS = (
     "TRACKER.md",
     "BACKLOG.md",
@@ -747,6 +761,28 @@ class ManifestValidationError(ValueError):
         self.code = code
 
 
+@dataclass(frozen=True)
+class MigrationDefinition:
+    migration_id: str
+    source_schema: int
+    target_schema: int
+    target_files: tuple[str, ...]
+    transformations: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class UpgradeBlocker:
+    code: str
+    message: str
+
+    def __post_init__(self) -> None:
+        if self.code not in UPGRADE_BLOCKER_CODES:
+            raise ValueError(f"Unknown upgrade blocker code: {self.code}")
+
+
+PRODUCTION_MIGRATIONS: tuple[MigrationDefinition, ...] = ()
+
+
 def _workflow_config_path(root: Path) -> Path:
     return root / ".project-workflow" / WORKFLOW_CONFIG_FILENAME
 
@@ -888,6 +924,371 @@ def _repository_compatibility(root: Path) -> RepositoryCompatibility:
     if schema_behind:
         return RepositoryCompatibility("upgradeable", "schema-behind", manifest)
     return RepositoryCompatibility("current", "versions-current", manifest)
+
+
+def _migration_target_is_safe(target: str) -> bool:
+    path = Path(target)
+    return bool(target) and not path.is_absolute() and ".." not in path.parts
+
+
+def _resolve_migration_path(
+    source_schema: int,
+    target_schema: int,
+    migrations: tuple[MigrationDefinition, ...],
+) -> tuple[tuple[MigrationDefinition, ...], tuple[UpgradeBlocker, ...]]:
+    blockers: list[UpgradeBlocker] = []
+    migration_ids = [migration.migration_id for migration in migrations]
+    duplicate_ids = sorted(
+        migration_id for migration_id in set(migration_ids) if migration_ids.count(migration_id) > 1
+    )
+    if duplicate_ids:
+        blockers.append(
+            UpgradeBlocker(
+                "PW_UPGRADE_REGISTRY_DUPLICATE_ID",
+                "Duplicate migration IDs: " + ", ".join(duplicate_ids),
+            )
+        )
+
+    by_source: dict[int, list[MigrationDefinition]] = {}
+    for migration in migrations:
+        by_source.setdefault(migration.source_schema, []).append(migration)
+        if (
+            not MIGRATION_ID_PATTERN.fullmatch(migration.migration_id)
+            or not migration.target_files
+            or not migration.transformations
+            or any(not transformation.strip() for transformation in migration.transformations)
+        ):
+            blockers.append(
+                UpgradeBlocker(
+                    "PW_UPGRADE_REGISTRY_INVALID_MIGRATION",
+                    f"Migration {migration.migration_id or '<empty>'} has invalid metadata.",
+                )
+            )
+        if migration.target_schema <= migration.source_schema:
+            blockers.append(
+                UpgradeBlocker(
+                    "PW_UPGRADE_REGISTRY_DOWNGRADE",
+                    f"Migration {migration.migration_id} must advance the repository schema.",
+                )
+            )
+        unsafe_targets = [
+            target for target in migration.target_files if not _migration_target_is_safe(target)
+        ]
+        if unsafe_targets:
+            blockers.append(
+                UpgradeBlocker(
+                    "PW_UPGRADE_REGISTRY_INVALID_TARGET",
+                    f"Migration {migration.migration_id} has unsafe target files: "
+                    + ", ".join(unsafe_targets),
+                )
+            )
+
+    ambiguous_sources = sorted(source for source, entries in by_source.items() if len(entries) > 1)
+    if ambiguous_sources:
+        blockers.append(
+            UpgradeBlocker(
+                "PW_UPGRADE_REGISTRY_AMBIGUOUS",
+                "Multiple migrations start at schema versions: "
+                + ", ".join(str(source) for source in ambiguous_sources),
+            )
+        )
+    cycle_schema: int | None = None
+    for start_schema in sorted(by_source):
+        current_schema = start_schema
+        visited: set[int] = set()
+        while len(by_source.get(current_schema, [])) == 1:
+            if current_schema in visited:
+                cycle_schema = current_schema
+                break
+            visited.add(current_schema)
+            current_schema = by_source[current_schema][0].target_schema
+        if cycle_schema is not None:
+            break
+    if cycle_schema is not None:
+        blockers.append(
+            UpgradeBlocker(
+                "PW_UPGRADE_REGISTRY_CYCLE",
+                f"Migration registry cycles at schema {cycle_schema}.",
+            )
+        )
+    if blockers:
+        return (), tuple(blockers)
+
+    if source_schema == target_schema:
+        return (), ()
+    if source_schema > target_schema:
+        return (
+            (),
+            (
+                UpgradeBlocker(
+                    "PW_UPGRADE_REGISTRY_DOWNGRADE",
+                    f"Repository schema {source_schema} is newer than target {target_schema}.",
+                ),
+            ),
+        )
+
+    path: list[MigrationDefinition] = []
+    visited: set[int] = set()
+    current_schema = source_schema
+    while current_schema != target_schema:
+        if current_schema in visited:
+            return (
+                (),
+                (
+                    UpgradeBlocker(
+                        "PW_UPGRADE_REGISTRY_CYCLE",
+                        f"Migration path cycles at schema {current_schema}.",
+                    ),
+                ),
+            )
+        visited.add(current_schema)
+        candidates = by_source.get(current_schema, [])
+        if not candidates:
+            return (
+                (),
+                (
+                    UpgradeBlocker(
+                        "PW_UPGRADE_REGISTRY_PATH_MISSING",
+                        f"No migration path from schema {current_schema} to {target_schema}.",
+                    ),
+                ),
+            )
+        migration = candidates[0]
+        if migration.target_schema > target_schema:
+            return (
+                (),
+                (
+                    UpgradeBlocker(
+                        "PW_UPGRADE_REGISTRY_PATH_MISSING",
+                        f"Migration {migration.migration_id} overshoots target schema "
+                        f"{target_schema}.",
+                    ),
+                ),
+            )
+        path.append(migration)
+        current_schema = migration.target_schema
+    return tuple(path), ()
+
+
+def _upgrade_file_hash(root: Path, relative_path: str) -> str:
+    path = root / relative_path
+    if not path.exists():
+        return ABSENT_FILE_HASH
+    if path.is_symlink() or not path.is_file():
+        return "not-a-file"
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _upgrade_source_versions(
+    compatibility: RepositoryCompatibility,
+) -> dict[str, object]:
+    if compatibility.manifest is not None:
+        return {
+            "package": compatibility.manifest.package_version,
+            "asset": compatibility.manifest.asset_version,
+            "schema": compatibility.manifest.schema_version,
+            "applied_migrations": list(compatibility.manifest.applied_migrations),
+        }
+    if compatibility.state == "legacy-unversioned":
+        return {
+            "package": None,
+            "asset": 0,
+            "schema": 0,
+            "applied_migrations": [],
+        }
+    return {
+        "package": None,
+        "asset": None,
+        "schema": None,
+        "applied_migrations": [],
+    }
+
+
+def _upgrade_state_blockers(
+    compatibility: RepositoryCompatibility,
+) -> tuple[UpgradeBlocker, ...]:
+    mapping = {
+        "invalid": (
+            "PW_UPGRADE_INVALID_REPOSITORY",
+            f"Repository manifest is invalid: {compatibility.reason}.",
+        ),
+        "unsupported-future": (
+            "PW_UPGRADE_UNSUPPORTED_FUTURE",
+            f"Repository uses an unsupported future contract: {compatibility.reason}.",
+        ),
+        "not-initialized": (
+            "PW_UPGRADE_NOT_INITIALIZED",
+            "Repository is not initialized with project-workflow.",
+        ),
+    }
+    blocker = mapping.get(compatibility.state)
+    if blocker is None:
+        return ()
+    return (UpgradeBlocker(*blocker),)
+
+
+def _upgrade_owner_decisions(root: Path) -> list[dict[str, object]]:
+    accepted_fingerprints = _accepted_doctor_warning_fingerprints(root)
+    decisions: list[dict[str, object]] = []
+    for issue in run_doctor(root):
+        if issue.remediation_owner != "owner":
+            continue
+        fingerprint = _doctor_issue_fingerprint(issue, root)
+        decisions.append(
+            {
+                "code": issue.code,
+                "artifact": _doctor_issue_path_for_fingerprint(issue, root),
+                "message": issue.message,
+                "accepted": fingerprint in accepted_fingerprints,
+                "fingerprint": fingerprint,
+            }
+        )
+    return decisions
+
+
+def _upgrade_plan_fingerprint(payload: dict[str, object]) -> str:
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _build_upgrade_plan(
+    root: Path,
+    *,
+    migrations: tuple[MigrationDefinition, ...] = PRODUCTION_MIGRATIONS,
+) -> dict[str, object]:
+    compatibility = _repository_compatibility(root)
+    source = _upgrade_source_versions(compatibility)
+    target = {
+        "package": CURRENT_PACKAGE_VERSION,
+        "asset": CURRENT_ASSET_VERSION,
+        "schema": CURRENT_SCHEMA_VERSION,
+    }
+    blockers = list(_upgrade_state_blockers(compatibility))
+    migration_path: tuple[MigrationDefinition, ...] = ()
+    source_schema = source["schema"]
+    if not blockers and isinstance(source_schema, int):
+        migration_path, registry_blockers = _resolve_migration_path(
+            source_schema,
+            CURRENT_SCHEMA_VERSION,
+            migrations,
+        )
+        blockers.extend(registry_blockers)
+
+    steps = [
+        {
+            "migration_id": migration.migration_id,
+            "source_schema": migration.source_schema,
+            "target_schema": migration.target_schema,
+            "target_files": list(migration.target_files),
+            "transformations": list(migration.transformations),
+        }
+        for migration in migration_path
+    ]
+    target_files = list(
+        dict.fromkeys(target for migration in migration_path for target in migration.target_files)
+    )
+    invalid_existing_targets = [
+        target_file
+        for target_file in target_files
+        if _upgrade_file_hash(root, target_file) == "not-a-file"
+    ]
+    if invalid_existing_targets:
+        blockers.append(
+            UpgradeBlocker(
+                "PW_UPGRADE_REGISTRY_INVALID_TARGET",
+                "Planned targets must be regular files or absent: "
+                + ", ".join(invalid_existing_targets),
+            )
+        )
+    preconditions: list[dict[str, object]] = [
+        {
+            "kind": "clean-worktree",
+            "artifact": ".",
+            "expected": "required-for-apply",
+        },
+        {
+            "kind": "repository-state",
+            "artifact": ".project-workflow/manifest.json",
+            "expected": compatibility.state,
+        },
+    ]
+    preconditions.extend(
+        {
+            "kind": "file-hash",
+            "artifact": target_file,
+            "expected": _upgrade_file_hash(root, target_file),
+        }
+        for target_file in target_files
+        if target_file not in invalid_existing_targets
+    )
+    payload: dict[str, object] = {
+        "schema_version": UPGRADE_PLAN_SCHEMA_VERSION,
+        "repository_state": compatibility.state,
+        "repository_reason": compatibility.reason,
+        "source": source,
+        "target": target,
+        "steps": steps,
+        "target_files": target_files,
+        "preconditions": preconditions,
+        "blockers": [
+            {"code": blocker.code, "message": blocker.message} for blocker in blockers
+        ],
+        "owner_decisions": _upgrade_owner_decisions(root),
+    }
+    return {"plan_fingerprint": _upgrade_plan_fingerprint(payload), **payload}
+
+
+def _format_upgrade_plan_human(plan: dict[str, object]) -> str:
+    source = plan["source"]
+    target = plan["target"]
+    assert isinstance(source, dict)
+    assert isinstance(target, dict)
+    lines = [
+        f"project upgrade plan: {plan['repository_state']} -> schema {target['schema']}",
+        f"plan fingerprint: {plan['plan_fingerprint']}",
+        f"source versions: package={source['package']} asset={source['asset']} "
+        f"schema={source['schema']}",
+        f"target versions: package={target['package']} asset={target['asset']} "
+        f"schema={target['schema']}",
+    ]
+    steps = plan["steps"]
+    blockers = plan["blockers"]
+    owner_decisions = plan["owner_decisions"]
+    assert isinstance(steps, list)
+    assert isinstance(blockers, list)
+    assert isinstance(owner_decisions, list)
+    if steps:
+        lines.append("migrations:")
+        for step in steps:
+            lines.append(
+                f"- {step['migration_id']}: schema {step['source_schema']} -> "
+                f"{step['target_schema']} ({', '.join(step['target_files'])})"
+            )
+    else:
+        lines.append("migrations: none")
+    if blockers:
+        lines.append("blockers:")
+        lines.extend(f"- {blocker['code']}: {blocker['message']}" for blocker in blockers)
+    if owner_decisions:
+        lines.append("owner decisions:")
+        for decision in owner_decisions:
+            accepted = "accepted" if decision["accepted"] else "open"
+            lines.append(
+                f"- {decision['code']} {decision['artifact']} [{accepted}]: "
+                f"{decision['message']}"
+            )
+    return "\n".join(lines)
+
+
+def cmd_upgrade(args: argparse.Namespace) -> None:
+    root = Path(args.root).resolve() if args.root else Path.cwd()
+    plan = _build_upgrade_plan(root)
+    if args.format == "json":
+        print(json.dumps(plan, indent=2))
+    else:
+        print(_format_upgrade_plan_human(plan))
+    if plan["blockers"]:
+        raise SystemExit(1)
 
 
 def _normalize_task_id_prefix(prefix: str) -> str:
@@ -7031,6 +7432,23 @@ def build_parser() -> argparse.ArgumentParser:
             help="Output format (default: human)",
         )
         doctor_parser.set_defaults(func=cmd_doctor)
+
+    upgrade_parser = subparsers.add_parser(
+        "upgrade",
+        help="Plan a deterministic project-workflow repository upgrade",
+        description="Plan a deterministic repository upgrade without changing files.",
+    )
+    upgrade_parser.add_argument(
+        "--root",
+        help="Repository root to inspect (default: current directory)",
+    )
+    upgrade_parser.add_argument(
+        "--format",
+        choices=("human", "json"),
+        default="human",
+        help="Output format (default: human)",
+    )
+    upgrade_parser.set_defaults(func=cmd_upgrade)
 
     # ===== project backlog ... =====
     backlog_parser = subparsers.add_parser(
