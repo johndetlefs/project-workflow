@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from project_workflow import __version__
 from project_workflow import cli as workflow_cli
 
 
@@ -350,6 +351,203 @@ def ready_epic_retro(epic_id: str = "EPIC-001", title: str = "Ready Epic") -> st
         "## Missed In-Scope Work\n\n"
         "- None.\n"
     )
+
+
+def test_workflow_manifest_contract_is_deterministic() -> None:
+    manifest = workflow_cli._current_workflow_manifest()
+
+    assert manifest == workflow_cli.WorkflowManifest(
+        manifest_version=1,
+        package_version=__version__,
+        asset_version=1,
+        schema_version=1,
+        applied_migrations=(),
+    )
+    assert workflow_cli._serialize_workflow_manifest(manifest) == (
+        "{\n"
+        '  "manifest_version": 1,\n'
+        '  "package_version": "0.1.1",\n'
+        '  "asset_version": 1,\n'
+        '  "schema_version": 1,\n'
+        '  "applied_migrations": []\n'
+        "}\n"
+    )
+    assert workflow_cli._parse_workflow_manifest(
+        workflow_cli._workflow_manifest_payload(manifest)
+    ) == manifest
+
+
+def test_repository_compatibility_classifies_supported_states(tmp_path: Path) -> None:
+    assert workflow_cli._repository_compatibility(tmp_path) == workflow_cli.RepositoryCompatibility(
+        "not-initialized",
+        "workflow-installation-absent",
+    )
+
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    (workflow_dir / "TRACKER.md").write_text("# Tracker\n", encoding="utf-8")
+    assert workflow_cli._repository_compatibility(tmp_path) == workflow_cli.RepositoryCompatibility(
+        "legacy-unversioned",
+        "manifest-absent",
+    )
+
+    manifest_path = workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME
+    current_manifest = workflow_cli._current_workflow_manifest()
+    workflow_cli._write_workflow_manifest(manifest_path, current_manifest)
+    assert workflow_cli._repository_compatibility(tmp_path) == workflow_cli.RepositoryCompatibility(
+        "current",
+        "versions-current",
+        current_manifest,
+    )
+
+    older_manifest = workflow_cli.WorkflowManifest(
+        manifest_version=1,
+        package_version="0.1.0",
+        asset_version=1,
+        schema_version=0,
+        applied_migrations=(),
+    )
+    workflow_cli._write_workflow_manifest(manifest_path, older_manifest)
+    assert workflow_cli._repository_compatibility(tmp_path) == workflow_cli.RepositoryCompatibility(
+        "upgradeable",
+        "schema-behind",
+        older_manifest,
+    )
+
+    future_manifest = workflow_cli.WorkflowManifest(
+        manifest_version=1,
+        package_version="9.0.0",
+        asset_version=1,
+        schema_version=2,
+        applied_migrations=("MIGRATION-001",),
+    )
+    workflow_cli._write_workflow_manifest(manifest_path, future_manifest)
+    assert workflow_cli._repository_compatibility(tmp_path) == workflow_cli.RepositoryCompatibility(
+        "unsupported-future",
+        "future-schema-version",
+        future_manifest,
+    )
+
+    manifest_path.write_text("{not-json}\n", encoding="utf-8")
+    assert workflow_cli._repository_compatibility(tmp_path) == workflow_cli.RepositoryCompatibility(
+        "invalid",
+        "invalid-manifest-json",
+    )
+
+
+@pytest.mark.parametrize(
+    ("update", "reason"),
+    [
+        ({"manifest_version": 2, "extension": "future"}, "future-manifest-version"),
+        ({"asset_version": 2}, "future-asset-version"),
+        ({"schema_version": 2}, "future-schema-version"),
+    ],
+)
+def test_repository_compatibility_blocks_future_contracts(
+    tmp_path: Path,
+    update: dict[str, object],
+    reason: str,
+) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    payload = workflow_cli._workflow_manifest_payload(workflow_cli._current_workflow_manifest())
+    payload.update(update)
+    (workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME).write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+
+    compatibility = workflow_cli._repository_compatibility(tmp_path)
+    assert compatibility.state == "unsupported-future"
+    assert compatibility.reason == reason
+
+
+@pytest.mark.parametrize(
+    ("update", "reason"),
+    [
+        ({"unexpected": True}, "invalid-manifest-fields"),
+        ({"manifest_version": True}, "invalid-manifest-version"),
+        ({"package_version": ""}, "invalid-package-version"),
+        ({"asset_version": 0}, "invalid-asset-version"),
+        ({"schema_version": -1}, "invalid-schema-version"),
+        ({"applied_migrations": "MIGRATION-001"}, "invalid-applied-migrations"),
+        ({"applied_migrations": ["bad migration"]}, "invalid-migration-id"),
+        (
+            {"applied_migrations": ["MIGRATION-001", "MIGRATION-001"]},
+            "duplicate-migration-id",
+        ),
+    ],
+)
+def test_workflow_manifest_validation_is_strict(
+    tmp_path: Path,
+    update: dict[str, object],
+    reason: str,
+) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    payload = workflow_cli._workflow_manifest_payload(workflow_cli._current_workflow_manifest())
+    payload.update(update)
+    (workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME).write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+
+    compatibility = workflow_cli._repository_compatibility(tmp_path)
+    assert compatibility.state == "invalid"
+    assert compatibility.reason == reason
+
+
+def test_workflow_manifest_serialization_rejects_invalid_values() -> None:
+    invalid_manifest = workflow_cli.WorkflowManifest(
+        manifest_version=1,
+        package_version="0.1.1",
+        asset_version=1,
+        schema_version=1,
+        applied_migrations=("duplicate", "duplicate"),
+    )
+
+    with pytest.raises(workflow_cli.ManifestValidationError, match="duplicate-migration-id"):
+        workflow_cli._serialize_workflow_manifest(invalid_manifest)
+
+
+def test_manifest_inspection_and_writing_preserve_non_target_files(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    task_dir = workflow_dir / "tasks" / "TASK-001-Canary"
+    task_dir.mkdir(parents=True)
+    canaries = {
+        workflow_dir / "config.json": b'{"user_setting": true}\n',
+        workflow_dir / "TRACKER.md": b"# Historical tracker\n",
+        workflow_dir / "BACKLOG.md": b"# User backlog\n",
+        workflow_dir / "guidance.md": b"# Local guidance\n",
+        task_dir / "REQUIREMENTS.md": b"# Approved requirements\n",
+        task_dir / "EVIDENCE.json": b'{"claims": []}\n',
+        tmp_path / "UNMARKED.txt": b"owner content\n",
+    }
+    for path, content in canaries.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+
+    before = {path: path.read_bytes() for path in canaries}
+    assert workflow_cli._repository_compatibility(tmp_path).state == "legacy-unversioned"
+    assert {path: path.read_bytes() for path in canaries} == before
+    assert not (workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME).exists()
+
+    workflow_cli._write_workflow_manifest(
+        workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME,
+        workflow_cli._current_workflow_manifest(),
+    )
+    assert {path: path.read_bytes() for path in canaries} == before
+
+
+def test_compatibility_policy_retains_legacy_and_current_schema() -> None:
+    assert workflow_cli.SUPPORTED_SCHEMA_VERSIONS == (0, 1)
+    assert workflow_cli.CURRENT_SCHEMA_VERSION in workflow_cli.SUPPORTED_SCHEMA_VERSIONS
+    policy = " ".join(
+        (REPO_ROOT / "COMPATIBILITY.md").read_text(encoding="utf-8").split()
+    )
+    assert "recognized pre-versioned repository shape" in policy
+    assert "breaking release" in policy
+    assert "Refreshing generated assets does not by itself upgrade" in policy
 
 
 def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:
