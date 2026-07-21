@@ -1,8 +1,8 @@
 # Epic Retro
 
 - Epic: EPIC-007
-- Title: Repo Migration And Adoption Tooling
-- Last updated: 2026-07-10
+- Title: Versioned Repository Upgrade System
+- Last updated: 2026-07-21
 
 ## Lessons
 
