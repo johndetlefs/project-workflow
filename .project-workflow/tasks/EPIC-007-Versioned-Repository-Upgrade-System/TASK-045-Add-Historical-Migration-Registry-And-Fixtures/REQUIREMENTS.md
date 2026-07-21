@@ -23,9 +23,9 @@
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -74,7 +74,7 @@ Register and prove the first immutable production migration from recognized pre-
 ## Non-Goals
 
 - Normalizing old trackers, task/Epic documents, approvals, evidence, warnings, or decisions into current passing shapes.
-- Refreshing generated assets; init owns that operation.
+- Defining generated asset content; existing generators own the content while canonical upgrade coordinates it with schema migration.
 - Supporting unknown legacy profiles that do not meet the recognized project-workflow markers.
 - Adding schema versions beyond 1.
 
@@ -90,8 +90,8 @@ Register and prove the first immutable production migration from recognized pre-
 - Target only `.project-workflow/manifest.json` and create the current manifest with that migration ID recorded.
 - Register one pure production handler whose output is bound into the plan fingerprint.
 - Add a checked-in representative legacy fixture containing tracker, backlog, config, guidance, task requirements/implementation/evidence, approvals/placeholder history, and unmarked user content.
-- Prove canonical init refresh leaves the fixture legacy and preserves durable content before upgrade.
-- Prove production plan/apply succeeds on the clean initialized fixture, changes only the manifest, and records the exact migration.
+- Prove mistaken init is a byte-identical no-op on the legacy fixture and directs canonical upgrade.
+- Prove canonical upgrade plans and applies managed assets plus the production migration on the clean fixture and records the exact migration.
 - Prove plan diff equals apply diff, failure restores manifest absence, and second apply at current schema is a no-op.
 - Prove post-upgrade compatibility is current while historical Doctor findings remain visible and unchanged.
 - Preserve all fixture canaries byte-for-byte and run full regression/parity gates.
@@ -101,7 +101,7 @@ Register and prove the first immutable production migration from recognized pre-
 - AC1: Covers parent AC AC1: production registry contains the immutable ordered 0-to-1 migration and applied manifest records its ID.
 - AC2: Covers parent AC AC3: the checked-in legacy fixture produces one deterministic exact-target plan with predicted manifest hash and zero planning mutation.
 - AC3: Covers parent AC AC6: apply creates exactly the predicted manifest, failure restores absence, and second apply no-ops.
-- AC4: Covers parent AC AC7: every tracker/backlog/config/guidance/task/evidence/unmarked fixture canary remains byte-identical through init, plan, apply, and rollback.
+- AC4: Covers parent AC AC7: every tracker/backlog/config/guidance/task/evidence/unmarked fixture canary remains byte-identical through mistaken init, plan, apply, and rollback.
 - AC5: Covers parent AC AC8: historical approval/evidence/decision gaps remain Doctor findings and are never transformed by migration.
 - AC6: Covers parent AC AC9: production CLI and local helper run the fixture end-to-end with full pytest, parity, compilation, and strict Doctor passing.
 
@@ -118,7 +118,7 @@ Register and prove the first immutable production migration from recognized pre-
 
 ## Validation Plan
 
-- Copy the checked-in fixture, run init, commit it, then run production plan/apply through packaged and local helpers.
-- Hash every non-manifest file across init, plan, success, rollback, and no-op phases.
+- Copy the checked-in fixture, prove mistaken init is a no-op, commit the baseline, then run production plan/apply through packaged and local helpers.
+- Hash every durable user-owned canary across mistaken init, plan, success, rollback, and no-op phases.
 - Assert exact migration ID, target, predicted output hash, manifest payload, plan/apply diff, and post-upgrade findings.
 - Run full pytest, mirror parity, compilation, and strict Doctor.

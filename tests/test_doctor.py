@@ -579,7 +579,10 @@ def test_compatibility_policy_retains_legacy_and_current_schema() -> None:
     )
     assert "recognized pre-versioned repository shape" in policy
     assert "breaking release" in policy
-    assert "Refreshing generated assets does not by itself upgrade" in policy
+    assert (
+        "plans managed-asset refresh plus repository-schema transformation as one transaction"
+        in policy
+    )
 
 
 def test_upgrade_documentation_and_agent_guidance_match_command_contract() -> None:
@@ -594,7 +597,9 @@ def test_upgrade_documentation_and_agent_guidance_match_command_contract() -> No
 
     for required in (
         "doctor --format json",
-        "upgrade --format json",
+        "project upgrade --agent codex",
+        "--plan --format json",
+        "--yes",
         "--apply",
         "--plan-fingerprint",
         "clean Git worktree",
@@ -602,38 +607,37 @@ def test_upgrade_documentation_and_agent_guidance_match_command_contract() -> No
         "COMPATIBILITY.md",
     ):
         assert required in readme
-    runbook_text = readme_text.split("### Upgrade An Existing Repository", 1)[1].split(
+    runbook_text = readme_text.split("### Normal Upgrade", 1)[1].split(
         "## IDs And Parallel Work", 1
     )[0]
     runbook = " ".join(runbook_text.split())
     for required in (
-        "commit the reviewed managed-asset refresh before applying an upgrade",
-        "If init was run when upgrade was intended, nothing needs to be undone",
-        "Validate and commit the migration separately from the managed-asset refresh",
+        "Do not run init first",
+        "Doctor is not a prerequisite",
+        "managed helper/agent-asset changes",
+        "asks for confirmation",
+        "applies the confirmed plan as one transaction",
         "Pre-versioned legacy",
-        "Schema behind",
         "Invalid or unsupported future manifest",
     ):
         assert required in runbook
-    ordered_steps = (
-        "project init --agent codex",
-        "workflow doctor",
-        "workflow upgrade",
-        "--apply",
-        "workflow doctor --strict",
-    )
-    runbook_commands = " ".join(
-        "\n".join(re.findall(r"```bash\n(.*?)```", runbook_text, flags=re.DOTALL)).split()
-    )
-    positions = [runbook_commands.index(step) for step in ordered_steps]
-    assert positions == sorted(positions)
-    assert "transactional `project upgrade --apply`" in changelog
+    normal_commands = re.findall(r"```bash\n(.*?)```", runbook_text, flags=re.DOTALL)
+    assert "project upgrade --agent codex" in " ".join(normal_commands[0].split())
+    assert "project init" not in " ".join(normal_commands[0].split())
+    assert "project upgrade --agent codex --yes" in " ".join(normal_commands[1].split())
+    assert "canonical UVX `project upgrade`" in changelog
+    assert "fingerprint-bound automation apply" in changelog
     assert "PW-0001-legacy-manifest" in changelog
     assert "PW-0001-legacy-manifest" in compatibility
+    managed_guidance = workflow_cli._managed_project_workflow_block()
+    assert "Authorized non-interactive agents add `--yes`" in managed_guidance
+    assert "human invocation confirms" in managed_guidance
     for path in guidance_paths:
         guidance = path.read_text(encoding="utf-8")
-        assert "init refreshes managed assets" in guidance
+        assert "init creates a new installation" in guidance
         assert "Doctor diagnoses without mutation" in guidance
+        assert "canonical UVX upgrade" in guidance
+        assert "managed assets and repository schema" in guidance
         assert "--apply --plan-fingerprint <SHA256>" in guidance
 
 
@@ -648,10 +652,21 @@ def test_project_init_creates_and_preserves_current_manifest(tmp_path: Path) -> 
     assert "Repository state before init: not-initialized" in first.stdout
     assert "Repository state after init: current" in first.stdout
 
-    second = run_project(["init"], cwd=tmp_path)
+    before_second = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+    second = run_project(["init", "--agent", "github-copilot"], cwd=tmp_path)
     assert second.returncode == 0, second.stdout + second.stderr
     assert manifest_path.read_text(encoding="utf-8") == expected
-    assert "Repository state before init: current" in second.stdout
+    assert "already initialized (current); init made no changes" in second.stdout
+    assert "project upgrade --agent github-copilot" in second.stdout
+    assert {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    } == before_second
 
 
 def test_project_init_preserves_legacy_state_and_directs_upgrade(tmp_path: Path) -> None:
@@ -668,12 +683,11 @@ def test_project_init_preserves_legacy_state_and_directs_upgrade(tmp_path: Path)
     assert backlog_path.read_text(encoding="utf-8") == "# Historical backlog\n"
     assert canary_path.read_text(encoding="utf-8") == "owner content\n"
     assert not (workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME).exists()
-    assert "Repository state before init: legacy-unversioned" in result.stdout
-    assert "Repository schema was not migrated" in result.stdout
-    assert "`project upgrade`" in result.stdout
+    assert "already initialized (legacy-unversioned); init made no changes" in result.stdout
+    assert "project upgrade --agent github-copilot" in result.stdout
 
 
-def test_project_init_refreshes_assets_without_advancing_schema(tmp_path: Path) -> None:
+def test_project_init_never_refreshes_an_existing_versioned_repository(tmp_path: Path) -> None:
     workflow_dir = tmp_path / ".project-workflow"
     workflow_dir.mkdir()
     manifest_path = workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME
@@ -681,23 +695,20 @@ def test_project_init_refreshes_assets_without_advancing_schema(tmp_path: Path) 
         manifest_version=1,
         package_version="0.1.0",
         asset_version=1,
-        schema_version=0,
-        applied_migrations=("LEGACY-ACK",),
+        schema_version=1,
+        applied_migrations=(),
     )
     workflow_cli._write_workflow_manifest(manifest_path, behind)
 
     result = run_project(["init"], cwd=tmp_path)
 
     assert result.returncode == 0, result.stdout + result.stderr
-    refreshed = workflow_cli._parse_workflow_manifest(
+    preserved = workflow_cli._parse_workflow_manifest(
         json.loads(manifest_path.read_text(encoding="utf-8"))
     )
-    assert refreshed.package_version == workflow_cli.CURRENT_PACKAGE_VERSION
-    assert refreshed.asset_version == workflow_cli.CURRENT_ASSET_VERSION
-    assert refreshed.schema_version == 0
-    assert refreshed.applied_migrations == ("LEGACY-ACK",)
-    assert "Repository state after init: upgradeable" in result.stdout
-    assert "Repository schema was not migrated" in result.stdout
+    assert preserved == behind
+    assert "already initialized (current); init made no changes" in result.stdout
+    assert "project upgrade --agent github-copilot" in result.stdout
 
 
 @pytest.mark.parametrize("state", ["invalid", "future"])
@@ -723,7 +734,8 @@ def test_project_init_does_not_rewrite_invalid_or_future_manifest(
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert manifest_path.read_bytes() == content
-    assert "Repository manifest was not changed" in result.stdout
+    assert "init made no changes" in result.stdout
+    assert "project upgrade --agent github-copilot" in result.stdout
 
 
 @pytest.mark.parametrize(
@@ -1131,8 +1143,8 @@ def test_upgrade_command_plans_registered_legacy_without_mutation(tmp_path: Path
     (workflow_dir / "TRACKER.md").write_text("# Legacy tracker\n", encoding="utf-8")
     before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
 
-    result = run_project(["upgrade", "--format", "json"], cwd=tmp_path)
-    human = run_project(["upgrade"], cwd=tmp_path)
+    result = run_project(["upgrade", "--agent", "codex", "--plan", "--format", "json"], cwd=tmp_path)
+    human = run_project(["upgrade", "--agent", "codex", "--plan"], cwd=tmp_path)
 
     after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     assert result.returncode == 0
@@ -1144,7 +1156,83 @@ def test_upgrade_command_plans_registered_legacy_without_mutation(tmp_path: Path
         workflow_cli.LEGACY_MANIFEST_MIGRATION_ID
     ]
     assert payload["blockers"] == []
-    assert payload["expected_outputs"][0]["artifact"] == ".project-workflow/manifest.json"
+    assert ".project-workflow/manifest.json" in payload["target_files"]
+    assert ".project-workflow/cli/workflow.py" in payload["asset_changes"]
+    assert "AGENTS.md" in payload["asset_changes"]
+
+
+def test_upgrade_default_human_flow_confirms_and_applies(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    fixture = REPO_ROOT / "tests" / "fixtures" / "legacy-unversioned"
+    shutil.copytree(fixture, tmp_path, dirs_exist_ok=True)
+    init_git_fixture(tmp_path)
+
+    noninteractive = run_project(["upgrade", "--agent", "codex"], cwd=tmp_path)
+    assert noninteractive.returncode == 1
+    assert "Non-interactive upgrade requires --yes" in noninteractive.stderr
+    assert not (tmp_path / ".project-workflow" / "manifest.json").exists()
+
+    args = workflow_cli.build_parser().parse_args(["upgrade", "--agent", "codex"])
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(workflow_cli.os, "isatty", lambda _fd: True)
+    monkeypatch.setattr("builtins.input", lambda _prompt: "yes")
+
+    args.func(args)
+
+    output = capsys.readouterr().out
+    assert "project upgrade plan: legacy-unversioned -> schema 1" in output
+    assert "project upgrade apply: applied" in output
+    assert "post-upgrade validation: current" in output
+    assert (tmp_path / ".project-workflow" / "manifest.json").exists()
+    assert (tmp_path / ".project-workflow" / "cli" / "workflow.py").exists()
+    assert (tmp_path / "AGENTS.md").exists()
+
+
+def test_upgrade_plan_blocks_unsafe_managed_asset_target(tmp_path: Path) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    (workflow_dir / "cli" / "workflow.py").mkdir(parents=True)
+    (workflow_dir / "TRACKER.md").write_text("# Legacy tracker\n", encoding="utf-8")
+
+    plan = workflow_cli._build_repository_upgrade_plan(tmp_path, "codex")
+
+    assert plan["target_files"] == [".project-workflow/manifest.json"]
+    assert plan["blockers"] == [
+        {
+            "code": "PW_UPGRADE_MANAGED_ASSET_INVALID_TARGET",
+            "message": (
+                "Managed asset target must be a regular file or absent: "
+                ".project-workflow/cli/workflow.py."
+            ),
+        }
+    ]
+
+
+def test_upgrade_plan_directs_uvx_when_package_resources_are_unavailable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workflow_dir = tmp_path / ".project-workflow"
+    workflow_dir.mkdir()
+    (workflow_dir / "TRACKER.md").write_text("# Legacy tracker\n", encoding="utf-8")
+
+    def unavailable(_resource_path: str) -> str:
+        raise SystemExit("package resources unavailable")
+
+    monkeypatch.setattr(workflow_cli, "_get_package_resource", unavailable)
+    plan = workflow_cli._build_repository_upgrade_plan(tmp_path, "codex")
+
+    assert plan["blockers"] == [
+        {
+            "code": "PW_UPGRADE_PACKAGE_RESOURCE_UNAVAILABLE",
+            "message": (
+                "Managed asset resources are unavailable in this local helper. Run: "
+                f"{workflow_cli.CANONICAL_UPGRADE_COMMAND} --agent codex."
+            ),
+        }
+    ]
 
 
 def test_upgrade_plan_blocks_non_file_targets(tmp_path: Path) -> None:
@@ -1306,23 +1394,33 @@ def test_upgrade_apply_rejects_changed_handler_fingerprint(tmp_path: Path) -> No
 
 
 def test_upgrade_apply_cli_requires_fingerprint_and_noops_current_repo(tmp_path: Path) -> None:
-    workflow_dir = tmp_path / ".project-workflow"
-    workflow_dir.mkdir()
-    workflow_cli._write_workflow_manifest(
-        workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME,
-        workflow_cli._current_workflow_manifest(),
-    )
+    initialized = run_project(["init", "--agent", "github-copilot"], cwd=tmp_path)
+    assert initialized.returncode == 0, initialized.stdout + initialized.stderr
     init_git_fixture(tmp_path)
-    plan_result = run_project(["upgrade", "--format", "json"], cwd=tmp_path)
+    plan_result = run_project(
+        ["upgrade", "--agent", "github-copilot", "--plan", "--format", "json"],
+        cwd=tmp_path,
+    )
     assert plan_result.returncode == 0, plan_result.stdout + plan_result.stderr
     fingerprint = json.loads(plan_result.stdout)["plan_fingerprint"]
 
-    missing = run_project(["upgrade", "--apply"], cwd=tmp_path)
+    missing = run_project(
+        ["upgrade", "--agent", "github-copilot", "--apply"], cwd=tmp_path
+    )
     assert missing.returncode == 1
     assert "--apply requires --plan-fingerprint" in missing.stderr
 
     applied = run_project(
-        ["upgrade", "--apply", "--plan-fingerprint", fingerprint, "--format", "json"],
+        [
+            "upgrade",
+            "--agent",
+            "github-copilot",
+            "--apply",
+            "--plan-fingerprint",
+            fingerprint,
+            "--format",
+            "json",
+        ],
         cwd=tmp_path,
     )
     assert applied.returncode == 0, applied.stdout + applied.stderr
@@ -1478,6 +1576,8 @@ def test_production_legacy_fixture_plan_apply_preservation_and_noop(tmp_path: Pa
 
     init = run_project(["init", "--agent", "codex"], cwd=tmp_path)
     assert init.returncode == 0, init.stdout + init.stderr
+    assert "init made no changes" in init.stdout
+    assert "project upgrade --agent codex" in init.stdout
     assert not (tmp_path / ".project-workflow" / "manifest.json").exists()
     for relative_path, content in fixture_files.items():
         assert (tmp_path / relative_path).read_bytes() == content
@@ -1493,28 +1593,20 @@ def test_production_legacy_fixture_plan_apply_preservation_and_noop(tmp_path: Pa
         for issue in workflow_cli.run_doctor(tmp_path)
         if issue.remediation_owner == "owner"
     ]
-    local_workflow = tmp_path / ".project-workflow" / "cli" / "workflow.py"
-    human_plan = subprocess.run(
-        [sys.executable, str(local_workflow), "upgrade"],
-        cwd=tmp_path,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    human_plan = run_project(["upgrade", "--agent", "codex", "--plan"], cwd=tmp_path)
     assert human_plan.returncode == 0, human_plan.stdout + human_plan.stderr
-    plan_result = subprocess.run(
-        [sys.executable, str(local_workflow), "upgrade", "--format", "json"],
+    plan_result = run_project(
+        ["upgrade", "--agent", "codex", "--plan", "--format", "json"],
         cwd=tmp_path,
-        check=False,
-        capture_output=True,
-        text=True,
     )
     assert plan_result.returncode == 0, plan_result.stdout + plan_result.stderr
     plan = json.loads(plan_result.stdout)
     assert [step["migration_id"] for step in plan["steps"]] == [
         workflow_cli.LEGACY_MANIFEST_MIGRATION_ID
     ]
-    assert plan["target_files"] == [".project-workflow/manifest.json"]
+    assert ".project-workflow/manifest.json" in plan["target_files"]
+    assert ".project-workflow/cli/workflow.py" in plan["asset_changes"]
+    assert "AGENTS.md" in plan["asset_changes"]
     assert plan["blockers"] == []
     assert {
         path.relative_to(tmp_path): path.read_bytes()
@@ -1522,26 +1614,18 @@ def test_production_legacy_fixture_plan_apply_preservation_and_noop(tmp_path: Pa
         if path.is_file() and ".git" not in path.parts
     } == before_plan
 
-    apply_result = subprocess.run(
-        [
-            sys.executable,
-            str(local_workflow),
-            "upgrade",
-            "--apply",
-            "--plan-fingerprint",
-            plan["plan_fingerprint"],
-            "--format",
-            "json",
-        ],
+    apply_result = run_project(
+        ["upgrade", "--agent", "codex", "--yes", "--format", "json"],
         cwd=tmp_path,
-        check=False,
-        capture_output=True,
-        text=True,
     )
     assert apply_result.returncode == 0, apply_result.stdout + apply_result.stderr
     result = json.loads(apply_result.stdout)
     assert result["status"] == "applied"
-    assert result["changed_files"] == [".project-workflow/manifest.json"]
+    assert ".project-workflow/manifest.json" in result["changed_files"]
+    assert ".project-workflow/cli/workflow.py" in result["changed_files"]
+    assert "AGENTS.md" in result["changed_files"]
+    assert result["post_upgrade"]["repository_state"] == "current"
+    assert result["post_upgrade"]["owner_finding_count"] == len(owner_findings_before)
     manifest = workflow_cli._parse_workflow_manifest(
         json.loads(
             (tmp_path / ".project-workflow" / "manifest.json").read_text(encoding="utf-8")
@@ -1557,6 +1641,7 @@ def test_production_legacy_fixture_plan_apply_preservation_and_noop(tmp_path: Pa
     ]
     assert owner_findings_after == owner_findings_before
 
+    local_workflow = tmp_path / ".project-workflow" / "cli" / "workflow.py"
     strict_doctor = subprocess.run(
         [sys.executable, str(local_workflow), "doctor", "--strict"],
         cwd=tmp_path,
@@ -1570,7 +1655,16 @@ def test_production_legacy_fixture_plan_apply_preservation_and_noop(tmp_path: Pa
 
     commit_git_fixture(tmp_path, "production upgrade")
     current_plan_result = subprocess.run(
-        [sys.executable, str(local_workflow), "upgrade", "--format", "json"],
+        [
+            sys.executable,
+            str(local_workflow),
+            "upgrade",
+            "--agent",
+            "codex",
+            "--plan",
+            "--format",
+            "json",
+        ],
         cwd=tmp_path,
         check=False,
         capture_output=True,
@@ -1580,14 +1674,15 @@ def test_production_legacy_fixture_plan_apply_preservation_and_noop(tmp_path: Pa
         current_plan_result.stdout + current_plan_result.stderr
     )
     current_plan = json.loads(current_plan_result.stdout)
+    assert current_plan["target_files"] == []
     noop_result = subprocess.run(
         [
             sys.executable,
             str(local_workflow),
             "upgrade",
-            "--apply",
-            "--plan-fingerprint",
-            current_plan["plan_fingerprint"],
+            "--agent",
+            "codex",
+            "--yes",
             "--format",
             "json",
         ],
@@ -1624,6 +1719,35 @@ def test_production_legacy_migration_failure_restores_manifest_absence(tmp_path:
     assert failed["failure"]["code"] == "PW_UPGRADE_APPLY_REPLACEMENT_FAILED"
     assert not (tmp_path / ".project-workflow" / "manifest.json").exists()
     assert not list(tmp_path.rglob("*.tmp"))
+
+
+def test_combined_upgrade_failure_restores_assets_and_schema(tmp_path: Path) -> None:
+    fixture = REPO_ROOT / "tests" / "fixtures" / "legacy-unversioned"
+    shutil.copytree(fixture, tmp_path, dirs_exist_ok=True)
+    init_git_fixture(tmp_path)
+    before = {
+        path.relative_to(tmp_path): (path.read_bytes(), path.stat().st_mode & 0o777)
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+    plan = workflow_cli._build_repository_upgrade_plan(tmp_path, "codex")
+
+    failed = workflow_cli._apply_repository_upgrade_plan(
+        tmp_path,
+        "codex",
+        plan["plan_fingerprint"],
+        fail_after_replacements=2,
+    )
+
+    assert failed["status"] == "failed"
+    assert failed["failure"]["code"] == "PW_UPGRADE_APPLY_REPLACEMENT_FAILED"
+    assert {
+        path.relative_to(tmp_path): (path.read_bytes(), path.stat().st_mode & 0o777)
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    } == before
+    assert not (tmp_path / ".project-workflow" / "manifest.json").exists()
+    assert not (tmp_path / ".project-workflow" / "cli" / "workflow.py").exists()
 
 
 def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:
@@ -2788,7 +2912,9 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
         "uvx --from git+https://github.com/johndetlefs/project-workflow.git project init"
         in codex_agents
     )
-    assert "Do not use bare `project init`" in codex_agents
+    assert "To initialize a new repository" in codex_agents
+    assert "project upgrade" in codex_agents
+    assert "Do not run init first" in codex_agents
     assert "workflow doctor" in codex_agents
     assert ".project-workflow/BACKLOG.md" in codex_agents
     assert "Promoted rows stay in the backlog" in codex_agents
@@ -2873,9 +2999,10 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "EVIDENCE.json" in claude_implement
 
 
-def test_init_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path) -> None:
+def test_upgrade_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path) -> None:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
+    init_git_fixture(tmp_path)
 
     local_workflow = tmp_path / ".project-workflow" / "cli" / "workflow.py"
     local_workflow.write_text(
@@ -2890,8 +3017,11 @@ def test_init_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path
         "<!-- project-workflow:end -->\n",
         encoding="utf-8",
     )
+    commit_git_fixture(tmp_path, "legacy generated assets")
 
-    refreshed = run_project(["init"], cwd=tmp_path)
+    refreshed = run_project(
+        ["upgrade", "--agent", "github-copilot", "--yes"], cwd=tmp_path
+    )
     assert refreshed.returncode == 0, refreshed.stdout + refreshed.stderr
 
     help_result = subprocess.run(
@@ -2934,19 +3064,29 @@ def test_init_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path
     assert "Manage bounded defects" in fix_help.stdout
 
 
-def test_uvx_fresh_install_and_legacy_refresh_deliver_fix_assets(tmp_path: Path) -> None:
+def test_uvx_fresh_init_and_upgrade_deliver_fix_assets(tmp_path: Path) -> None:
     uvx = shutil.which("uvx")
     if uvx is None:
         pytest.skip("uvx is not installed")
     target = tmp_path / "uvx-target"
     target.mkdir()
-    command = [uvx, "--from", str(REPO_ROOT), "project", "init", "--agent", "codex"]
+    init_command = [uvx, "--from", str(REPO_ROOT), "project", "init", "--agent", "codex"]
+    upgrade_command = [
+        uvx,
+        "--from",
+        str(REPO_ROOT),
+        "project",
+        "upgrade",
+        "--agent",
+        "codex",
+        "--yes",
+    ]
     uv_env = os.environ.copy()
     uv_env["UV_CACHE_DIR"] = str(tmp_path / "uv-cache")
     uv_env["UV_TOOL_DIR"] = str(tmp_path / "uv-tools")
 
     fresh = subprocess.run(
-        command,
+        init_command,
         cwd=target,
         check=False,
         capture_output=True,
@@ -2954,6 +3094,7 @@ def test_uvx_fresh_install_and_legacy_refresh_deliver_fix_assets(tmp_path: Path)
         env=uv_env,
     )
     assert fresh.returncode == 0, fresh.stdout + fresh.stderr
+    init_git_fixture(target)
     local_workflow = target / ".project-workflow" / "cli" / "workflow.py"
     fix_skill = target / ".agents" / "skills" / "project-fix" / "SKILL.md"
     assert fix_skill.exists()
@@ -2978,9 +3119,10 @@ def test_uvx_fresh_install_and_legacy_refresh_deliver_fix_assets(tmp_path: Path)
         encoding="utf-8",
     )
     fix_skill.write_text("# User-owned Fix guidance\n", encoding="utf-8")
+    commit_git_fixture(target, "legacy generated assets")
 
     refreshed = subprocess.run(
-        command,
+        upgrade_command,
         cwd=target,
         check=False,
         capture_output=True,
@@ -3007,8 +3149,9 @@ def test_uvx_fresh_install_and_legacy_refresh_deliver_fix_assets(tmp_path: Path)
 
     workflow_after_refresh = local_workflow.read_text(encoding="utf-8")
     skill_new_after_refresh = fix_skill_new.read_text(encoding="utf-8")
+    commit_git_fixture(target, "upgrade generated assets")
     repeated = subprocess.run(
-        command,
+        upgrade_command,
         cwd=target,
         check=False,
         capture_output=True,

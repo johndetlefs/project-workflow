@@ -100,12 +100,14 @@ project task status --id TASK-001 --to "In Progress"
 project doctor
 ```
 
-For refreshing an initialized repository, prefer the canonical UVX command from the target repository root:
+Use init only to create project-workflow in a new repository. Upgrade an existing repository with the canonical UVX command from the target repository root:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project upgrade --agent codex
 ```
 
-Use bare `project init` only when the package is intentionally installed locally and known to be current. Re-running init from the latest package refreshes marked generated workflow assets and managed host-file blocks. Unmarked existing files are preserved; project-workflow writes the new generated content beside them as `*.new` for review.
+Canonical upgrade obtains the current package and plans managed assets plus repository schema as one transaction. It shows the plan and asks for confirmation; authorized agents can add `--yes`. Use `--plan --format json` and fingerprinted `--apply` only when automation requires a separated review. Unmarked existing files are preserved and receive generated `*.new` content for review.
+
+Do not use the local helper as the source for a repository upgrade. It cannot prove that it has the latest packaged asset resources; when they are unavailable, local upgrade blocks and prints the canonical UVX command.
 
 The in-repo script is intentionally dependency-free (stdlib only) so initialized projects can keep using the local workflow helper without installing the package.

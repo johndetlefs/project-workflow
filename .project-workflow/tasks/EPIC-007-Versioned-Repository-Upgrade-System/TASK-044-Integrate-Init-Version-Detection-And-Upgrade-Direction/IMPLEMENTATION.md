@@ -1,6 +1,6 @@
 ## User Story
 
-As a maintainer or agent initializing an existing repository, I want init to distinguish managed asset refresh from schema migration, so that it never reports old durable state as current.
+As a maintainer or agent, I want init to create only new installations and direct every existing repository to canonical upgrade without mutation, so command names match their user-facing behavior.
 
 ## Parent AC Coverage
 
@@ -10,9 +10,9 @@ As a maintainer or agent initializing an existing repository, I want init to dis
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -48,13 +48,13 @@ As a maintainer or agent initializing an existing repository, I want init to dis
 ### Parent AC Proof Ownership
 
 - AC1: owner `Define Repository Version Manifest And Compatibility Policy, Add Historical Migration Registry And Fixtures`; required evidence: Fixture inspection showing explicit package/asset/schema versions and deterministic classification of pre-versioned state.
-- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: Legacy/current init fixtures proving managed refresh and honest schema/upgrade direction without repository-state mutation.
+- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: New/existing init fixtures proving init-only creation and no-mutation upgrade direction, plus canonical upgrade asset refresh.
 
 ## Acceptance Criteria
 
 - [x] AC1: Fresh and repeated init create then preserve the exact current manifest.
-- [x] AC2: Legacy init refreshes assets without manifest creation or durable-state mutation and directs upgrade.
-- [x] AC3: Behind-schema init preserves schema/history while refreshing only managed metadata and directing upgrade.
+- [x] AC2: Legacy init changes nothing, creates no manifest, and directs canonical UVX upgrade.
+- [x] AC3: Current and behind-schema init preserve every file and direct canonical upgrade.
 - [x] AC4: Invalid/future manifests remain byte-identical and block honestly.
 - [x] AC5: Doctor emits equivalent stable human/JSON version findings and exits.
 - [x] AC6: Current behavior, all mirrors, and validation gates pass.
@@ -72,10 +72,10 @@ As a maintainer or agent initializing an existing repository, I want init to dis
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ |
-| 1 | Integrate init state detection | Detect before mutation, create only fresh manifests, and safely refresh valid managed metadata. | AC1, AC2, AC3, AC4 | Run state matrix and inspect manifest/tree diffs. | Done |
+| 1 | Integrate init state detection | Detect before mutation, create only fresh manifests, and leave every existing state unchanged. | AC1, AC2, AC3, AC4 | Run state matrix and inspect manifest/tree diffs. | Done |
 | 2 | Add honest init direction | Report detected/resulting states and exact upgrade or recovery next actions. | AC2, AC3, AC4 | Compare init output across fixtures. | Done |
 | 3 | Add repository Doctor findings | Map compatibility states to explicit structured finding codes and remediation metadata. | AC4, AC5 | Compare human/JSON findings and strict exits. | Done |
-| 4 | Prove idempotency and parity | Refresh mirrors and run complete validation. | AC1, AC6 | Run second init, local helper, pytest, parity, compilation, and strict Doctor. | Done |
+| 4 | Prove idempotency and parity | Refresh mirrors through upgrade and run complete validation. | AC1, AC6 | Run second init, canonical upgrade, local helper, pytest, parity, compilation, and strict Doctor. | Done |
 
 ## Parent AC Evidence
 
@@ -85,13 +85,13 @@ As a maintainer or agent initializing an existing repository, I want init to dis
 ## QA & Code Review
 
 - Verdict: Pass; completed under autonomous Epic continuation authority.
-- Evidence: Ten focused init/version tests passed; full suite passed with 124 tests and 1 existing skip; live current init, local helper refresh, source/template/local parity, compilation, and strict Doctor passed.
-- Findings: No blocking findings. Legacy repositories intentionally remain manifest-free until TASK-045 performs the fixture-backed migration.
+- Evidence: Fresh/second/existing/legacy/invalid/future init tests prove new-only creation and byte-identical existing-state no-op behavior; canonical upgrade tests prove helper/agent refresh moved to the upgrade transaction; full suite, source/template/local parity, compilation, and strict Doctor passed.
+- Findings: No blocking findings. Legacy repositories remain manifest-free after mistaken init and are migrated only by canonical upgrade.
 
 ## Retro
 
-- Reusable lessons: Compatibility must be captured before init creates workflow markers; managed asset refresh may update package/asset provenance but must preserve schema and migration history; invalid/future metadata must never be normalized.
-- Conventions or agent assets updated: Added version-aware init output, fresh-manifest creation, safe metadata refresh, and explicit repository-state Doctor findings across CLI mirrors.
+- Reusable lessons: Compatibility must be captured before init creates workflow markers; an existing-repository init should not mutate merely because older versions used init as refresh; canonical upgrade can preserve internal asset/schema boundaries without exposing them as separate user steps.
+- Conventions or agent assets updated: Added new-only init behavior, exact canonical upgrade direction, combined upgrade asset refresh, and explicit repository-state Doctor findings across CLI mirrors.
 - Follow-up tasks: TASK-045 will convert recognized legacy state through the immutable migration registry and preservation fixtures.
 
 ## Notes

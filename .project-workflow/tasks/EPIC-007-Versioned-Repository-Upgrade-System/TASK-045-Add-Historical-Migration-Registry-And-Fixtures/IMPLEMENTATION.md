@@ -10,9 +10,9 @@ As a maintainer of a pre-versioned repository, I want a tested production migrat
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -78,7 +78,7 @@ As a maintainer of a pre-versioned repository, I want a tested production migrat
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ |
 | 1 | Register legacy migration | Add immutable metadata and pure manifest handler to production registries. | AC1 | Inspect registry and output manifest. | Done |
 | 2 | Add checked-in historical fixture | Capture representative durable/history/user-owned artifacts and expected preservation boundary. | AC2, AC4, AC5 | Inspect fixture and hashes. | Done |
-| 3 | Prove production end-to-end | Run init, plan, apply, rollback, post-Doctor, and no-op against fixture. | AC2, AC3, AC4, AC5 | Compare exact plans, diffs, findings, and bytes. | Done |
+| 3 | Prove production end-to-end | Prove mistaken init is a no-op, then run canonical plan, one-command apply, rollback, post-Doctor, and no-op against the fixture. | AC2, AC3, AC4, AC5 | Compare exact plans, diffs, findings, and bytes. | Done |
 | 4 | Prove all mirrors and gates | Refresh generated helpers and run complete regression validation. | AC6 | Run packaged/local E2E, pytest, parity, compilation, strict Doctor. | Done |
 
 ## Parent AC Evidence
@@ -88,7 +88,7 @@ As a maintainer of a pre-versioned repository, I want a tested production migrat
 ## QA & Code Review
 
 - Verdict: Pass; completed under autonomous Epic continuation authority.
-- Evidence: Three production legacy planning/apply tests passed; full suite passed with 126 tests and 1 existing skip; local helper refresh, parity, compilation, and strict Doctor passed.
+- Evidence: Production legacy planning/apply tests prove mistaken init no-op, combined one-command upgrade, preservation, rollback, and current no-op behavior; final suite passed with 131 tests and 1 environment-gated UVX skip, plus local-helper parity, compilation, and strict Doctor.
 - Findings: No blocking findings. Schema 1 adopts the explicit version contract without falsifying historical document compliance.
 
 ## Retro

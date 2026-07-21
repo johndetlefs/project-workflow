@@ -31,9 +31,9 @@
 
 ## Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; the normal human command confirms before apply and authorized non-interactive agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -47,7 +47,7 @@
 ## Artifact Targets
 
 - Managed repository metadata at `.project-workflow/manifest.json`
-- Upgrade command, plan model, migration registry, and apply engine in `src/project_workflow/cli.py` with behavioral parity in `src/project_workflow/templates/workflow.py`
+- Combined managed-asset/schema upgrade command, plan model, migration registry, and apply engine in `src/project_workflow/cli.py` with behavioral parity in `src/project_workflow/templates/workflow.py`
 - Stable structured doctor and upgrade-plan output schemas
 - Historical repository fixtures and focused regression coverage under `tests/`
 - Generated agent guidance under `src/project_workflow/prompts/`, `src/project_workflow/codex/`, and `src/project_workflow/cursor/`
@@ -60,9 +60,9 @@
 | --- | --- | --- |
 | AC1 | TASK-040, TASK-044, TASK-045 | Fixture inspection showing explicit package/asset/schema versions and deterministic classification of pre-versioned state. |
 | AC2 | TASK-041, TASK-046 | Tests and captured output proving stable finding codes and equivalent human/machine-readable fields. |
-| AC3 | TASK-042, TASK-045, TASK-046 | Before/after fixture hashes proving zero plan mutation plus complete ordered plan records for every supported source schema. |
+| AC3 | TASK-042, TASK-045, TASK-046 | Before/after fixture hashes proving zero `--plan` mutation plus complete managed-asset and ordered migration records for every supported source schema. |
 | AC4 | TASK-042, TASK-043 | Dirty, stale, unsupported, and unrecognized failure tests plus a successful apply whose diff exactly matches the fresh plan. |
-| AC5 | TASK-040, TASK-041, TASK-044, TASK-046 | Legacy/current init fixtures proving managed refresh and honest schema/upgrade direction without repository-state mutation. |
+| AC5 | TASK-040, TASK-041, TASK-044, TASK-046 | New/existing init fixtures proving init-only creation and no-mutation upgrade direction, plus canonical upgrade asset refresh. |
 | AC6 | TASK-043, TASK-045 | Injected-failure evidence proving no partial writes and second-apply evidence proving no-op idempotency. |
 | AC7 | TASK-040, TASK-043, TASK-045 | Preservation-canary diffs across tracker, docs, backlog, guidance, config, approvals, deferrals, evidence, and unmarked content. |
 | AC8 | TASK-041, TASK-042, TASK-043, TASK-045 | Fixtures proving owner-owned approval/evidence/decision gaps remain visible and unchanged after plan/apply. |

@@ -109,7 +109,9 @@ UPGRADE_BLOCKER_CODES = (
     "PW_UPGRADE_INVALID_REPOSITORY",
     "PW_UPGRADE_HANDLER_INVALID",
     "PW_UPGRADE_HANDLER_MISSING",
+    "PW_UPGRADE_MANAGED_ASSET_INVALID_TARGET",
     "PW_UPGRADE_NOT_INITIALIZED",
+    "PW_UPGRADE_PACKAGE_RESOURCE_UNAVAILABLE",
     "PW_UPGRADE_REGISTRY_AMBIGUOUS",
     "PW_UPGRADE_REGISTRY_CYCLE",
     "PW_UPGRADE_REGISTRY_DOWNGRADE",
@@ -125,7 +127,9 @@ UPGRADE_APPLY_FAILURE_CODES = (
     "PW_UPGRADE_APPLY_FINAL_MANIFEST_INVALID",
     "PW_UPGRADE_APPLY_HANDLER_INVALID",
     "PW_UPGRADE_APPLY_HANDLER_MISSING",
+    "PW_UPGRADE_MANAGED_ASSET_INVALID_TARGET",
     "PW_UPGRADE_APPLY_NOT_GIT",
+    "PW_UPGRADE_PACKAGE_RESOURCE_UNAVAILABLE",
     "PW_UPGRADE_APPLY_REPLACEMENT_FAILED",
     "PW_UPGRADE_APPLY_STALE_FILE",
     "PW_UPGRADE_APPLY_STALE_PLAN",
@@ -435,6 +439,9 @@ GENERATED_MARKER_COMMENT = f"# {GENERATED_MARKER}"
 MANAGED_BLOCK_START = "<!-- project-workflow:start -->"
 MANAGED_BLOCK_END = "<!-- project-workflow:end -->"
 CANONICAL_INIT_COMMAND = "uvx --from git+https://github.com/johndetlefs/project-workflow.git project init"
+CANONICAL_UPGRADE_COMMAND = (
+    "uvx --from git+https://github.com/johndetlefs/project-workflow.git project upgrade"
+)
 
 
 def _words(value: str) -> list[str]:
@@ -536,7 +543,7 @@ def _collision_path(path: Path) -> Path:
     try:
         if _is_generated_content(candidate.read_text(encoding="utf-8")):
             return candidate
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         pass
 
     counter = 2
@@ -574,6 +581,25 @@ def _ensure_generated_file(path: Path, content: str, *, executable: bool = False
     if executable:
         new_path.chmod(0o755)
     return f"Kept existing unmarked file and wrote: {new_path}"
+
+
+def _planned_generated_file(
+    path: Path,
+    content: str,
+    *,
+    executable: bool = False,
+) -> tuple[Path, bytes, bool]:
+    """Return the safe target and bytes that init would write without mutating the repository."""
+    generated_content = _with_generated_marker(path, content)
+    target = path
+    if path.exists():
+        try:
+            existing_content = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            existing_content = ""
+        if not _is_generated_content(existing_content):
+            target = _collision_path(path)
+    return target, generated_content.encode("utf-8"), executable
 
 
 def _ensure_user_guidance_file(path: Path) -> str:
@@ -626,11 +652,13 @@ def _managed_project_workflow_block() -> str:
         "promoted into task or epic execution state. Promoted rows stay in the backlog; "
         "active execution status belongs in trackers and task/epic docs.\n"
         "- Read task ID namespace and generation config from `.project-workflow/config.json`.\n"
-        f"- To install or refresh project-workflow itself, run `{CANONICAL_INIT_COMMAND}` "
-        "from the repository root; add `--agent codex`, `--agent cursor`, "
-        "`--agent claude-code`, or `--agent github-copilot` when selecting a mode. "
-        "Do not use bare `project init` unless the package is intentionally installed "
-        "and known to be current.\n"
+        f"- To initialize a new repository, run `{CANONICAL_INIT_COMMAND}` from the repository "
+        "root with `--agent codex`, `--agent cursor`, `--agent claude-code`, or "
+        "`--agent github-copilot`.\n"
+        f"- To upgrade an existing repository, run `{CANONICAL_UPGRADE_COMMAND}` with its "
+        "agent mode. Authorized non-interactive agents add `--yes`; human invocation confirms "
+        "before upgrade applies managed assets plus repository schema together. Do not run init "
+        "first.\n"
         "- Use `./.project-workflow/cli/workflow` for supported backlog, Fix, task, epic, "
         "and validation commands.\n"
         "- Route one bounded post-completion correction to a Fix, new outcomes or multiple "
@@ -657,10 +685,10 @@ def _managed_project_workflow_block() -> str:
         "`EVIDENCE.json`; QA prose, tests, builds, or surrogate artifacts are invalid substitutes.\n"
         "- Use `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` "
         "for tracker lifecycle changes.\n"
-        "- Keep version command ownership explicit: init refreshes managed assets, Doctor "
-        "diagnoses without mutation, and upgrade transforms repository schema. Review "
-        "`upgrade` first; apply only with `--apply --plan-fingerprint <SHA256>` in a clean "
-        "worktree.\n"
+        "- Keep version command ownership explicit: init creates a new installation, Doctor "
+        "diagnoses without mutation, and canonical UVX upgrade refreshes managed assets and "
+        "transforms repository schema in one reviewed transaction. Use `upgrade --plan` and "
+        "fingerprinted apply for automation.\n"
         "- Run `./.project-workflow/cli/workflow doctor` after tracker or task-doc changes.\n"
         f"{MANAGED_BLOCK_END}"
     )
@@ -692,6 +720,27 @@ def _ensure_managed_block(path: Path, block: str) -> str:
         separator = "\n"
     path.write_text(f"{content}{separator}{block}\n", encoding="utf-8")
     return f"Appended managed block: {path}"
+
+
+def _planned_managed_block(path: Path, block: str) -> bytes:
+    """Return the host-file bytes that managed-block refresh would produce."""
+    if not path.exists():
+        return f"{block}\n".encode("utf-8")
+
+    content = path.read_text(encoding="utf-8")
+    pattern = re.compile(
+        rf"^{re.escape(MANAGED_BLOCK_START)}\n.*?^{re.escape(MANAGED_BLOCK_END)}$",
+        flags=re.DOTALL | re.MULTILINE,
+    )
+    if pattern.search(content):
+        return pattern.sub(block, content).encode("utf-8")
+
+    separator = "\n\n"
+    if content.endswith("\n\n"):
+        separator = ""
+    elif content.endswith("\n"):
+        separator = "\n"
+    return f"{content}{separator}{block}\n".encode("utf-8")
 
 
 def _remove_retired_project_workflow_path(path: Path) -> None:
@@ -1211,6 +1260,184 @@ def _upgrade_owner_decisions(root: Path) -> list[dict[str, object]]:
     return decisions
 
 
+def _managed_asset_upgrade_outputs(
+    root: Path,
+    selected_agent: str,
+) -> tuple[dict[str, bytes | None], tuple[str, ...]]:
+    """Plan the exact managed-asset refresh that init previously performed."""
+    outputs: dict[str, bytes | None] = {}
+    executable_files: set[str] = set()
+
+    def require_safe_target(path: Path, *, allow_directory: bool = False) -> None:
+        relative = path.relative_to(root)
+        current = root
+        for part in relative.parts[:-1]:
+            current /= part
+            if current.is_symlink() or (current.exists() and not current.is_dir()):
+                raise UpgradeApplyFailure(
+                    "PW_UPGRADE_MANAGED_ASSET_INVALID_TARGET",
+                    f"Managed asset target has an unsafe parent: {relative.as_posix()}.",
+                )
+        if path.is_symlink() or (
+            path.exists()
+            and not path.is_file()
+            and not (allow_directory and path.is_dir())
+        ):
+            raise UpgradeApplyFailure(
+                "PW_UPGRADE_MANAGED_ASSET_INVALID_TARGET",
+                f"Managed asset target must be a regular file or absent: {relative.as_posix()}.",
+            )
+
+    def record(path: Path, content: bytes, *, executable: bool = False) -> None:
+        require_safe_target(path)
+        relative = path.relative_to(root).as_posix()
+        existing = path.read_bytes() if path.exists() else None
+        if existing != content:
+            outputs[relative] = content
+        if executable and (
+            not path.exists() or not path.is_file() or not (path.stat().st_mode & 0o111)
+        ):
+            executable_files.add(relative)
+            outputs.setdefault(relative, content)
+
+    def record_generated(
+        relative_path: str,
+        resource_path: str,
+        *,
+        executable: bool = False,
+        transform: object | None = None,
+    ) -> None:
+        path = root / relative_path
+        require_safe_target(path)
+        try:
+            content = _get_package_resource(resource_path)
+        except SystemExit as exc:
+            raise UpgradeApplyFailure(
+                "PW_UPGRADE_PACKAGE_RESOURCE_UNAVAILABLE",
+                "Managed asset resources are unavailable in this local helper. Run: "
+                f"{CANONICAL_UPGRADE_COMMAND} --agent {selected_agent}.",
+            ) from exc
+        if callable(transform):
+            content = transform(content)
+        target, generated_bytes, target_executable = _planned_generated_file(
+            path,
+            content,
+            executable=executable,
+        )
+        require_safe_target(target)
+        record(target, generated_bytes, executable=target_executable)
+
+    def record_retired(path: Path) -> None:
+        require_safe_target(path, allow_directory=True)
+        if path.is_dir():
+            for child in sorted(path.rglob("*")):
+                if child.is_file() or child.is_symlink():
+                    outputs[child.relative_to(root).as_posix()] = None
+        elif path.exists() or path.is_symlink():
+            outputs[path.relative_to(root).as_posix()] = None
+
+    workflow_dir = root / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+    backlog_path = workflow_dir / "BACKLOG.md"
+    guidance_path = workflow_dir / "guidance.md"
+    config_path = workflow_dir / WORKFLOW_CONFIG_FILENAME
+    manifest_path = workflow_dir / WORKFLOW_MANIFEST_FILENAME
+
+    if not tracker_path.exists():
+        record(tracker_path, _tracker_template().encode("utf-8"))
+    if not backlog_path.exists():
+        record(backlog_path, _backlog_template().encode("utf-8"))
+    if not guidance_path.exists():
+        record(
+            guidance_path,
+            (
+                "# Project Workflow Guidance\n\n"
+                "Use this file for repo-specific workflow guidance that should survive "
+                "project-workflow upgrades.\n\n"
+                "Add local conventions, validation commands, safety constraints, handoff "
+                "rules, and agent notes here.\n"
+            ).encode("utf-8"),
+        )
+    if not config_path.exists():
+        record(config_path, _default_workflow_config_text().encode("utf-8"))
+
+    record_generated(
+        ".project-workflow/cli/workflow.py",
+        "templates/workflow.py",
+    )
+    record_generated(
+        ".project-workflow/cli/workflow",
+        "templates/workflow",
+        executable=True,
+    )
+
+    managed_block = _managed_project_workflow_block()
+    if selected_agent == "claude-code":
+        for prompt_file in PROMPT_FILES:
+            agent_name = _prompt_filename_to_claude_agent_name(prompt_file)
+            record_generated(
+                f".claude/agents/{agent_name}.md",
+                f"prompts/{prompt_file}",
+                transform=lambda content, name=agent_name: _to_claude_agent_markdown(
+                    content, name
+                ),
+            )
+        record_retired(root / ".claude" / "agents" / "project-scaffold.md")
+    elif selected_agent == "codex":
+        agents_path = root / "AGENTS.md"
+        require_safe_target(agents_path)
+        record(agents_path, _planned_managed_block(agents_path, managed_block))
+        for skill_name in CODEX_SKILL_NAMES:
+            record_generated(
+                f".agents/skills/{skill_name}/SKILL.md",
+                f"codex/skills/{skill_name}/SKILL.md",
+            )
+        record_retired(root / ".agents" / "skills" / "project-scaffold")
+    elif selected_agent == "cursor":
+        for prompt_file in PROMPT_FILES:
+            agent_name = _prompt_filename_to_cursor_agent_name(prompt_file)
+            record_generated(
+                f".cursor/agents/{agent_name}.md",
+                f"prompts/{prompt_file}",
+                transform=lambda content, name=agent_name: _to_cursor_agent_markdown(
+                    content, name
+                ),
+            )
+        record_retired(root / ".cursor" / "agents" / "project-scaffold.md")
+        record_generated(
+            ".cursor/rules/project-workflow.mdc",
+            "cursor/rules/project-workflow.mdc",
+        )
+    else:
+        copilot_path = root / ".github" / "copilot-instructions.md"
+        require_safe_target(copilot_path)
+        record(copilot_path, _planned_managed_block(copilot_path, managed_block))
+        for prompt_file in PROMPT_FILES:
+            record_generated(
+                f".github/prompts/{prompt_file}",
+                f"prompts/{prompt_file}",
+            )
+        record_retired(root / ".github" / "prompts" / "Scaffold.prompt.md")
+
+    compatibility = _repository_compatibility(root)
+    if compatibility.manifest is not None and compatibility.state in {"current", "upgradeable"}:
+        existing_manifest = compatibility.manifest
+        refreshed_manifest = WorkflowManifest(
+            manifest_version=existing_manifest.manifest_version,
+            package_version=CURRENT_PACKAGE_VERSION,
+            asset_version=CURRENT_ASSET_VERSION,
+            schema_version=existing_manifest.schema_version,
+            applied_migrations=existing_manifest.applied_migrations,
+        )
+        if refreshed_manifest != existing_manifest:
+            record(
+                manifest_path,
+                _serialize_workflow_manifest(refreshed_manifest).encode("utf-8"),
+            )
+
+    return outputs, tuple(sorted(executable_files))
+
+
 def _upgrade_plan_fingerprint(payload: dict[str, object]) -> str:
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -1328,6 +1555,86 @@ def _build_upgrade_plan(
     return {"plan_fingerprint": _upgrade_plan_fingerprint(payload), **payload}
 
 
+def _build_repository_upgrade_plan(root: Path, selected_agent: str) -> dict[str, object]:
+    """Build one deterministic plan for managed assets and durable schema state."""
+    schema_plan = _build_upgrade_plan(root, handlers=PRODUCTION_MIGRATION_HANDLERS)
+    blockers = list(schema_plan["blockers"])
+    asset_outputs: dict[str, bytes | None] = {}
+    executable_files: tuple[str, ...] = ()
+    if not blockers:
+        try:
+            asset_outputs, executable_files = _managed_asset_upgrade_outputs(
+                root, selected_agent
+            )
+        except UpgradeApplyFailure as failure:
+            blockers.append({"code": failure.code, "message": failure.message})
+
+    schema_targets = list(schema_plan["target_files"])
+    target_files = sorted(set(schema_targets) | set(asset_outputs))
+    preconditions: list[dict[str, object]] = [
+        {
+            "kind": "clean-worktree",
+            "artifact": ".",
+            "expected": "required-for-apply",
+        },
+        {
+            "kind": "repository-state",
+            "artifact": ".project-workflow/manifest.json",
+            "expected": schema_plan["repository_state"],
+        },
+    ]
+    preconditions.extend(
+        {
+            "kind": "file-hash",
+            "artifact": target,
+            "expected": _upgrade_file_hash(root, target),
+        }
+        for target in target_files
+    )
+    payload: dict[str, object] = {
+        "schema_version": schema_plan["schema_version"],
+        "repository_state": schema_plan["repository_state"],
+        "repository_reason": schema_plan["repository_reason"],
+        "agent": selected_agent,
+        "source": schema_plan["source"],
+        "target": schema_plan["target"],
+        "steps": schema_plan["steps"],
+        "asset_changes": sorted(asset_outputs),
+        "target_files": target_files,
+        "executable_files": list(executable_files),
+        "preconditions": preconditions,
+        "blockers": blockers,
+        "owner_decisions": schema_plan["owner_decisions"],
+        "expected_outputs": [],
+    }
+    if target_files and not blockers:
+        try:
+            outputs = _compute_upgrade_outputs(
+                root,
+                payload,
+                PRODUCTION_MIGRATION_HANDLERS,
+                initial_outputs=asset_outputs,
+            )
+        except UpgradeApplyFailure as failure:
+            payload["blockers"] = [
+                {
+                    "code": "PW_UPGRADE_HANDLER_INVALID",
+                    "message": failure.message,
+                }
+            ]
+        else:
+            payload["expected_outputs"] = [
+                {
+                    "artifact": target,
+                    "expected": ABSENT_FILE_HASH
+                    if outputs[target] is None
+                    else "sha256:" + hashlib.sha256(outputs[target]).hexdigest(),
+                }
+                for target in target_files
+            ]
+    return {"plan_fingerprint": _upgrade_plan_fingerprint(payload), **payload}
+
+
 def _format_upgrade_plan_human(plan: dict[str, object]) -> str:
     source = plan["source"]
     target = plan["target"]
@@ -1341,6 +1648,8 @@ def _format_upgrade_plan_human(plan: dict[str, object]) -> str:
         f"target versions: package={target['package']} asset={target['asset']} "
         f"schema={target['schema']}",
     ]
+    if plan.get("agent"):
+        lines.append(f"agent mode: {plan['agent']}")
     steps = plan["steps"]
     blockers = plan["blockers"]
     owner_decisions = plan["owner_decisions"]
@@ -1356,6 +1665,12 @@ def _format_upgrade_plan_human(plan: dict[str, object]) -> str:
             )
     else:
         lines.append("migrations: none")
+    asset_changes = plan.get("asset_changes", [])
+    if asset_changes:
+        lines.append("managed asset changes:")
+        lines.extend(f"- {artifact}" for artifact in asset_changes)
+    else:
+        lines.append("managed asset changes: none")
     expected_outputs = plan.get("expected_outputs", [])
     if expected_outputs:
         lines.append("expected outputs:")
@@ -1432,6 +1747,8 @@ def _compute_upgrade_outputs(
     root: Path,
     plan: dict[str, object],
     handlers: dict[str, object],
+    *,
+    initial_outputs: dict[str, bytes | None] | None = None,
 ) -> dict[str, bytes | None]:
     target_files = plan["target_files"]
     assert isinstance(target_files, list)
@@ -1440,6 +1757,13 @@ def _compute_upgrade_outputs(
     for target in target_files:
         path = root / target
         outputs[target] = path.read_bytes() if path.exists() else None
+    if initial_outputs:
+        if not set(initial_outputs).issubset(declared_targets):
+            raise UpgradeApplyFailure(
+                "PW_UPGRADE_APPLY_HANDLER_INVALID",
+                "Managed asset planning returned an undeclared target.",
+            )
+        outputs.update(initial_outputs)
 
     for step in plan["steps"]:
         migration_id = step["migration_id"]
@@ -1519,21 +1843,31 @@ def _apply_upgrade_outputs(
     root: Path,
     outputs: dict[str, bytes | None],
     *,
+    executable_files: tuple[str, ...] = (),
     fail_after_replacements: int | None = None,
 ) -> list[str]:
     originals: dict[str, bytes | None] = {}
+    original_modes: dict[str, int | None] = {}
     changed_files: list[str] = []
     for target, content in outputs.items():
         path = root / target
         originals[target] = path.read_bytes() if path.exists() else None
-        if originals[target] != content:
+        original_modes[target] = path.stat().st_mode & 0o777 if path.exists() else None
+        executable_change = target in executable_files and (
+            original_modes[target] is None or not (original_modes[target] & 0o111)
+        )
+        if originals[target] != content or executable_change:
             changed_files.append(target)
     replaced: list[str] = []
     try:
         if fail_after_replacements == 0:
             raise OSError("injected replacement failure")
         for target in changed_files:
-            _atomic_replace_target(root / target, outputs[target])
+            path = root / target
+            if originals[target] != outputs[target]:
+                _atomic_replace_target(path, outputs[target])
+            if target in executable_files and path.exists():
+                path.chmod(0o755)
             replaced.append(target)
             if fail_after_replacements == len(replaced):
                 raise OSError("injected replacement failure")
@@ -1542,6 +1876,9 @@ def _apply_upgrade_outputs(
         for target in reversed(replaced):
             try:
                 _atomic_replace_target(root / target, originals[target])
+                original_mode = original_modes[target]
+                if original_mode is not None and (root / target).exists():
+                    (root / target).chmod(original_mode)
             except OSError:
                 rollback_errors.append(target)
         detail = f" Failed to restore: {', '.join(rollback_errors)}." if rollback_errors else ""
@@ -1619,6 +1956,76 @@ def _apply_upgrade_plan(
         return _upgrade_apply_result(plan=plan, status="failed", failure=failure)
 
 
+def _apply_repository_upgrade_plan(
+    root: Path,
+    selected_agent: str,
+    supplied_fingerprint: str,
+    *,
+    fail_after_replacements: int | None = None,
+) -> dict[str, object]:
+    """Apply the combined managed-asset and schema plan as one transaction."""
+    plan = _build_repository_upgrade_plan(root, selected_agent)
+    try:
+        _validate_upgrade_apply_plan(root, plan, supplied_fingerprint)
+        _require_clean_git_worktree(root)
+        if not plan["target_files"]:
+            result = _upgrade_apply_result(plan=plan, status="noop")
+        else:
+            asset_outputs, executable_files = _managed_asset_upgrade_outputs(
+                root, selected_agent
+            )
+            outputs = _compute_upgrade_outputs(
+                root,
+                plan,
+                PRODUCTION_MIGRATION_HANDLERS,
+                initial_outputs=asset_outputs,
+            )
+            actual_outputs = [
+                {
+                    "artifact": target,
+                    "expected": ABSENT_FILE_HASH
+                    if outputs[target] is None
+                    else "sha256:" + hashlib.sha256(outputs[target]).hexdigest(),
+                }
+                for target in plan["target_files"]
+            ]
+            if actual_outputs != plan["expected_outputs"]:
+                raise UpgradeApplyFailure(
+                    "PW_UPGRADE_APPLY_STALE_PLAN",
+                    "Computed managed-asset or migration outputs do not match the reviewed plan.",
+                )
+            if list(executable_files) != plan["executable_files"]:
+                raise UpgradeApplyFailure(
+                    "PW_UPGRADE_APPLY_STALE_PLAN",
+                    "Computed executable targets do not match the reviewed plan.",
+                )
+            _validate_upgrade_apply_plan(root, plan, supplied_fingerprint)
+            _require_clean_git_worktree(root)
+            changed_files = _apply_upgrade_outputs(
+                root,
+                outputs,
+                executable_files=executable_files,
+                fail_after_replacements=fail_after_replacements,
+            )
+            result = _upgrade_apply_result(
+                plan=plan,
+                status="applied",
+                changed_files=changed_files,
+            )
+        post_compatibility = _repository_compatibility(root)
+        post_issues = run_doctor(root)
+        result["post_upgrade"] = {
+            "repository_state": post_compatibility.state,
+            "finding_count": len(post_issues),
+            "owner_finding_count": sum(
+                issue.remediation_owner == "owner" for issue in post_issues
+            ),
+        }
+        return result
+    except UpgradeApplyFailure as failure:
+        return _upgrade_apply_result(plan=plan, status="failed", failure=failure)
+
+
 def _format_upgrade_apply_human(result: dict[str, object]) -> str:
     lines = [
         f"project upgrade apply: {result['status']}",
@@ -1632,15 +2039,34 @@ def _format_upgrade_apply_human(result: dict[str, object]) -> str:
         lines.append("no changes required")
     if result["failure"]:
         lines.append(f"failure: {result['failure']['code']}: {result['failure']['message']}")
+    post_upgrade = result.get("post_upgrade")
+    if post_upgrade:
+        lines.append(
+            "post-upgrade validation: "
+            f"{post_upgrade['repository_state']}; "
+            f"{post_upgrade['finding_count']} finding(s), "
+            f"{post_upgrade['owner_finding_count']} owner-owned"
+        )
     return "\n".join(lines)
 
 
 def cmd_upgrade(args: argparse.Namespace) -> None:
     root = Path(args.root).resolve() if args.root else Path.cwd()
+    selected_agent = args.agent
+    if args.plan and (args.apply or args.yes):
+        raise SystemExit("--plan cannot be combined with --apply or --yes.")
+    if args.apply and args.yes:
+        raise SystemExit("--apply and --yes are separate upgrade modes.")
+    if args.plan_fingerprint and not args.apply:
+        raise SystemExit("--plan-fingerprint requires --apply.")
     if args.apply:
         if not args.plan_fingerprint:
             raise SystemExit("--apply requires --plan-fingerprint <SHA256>.")
-        result = _apply_upgrade_plan(root, args.plan_fingerprint)
+        result = _apply_repository_upgrade_plan(
+            root,
+            selected_agent,
+            args.plan_fingerprint,
+        )
         if args.format == "json":
             print(json.dumps(result, indent=2))
         else:
@@ -1648,12 +2074,55 @@ def cmd_upgrade(args: argparse.Namespace) -> None:
         if result["status"] == "failed":
             raise SystemExit(1)
         return
-    plan = _build_upgrade_plan(root, handlers=PRODUCTION_MIGRATION_HANDLERS)
-    if args.format == "json":
-        print(json.dumps(plan, indent=2))
-    else:
+    plan = _build_repository_upgrade_plan(root, selected_agent)
+    plan_only = args.plan or (args.format == "json" and not args.yes)
+    if plan_only:
+        if args.format == "json":
+            print(json.dumps(plan, indent=2))
+        else:
+            print(_format_upgrade_plan_human(plan))
+        if plan["blockers"]:
+            raise SystemExit(1)
+        return
+
+    if args.format == "human":
         print(_format_upgrade_plan_human(plan))
     if plan["blockers"]:
+        raise SystemExit(1)
+    if not plan["target_files"]:
+        result = _apply_repository_upgrade_plan(
+            root,
+            selected_agent,
+            plan["plan_fingerprint"],
+        )
+        if args.format == "json":
+            print(json.dumps(result, indent=2))
+        else:
+            print(_format_upgrade_apply_human(result))
+        return
+
+    confirmed = args.yes
+    if not confirmed:
+        if not os.isatty(0):
+            raise SystemExit(
+                "Non-interactive upgrade requires --yes, or use --plan for a non-mutating plan."
+            )
+        response = input("Apply this exact upgrade plan? [y/N] ").strip().lower()
+        confirmed = response in {"y", "yes"}
+    if not confirmed:
+        print("project upgrade: cancelled; no changes applied")
+        return
+
+    result = _apply_repository_upgrade_plan(
+        root,
+        selected_agent,
+        plan["plan_fingerprint"],
+    )
+    if args.format == "json":
+        print(json.dumps(result, indent=2))
+    else:
+        print(_format_upgrade_apply_human(result))
+    if result["status"] == "failed":
         raise SystemExit(1)
 
 
@@ -6615,6 +7084,16 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     managed_block = _managed_project_workflow_block()
 
     print(f"Selected agent mode: {selected_agent_label} ({selected_agent})")
+    if initial_compatibility.state != "not-initialized":
+        print(
+            f"Project workflow is already initialized ({initial_compatibility.state}); "
+            "init made no changes."
+        )
+        print(
+            "Upgrade the existing repository with: "
+            f"{CANONICAL_UPGRADE_COMMAND} --agent {selected_agent}"
+        )
+        return
 
     # Create .project-workflow structure
     project_workflow_dir = cwd / ".project-workflow"
@@ -6722,39 +7201,12 @@ def cmd_project_init(args: argparse.Namespace) -> None:
 
         _remove_retired_project_workflow_path(prompts_dir / "Scaffold.prompt.md")
 
-    if initial_compatibility.state == "not-initialized":
-        _write_workflow_manifest(manifest_path, _current_workflow_manifest())
-        print(f"✓ Created: {manifest_path}")
-    elif initial_compatibility.manifest is not None and initial_compatibility.state in {
-        "current",
-        "upgradeable",
-    }:
-        existing_manifest = initial_compatibility.manifest
-        refreshed_manifest = WorkflowManifest(
-            manifest_version=existing_manifest.manifest_version,
-            package_version=CURRENT_PACKAGE_VERSION,
-            asset_version=CURRENT_ASSET_VERSION,
-            schema_version=existing_manifest.schema_version,
-            applied_migrations=existing_manifest.applied_migrations,
-        )
-        if refreshed_manifest != existing_manifest:
-            _write_workflow_manifest(manifest_path, refreshed_manifest)
-            print(f"✓ Refreshed managed version metadata: {manifest_path}")
+    _write_workflow_manifest(manifest_path, _current_workflow_manifest())
+    print(f"✓ Created: {manifest_path}")
 
     resulting_compatibility = _repository_compatibility(cwd)
     print(f"Repository state before init: {initial_compatibility.state}")
     print(f"Repository state after init: {resulting_compatibility.state}")
-    if initial_compatibility.state == "legacy-unversioned" or (
-        resulting_compatibility.state == "upgradeable"
-        and resulting_compatibility.reason in {"schema-behind", "assets-and-schema-behind"}
-    ):
-        print("Repository schema was not migrated; run `project upgrade` to review the plan.")
-    elif initial_compatibility.state in {"invalid", "unsupported-future"}:
-        print(
-            "Repository manifest was not changed because its state is unsupported; "
-            "resolve the reported version state before upgrading."
-        )
-
     print(f"\n✅ Project workflow initialized in {cwd}")
     print(f"   Agent mode applied: {selected_agent_label}")
     print(f"\nNext steps:")
@@ -7915,12 +8367,24 @@ def build_parser() -> argparse.ArgumentParser:
 
     upgrade_parser = subparsers.add_parser(
         "upgrade",
-        help="Plan a deterministic project-workflow repository upgrade",
-        description="Plan a deterministic repository upgrade without changing files.",
+        help="Upgrade managed assets and repository schema with one reviewed transaction",
+        description=(
+            "Plan, confirm, apply, and validate one managed-asset and repository-schema upgrade."
+        ),
     )
     upgrade_parser.add_argument(
         "--root",
         help="Repository root to inspect (default: current directory)",
+    )
+    upgrade_parser.add_argument(
+        "--agent",
+        type=_normalize_agent,
+        default="github-copilot",
+        metavar="AGENT",
+        help=(
+            "Target agent ecosystem: github-copilot (default), claude-code, codex, or cursor. "
+            "Aliases accepted: copilot, claude, codex, cursor."
+        ),
     )
     upgrade_parser.add_argument(
         "--format",
@@ -7929,9 +8393,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output format (default: human)",
     )
     upgrade_parser.add_argument(
+        "--plan",
+        action="store_true",
+        help="Print the complete non-mutating upgrade plan and exit",
+    )
+    upgrade_parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Apply the generated plan without interactive confirmation",
+    )
+    upgrade_parser.add_argument(
         "--apply",
         action="store_true",
-        help="Apply the exact fresh plan (requires --plan-fingerprint)",
+        help="Automation mode: apply an exact prior plan (requires --plan-fingerprint)",
     )
     upgrade_parser.add_argument(
         "--plan-fingerprint",

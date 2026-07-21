@@ -23,9 +23,9 @@
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -61,7 +61,7 @@
 ### Parent AC Proof Ownership
 
 - AC2: owner `Add Structured Doctor Findings, Align Documentation And Generated Agent Assets`; required evidence: Tests and captured output proving stable finding codes and equivalent human/machine-readable fields.
-- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: Legacy/current init fixtures proving managed refresh and honest schema/upgrade direction without repository-state mutation.
+- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: New/existing init fixtures proving init-only creation and no-mutation upgrade direction, plus canonical upgrade asset refresh.
 - AC8: owner `Add Structured Doctor Findings, Build Deterministic Upgrade Planner, Build Safe Transactional Upgrade Apply`; required evidence: Fixtures proving owner-owned approval/evidence/decision gaps remain visible and unchanged after plan/apply.
 
 ## Goal
@@ -70,7 +70,7 @@ Make Doctor findings deterministic and consumable by humans, agents, and CI with
 
 ## Non-Goals
 
-- Adding repository-version findings before init writes and refreshes manifests; TASK-044 owns that integration.
+- Adding repository-version findings before command integration; TASK-044 owns init state handling and upgrade direction.
 - Implementing upgrade plans, migrations, or repair behavior.
 - Changing current validation rules, accepted-warning identities, strict-mode semantics, or exit codes.
 - Automatically resolving missing approvals, stale evidence, deferrals, or owner decisions.
@@ -100,7 +100,7 @@ Make Doctor findings deterministic and consumable by humans, agents, and CI with
 - AC1: Covers parent AC AC2: every Doctor finding exposes a stable code, severity, affected artifact, remediation owner, mechanical-upgrade eligibility, message, and fingerprint.
 - AC2: Covers parent AC AC2: `doctor --format json` emits a versioned deterministic envelope whose status, counts, accepted state, and blocking findings match human output and exit behavior for clean, warning, strict, error, legacy, and accepted-warning fixtures.
 - AC3: Covers parent AC AC8: missing approvals, stale or missing evidence, incomplete deferrals, and unresolved owner decisions are labeled `owner`, remain visible unless explicitly accepted under existing rules, and are never mechanically upgradeable.
-- AC4: Covers parent AC AC5: managed generated-asset drift is distinguishable from owner-owned repository state and can be labeled project-workflow-owned without claiming that init upgraded durable schema state.
+- AC4: Covers parent AC AC5: managed generated-asset drift is distinguishable from owner-owned repository state and can be labeled project-workflow-owned without claiming that Doctor mutates repository state.
 - AC5: Covers parent ACs AC2, AC5, AC8: existing human-output assertions, accepted-warning fingerprints, strict behavior, and exit codes remain backward-compatible.
 - AC6: Covers parent AC AC2: source, packaged template, and local generated helper remain behaviorally aligned, and targeted tests plus the full suite and strict Doctor pass.
 
@@ -115,7 +115,7 @@ Make Doctor findings deterministic and consumable by humans, agents, and CI with
 - Use remediation owners `project-workflow`, `agent`, and `owner`.
 - Include accepted findings in JSON with `accepted: true` even when human output hides them, so machine output is complete and auditable.
 - Derive both renderers from one evaluation result containing visible, accepted, blocking, current, and legacy finding partitions.
-- Keep repository compatibility classification available but defer Doctor integration until TASK-044 establishes init manifest behavior.
+- Keep repository compatibility classification available but defer Doctor integration until TASK-044 establishes init state behavior and upgrade direction.
 
 ## Validation Plan
 

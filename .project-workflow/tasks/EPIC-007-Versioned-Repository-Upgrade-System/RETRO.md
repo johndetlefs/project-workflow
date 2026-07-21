@@ -7,7 +7,8 @@
 ## Lessons
 
 - Repository compatibility needs separate package, generated-asset, and durable schema versions; a single package version cannot describe whether a repository is current.
-- `init`, `doctor`, and `upgrade` need distinct ownership boundaries: refresh managed assets, diagnose state, and transform durable state respectively.
+- Public command ownership must match user intent: `init` creates, `doctor` diagnoses, and canonical `upgrade` refreshes managed assets plus durable schema in one reviewed transaction.
+- Internal asset and schema boundaries are valuable for versioning and tests, but they must not become mandatory user choreography.
 - A safe apply contract must bind both expected inputs and predicted outputs to the reviewed plan fingerprint, then recheck repository state immediately before writing.
 - The first legacy migration is strongest when it changes only the new managed manifest and proves all pre-existing workflow and user-owned content remains byte-for-byte unchanged.
 - Epic proof-owner contracts must identify owners by stable work-item ID. Human-readable titles alone cannot satisfy machine-enforced ownership.

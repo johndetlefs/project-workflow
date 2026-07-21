@@ -10,9 +10,9 @@ As a maintainer or automation system, I want to apply only the exact fresh upgra
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -92,6 +92,7 @@ As a maintainer or automation system, I want to apply only the exact fresh upgra
 
 - Verdict: Pass; completed under autonomous Epic continuation authority.
 - Evidence: Eight focused apply tests and 21 combined planner/apply tests passed; full suite passed with 115 tests and 1 existing skip; compilation, source/template/local parity, generated helper refresh, and strict Doctor passed.
+- Pre-merge correction evidence: Managed assets, executable permissions, and schema outputs now share the same fingerprint-bound transaction and rollback path; final suite result is 131 passed with 1 environment-gated UVX skip.
 - Findings: No blocking findings. Production handlers intentionally remain empty until TASK-045 supplies fixture-proven migrations. Rollback failures are surfaced explicitly rather than concealed.
 
 ## Retro

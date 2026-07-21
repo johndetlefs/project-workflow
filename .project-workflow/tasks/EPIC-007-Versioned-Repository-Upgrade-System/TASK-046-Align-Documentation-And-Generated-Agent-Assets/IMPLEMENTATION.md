@@ -10,9 +10,9 @@ As an owner or agent, I want one accurate upgrade operating guide, so that I can
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -49,14 +49,14 @@ As an owner or agent, I want one accurate upgrade operating guide, so that I can
 
 - AC2: owner `Add Structured Doctor Findings, Align Documentation And Generated Agent Assets`; required evidence: Tests and captured output proving stable finding codes and equivalent human/machine-readable fields.
 - AC3: owner `Build Deterministic Upgrade Planner, Add Historical Migration Registry And Fixtures`; required evidence: Before/after fixture hashes proving zero plan mutation plus complete ordered plan records for every supported source schema.
-- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: Legacy/current init fixtures proving managed refresh and honest schema/upgrade direction without repository-state mutation.
+- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: New/existing init fixtures proving init-only creation and no-mutation upgrade direction, plus canonical upgrade asset refresh.
 - AC9: owner `Add Historical Migration Registry And Fixtures, Align Documentation And Generated Agent Assets`; required evidence: Passing targeted and full-suite output, strict doctor, backlog validation, and packaged/generated parity evidence.
 
 ## Acceptance Criteria
 
-- [x] AC1: README contains complete runnable version-aware workflows and boundaries.
+- [x] AC1: README contains complete runnable new-init, one-command upgrade, and advanced automation workflows and boundaries.
 - [x] AC2: Compatibility policy and changelog match the delivered contract.
-- [x] AC3: Generated agent guidance consistently encodes init/Doctor/upgrade ownership and explicit apply.
+- [x] AC3: Generated agent guidance consistently encodes new-only init, optional Doctor, canonical UVX upgrade, `--yes`, and advanced fingerprinted apply.
 - [x] AC4: Documentation and complete validation gates pass.
 
 ## Validation
@@ -72,22 +72,22 @@ As an owner or agent, I want one accurate upgrade operating guide, so that I can
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ |
 | 1 | Update owner documentation | Align README, structure, health, and upgrade operating sequence. | AC1 | Follow every documented command path. | Done |
 | 2 | Align policy and changelog | Record support window, migration, safety, and limitations. | AC2 | Compare docs with constants and tests. | Done |
-| 3 | Align generated agent assets | Add command ownership and explicit apply safety to managed guidance surfaces. | AC3 | Search packaged and generated assets. | Done |
+| 3 | Align generated agent assets | Add command ownership and one-command upgrade safety to managed guidance surfaces. | AC3 | Search packaged and generated assets. | Done |
 | 4 | Validate documentation contract | Add assertions, refresh mirrors, and run complete gates. | AC4 | Run pytest, parity, compilation, strict Doctor. | Done |
 
 ## Parent AC Evidence
 
-- AC2, AC3, AC5, AC9: README, compatibility policy, changelog, managed instructions, Codex/Cursor guidance, and documentation contract tests align with the implemented human/JSON init, Doctor, plan, and explicit apply behavior.
+- AC2, AC3, AC5, AC9: README, compatibility policy, changelog, managed instructions, Codex/Cursor guidance, and documentation contract tests align with new-only init and one-command canonical UVX managed-asset/schema upgrade behavior.
 
 ## QA & Code Review
 
 - Verdict: Pass; completed under autonomous Epic continuation authority.
-- Evidence: Documentation contract test passed; the checked-in legacy fixture now executes the documented canonical init, clean refresh commit, human/JSON plan, fingerprinted local-helper apply, strict Doctor owner-finding preservation, and current-schema no-op sequence; full suite, generated refresh, source/template/local parity, backlog validation, compilation, and strict Doctor passed.
-- Findings: A pre-merge review found that the original README documented each command but left owners to infer the commit boundary between init refresh and upgrade apply. The existing-repository runbook and journey regression correct that gap. Release publishing/version increment remains outside EPIC-007 under BL-010.
+- Evidence: Documentation contract test passed; the checked-in legacy fixture now proves mistaken init is a byte-identical no-op and canonical package upgrade with `--yes` installs managed Codex assets, migrates schema, validates, preserves owner findings, and becomes a current no-op in one invocation; final suite passed with 131 tests and 1 environment-gated UVX skip, plus generated refresh, source/template/local parity, backlog validation, compilation, and strict Doctor.
+- Findings: A pre-merge review found that splitting managed-asset refresh into init made the public upgrade journey needlessly complex and allowed direct UVX schema upgrade to overstate asset currency. Canonical upgrade now owns both output sets in one deterministic transaction. Release publishing/version increment remains outside EPIC-007 under BL-010.
 
 ## Retro
 
-- Reusable lessons: Operational docs should organize commands by ownership and mutation boundary; human and machine workflows need the same fingerprint, blocker, and owner-decision vocabulary.
+- Reusable lessons: Internal ownership boundaries must not become mandatory user choreography; command names should match intent, while human and machine workflows can expose different review ergonomics over the same deterministic plan.
 - Conventions or agent assets updated: README, compatibility policy, changelog, managed AGENTS block, packaged Codex guidance, Cursor rule, CLI mirrors, and documentation assertions.
 - Follow-up tasks: BL-010 retains release/version hygiene; no additional EPIC-007 implementation follow-up identified.
 

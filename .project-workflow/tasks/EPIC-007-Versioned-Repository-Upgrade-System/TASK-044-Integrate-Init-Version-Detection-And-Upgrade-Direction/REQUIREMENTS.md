@@ -23,9 +23,9 @@
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -61,11 +61,11 @@
 ### Parent AC Proof Ownership
 
 - AC1: owner `Define Repository Version Manifest And Compatibility Policy, Add Historical Migration Registry And Fixtures`; required evidence: Fixture inspection showing explicit package/asset/schema versions and deterministic classification of pre-versioned state.
-- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: Legacy/current init fixtures proving managed refresh and honest schema/upgrade direction without repository-state mutation.
+- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: New/existing init fixtures proving init-only creation and no-mutation upgrade direction, plus canonical upgrade asset refresh.
 
 ## Goal
 
-Make canonical init and Doctor version-aware so managed asset refresh is honest about the repository schema it found and never masquerades as a durable repository upgrade.
+Make canonical init mean initialization only: create a current new installation, leave every existing repository unchanged, and direct it to canonical UVX upgrade.
 
 ## Non-Goals
 
@@ -77,31 +77,28 @@ Make canonical init and Doctor version-aware so managed asset refresh is honest 
 ## Users & Context
 
 - New repositories need a current manifest at first initialization.
-- Existing legacy repositories need managed helper refresh without being mislabeled current.
+- Existing legacy repositories need one current-package upgrade command without first mutating through init.
 - Versioned repositories may have current, behind, invalid, or future schema/asset state.
 - Humans and agents need the same explicit next action from init and structured Doctor findings.
 
 ## Requirements (Outcome-Focused)
 
-- Detect repository compatibility before init creates or refreshes any managed asset.
+- Detect repository compatibility before init creates any managed asset.
 - Fresh not-initialized repositories receive a deterministic current manifest after successful initialization.
-- Current repositories preserve schema and migration history while refreshing managed package/asset metadata when required.
-- Legacy-unversioned repositories remain manifest-free, preserve all durable state, and are directed to non-mutating `project upgrade` planning.
-- Schema-behind repositories preserve schema/applied migrations, refresh only managed assets, and are directed to upgrade.
-- Invalid and unsupported-future manifests are never rewritten and produce blocking guidance.
-- Init output names detected state, resulting asset/schema state, and the correct next command without claiming migration.
+- Current, legacy-unversioned, schema-behind, asset-behind, invalid, and unsupported-future repositories remain byte-identical when init is run.
+- Existing-repository init output names the detected state and exact canonical UVX upgrade command without creating or refreshing assets.
 - Doctor emits stable structured findings for not-initialized, legacy, schema-behind, asset-behind, invalid, and future state; current state emits none.
 - Repository compatibility findings use explicit remediation ownership and mechanical eligibility.
-- Preserve second-init idempotency and generated asset parity.
+- Preserve second-init no-op behavior and generated asset parity through upgrade.
 
 ## Acceptance Criteria (Verifiable)
 
 - AC1: Covers parent AC AC1: fresh init creates the exact current manifest and second init leaves it unchanged.
-- AC2: Covers parent AC AC5: legacy init refreshes managed assets but creates no manifest, mutates no durable/user-owned canary, and directs `project upgrade`.
-- AC3: Covers parent AC AC5: behind-schema init preserves schema/applied migrations, refreshes only package/asset metadata, and reports upgrade direction without claiming schema completion.
-- AC4: Covers parent ACs AC1, AC5: invalid/future manifests remain byte-identical and init reports a stable blocking state.
+- AC2: Covers parent AC AC5: legacy init changes no file, creates no manifest, and directs canonical UVX `project upgrade`.
+- AC3: Covers parent AC AC5: current and behind-schema init change no file or metadata and direct canonical upgrade.
+- AC4: Covers parent ACs AC1, AC5: invalid/future manifests and all neighboring assets remain byte-identical while init reports upgrade direction.
 - AC5: Covers parent AC AC5: Doctor human/JSON output provides stable version-state codes, owner, mechanical eligibility, artifact, and next-action message with unchanged strict exits.
-- AC6: Covers parent ACs AC1, AC5: current init/Doctor no-op behavior, full suite, generated parity, compilation, and strict Doctor pass.
+- AC6: Covers parent ACs AC1, AC5: current init no-op, canonical upgrade refresh, Doctor behavior, full suite, generated parity, compilation, and strict Doctor pass.
 
 ## Open Questions (Answer Needed)
 
@@ -112,7 +109,7 @@ Make canonical init and Doctor version-aware so managed asset refresh is honest 
 - Detect state before creating `.project-workflow/`; otherwise fresh and legacy state become indistinguishable.
 - Create a manifest only for genuinely fresh initialization.
 - Never create or normalize a legacy manifest during init; TASK-045 upgrade owns that transition.
-- Permit init to update only package/asset fields in an existing valid manifest while preserving schema and applied migrations.
+- Never update an existing valid manifest or generated asset through init; canonical upgrade owns all existing-repository changes.
 - Add explicit Doctor codes rather than deriving version findings from prose.
 - Treat legacy/schema-behind as project-workflow-owned and mechanically upgradeable; invalid/future state blocks and requires owner/maintainer resolution.
 
@@ -121,4 +118,4 @@ Make canonical init and Doctor version-aware so managed asset refresh is honest 
 - Fixture-test fresh, second-init, legacy, current, schema-behind, invalid, and future repositories.
 - Snapshot preservation canaries and manifest bytes before/after each init state.
 - Compare init output with Doctor human/JSON codes and remediation fields.
-- Run packaged/local init and Doctor, full pytest, parity, compilation, and strict Doctor.
+- Run packaged init, canonical upgrade, local Doctor, full pytest, parity, compilation, and strict Doctor.

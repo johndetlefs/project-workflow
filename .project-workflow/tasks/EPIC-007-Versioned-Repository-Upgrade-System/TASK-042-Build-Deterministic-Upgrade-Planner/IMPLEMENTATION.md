@@ -10,9 +10,9 @@ As a maintainer, agent, or CI system, I want an exact non-mutating upgrade plan,
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -90,6 +90,7 @@ As a maintainer, agent, or CI system, I want an exact non-mutating upgrade plan,
 
 - Verdict: Pass; completed under autonomous Epic continuation authority.
 - Evidence: Thirteen focused planner tests passed; full suite passed with 107 tests and 1 existing skip; live current-repository planning, generated local-helper invocation, Python compilation, source/template/local parity, and strict Doctor passed.
+- Pre-merge correction evidence: The repository plan now includes managed-asset targets and executable modes alongside schema steps; interactive, non-interactive, unsafe-target, historical-fixture, rollback, and documentation tests pass in the 131-test suite.
 - Findings: No blocking findings. Production migration registry intentionally remains empty until TASK-045 provides fixture-backed migrations, so unversioned legacy planning blocks honestly rather than guessing.
 
 ## Retro

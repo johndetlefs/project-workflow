@@ -70,6 +70,6 @@ Project Workflow is owner-directed and agent-operated. The owner supplies produc
 
 - Run `.project-workflow/cli/workflow doctor` when workflow state is uncertain or before continuing after tracker/task doc edits.
 - Use `.project-workflow/cli/workflow doctor --strict` when safety warnings should block autonomous work.
-- Keep command ownership explicit: init refreshes managed assets, Doctor diagnoses without mutation, and upgrade transforms repository schema. Review `upgrade` first; apply only with `--apply --plan-fingerprint <SHA256>` in a clean worktree.
+- Keep command ownership explicit: init creates a new installation, Doctor diagnoses without mutation, and canonical UVX upgrade plans and applies managed assets and repository schema together. Existing repositories must not run init first. Use `--yes` for authorized one-command agent operation or `--plan` plus `--apply --plan-fingerprint <SHA256>` for separate automation review.
 - Run the most relevant available tests, type checks, linters, or manual verification steps for the changed work.
 - If broad validation fails for unrelated pre-existing reasons, run the narrowest meaningful checks and report the limitation.

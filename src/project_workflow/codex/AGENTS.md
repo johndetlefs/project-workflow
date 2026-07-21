@@ -34,13 +34,19 @@ cases require one focused question. Do not reopen or rewrite completed work by d
 
 For epic-managed work, preserve parent epic acceptance criteria coverage from the epic tracker through child requirements, child implementation, QA evidence, and closeout. New epic trackers use a `Parent ACs` field; legacy trackers may carry coverage in `Notes` as `Covers AC1, AC3`. The global tracker summarizes epic rows; epic `TRACKER.md` files own child rows, including Proposed rows.
 
-When a user asks to install, update, refresh, reinstall, or align project-workflow in a repository, run the canonical UVX command from that repository root:
+When a user asks to initialize project-workflow in a new repository, run the canonical UVX init command from that repository root:
 
 ```bash
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
 ```
 
-Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github-copilot` when the target agent mode is known. Do not run bare `project init` unless the user explicitly says the package is already installed locally and should be used.
+When a user asks to update, refresh, reinstall, align, or upgrade an existing repository, use canonical UVX upgrade instead; do not run init first:
+
+```bash
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project upgrade
+```
+
+Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github-copilot` for the target mode. Canonical UVX upgrade obtains current software and plans managed assets and repository schema together. Use `--yes` for an authorized non-interactive one-command apply, or `--plan --format json` followed by `--apply --plan-fingerprint <SHA256>` when automation requires separate review.
 
 ## Workflow Skill Map
 
@@ -120,6 +126,6 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 
 - Run `.project-workflow/cli/workflow doctor` when workflow state is uncertain or before continuing after tracker/task doc edits.
 - Use `.project-workflow/cli/workflow doctor --strict` when safety warnings should block autonomous work.
-- Keep command ownership explicit: init refreshes managed assets, Doctor diagnoses without mutation, and upgrade transforms repository schema. Review `upgrade` first; apply only with `--apply --plan-fingerprint <SHA256>` in a clean worktree.
+- Keep command ownership explicit: init creates a new installation, Doctor diagnoses without mutation, and canonical UVX upgrade plans and applies managed assets and repository schema together. Existing repositories must not run init first. Use `--yes` for authorized one-command agent operation or `--plan` plus `--apply --plan-fingerprint <SHA256>` for separate automation review.
 - Run the most relevant available tests, type checks, linters, or manual verification steps for the changed work.
 - If broad validation fails for unrelated pre-existing reasons, run the narrowest meaningful checks and report the limitation.

@@ -8,8 +8,8 @@ All notable changes to this project are documented in this file.
 
 - Added explicit package, generated-asset, and repository-schema metadata in `.project-workflow/manifest.json`.
 - Added stable structured Doctor finding codes, remediation ownership, mechanical eligibility, and `doctor --format json`.
-- Added deterministic non-mutating `project upgrade` human/JSON plans with input and predicted-output hashes.
-- Added explicit fingerprint-bound transactional `project upgrade --apply`, clean-worktree and stale-plan rejection, rollback, and idempotent no-op behavior.
+- Added canonical UVX `project upgrade` as the single existing-repository entry point, combining managed-asset refresh, repository-schema migration, confirmation, apply, and post-upgrade validation.
+- Added deterministic non-mutating `project upgrade --plan` human/JSON output plus explicit fingerprint-bound automation apply, clean-worktree and stale-plan rejection, rollback, and idempotent no-op behavior.
 - Added immutable production migration `PW-0001-legacy-manifest` and checked-in historical preservation fixtures.
 - Added configurable sequential or unique workflow ID generation for tasks, epics, and backlog rows.
 - Added 5-character uppercase base36 unique IDs with local collision checks across trackers, backlog rows, and task folders.
@@ -17,7 +17,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
-- Made init version-aware: fresh repositories receive a current manifest, legacy repositories remain unmigrated and receive upgrade direction, and invalid/future manifests are preserved.
+- Restricted init to genuinely new repositories. Existing, legacy, invalid, and future repositories remain unchanged and receive the canonical upgrade command.
 - Updated workflow validation, generated agent guidance, and README documentation to support configured unique IDs and accepted doctor warnings.
 
 ## 0.1.2 - 2026-06-04

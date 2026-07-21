@@ -23,9 +23,9 @@
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -61,7 +61,7 @@
 ### Parent AC Proof Ownership
 
 - AC1: owner `Define Repository Version Manifest And Compatibility Policy, Add Historical Migration Registry And Fixtures`; required evidence: Fixture inspection showing explicit package/asset/schema versions and deterministic classification of pre-versioned state.
-- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: Legacy/current init fixtures proving managed refresh and honest schema/upgrade direction without repository-state mutation.
+- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: New/existing init fixtures proving init-only creation and no-mutation upgrade direction, plus canonical upgrade asset refresh.
 - AC7: owner `Build Safe Transactional Upgrade Apply, Add Historical Migration Registry And Fixtures`; required evidence: Preservation-canary diffs across tracker, docs, backlog, guidance, config, approvals, deferrals, evidence, and unmarked content.
 
 ## Goal
@@ -103,7 +103,7 @@ Define one explicit, machine-readable repository version contract so project-wor
 - AC3: Covers parent AC AC1: valid manifests are deterministically classified as `current`, `upgradeable`, or `unsupported-future`; malformed manifests are `invalid` with a stable reason and are never treated as current.
 - AC4: Covers parent AC AC1: the compatibility policy explicitly retains the legacy baseline and all introduced schema versions unless support is removed by a documented breaking-release decision.
 - AC5: Covers parent AC AC7: compatibility inspection performs no writes, and current-manifest serialization changes only the caller-selected manifest target while preservation canaries for config, trackers, docs, approvals, evidence, and unmarked files remain byte-identical.
-- AC6: Covers parent AC AC5: reusable state and version primitives expose package, asset, and schema state for later init integration without claiming that managed-asset refresh upgrades repository state.
+- AC6: Covers parent AC AC5: reusable state and version primitives expose package, asset, and schema state without collapsing the distinct version dimensions used by canonical upgrade.
 - AC7: Covers parent ACs AC1, AC5, AC7: focused tests cover every compatibility state, strict manifest validation, deterministic output, read-only inspection, and preservation boundaries, and the full suite plus strict Doctor validation pass.
 
 ## Open Questions (Answer Needed)

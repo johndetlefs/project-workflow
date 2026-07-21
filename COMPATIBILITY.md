@@ -45,6 +45,7 @@ Removing a schema from the support window requires all of the following:
 3. A stable unsupported-state result with a concrete recovery path.
 4. Historical fixtures retained for the last release that supported the removed schema.
 
-`project init` owns managed-asset installation and refresh, `project doctor` owns diagnosis, and
-`project upgrade` owns repository-schema transformation. Refreshing generated assets does not by
-itself upgrade durable repository state.
+`project init` creates managed assets and current metadata only for a new repository. `project
+doctor` owns diagnosis. Canonical UVX `project upgrade` owns every existing-repository update and
+plans managed-asset refresh plus repository-schema transformation as one transaction. An existing
+repository never needs init before upgrade.

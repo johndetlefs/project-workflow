@@ -10,9 +10,9 @@ As a maintainer or agent inspecting an initialized repository, I want an explici
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -48,7 +48,7 @@ As a maintainer or agent inspecting an initialized repository, I want an explici
 ### Parent AC Proof Ownership
 
 - AC1: owner `Define Repository Version Manifest And Compatibility Policy, Add Historical Migration Registry And Fixtures`; required evidence: Fixture inspection showing explicit package/asset/schema versions and deterministic classification of pre-versioned state.
-- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: Legacy/current init fixtures proving managed refresh and honest schema/upgrade direction without repository-state mutation.
+- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: New/existing init fixtures proving init-only creation and no-mutation upgrade direction, plus canonical upgrade asset refresh.
 - AC7: owner `Build Safe Transactional Upgrade Apply, Add Historical Migration Registry And Fixtures`; required evidence: Preservation-canary diffs across tracker, docs, backlog, guidance, config, approvals, deferrals, evidence, and unmarked content.
 
 ## Acceptance Criteria
@@ -58,7 +58,7 @@ As a maintainer or agent inspecting an initialized repository, I want an explici
 - [x] AC3: Current, known-behind, unsupported-future, and malformed manifests receive deterministic compatibility states and stable reasons.
 - [x] AC4: The compatibility policy retains the legacy baseline and introduced schema versions until an explicit breaking-release decision.
 - [x] AC5: Inspection is read-only and manifest writing preserves every non-target file byte-for-byte.
-- [x] AC6: Reusable internal primitives expose state for later init integration without conflating asset refresh with schema upgrade.
+- [x] AC6: Reusable internal primitives expose distinct package, asset, and schema state for init, Doctor, and canonical upgrade integration.
 - [x] AC7: Targeted and full validation, strict Doctor, and source/generated parity checks pass.
 
 ## Validation

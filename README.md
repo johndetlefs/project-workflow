@@ -43,7 +43,7 @@ The initialized agent instructions and skills tell the agent how to create the r
 - Evidence and QA gates that make completion mean more than "the code was written."
 - Proposal-first epics for coordinated work that needs decomposition and closeout.
 - Agent guidance that can be refreshed without replacing your repository-owned instructions.
-- Versioned repository upgrades with non-mutating plans, explicit apply, stale-plan rejection, and rollback.
+- Versioned repository upgrades with one-command confirmation, optional non-mutating plans, stale-plan rejection, and rollback.
 
 Project-workflow is not a replacement for Jira, Linear, or another planning system. It is the execution layer beside the code: the place where agents can reliably read the agreed outcome, current status, proof obligations, and next action.
 
@@ -270,21 +270,19 @@ uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
 
 Without `--agent`, the default mode is `github-copilot`. Pass an explicit mode when the repository uses another agent.
 
-Run the same canonical command to refresh an existing installation. Do not use bare `project init` unless the package is intentionally installed and known to be current.
+Use init only for a repository that does not yet contain project-workflow. If the repository is
+already initialized, init makes no changes and directs the caller to canonical `project upgrade`.
 
-Init is idempotent:
+For a new repository, init:
 
-- packaged CLI, templates, prompts, skills, rules, and managed guidance are refreshed;
-- marked project-workflow blocks in host-owned files are updated;
+- installs the packaged CLI, templates, prompts, skills, rules, and managed guidance;
+- creates marked project-workflow blocks in host-owned files;
 - user-owned workflow files and unmarked host content are preserved;
 - when generated content cannot safely replace an unmarked existing file, init writes a `*.new` file for review.
 
-Init detects repository state before refreshing assets. A genuinely new installation receives a
-current `.project-workflow/manifest.json`. A recognized pre-versioned repository remains
-manifest-free and is directed to `project upgrade`; init does not claim its durable state was
-migrated. Invalid or future manifests are reported and preserved byte-for-byte.
-
-Older initialized repositories may not have newer commands in `./.project-workflow/cli/workflow` until the canonical UVX init command refreshes the local helper.
+Init detects repository state before writing. A genuinely new installation receives a current
+`.project-workflow/manifest.json`; every existing, legacy, invalid, or future installation is left
+unchanged and receives the exact canonical upgrade command instead.
 
 ### Generated Structure
 
@@ -317,7 +315,7 @@ The selected mode adds agent-facing assets:
 | OpenAI Codex | `.agents/skills/` and a managed block in `AGENTS.md` |
 | Cursor | `.cursor/agents/` and `.cursor/rules/project-workflow.mdc` |
 
-`.project-workflow/guidance.md` is the repository-owned place for local validation commands, safety constraints, handoff rules, and conventions that should survive init refreshes.
+`.project-workflow/guidance.md` is the repository-owned place for local validation commands, safety constraints, handoff rules, and conventions that should survive upgrades.
 
 ## Validation And Health
 
@@ -328,6 +326,10 @@ Use the initialized, dependency-free helper for day-to-day commands:
 ./.project-workflow/cli/workflow validate
 ./.project-workflow/cli/workflow backlog validate
 ```
+
+Use canonical UVX, not the local helper, for repository upgrades. The local helper cannot prove it
+has the latest managed asset resources; when those package resources are unavailable, its upgrade
+command blocks and prints the exact canonical UVX command.
 
 Strict mode makes safety warnings fail automation:
 
@@ -374,78 +376,69 @@ Run `doctor` after tracker or task-document changes and before handing work over
 
 The commands have separate responsibilities:
 
-- `project init` installs or refreshes managed executable and agent assets.
+- `project init` creates project-workflow in a new repository.
 - `project doctor` diagnoses repository and workflow state without mutation.
-- `project upgrade` transforms durable repository state through versioned migrations.
+- canonical UVX `project upgrade` refreshes managed assets and transforms durable repository state
+  together.
 
-### Upgrade An Existing Repository
+### Normal Upgrade
 
-Start from a clean Git worktree. If the repository has an older installation, run the canonical
-init command first so the local helper and generated agent assets know the current upgrade
-contract. Use the repository's configured agent mode; this example uses Codex:
+Run one canonical command from a clean Git worktree. Do not run init first. UVX obtains the current
+project-workflow package, so this works even when the repository's local helper is old or does not
+yet contain the upgrade command:
 
 ```bash
-git status --short
 uvx --from git+https://github.com/johndetlefs/project-workflow.git \
-  project init --agent codex
+  project upgrade --agent codex
 ```
 
-Init may refresh generated files and managed instruction blocks. Review its output, inspect
-`git status --short` and `git diff`, and resolve any reported `*.new` collision without
-overwriting unmarked content. If init changed files, commit the reviewed managed-asset refresh
-before applying an upgrade; `upgrade --apply` deliberately rejects a dirty worktree. If init was
-run when upgrade was intended, nothing needs to be undone: complete this review-and-commit step,
-then continue with Doctor and upgrade below.
+The command builds one deterministic plan containing managed helper/agent-asset changes and
+ordered repository-schema migrations. It displays the exact targets, hashes, blockers, owner
+decisions, and fingerprint, asks for confirmation, applies the confirmed plan as one transaction,
+and reports post-upgrade validation. A cancellation makes no changes.
 
-Run both human and machine-readable diagnosis, then produce the non-mutating upgrade plan:
+Agents and other non-interactive callers use the same canonical command with `--yes` after the
+owner has authorized the upgrade:
 
 ```bash
-./.project-workflow/cli/workflow doctor
-./.project-workflow/cli/workflow doctor --format json
-./.project-workflow/cli/workflow upgrade
-./.project-workflow/cli/workflow upgrade --format json
+uvx --from git+https://github.com/johndetlefs/project-workflow.git \
+  project upgrade --agent codex --yes
 ```
 
-Review the detected current and target versions, ordered migrations, exact target files, input
-and predicted-output hashes, blockers, owner decisions, and plan fingerprint. Invalid or future
-repository state blocks here and must be resolved rather than forced. When the plan is accepted,
-confirm that `git status --short` is empty and apply that exact fingerprint:
+Doctor is not a prerequisite. Run it separately when detailed diagnosis is useful; upgrade itself
+reports the resulting repository state and finding counts.
+
+### Automation And CI
+
+Automation can retain an explicitly separated, non-mutating plan and fingerprinted apply. Both
+commands must use the same package source and version:
 
 ```bash
-./.project-workflow/cli/workflow upgrade \
+uvx --from git+https://github.com/johndetlefs/project-workflow.git \
+  project upgrade --agent codex --plan --format json
+
+uvx --from git+https://github.com/johndetlefs/project-workflow.git \
+  project upgrade --agent codex \
   --apply \
   --plan-fingerprint sha256:<REVIEWED_PLAN_FINGERPRINT>
 ```
 
-Validate and commit the migration separately from the managed-asset refresh:
+Upgrade behavior by detected repository state:
 
-```bash
-./.project-workflow/cli/workflow doctor --strict
-./.project-workflow/cli/workflow upgrade
-git status --short
-```
+| State before upgrade | Upgrade result |
+| --- | --- |
+| Not initialized | Blocks without mutation and directs the caller to `project init`. |
+| Current | Refreshes changed managed assets, or reports a no-op when assets and schema are current. |
+| Pre-versioned legacy | Refreshes managed assets and applies `PW-0001-legacy-manifest` in the same transaction. |
+| Assets or schema behind | Refreshes assets and applies every required ordered migration together. |
+| Invalid or unsupported future manifest | Blocks without mutation; the state must be resolved rather than forced. |
 
-The final plan should contain no pending migration. A current repository remains a no-op. Strict
-Doctor may still exit nonzero for preserved owner decisions or unrelated workflow findings; this
-does not mean the migration failed. Resolve or accept those findings through their normal workflow
-rather than treating them as migration output.
-
-Init preserves the durable state boundary in every detected repository state:
-
-| State before init | Init result | Required next action |
-| --- | --- | --- |
-| Not initialized | Creates the current manifest and managed assets. | Run Doctor; no migration is expected. |
-| Current | Refreshes managed assets without changing schema history. | Review and commit refresh changes; upgrade is a no-op. |
-| Pre-versioned legacy | Refreshes managed assets but leaves the repository manifest-free. | Commit the refresh, then plan and apply `PW-0001-legacy-manifest`. |
-| Assets behind only | Refreshes package and asset metadata without changing schema history. | Review and commit the refresh; upgrade is a no-op. |
-| Schema behind | Refreshes package/assets while preserving schema version and applied migration IDs. | Commit the refresh, then plan and apply the required migrations. |
-| Invalid or unsupported future manifest | May refresh managed assets, but preserves the manifest and reports the unsupported state. | Stop and resolve the manifest state; do not force apply. |
-
-Planning is always non-mutating. Apply rebuilds the plan, rechecks repository state and hashes,
-requires a clean Git worktree including no untracked files, computes all outputs before writing,
-and replaces only declared targets. A failed multi-file replacement restores touched targets; a
-second apply at the current schema is a no-op. Missing approvals, stale evidence, accepted warnings,
-deferrals, and owner decisions remain visible and are never upgraded into authority.
+Apply requires a clean Git worktree including no untracked files. It rechecks repository state and
+input hashes immediately before writing, computes every output first, and replaces only declared
+targets. A failed multi-file replacement restores touched targets. Unmarked collisions are
+preserved and receive a generated `*.new` file for review. Missing approvals, stale evidence,
+accepted warnings, deferrals, and owner decisions remain visible and are never upgraded into
+authority.
 
 The first production migration, `PW-0001-legacy-manifest`, adopts the schema-1 manifest for a
 recognized pre-versioned repository without rewriting its tracker, backlog, config, guidance,

@@ -10,9 +10,9 @@ As a human, agent, or CI system validating a repository, I want stable structure
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -48,7 +48,7 @@ As a human, agent, or CI system validating a repository, I want stable structure
 ### Parent AC Proof Ownership
 
 - AC2: owner `Add Structured Doctor Findings, Align Documentation And Generated Agent Assets`; required evidence: Tests and captured output proving stable finding codes and equivalent human/machine-readable fields.
-- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: Legacy/current init fixtures proving managed refresh and honest schema/upgrade direction without repository-state mutation.
+- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: New/existing init fixtures proving init-only creation and no-mutation upgrade direction, plus canonical upgrade asset refresh.
 - AC8: owner `Add Structured Doctor Findings, Build Deterministic Upgrade Planner, Build Safe Transactional Upgrade Apply`; required evidence: Fixtures proving owner-owned approval/evidence/decision gaps remain visible and unchanged after plan/apply.
 
 ## Acceptance Criteria
@@ -94,7 +94,7 @@ As a human, agent, or CI system validating a repository, I want stable structure
 
 - Reusable lessons: Human and JSON output must share evaluation and effective-severity logic; accepted findings should remain machine-visible for audit even when hidden from default human output.
 - Conventions or agent assets updated: Added the versioned Doctor JSON schema, finite finding catalog, remediation ownership, and mechanical eligibility to packaged, template, and local helpers.
-- Follow-up tasks: TASK-044 will map repository compatibility states into this finding model after init owns manifest creation and refresh.
+- Follow-up tasks: TASK-044 will map repository compatibility states into this finding model and establish new-only init plus existing-repository upgrade direction.
 
 ## Notes
 

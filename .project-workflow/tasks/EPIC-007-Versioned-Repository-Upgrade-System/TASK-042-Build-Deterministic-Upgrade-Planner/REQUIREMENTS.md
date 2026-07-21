@@ -23,9 +23,9 @@
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -72,7 +72,7 @@ Provide a deterministic, non-mutating `project upgrade` planning command that tu
 
 - Applying any file change or adding `--apply`; TASK-043 owns execution.
 - Registering production historical migrations or claiming the legacy baseline is upgradeable before fixture proof; TASK-045 owns that registry.
-- Refreshing managed assets or creating manifests through init; TASK-044 owns init integration.
+- Creating new installations or applying reviewed plans; TASK-044 owns init integration and TASK-043 owns apply.
 - Automatically resolving owner-owned approvals, evidence, deferrals, or product decisions.
 - Supporting partial migration selection or best-effort plans.
 

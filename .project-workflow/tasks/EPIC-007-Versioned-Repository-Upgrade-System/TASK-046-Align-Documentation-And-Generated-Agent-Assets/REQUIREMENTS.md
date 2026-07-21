@@ -23,9 +23,9 @@
 
 ### Inherited Invariants
 
-- `project init` owns managed installation and refresh; `project doctor` owns diagnosis; `project upgrade` owns versioned repository-state transformation.
-- Upgrade planning is non-mutating by default.
-- Apply requires an explicit flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
+- `project init` creates new installations; `project doctor` owns diagnosis; canonical UVX `project upgrade` refreshes managed assets and transforms existing repository state in one transaction.
+- Explicit `--plan` mode is non-mutating; normal human upgrade confirms before apply and authorized agents use `--yes`.
+- Apply requires confirmation or an explicit automation flag, a clean worktree, a supported source version, and fresh version/hash preconditions.
 - The first release applies the complete validated mechanical plan or no changes.
 - Migration IDs are immutable and ordered.
 - Successful migrations are idempotent; reapplying at the target schema is a no-op.
@@ -62,12 +62,12 @@
 
 - AC2: owner `Add Structured Doctor Findings, Align Documentation And Generated Agent Assets`; required evidence: Tests and captured output proving stable finding codes and equivalent human/machine-readable fields.
 - AC3: owner `Build Deterministic Upgrade Planner, Add Historical Migration Registry And Fixtures`; required evidence: Before/after fixture hashes proving zero plan mutation plus complete ordered plan records for every supported source schema.
-- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: Legacy/current init fixtures proving managed refresh and honest schema/upgrade direction without repository-state mutation.
+- AC5: owner `Define Repository Version Manifest And Compatibility Policy, Integrate Init Version Detection And Upgrade Direction`; required evidence: New/existing init fixtures proving init-only creation and no-mutation upgrade direction, plus canonical upgrade asset refresh.
 - AC9: owner `Add Historical Migration Registry And Fixtures, Align Documentation And Generated Agent Assets`; required evidence: Passing targeted and full-suite output, strict doctor, backlog validation, and packaged/generated parity evidence.
 
 ## Goal
 
-Document one accurate human and agent operating model for version-aware init, structured Doctor diagnostics, non-mutating upgrade planning, and explicit transactional apply.
+Document one accurate human and agent operating model: init creates new installations, Doctor diagnoses, and canonical UVX upgrade updates existing repositories in one normal invocation while preserving advanced plan/apply automation.
 
 ## Non-Goals
 
@@ -83,17 +83,17 @@ Document one accurate human and agent operating model for version-aware init, st
 
 ## Requirements (Outcome-Focused)
 
-- Update README structure, init behavior, Doctor JSON/finding fields, and complete plan/review/apply commands.
+- Update README structure, new-only init behavior, optional Doctor diagnostics, one-command canonical upgrade, and advanced plan/apply automation commands.
 - Link and align the compatibility policy with the implemented support window and migration ID.
 - Update changelog with the complete unreleased upgrade system.
-- Update managed instructions, Codex/Cursor guidance, and relevant prompts/skills to preserve init/doctor/upgrade separation and explicit apply fingerprinting.
+- Update managed instructions, Codex/Cursor guidance, and relevant prompts/skills so existing repositories use canonical UVX upgrade without init, with `--yes` for authorized agents and fingerprinting for separated automation.
 - Refresh generated local assets and prove source/generated parity.
 
 ## Acceptance Criteria (Verifiable)
 
-- AC1: Covers parent ACs AC2, AC3, AC5: README gives runnable fresh/legacy init, Doctor human/JSON, upgrade plan, and explicit apply instructions with safety boundaries.
+- AC1: Covers parent ACs AC2, AC3, AC5: README gives runnable new init, one-command human/agent canonical upgrade, optional Doctor, and separated automation instructions with safety boundaries.
 - AC2: Covers parent AC AC9: compatibility/changelog accurately name schema 1, legacy migration, support policy, rollback/idempotency, and limitations.
-- AC3: Covers parent ACs AC2, AC3, AC5, AC9: generated agent assets consistently direct install/refresh to init, diagnosis to Doctor, and transformation to upgrade with fingerprinted apply.
+- AC3: Covers parent ACs AC2, AC3, AC5, AC9: generated agent assets direct new installation to init, every existing update to canonical UVX upgrade, diagnosis to Doctor, authorized agent apply to `--yes`, and separated automation to plan/fingerprinted apply.
 - AC4: Covers parent AC AC9: documentation assertions, full pytest, parity, compilation, and strict Doctor pass.
 
 ## Open Questions (Answer Needed)
@@ -109,4 +109,4 @@ Document one accurate human and agent operating model for version-aware init, st
 ## Validation Plan
 
 - Search every generated agent surface for the command ownership and apply safety language.
-- Run documentation contract assertions, full pytest, init refresh, parity, compilation, and strict Doctor.
+- Run documentation contract assertions, full pytest, canonical upgrade refresh, parity, compilation, and strict Doctor.
