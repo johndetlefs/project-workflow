@@ -1070,7 +1070,7 @@ def test_upgrade_plan_preserves_owner_decisions_without_mutation(tmp_path: Path)
         assert decision["message"] in human_plan
 
 
-def test_upgrade_command_blocks_unregistered_legacy_without_mutation(tmp_path: Path) -> None:
+def test_upgrade_command_plans_registered_legacy_without_mutation(tmp_path: Path) -> None:
     workflow_dir = tmp_path / ".project-workflow"
     workflow_dir.mkdir()
     (workflow_dir / "TRACKER.md").write_text("# Legacy tracker\n", encoding="utf-8")
@@ -1080,18 +1080,16 @@ def test_upgrade_command_blocks_unregistered_legacy_without_mutation(tmp_path: P
     human = run_project(["upgrade"], cwd=tmp_path)
 
     after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
-    assert result.returncode == 1
-    assert human.returncode == 1
+    assert result.returncode == 0
+    assert human.returncode == 0
     assert after == before
     payload = json.loads(result.stdout)
     assert payload["repository_state"] == "legacy-unversioned"
-    assert payload["steps"] == []
-    assert payload["blockers"] == [
-        {
-            "code": "PW_UPGRADE_REGISTRY_PATH_MISSING",
-            "message": "No migration path from schema 0 to 1.",
-        }
+    assert [step["migration_id"] for step in payload["steps"]] == [
+        workflow_cli.LEGACY_MANIFEST_MIGRATION_ID
     ]
+    assert payload["blockers"] == []
+    assert payload["expected_outputs"][0]["artifact"] == ".project-workflow/manifest.json"
 
 
 def test_upgrade_plan_blocks_non_file_targets(tmp_path: Path) -> None:
@@ -1412,6 +1410,111 @@ def test_upgrade_apply_rejects_invalid_handler_without_mutation(tmp_path: Path) 
     assert result["failure"]["code"] == "PW_UPGRADE_APPLY_BLOCKED"
     assert tracker_path.read_bytes() == before
     assert not (tmp_path / "UNDECLARED.txt").exists()
+
+
+def test_production_legacy_fixture_plan_apply_preservation_and_noop(tmp_path: Path) -> None:
+    fixture = REPO_ROOT / "tests" / "fixtures" / "legacy-unversioned"
+    shutil.copytree(fixture, tmp_path, dirs_exist_ok=True)
+    fixture_files = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+
+    init = run_project(["init", "--agent", "codex"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    assert not (tmp_path / ".project-workflow" / "manifest.json").exists()
+    for relative_path, content in fixture_files.items():
+        assert (tmp_path / relative_path).read_bytes() == content
+
+    init_git_fixture(tmp_path)
+    before_plan = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+    owner_findings_before = [
+        (issue.code, issue.path, issue.message)
+        for issue in workflow_cli.run_doctor(tmp_path)
+        if issue.remediation_owner == "owner"
+    ]
+    plan = workflow_cli._build_upgrade_plan(
+        tmp_path,
+        migrations=workflow_cli.PRODUCTION_MIGRATIONS,
+        handlers=workflow_cli.PRODUCTION_MIGRATION_HANDLERS,
+    )
+    assert [step["migration_id"] for step in plan["steps"]] == [
+        workflow_cli.LEGACY_MANIFEST_MIGRATION_ID
+    ]
+    assert plan["target_files"] == [".project-workflow/manifest.json"]
+    assert plan["blockers"] == []
+    assert {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    } == before_plan
+
+    result = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        plan["plan_fingerprint"],
+        migrations=workflow_cli.PRODUCTION_MIGRATIONS,
+        handlers=workflow_cli.PRODUCTION_MIGRATION_HANDLERS,
+    )
+    assert result["status"] == "applied"
+    assert result["changed_files"] == [".project-workflow/manifest.json"]
+    manifest = workflow_cli._parse_workflow_manifest(
+        json.loads(
+            (tmp_path / ".project-workflow" / "manifest.json").read_text(encoding="utf-8")
+        )
+    )
+    assert manifest.applied_migrations == (workflow_cli.LEGACY_MANIFEST_MIGRATION_ID,)
+    for relative_path, content in before_plan.items():
+        assert (tmp_path / relative_path).read_bytes() == content
+    owner_findings_after = [
+        (issue.code, issue.path, issue.message)
+        for issue in workflow_cli.run_doctor(tmp_path)
+        if issue.remediation_owner == "owner"
+    ]
+    assert owner_findings_after == owner_findings_before
+
+    commit_git_fixture(tmp_path, "production upgrade")
+    current_plan = workflow_cli._build_upgrade_plan(
+        tmp_path,
+        migrations=workflow_cli.PRODUCTION_MIGRATIONS,
+        handlers=workflow_cli.PRODUCTION_MIGRATION_HANDLERS,
+    )
+    noop = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        current_plan["plan_fingerprint"],
+        migrations=workflow_cli.PRODUCTION_MIGRATIONS,
+        handlers=workflow_cli.PRODUCTION_MIGRATION_HANDLERS,
+    )
+    assert noop["status"] == "noop"
+
+
+def test_production_legacy_migration_failure_restores_manifest_absence(tmp_path: Path) -> None:
+    fixture = REPO_ROOT / "tests" / "fixtures" / "legacy-unversioned"
+    shutil.copytree(fixture, tmp_path, dirs_exist_ok=True)
+    init = run_project(["init", "--agent", "codex"], cwd=tmp_path)
+    assert init.returncode == 0, init.stdout + init.stderr
+    init_git_fixture(tmp_path)
+    plan = workflow_cli._build_upgrade_plan(
+        tmp_path,
+        migrations=workflow_cli.PRODUCTION_MIGRATIONS,
+        handlers=workflow_cli.PRODUCTION_MIGRATION_HANDLERS,
+    )
+
+    failed = workflow_cli._apply_upgrade_plan(
+        tmp_path,
+        plan["plan_fingerprint"],
+        migrations=workflow_cli.PRODUCTION_MIGRATIONS,
+        handlers=workflow_cli.PRODUCTION_MIGRATION_HANDLERS,
+        fail_after_replacements=1,
+    )
+
+    assert failed["failure"]["code"] == "PW_UPGRADE_APPLY_REPLACEMENT_FAILED"
+    assert not (tmp_path / ".project-workflow" / "manifest.json").exists()
+    assert not list(tmp_path.rglob("*.tmp"))
 
 
 def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:

@@ -1,0 +1,5 @@
+{
+  "task_id_prefixes": ["TASK"],
+  "default_task_id_prefix": "TASK",
+  "accepted_doctor_warnings": []
+}
