@@ -1,111 +1,337 @@
 # project-workflow
 
-Spec-driven development with GitHub Copilot, Claude Code, OpenAI Codex, and Cursor.
+Project-workflow turns a conversation about what should change into a reviewable delivery record that lives beside the code.
 
-A lightweight workflow framework for guiding feature development from requirements through implementation, QA review, and retro. Works entirely in Markdown—no complex tools or dashboards.
+It gives project owners clear decision points and gives coding agents a dependable way to move from intent to requirements, implementation, evidence, QA, and closeout. The workflow stays in Markdown and Git, so there is no separate dashboard to maintain and no hidden agent state to trust.
 
-## For the Impatient
+Use it with GitHub Copilot, Claude Code, OpenAI Codex, or Cursor.
 
-If your project is already a git repo:
+## Quick Start
+
+From the root of an existing Git repository:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent codex
 ```
 
-Or select an explicit agent mode:
+Choose the mode that matches your agent:
 
 ```bash
+uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent github-copilot
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent claude-code
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent codex
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor
 ```
 
-Then use your selected agent ecosystem to run the project workflow prompts/subagents.
+Then tell the agent what you want in ordinary language:
 
----
+> Add a backlog item for account export.
 
-## Installation
+> Create a task for the approved account export feature. I want to review the requirements before implementation.
+
+> The completed export flow now fails for large accounts. Treat this as a bounded fix.
+
+The initialized agent instructions and skills tell the agent how to create the right artifacts, use the local workflow CLI, preserve approval history, and validate state.
+
+## What You Get
+
+- A repository-native backlog for ideas worth preserving but not yet active.
+- Lightweight Fix records for bounded corrections after work has been delivered.
+- Requirements and implementation records with stable acceptance-criteria IDs.
+- One visible global tracker for active standalone work and epics, with child trackers inside epics.
+- Explicit owner authority without repeated approval prompts inside an unchanged scope.
+- Evidence and QA gates that make completion mean more than "the code was written."
+- Proposal-first epics for coordinated work that needs decomposition and closeout.
+- Agent guidance that can be refreshed without replacing your repository-owned instructions.
+
+Project-workflow is not a replacement for Jira, Linear, or another planning system. It is the execution layer beside the code: the place where agents can reliably read the agreed outcome, current status, proof obligations, and next action.
+
+## How Collaboration Works
+
+Project-workflow is human-directed and agent-operated.
+
+The owner provides:
+
+- the problem or opportunity;
+- the desired outcome and affected user or system;
+- boundaries, non-goals, constraints, priority, and relevant examples;
+- the signal that would make the work acceptable;
+- decisions where product authority is required;
+- one explicit approval of the requirements and acceptance-criteria envelope before planning.
+
+The agent:
+
+- inspects the repository and existing workflow state;
+- recommends Backlog, Fix, Task, or Epic from the actual scope;
+- drafts and maintains the Markdown artifacts;
+- surfaces unresolved product decisions instead of guessing;
+- runs Planner and the post-plan Clarify pass after approval;
+- validates readiness and advances work inside the approved envelope;
+- implements, validates, records evidence, and runs QA/code review;
+- returns to the owner when scope, proof obligations, or artifact identity materially changes.
+
+The important boundary is the approved requirements envelope. Approval is recorded once before planning. Work that remains inside that envelope proceeds without approval fatigue. Material drift requires the requirements to be corrected or amended and approved again.
+
+## Choose The Right Route
+
+| Route | Use it when | Result |
+| --- | --- | --- |
+| Backlog | The idea is useful future intent but is not ready for execution. | A `BL-*` row in `.project-workflow/BACKLOG.md`. |
+| Fix | One bounded defect, regression, change request, or incident corrects a delivered or accepted baseline. | A lightweight `FIX-*` folder with one `FIX.md` and a row in the global tracker. |
+| Task | The work creates a new outcome, needs a material product decision, or contains more than one independent change. | A `TASK-*` folder with `REQUIREMENTS.md` and `IMPLEMENTATION.md`. |
+| Epic | Several coordinated outcomes or workstreams share parent acceptance criteria and closeout obligations. | An `EPIC-*` proposal, contract, decomposition, child tracker, evidence map, audit, and retro. |
+
+An in-scope correction stays in its active task or epic child. Do not rewrite completed requirements to make later defects look as though they were part of the original ticket. Link the new Fix to the originating work and preserve the historical record.
+
+The user's label is useful evidence, but the agent should recommend the route that matches the actual work.
+
+## The Working Model
+
+### Set Stable Project Outcomes
+
+For a new repository, use the project constitution skill once to create or refine:
+
+```text
+.project-workflow/CONSTITUTION.md
+```
+
+The constitution records durable product outcomes, users, principles, and decision filters. Technical conventions belong in repository instructions or `.project-workflow/guidance.md`, not in the constitution.
+
+### Keep Future Intent In The Backlog
+
+Backlog rows are optional future intent, not active delivery state:
+
+```bash
+./.project-workflow/cli/workflow backlog add --title "Account export" --type "Task Candidate" --priority Medium --status Proposed --outcome "Customers can retain a portable copy of their account data."
+./.project-workflow/cli/workflow backlog status --id BL-001 --to Accepted
+./.project-workflow/cli/workflow backlog promote --id BL-001 --to task
+./.project-workflow/cli/workflow backlog validate
+```
+
+Promotion keeps the backlog row for history, marks it `Promoted`, and links it to the new Task or Epic. Execution status then belongs in the trackers and work-item documents.
+
+### Run A Task
+
+A Task is the standard route for a new, bounded outcome:
+
+```bash
+./.project-workflow/cli/workflow task init --title "Account Export" --update-tracker
+./.project-workflow/cli/workflow task status --id TASK-001 --to Analysing
+```
+
+The agent captures `REQUIREMENTS.md` with a user story, scope, non-goals, stable `AC1`, `AC2`, and later acceptance criteria, open questions, decisions, and a validation plan.
+
+When those requirements are correct, the owner approves the envelope:
+
+```bash
+./.project-workflow/cli/workflow task approve-requirements \
+  --id TASK-001 \
+  --approved-by "Product Owner" \
+  --source "Owner approved requirements and acceptance criteria in the project task"
+```
+
+After approval, the agent:
+
+1. runs Planner and maps every implementation row to acceptance criteria;
+2. runs Clarify as a post-plan consistency pass;
+3. resolves implementation details that remain inside the approved envelope;
+4. runs the readiness gate and moves the task to `Ready`;
+5. implements and validates the work;
+6. moves the task through `Testing` and `Review`;
+7. records QA evidence by acceptance-criteria ID;
+8. marks the task `Complete` only after QA passes and the owner explicitly asks for completion;
+9. runs a retro when the work produced reusable lessons or follow-up intent.
+
+```bash
+./.project-workflow/cli/workflow task ready --id TASK-001
+./.project-workflow/cli/workflow task status --id TASK-001 --to Ready
+./.project-workflow/cli/workflow task status --id TASK-001 --to "In Progress"
+./.project-workflow/cli/workflow task status --id TASK-001 --to Testing
+./.project-workflow/cli/workflow task status --id TASK-001 --to Review
+./.project-workflow/cli/workflow task status --id TASK-001 --to Complete
+```
+
+`Plan Confirmed` remains available for legacy records. New work normally uses the owner-approved requirements envelope followed by agent-run planning, clarification, readiness, and `Ready`.
+
+### Run A Fix
+
+A Fix is deliberately lighter than a Task. It uses:
+
+- a reserved `FIX-*` ID;
+- one `FIX.md` containing report, triage, plan, evidence, and closeout;
+- the shared `.project-workflow/tasks/` directory;
+- the global `.project-workflow/TRACKER.md`;
+- one triage classification: Defect, Regression, Change Request, or Incident;
+- an optional Hotfix mode when urgency changes execution order, not the evidence requirement.
+
+```bash
+./.project-workflow/cli/workflow fix init --title "Export fails for large accounts"
+./.project-workflow/cli/workflow fix triage --id FIX-001
+./.project-workflow/cli/workflow fix status --id FIX-001 --to "In Progress"
+./.project-workflow/cli/workflow fix status --id FIX-001 --to Testing
+./.project-workflow/cli/workflow fix status --id FIX-001 --to Review
+./.project-workflow/cli/workflow fix close \
+  --id FIX-001 \
+  --disposition Fixed \
+  --decision "Verified bounded correction" \
+  --closed-by "Product Owner"
+```
+
+Triage confirms the baseline, impact, likely affected area, regression risk, validation, and originating work. If investigation reveals a new outcome, several independent items, or coordinated workstreams, promote the Fix instead of stretching the lightweight record:
+
+```bash
+./.project-workflow/cli/workflow fix promote \
+  --id FIX-001 \
+  --to task \
+  --reason "Investigation found several independent outcomes" \
+  --promoted-by "Delivery Agent"
+```
+
+### Run An Epic
+
+Epics are proposal-first. They add authority and evidence controls because several child workstreams must add up to one parent outcome.
+
+```bash
+./.project-workflow/cli/workflow epic init --title "Checkout Reliability"
+./.project-workflow/cli/workflow epic lifecycle --epic-id EPIC-001 --to Analysing
+```
+
+Before decomposition, complete:
+
+- `REQUIREMENTS.md` with stable parent acceptance criteria and any proposed child work;
+- `EPIC-CONTRACT.md` with sources of truth, invariants, artifact targets, invalid substitutes, proof owners, and evidence expectations.
+
+Then record the owner's single requirements approval and create the authoritative decomposition:
+
+```bash
+./.project-workflow/cli/workflow epic approve-requirements \
+  --epic-id EPIC-001 \
+  --approved-by "Product Owner" \
+  --source "Owner approved the epic requirements and decomposition boundary"
+./.project-workflow/cli/workflow epic decompose --epic-id EPIC-001 --limit 5 --type Task
+```
+
+`DECOMPOSITION.md` is the authority for planned child IDs, titles, and parent-AC coverage. The agent can approve and scaffold matching rows inside the approved envelope without another owner checkpoint:
+
+```bash
+./.project-workflow/cli/workflow epic approve --epic-id EPIC-001 --id TASK-014
+./.project-workflow/cli/workflow epic scaffold-child --epic-id EPIC-001 --id TASK-014
+./.project-workflow/cli/workflow epic ready-child --epic-id EPIC-001 --id TASK-014
+```
+
+During delivery:
+
+- the epic tracker owns child status and `Parent ACs` coverage;
+- the global tracker summarizes the parent Epic;
+- `ACCEPTANCE-MAP.md` is the live parent-coverage view;
+- each child proves only the parent criteria assigned to it;
+- proof-recipe claims use child-local `EVIDENCE.json`;
+- `epic amend` records owner-approved work outside the decomposition authority;
+- `epic audit` creates the closeout evidence record;
+- `epic closeout --complete` completes the Epic only after parent criteria are evidenced or explicitly deferred and the retro is complete.
+
+```bash
+./.project-workflow/cli/workflow epic amend --help
+./.project-workflow/cli/workflow epic audit --epic-id EPIC-001
+./.project-workflow/cli/workflow epic closeout --epic-id EPIC-001 --complete
+```
+
+Direct child-row edits outside the decomposition or amendment authority are blocked. This prevents an Epic from quietly changing shape while work is underway.
+
+### Evidence Is Part Of The Work
+
+Tests, builds, prose review, and code inspection are useful evidence, but they are not interchangeable with every claim.
+
+Project-workflow has structured proof recipes for:
+
+- visual or reference fidelity;
+- external contract alignment;
+- deployed artifact alignment;
+- runtime target and source identity;
+- responsive or multi-context visual behavior.
+
+When a requirement or material claim triggers one of these recipes, the relevant `EVIDENCE.json` must contain a passing structured claim and the required artifacts. A surrogate environment, unrendered inspection, or unrelated build cannot stand in for proof of the exact target.
+
+## Installation And Refresh
 
 ### Prerequisites
 
-- Git repo initialized
-- Python 3.10+
-- One supported agent environment:
-  - GitHub Copilot (VSCode / github.com/copilot)
-  - Claude Code
-  - OpenAI Codex
-  - Cursor
-- UV or Python with pip
+- A Git repository
+- Python 3.10 or newer
+- `uvx`, or an intentional current package installation
+- GitHub Copilot, Claude Code, OpenAI Codex, or Cursor
 
-### One-Time Setup
-
-From your project root:
+Run the canonical init command from the repository root:
 
 ```bash
 uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
 ```
 
-Optional: select agent mode explicitly:
+Without `--agent`, the default mode is `github-copilot`. Pass an explicit mode when the repository uses another agent.
 
-```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent github-copilot   # default
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent claude-code
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent codex
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor
+Run the same canonical command to refresh an existing installation. Do not use bare `project init` unless the package is intentionally installed and known to be current.
+
+Init is idempotent:
+
+- packaged CLI, templates, prompts, skills, rules, and managed guidance are refreshed;
+- marked project-workflow blocks in host-owned files are updated;
+- user-owned workflow files and unmarked host content are preserved;
+- when generated content cannot safely replace an unmarked existing file, init writes a `*.new` file for review.
+
+Older initialized repositories may not have newer commands in `./.project-workflow/cli/workflow` until the canonical UVX init command refreshes the local helper.
+
+### Generated Structure
+
+Every mode creates the shared workflow core:
+
+```text
+.project-workflow/
+|-- BACKLOG.md
+|-- TRACKER.md
+|-- CONSTITUTION.md
+|-- config.json
+|-- guidance.md
+|-- cli/
+|   |-- workflow
+|   `-- workflow.py
+`-- tasks/
+    |-- TASK-*/REQUIREMENTS.md
+    |-- TASK-*/IMPLEMENTATION.md
+    |-- FIX-*/FIX.md
+    `-- EPIC-*/
 ```
 
-This creates:
+The selected mode adds agent-facing assets:
 
-- `.project-workflow/` — Backlog, task folders, tracker, guidance, and local CLI
-- Agent definitions in one mode-specific location:
-  - `.github/prompts/` for GitHub Copilot
-  - `.claude/agents/` for Claude Code
-  - `AGENTS.md` managed block and `.agents/skills/` for OpenAI Codex
-  - `.cursor/agents/` and `.cursor/rules/project-workflow.mdc` for Cursor
-- `.project-workflow/TRACKER.md` — Centralized task status tracking
-- `.project-workflow/BACKLOG.md` — Optional future-intent backlog before work is promoted
-- `.project-workflow/guidance.md` — User-owned repo-specific workflow guidance
-- `.project-workflow/config.json` — User-owned task ID namespace and generation configuration
-- `.github/copilot-instructions.md` — A managed Project Workflow block for GitHub Copilot mode
+| Mode | Agent assets |
+| --- | --- |
+| GitHub Copilot | `.github/prompts/` and a managed block in `.github/copilot-instructions.md` |
+| Claude Code | `.claude/agents/` |
+| OpenAI Codex | `.agents/skills/` and a managed block in `AGENTS.md` |
+| Cursor | `.cursor/agents/` and `.cursor/rules/project-workflow.mdc` |
 
-Re-running is **idempotent** and safe. The canonical refresh command is `uvx --from git+https://github.com/johndetlefs/project-workflow.git project init`; it refreshes the packaged CLI, templates, prompts, Codex skills, Cursor rule, and managed guidance (including the Fix workflow), appends or refreshes only the managed block in host-owned files such as `AGENTS.md` and `.github/copilot-instructions.md`, and preserves unmarked existing files by writing the new generated content beside them as `*.new`.
+`.project-workflow/guidance.md` is the repository-owned place for local validation commands, safety constraints, handoff rules, and conventions that should survive init refreshes.
 
-### Refresh an Existing Install
+## Validation And Health
 
-To refresh an initialized repository to the latest workflow assets, run the same command again from the latest package:
+Use the initialized, dependency-free helper for day-to-day commands:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+./.project-workflow/cli/workflow doctor
+./.project-workflow/cli/workflow validate
+./.project-workflow/cli/workflow backlog validate
 ```
 
-For agents: when a user asks to update, refresh, reinstall, or align project-workflow in a repository, use the full `uvx --from git+https://github.com/johndetlefs/project-workflow.git project init` command from that repository root. Do not run bare `project init` unless the user explicitly says the package is installed locally and should be used.
-
-For an explicitly selected agent mode:
+Strict mode makes safety warnings fail automation:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent codex
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor
+./.project-workflow/cli/workflow doctor --strict
+./.project-workflow/cli/workflow validate --strict
 ```
 
-If your repository was initialized before `doctor`, `validate`, or `task status` existed, the local helper at `./.project-workflow/cli/workflow` will not know about those commands until you run the canonical UVX init command again from the latest package version. If init writes any `*.new` files, review and merge them manually; your original unmarked files were intentionally left untouched.
+Doctor checks tracker structure, linked task documents, readiness and completion evidence, epic schemas and coverage, and source-repository asset parity where applicable.
 
-### Validate Workflow State
-
-Run a workflow health check from any initialized repository:
-
-```bash
-project doctor
-project validate
-```
-
-Use strict mode when you want safety warnings, such as completed tasks without QA/code-review evidence, to fail automation:
-
-```bash
-project doctor --strict
-```
-
-Doctor warnings include stable fingerprints. To permanently accept a known
-warning, add the fingerprint to `.project-workflow/config.json`:
+Warnings have stable fingerprints. A known historical warning can be accepted in `.project-workflow/config.json` with a reason:
 
 ```json
 {
@@ -118,696 +344,86 @@ warning, add the fingerprint to `.project-workflow/config.json`:
 }
 ```
 
-Accepted warnings are hidden from normal `doctor` output and do not fail
-`doctor --strict`. They are exact matches over severity, repo-relative path, and
-message; if a warning changes, it reappears for review. Audit accepted warnings
-with:
+Accepted warnings are hidden from normal output and do not fail strict mode. They reappear if their severity, path, or message changes. Review them explicitly:
 
 ```bash
-project doctor --show-accepted
+./.project-workflow/cli/workflow doctor --show-accepted
 ```
 
-In repositories initialized with project-workflow, the local dependency-free helper exposes the same command surface:
+Run `doctor` after tracker or task-document changes and before handing work over.
 
-```bash
-./.project-workflow/cli/workflow doctor
-./.project-workflow/cli/workflow validate --strict
-```
+## IDs And Parallel Work
 
-### Task ID Namespaces and Generation
+`.project-workflow/config.json` controls prefixes and ID generation.
 
-Repos can choose task ID prefixes and ID generation in
-`.project-workflow/config.json`. If the file is missing, project-workflow keeps
-the compatibility default: sequential `TASK-###` IDs for tasks, reserved `FIX-###` IDs for
-lightweight fixes, `EPIC-###` IDs for epics, and `BL-###` IDs for backlog rows.
+The compatibility defaults are:
 
-Example:
+- `TASK-###` for standalone tasks;
+- reserved `FIX-###` IDs for lightweight fixes;
+- `EPIC-###` for epics;
+- `BL-###` for backlog rows.
+
+Repositories can configure domain prefixes such as `UI`, `MCP`, or `DEV` for tasks. Fix, Epic, and Backlog IDs retain their own namespaces.
+
+Sequential IDs are easy to read but can collide when several branches or agents allocate `max + 1` independently. Set the relevant `id_generation` value to `unique` for concurrent work:
 
 ```json
 {
-  "task_id_prefixes": ["TASK", "MCP", "UI", "DEV", "WF"],
-  "default_task_id_prefix": "WF",
+  "task_id_prefixes": ["TASK", "UI", "MCP", "DEV"],
+  "default_task_id_prefix": "TASK",
   "id_generation": {
-    "tasks": "sequential",
-    "epics": "sequential",
-    "fixes": "sequential",
-    "backlog": "sequential"
+    "tasks": "unique",
+    "epics": "unique",
+    "fixes": "unique",
+    "backlog": "unique"
   },
-  "unique_id_length": 5,
-  "accepted_doctor_warnings": [],
-  "prefix_guidance": {
-    "TASK": "General task work.",
-    "MCP": "MCP server, app tool, payload contract, fixture, orchestration.",
-    "UI": "Frontend, widget, component, route, layout, visual, interaction, UX.",
-    "DEV": "Local development, debug tooling, tunnels, build scripts.",
-    "WF": "Project workflow conventions, process automation, prompts, agent guidance."
-  }
+  "unique_id_length": 5
 }
 ```
 
-Use `task init --prefix UI` to force a configured namespace for one task. Omit
-`--prefix` to use the configured default. `epic decompose` uses
-`prefix_guidance` for mixed-prefix child rows by default; pass `--prefix MCP`
-only for a deliberately homogeneous batch.
+Unique IDs keep the namespace and use a short uppercase base36 suffix, such as `UI-K7F3Q`, `FIX-H4T2P`, `EPIC-R5M8T`, or `BL-Q6P4V`. The CLI checks workflow folders, the global tracker, epic trackers, and backlog rows before accepting a generated ID.
 
-For team repos with multiple active branches, set `id_generation` values to
-`unique` to avoid merge-time collisions from independent `max+1` allocation.
-Unique IDs keep the prefix and use a short uppercase base36 suffix, for example
-`WF-K7F3Q`, `FIX-H4T2P`, `EPIC-R5M8T`, and `BL-Q6P4V`. The default unique suffix length is
-`5`; the CLI checks existing tracker rows, epic trackers, backlog rows, and
-workflow task folders before accepting a generated ID.
-
----
-
-## Agent Modes
-
-`project init` supports four modes:
-
-- `github-copilot` (default)
-- `claude-code`
-- `codex`
-- `cursor`
-
-Aliases are also accepted for convenience (`copilot`, `claude`, `codex`, `cursor`).
-
----
-
-## How to Use (The Typical Workflow)
-
-You'll work in a cycle with your selected agent. Here's the pattern for building a new feature:
-
-### 0. **Set Project Outcomes** (recommended once per repo)
-
-Run `project.constitution` with a brief description of your project.
-
-This agent scans your repo and creates/updates `.project-workflow/CONSTITUTION.md` as the source of truth for product outcomes (non-technical).
-
-If technical guidance is missing, the agent should offer to create or update the relevant agent guidance file for the selected mode.
-
-Project Workflow is human-readable but agent-operated. The owner or PM supplies product intent, constraints, examples, decisions, and approvals conversationally; the agent runs the commands, drafts artifacts, asks targeted questions, validates readiness, implements, and records evidence. You should not normally fill templates by hand.
-
-Minimum owner context for task or epic intake:
-
-- Problem or opportunity
-- Desired outcome
-- Affected user, actor, or system
-- Scope boundaries and non-goals
-- Acceptance signal for "done"
-- Constraints, priority, risks, and relevant examples
-
-If that context is incomplete, the agent should ask focused questions and keep work in requirements/clarification rather than moving into implementation.
-
-### Optional: **Capture Future Backlog Items**
-
-Run `project.backlog` when you want to preserve future intent before it is ready to become a task or epic:
-
-```
-Action: add
-Title: Expanded dashboard planning
-Outcome: Keep the later planning-dashboard idea visible without making it active implementation work.
-```
-
-Backlog rows live in `.project-workflow/BACKLOG.md` with `BL-###` IDs by default,
-or `BL-K7F3Q` style IDs when backlog ID generation is configured as `unique`.
-They are not active execution state. `Accepted` means worth keeping or preparing,
-not ready to implement.
-
-When a backlog row is ready for workflow execution, promote it:
+For one task, force a configured namespace with:
 
 ```bash
-./.project-workflow/cli/workflow backlog status --id BL-001 --to Accepted
-./.project-workflow/cli/workflow backlog promote --id BL-001 --to task
-./.project-workflow/cli/workflow backlog promote --id BL-002 --to epic
+./.project-workflow/cli/workflow task init --title "Responsive account view" --prefix UI --update-tracker
 ```
 
-Promoted rows stay in the backlog with status `Promoted` and `Promoted To` set to
-the created task or epic ID. Execution status then belongs in
-`.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
+## Existing Work And Repository History
 
-Existing roadmap or backlog documents outside `.project-workflow/BACKLOG.md` are preserved. If you want to normalize them into the canonical backlog, create a repo-local project-workflow task and review the proposed rows before changing source documents.
+Use `task adopt` or `epic adopt` when bringing pre-existing work under current gates. Adoption records the current authority envelope and marks inferred pre-adoption evidence as untrusted until it is refreshed.
 
-### Route Active Work: Fix, Task, or Epic
+Project-workflow should preserve history:
 
-The agent recommends the route from the evidence; a user's label is useful context but is not
-binding:
+- promoted backlog rows remain visible;
+- completed Tasks and Epics remain complete;
+- later corrections link back through a Fix;
+- deferrals and Epic amendments record owner, date, reason, and follow-up;
+- tracker status changes use the CLI rather than silent Markdown edits.
 
-- Keep an in-scope correction in an active task or epic child.
-- Use a **Fix** for one bounded defect, regression, change request, or incident against a delivered
-  or accepted baseline.
-- Use a **Task** for a new outcome, material product decision/discovery, or multiple independent
-  work items.
-- Use an **Epic** for several coordinated outcomes or workstreams.
+This history is useful to humans and agents for the same reason: it distinguishes what was originally agreed from what was discovered later.
 
-Fixes do not create another tracking system. They use the same `.project-workflow/tasks/` directory
-and global `TRACKER.md`, with one lightweight `FIX.md`:
+## Day-To-Day Guidance
 
-```bash
-./.project-workflow/cli/workflow fix init --title "Export fails for large accounts"
-./.project-workflow/cli/workflow fix triage --id FIX-001
-./.project-workflow/cli/workflow fix status --id FIX-001 --to "In Progress"
-./.project-workflow/cli/workflow fix status --id FIX-001 --to Testing
-./.project-workflow/cli/workflow fix status --id FIX-001 --to Review
-./.project-workflow/cli/workflow fix close --id FIX-001 --disposition Fixed --decision "Verified bounded correction" --closed-by "Owner"
-```
+- Start with the outcome, not a preselected workflow type.
+- Keep one independently reviewable outcome per Task.
+- Use the smallest route that still captures the required decisions and proof.
+- Let the agent gather repository evidence before asking the owner questions it can answer locally.
+- Keep acceptance-criteria IDs stable from requirements through planning, validation, and QA.
+- Treat `Ready` as a passed gate, not a label applied by optimism.
+- Use Delegate when one Task has several planned work items with explicit dependencies; delegated work still passes through implementation, QA, and retro.
+- Commit workflow artifacts with the code they govern so branches and reviews carry their own context.
+- Put durable local conventions in `.project-workflow/guidance.md`.
+- Run `doctor` whenever workflow state feels uncertain.
 
-Completed work remains historically accurate and is linked rather than reopened by default. If a
-Fix grows beyond its lightweight envelope, use `fix promote --to task|epic`.
+Everything project-workflow creates is plain text. Owners can read it, agents can operate it, and teams can review it with the same Git history as the software it describes.
 
-### 1. **Create a Task** (5 min)
+## Reference And Support
 
-Run `project.task` and answer the quick questions:
-
-```
-Task title: User Account Export
-Create a git branch: yes
-```
-
-The agent will generate a task folder under `.project-workflow/tasks/` and update your tracker. Commit this scaffold.
-
-### 2. **Write Requirements** (15–30 min)
-
-Run `project.requirements` and provide your task details:
-
-```
-Task: TASK-001
-Goal: Allow users to export their account data as PDF
-Context: [any relevant links, design docs, constraints]
-```
-
-The agent will:
-
-- Ask discovery questions ("What format? Who sees this?")
-- Draft a user story
-- List acceptance criteria with stable IDs (`AC1`, `AC2`, etc.)
-- Ensure acceptance criteria are explicitly mappable to validation steps
-- Flag ambiguities as open questions
-
-Answer each question iteratively. The agent updates `.project-workflow/tasks/TASK-001-*/REQUIREMENTS.md` as you go.
-
-Resolve or explicitly accept open questions, review the requirements and ACs once, and let the
-agent record that exact owner-approved envelope with `task approve-requirements`.
-
-**Human checkpoint:** requirements/AC approval occurs here, before planning. After approval, the
-agent normally runs Planner, post-plan Clarify, `task ready`, and moves the task to `Ready`
-autonomously. A separate plan approval is optional for requested or exceptional high-risk work.
-
-### 3. **Create a Plan** (15 min)
-
-The agent runs `project.planner` after requirements approval:
-
-```
-Task: TASK-001
-Plan focus: API + UI for account export
-```
-
-The agent generates:
-
-- A phased approach (e.g., Phase 1: Backend API, Phase 2: UI)
-- Implementation task list
-- Validation steps for each phase, mapped to acceptance criteria IDs
-
-It updates `.project-workflow/tasks/TASK-001-*/IMPLEMENTATION.md` with a task table. Every implementation task row should reference one or more AC IDs, so QA can verify requirement coverage directly from the plan.
-
-**Output:** You now have a clear roadmap to code against.
-
-### 4. **Clarify for Internal Consistency** (10–20 min, always)
-
-After planning, the agent runs `project.clarify` to make sure REQUIREMENTS.md and IMPLEMENTATION.md are internally consistent:
-
-```
-Task: TASK-001
-Topic: Validate consistency between requirements and plan
-```
-
-The agent will:
-
-- Surface conflicts or ambiguous decisions
-- Propose options (A/B/C)
-- Record chosen decisions in REQUIREMENTS.md
-- Keep IMPLEMENTATION.md aligned with confirmed decisions
-
-The agent resolves implementation-detail gaps inside the approved envelope, runs `task ready`, and
-moves the task to `Ready`. Material scope or product-decision drift returns to the owner.
-
-### 5. **Implement & Validate** (varies)
-
-For each work item in the task list, run `project.implement`:
-
-```
-Task: TASK-001
-Work item: 1
-```
-
-The agent will:
-
-- Read your requirements and plan
-- Confirm the task is `Ready` inside an approved requirements/AC envelope
-- Run `./.project-workflow/cli/workflow task ready --id TASK-001` before coding
-- Make code changes incrementally
-- Run validation (tests, type checks, manual verification)
-- Report validation evidence by AC ID for the current work item
-- Run `./.project-workflow/cli/workflow task status --id TASK-001 --to "In Progress"` before coding and `./.project-workflow/cli/workflow task status --id TASK-001 --to Testing` after validation
-
-### 6. **QA & Code Review** (10-30 min)
-
-After implementation reaches `Testing`, run `project.qa-review`:
-
-```
-Task: TASK-001
-Scope: Review the implemented export flow
-```
-
-The agent will:
-
-- Map acceptance criteria IDs to validation evidence
-- Run validation it can perform directly before asking you for manual testing
-- Separate verified evidence from deferred setup, owner-only actions, or unavailable connector/OAuth checks
-- Review changed code for correctness, security, maintainability, and scope control
-- Record findings in `.project-workflow/tasks/TASK-001-*/IMPLEMENTATION.md`
-- Move the tracker through `Review`, then `Complete` with `task status` only after review passes and you explicitly approve completion
-
-### 7. **Retro & Update Conventions** (5-15 min)
-
-After the task is `Complete`, run `project.retro`:
-
-```
-Task: TASK-001
-Focus: Conventions, agent guidance, and follow-up tasks
-```
-
-The agent will:
-
-- Capture reusable lessons from the completed task
-- Update `.project-workflow/guidance.md` or the narrowest generated prompt/skill/agent asset when the task exposed a repeatable gap
-- Record the retro in `IMPLEMENTATION.md`
-- Propose separate follow-up tasks instead of reopening completed scope
-
-The full loop is: implement, validate, review, complete, and capture durable lessons.
-
-For multi-item orchestration, run `/project.delegate`:
-
-```
-Task: TASK-001
-Work items: 1,2,3
-Mode: parallel
-Dependencies: {"2":["1"],"3":["1"]}
-```
-
-Delegate behavior:
-
-- Defaults to `sequential` when mode is omitted
-- Supports `parallel` mode with dependency-aware eligibility
-- Uses a default worker limit of `4` in `parallel` mode when not provided
-- Validates dependency maps strictly (unknown IDs, self-dependencies, cycles)
-- Uses fail-fast launch behavior while allowing in-flight items to finish
-- Routes each delegated item through `project.implement`; the completed set still goes through QA/code review and retro
-
-### Epic Workflow (Proposal-First)
-
-Use this when work spans multiple child tasks under a single epic.
-
-Installed CLI path:
-
-```bash
-project epic init --title "Checkout Reliability"
-project epic lifecycle --epic-id EPIC-001 --to Analysing
-project epic approve-requirements --epic-id EPIC-001 --approved-by "Product Owner" --source "Owner approved epic requirements and decomposition boundary"
-project epic decompose --epic-id EPIC-001 --limit 5 --type Task
-project epic approve --epic-id EPIC-001 --id TASK-014
-project epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
-```
-
-Local workflow script path (inside an initialized repo):
-
-```bash
-.venv/bin/python .project-workflow/cli/workflow.py epic init --title "Checkout Reliability"
-.venv/bin/python .project-workflow/cli/workflow.py epic lifecycle --epic-id EPIC-001 --to Analysing
-.venv/bin/python .project-workflow/cli/workflow.py epic approve-requirements --epic-id EPIC-001 --approved-by "Product Owner" --source "Owner approved epic requirements and decomposition boundary"
-.venv/bin/python .project-workflow/cli/workflow.py epic decompose --epic-id EPIC-001 --limit 5 --type Task
-.venv/bin/python .project-workflow/cli/workflow.py epic approve --epic-id EPIC-001 --id TASK-014
-.venv/bin/python .project-workflow/cli/workflow.py epic scaffold-child --epic-id EPIC-001 --id TASK-014 --create-branch --epic-branch epic/epic-001-checkout-reliability
-```
-
-Epic workflow rules:
-
-- `epic init` auto-assigns the next configured epic ID and writes an epic `REQUIREMENTS.md`, `EPIC-CONTRACT.md`, epic `TRACKER.md`, `DEFERRALS.md`, `AMENDMENTS.md`, `RETRO.md`, and `ACCEPTANCE-MAP.md`.
-- `epic init` also writes `DEFERRALS.md`, where owner-approved deferrals must record parent AC, status, owner, decision date, reason, and follow-up reference.
-- `ACCEPTANCE-MAP.md` is the in-progress parent AC coverage view. It is refreshed by epic lifecycle commands from requirements, tracker rows, deferrals, and child evidence.
-- Epic requirements should use stable parent acceptance criteria IDs (`AC1`, `AC2`, etc.) and preserve existing IDs across revisions.
-- `epic approve-requirements` records the owner-approved requirements/AC authority envelope. It should happen once after requirements are ready; unchanged child work inside that envelope should proceed without repeated owner approval.
-- Approval gates are drift checks, not approval fatigue. Missing/stale requirements, out-of-envelope child rows, and evidence gaps should fail with concrete reasons for the agent to fix or amend.
-- `EPIC-CONTRACT.md` records the epic sources of truth, invalid substitutes, invariants, artifact targets, and parent AC proof owners. New/adopted epics must replace placeholder contract content before decomposition, child approval/scaffolding, or movement into `Ready`/`In Progress`.
-- `epic lifecycle` safely updates the global epic row through `Analysing`, `Ready`, `In Progress`, and `Closeout`. `Ready`, `In Progress`, and `Closeout` are gated; `Complete` remains owned by `epic closeout --complete`.
-- New epic trackers include a `Parent ACs` column for child-row coverage. Legacy trackers that use `Notes` values such as `Covers AC1, AC3` remain supported.
-- `epic decompose` writes Proposed child rows and `DECOMPOSITION.md`, the approved child-row authority plan. It does not scaffold child folders/docs.
-- If requirements include a `Proposed Child Work` table, `epic decompose` uses that owner-reviewed decomposition before falling back to generated requirement/AC candidates.
-- `epic decompose` reads `.project-workflow/config.json` prefix guidance by default and can propose mixed-prefix child rows. Use `--prefix <PREFIX>` only when intentionally forcing one configured namespace for the whole batch.
-- `epic approve`, `epic scaffold-child`, `epic ready-child`, and `epic status` reject child rows whose ID, title, or parent AC coverage does not match `DECOMPOSITION.md`; matching rows inside the plan do not need separate per-row owner approval.
-- `epic amend` records an owner-approved amendment in `AMENDMENTS.md` and appends the matching Proposed child row. Use it for mid-epic reactive fixes, new child work, source-of-truth changes, artifact identity changes, or proof-obligation changes; direct tracker edits outside decomposition/amendment authority remain blocked.
-- `task adopt` and `epic adopt` bring pre-existing work under current gates by recording an approval envelope plus a `Legacy Adoption` block. Pre-adoption inferred evidence is marked untrusted unless `--evidence-refreshed` is used after refreshing proof.
-- `epic scaffold-child` only accepts Approved rows, moves the row to In Progress after scaffold, and copies parent AC coverage plus a contract-derived child charter into the child `REQUIREMENTS.md` and `IMPLEMENTATION.md`.
-- `epic ready` validates epic requirements before decomposition; `epic ready-child` validates planned child requirements and implementation readiness before implementation/testing.
-- `epic status` moves planned epic child rows through `Testing`, `Review`, and `Complete`; `Complete` requires QA/code-review evidence and parent AC evidence for assigned parent ACs.
-- Scaffolded epic child docs include `Parent AC Coverage`, `Child Charter`, `Parent AC Evidence`, and `EVIDENCE.json` so QA can prove only the parent epic criteria the child owns.
-- Proof recipes are triggered by requirements and material claims. Built-in recipes cover `visual-reference-fidelity`, `external-contract-alignment`, `deployed-artifact-alignment`, `runtime-target-source`, and `responsive-visual-behavior`.
-- When a proof recipe is triggered, `epic status` blocks `Review`/`Complete`, `epic audit` refuses parent AC credit, and `doctor` fails invalid current states unless `EVIDENCE.json` contains passing structured claim records with recipe-specific fields and evidence artifacts.
-- Invalid substitutes do not count as partial proof. For example, visual/reference fidelity cannot be satisfied by code review, unit tests, build output, surrogate surfaces, or unrendered inspection; runtime target/source claims require evidence of the exact execution target and source/artifact under test.
-- The global tracker summarizes epic rows; each epic `TRACKER.md` owns child rows. Proposed child rows should not be added to the global tracker.
-- `epic audit` writes `ACCEPTANCE-AUDIT.md`; the audit is the closeout evidence artifact, while `ACCEPTANCE-MAP.md` remains the working coverage map.
-- `epic closeout` validates gates and only marks the global epic row Complete when `--complete` is explicit, all parent ACs have evidence or approved deferrals, and `RETRO.md` records lessons, follow-ups, deferrals, and missed in-scope work. Use explicit `None.` entries when a retro section has nothing to report.
-- Child IDs remain globally unique within configured task prefix namespaces across standalone and epic-managed work.
-- If `--create-branch` is used for epic child scaffold, `--epic-branch` must already exist; the command fails fast and never falls back to a base branch.
-
----
-
-## File Structure (After Init)
-
-### GitHub Copilot mode (`uvx --from git+https://github.com/johndetlefs/project-workflow.git project init`)
-
-```
-your-project/
-├── .project-workflow/
-│   ├── TRACKER.md                    # ← Check this to see project status
-│   ├── BACKLOG.md                    # ← Optional future-intent backlog
-│   ├── guidance.md                   # ← User-owned workflow guidance
-│   ├── CONSTITUTION.md               # ← Product outcomes (non-technical)
-│   ├── cli/
-│   │   ├── workflow                  # Advanced: manual task scaffolding
-│   │   └── workflow.py
-│   └── tasks/
-│       ├── TASK-001-User-Export/
-│       │   ├── IMPLEMENTATION.md      # ← User story, tasks, QA, retro
-│       │   └── REQUIREMENTS.md        # ← Goals, specs, decisions (auto-updated)
-│       ├── FIX-001-Export-Regression/
-│       │   └── FIX.md                 # ← Lightweight report, triage, plan, evidence, closeout
-│       └── TASK-002-*/
-│           └── ...
-├── .github/
-│   ├── copilot-instructions.md       # ← Host-owned file with Project Workflow managed block
-│   └── prompts/                      # ← Agent definitions used by Copilot
-│       ├── Constitution.prompt.md    # /project.constitution
-│       ├── Backlog.prompt.md         # /project.backlog
-│       ├── Task.prompt.md            # /project.task
-│       ├── Epic.prompt.md            # /project.epic
-│       ├── Fix.prompt.md             # /project.fix
-│       ├── Requirements.prompt.md    # /project.requirements
-│       ├── Clarify.prompt.md         # /project.clarify
-│       ├── Planner.prompt.md         # /project.planner
-│       ├── Delegate.prompt.md        # /project.delegate
-│       ├── Implement.prompt.md       # /project.implement
-│       ├── QAReview.prompt.md        # /project.qa-review
-│       └── Retro.prompt.md           # /project.retro
-└── [your code]
-```
-
-### Claude Code mode (`uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent claude-code`)
-
-```
-your-project/
-├── .project-workflow/
-│   ├── TRACKER.md
-│   ├── BACKLOG.md
-│   ├── CONSTITUTION.md
-│   ├── cli/
-│   │   ├── workflow
-│   │   └── workflow.py
-│   └── tasks/
-│       └── ...
-├── .claude/
-│   └── agents/
-│       ├── project-constitution.md
-│       ├── project-backlog.md
-│       ├── project-task.md
-│       ├── project-epic.md
-│       ├── project-fix.md
-│       ├── project-requirements.md
-│       ├── project-clarify.md
-│       ├── project-planner.md
-│       ├── project-delegate.md
-│       ├── project-implement.md
-│       ├── project-qa-review.md
-│       └── project-retro.md
-└── [your code]
-```
-
-### OpenAI Codex mode (`uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent codex`)
-
-```
-your-project/
-├── .project-workflow/
-│   ├── TRACKER.md
-│   ├── BACKLOG.md
-│   ├── CONSTITUTION.md
-│   ├── cli/
-│   │   ├── workflow
-│   │   └── workflow.py
-│   └── tasks/
-│       └── ...
-├── AGENTS.md
-├── .agents/
-│   └── skills/
-│       ├── project-constitution/
-│       ├── project-backlog/
-│       ├── project-task/
-│       ├── project-epic/
-│       ├── project-fix/
-│       ├── project-requirements/
-│       ├── project-clarify/
-│       ├── project-planner/
-│       ├── project-delegate/
-│       ├── project-implement/
-│       ├── project-qa-review/
-│       └── project-retro/
-└── [your code]
-```
-
-### Cursor mode (`uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor`)
-
-```
-your-project/
-├── .project-workflow/
-│   ├── TRACKER.md
-│   ├── BACKLOG.md
-│   ├── CONSTITUTION.md
-│   ├── cli/
-│   │   ├── workflow
-│   │   └── workflow.py
-│   └── tasks/
-│       └── ...
-├── .cursor/
-│   ├── agents/
-│   │   ├── project-constitution.md
-│   │   ├── project-backlog.md
-│   │   ├── project-task.md
-│   │   ├── project-epic.md
-│   │   ├── project-fix.md
-│   │   ├── project-requirements.md
-│   │   ├── project-clarify.md
-│   │   ├── project-planner.md
-│   │   ├── project-delegate.md
-│   │   ├── project-implement.md
-│   │   ├── project-qa-review.md
-│   │   └── project-retro.md
-│   └── rules/
-│       └── project-workflow.mdc
-└── [your code]
-```
-
----
-
-## Tips for Best Results
-
-### 📌 Structure Your Workflow
-
-The agents are designed to be used **in order**. Skipping steps = ambiguous code and rework.
-
-1. **Constitution (once)** → 2. **Backlog (optional)** → 3. **Route Fix/Task/Epic** → 4. **Requirements + owner approval (Task/Epic)** → 5. **Planner** → 6. **Clarify + Ready** → 7. **Implement** → 8. **QA & Code Review** → 9. **Retro when reusable**
-
-Always run Clarify after Planner to verify internal consistency before implementation.
-Use **Delegate** as an execution option when a task has multiple work items with dependencies.
-Always run QA & Code Review before marking work complete, then run Retro after completion to keep conventions and agent guidance current.
-
-### 📝 Keep Agent Definitions in the Repo
-
-Commit your mode-specific agent definitions so the whole team uses the same workflow:
-
-- `.github/prompts/` (Copilot)
-- `.claude/agents/` (Claude Code)
-- `AGENTS.md` managed block and `.agents/skills/` (Codex)
-- `.cursor/agents/` and `.cursor/rules/project-workflow.mdc` (Cursor)
-- `.project-workflow/guidance.md` for repo-specific workflow guidance that should survive init refreshes
-
-### 🔍 Review Generated Docs Before Coding
-
-When `/project.requirements` or `/project.planner` finishes:
-
-- Read the generated REQUIREMENTS.md and IMPLEMENTATION.md
-- Edit directly if something is wrong
-- Your agent will respect your edits on next use
-
-### 🧪 Keep Validation Terminal-Safe
-
-When running local validation or failure-path simulations, use commands that are resilient in interactive shells:
-
-- Prefer explicit virtual-environment binaries on every command (`.venv/bin/python`, `.venv/bin/project`) instead of relying on shell activation state.
-- In initialized repos, run generated workflow commands via Python for consistency:
-
-```bash
-.venv/bin/python .project-workflow/cli/workflow.py task init --help
-```
-
-- For expected-failure checks, avoid very long chained shell commands; use stepwise commands or a short script file.
-- Capture and assert non-zero exit codes explicitly so expected failures are treated as test outcomes rather than terminal crashes.
-
-### 🚀 One Feature = One Task ID
-
-Don't mix multiple features under one task. It makes the tracker useless.
-
-Good: `TASK-001: User Account Export`  
-Bad: `TASK-001: Export + Billing View + Email Notifications`
-
-### ⚡ Use the TRACKER as Your Source of Truth
-
-`.project-workflow/TRACKER.md` is visible to everyone. Use it to communicate status to your team.
-
-```markdown
-| ID       | Title                  | Status      | Docs                                               |
-| -------- | ---------------------- | ----------- | -------------------------------------------------- |
-| TASK-001 | User Account Export    | Complete    | `tasks/TASK-001-User-Export/IMPLEMENTATION.md`     |
-| TASK-002 | Fix login timeout      | In Progress | `tasks/TASK-002-Login-Timeout/IMPLEMENTATION.md`   |
-| TASK-003 | Email retention policy | To Do       | `tasks/TASK-003-Email-Retention/IMPLEMENTATION.md` |
-```
-
-### Commit Early, Commit Often
-
-- After Task scaffold -> Commit
-- After Requirements -> Commit
-- After Planner + Clarify alignment -> Commit
-- After each work item -> Commit
-- After QA & Code Review -> Commit
-- After Retro updates -> Commit
-
-This keeps your history clean and lets teammates review requirements before coding starts.
-
----
-
-## Example: Start to Finish
-
-```bash
-# 1. Initialize
-$ uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
-✅ Project workflow initialized
-
-# 2. Run project.constitution once per repo
-# 3. Provide a project brief; the agent scans repo and updates CONSTITUTION.md
-# 4. Commit: "docs: establish project constitution"
-
-# 5. Run project.task
-# 6. Answer: Title="Dark Mode Support", Branch=yes
-# 7. The agent runs: ./.project-workflow/cli/workflow task init ...
-# 8. Commit: "scaffold: TASK-001 Dark Mode Support"
-
-# 9. Run project.requirements
-# 10. Answer discovery questions; the agent updates REQUIREMENTS.md
-# 11. Commit: "requirements: TASK-001 dark mode draft"
-
-# 12. Run project.planner
-# 13. The agent generates implementation plan and updates IMPLEMENTATION.md with task table
-
-# 14. Run project.clarify
-# 15. Resolve any conflicts/open questions between requirements and plan
-# 16. Repeat project.clarify until consistent
-# 17. Commit: "plan+clarify: TASK-001 dark mode aligned requirements and plan"
-
-# 18. Run project.implement
-# 19. The agent implements Phase 1, runs tests, and uses task status to move TRACKER to Testing
-# 20. You review changes, commit
-# 21. Repeat for Phase 2, 3, ... with the same task ID
-
-# 22. Run project.qa-review
-# 23. The agent records findings/evidence and completes only after approval
-
-# 24. Run project.retro
-# 25. The agent updates durable conventions or agent guidance when needed
-```
-
----
-
-## What Happens Inside the Agent?
-
-When you run an agent command or skill (for example `project.requirements`) and provide inputs (task ID, goal, etc.), the agent:
-
-1. **Reads** your existing task files (REQUIREMENTS.md, IMPLEMENTATION.md)
-2. **Asks** clarifying questions (discovers gaps)
-3. **Generates** structured Markdown (requirements, plans, code), preserving AC IDs from requirements through implementation tasks
-4. **Updates** your local files (you can review before accepting)
-5. **Syncs** TRACKER.md with `task status` (To Do -> In Progress -> Testing -> Review -> Complete)
-6. **Keeps conventions current** with a retro after completion
-
-When you run `project.epic`, decomposition keeps source AC IDs in proposed child rows when possible, and scaffolded child tasks follow the same AC-mapped implementation planning rules.
-
-When you run `project.delegate`, the agent also:
-
-1. Validates dependency-map input before any item starts
-2. Runs work items in `sequential` or dependency-aware `parallel` mode
-3. Applies fail-fast launch behavior and reports failed/halted outcomes clearly
-4. Routes each delegated work item through `project.implement`
-
-Everything is **plain text**—you can edit, version control, and code-review it like any other file.
-
-When the workflow state feels uncertain, run `project doctor` before continuing. It validates tracker structure, linked task docs, epic tracker schemas, active AC-to-task mapping, completion evidence warnings, and source-repository prompt/template mirror parity when applicable.
-
----
-
-## When Things Go Wrong
-
-**"The agent's plan doesn't match my codebase"**
-
-→ Edit REQUIREMENTS.md to clarify constraints, re-run `project.planner`, then run `project.clarify` to ensure consistency before implementation.
-
-**"I want to change the requirements mid-way"**
-
-→ Prefer running `project.requirements` again so the agent updates REQUIREMENTS.md, then run `project.planner`, then `project.clarify`, and only then continue with `project.implement`. In a pinch, you can edit REQUIREMENTS.md manually first, but still run Planner + Clarify before implementation.
-
-**"My agents keep generating the same output"**
-
-→ Put repo-specific workflow constraints, validation commands, and local handoff notes in `.project-workflow/guidance.md`. Review generated definitions (`.github/prompts/`, `.claude/agents/`, `.agents/skills/`, `.cursor/agents/`, or `.cursor/rules/project-workflow.mdc`) only when the reusable workflow itself needs to change.
-
-**"I want to scaffold a task without using an agent"**
-
-→ Use the local CLI:
-
-```bash
-./.project-workflow/cli/workflow task init --title "Manual Task" --update-tracker
-```
-
----
-
-## Architecture (if you're curious)
-
-- **Agents** (mode-specific definitions)
-  - Copilot: `/project.*` via `.github/prompts/*.prompt.md`
-  - Claude Code: `.claude/agents/*.md`
-  - Codex: `AGENTS.md` managed block plus `.agents/skills/project-*/SKILL.md`
-  - Cursor: `.cursor/agents/*.md` plus `.cursor/rules/project-workflow.mdc`
-- **Tracker** (`.project-workflow/TRACKER.md`) — Single source of truth for project status
-- **Guidance** (`.project-workflow/guidance.md`) — User-owned repo-specific workflow guidance
-- **Constitution** (`.project-workflow/CONSTITUTION.md`) — Product outcome source of truth (non-technical)
-- **Task docs** (`.project-workflow/tasks/*/`) — REQUIREMENTS.md (goals) + IMPLEMENTATION.md (plan + user story + QA + retro)
-- **Local CLI** (`.project-workflow/cli/`) — Scaffolds new tasks, validates workflow state, and manages git branches (optional, can be automated via agents)
-
-No database, no external service, no vendor lock-in—just Markdown and git.
-
----
+- Run `./.project-workflow/cli/workflow --help` for the current command surface.
+- Read the [local CLI guide](.project-workflow/cli/README.md) for command-level detail.
+- Report defects or propose improvements through [GitHub Issues](https://github.com/johndetlefs/project-workflow/issues).
 
 ## License
 
-MIT
-
----
-
-## Questions?
-
-- 💬 Check [GitHub Issues](https://github.com/johndetlefs/project-workflow/issues)
-- 🔧 Customize mode-specific agent definitions to fit your team's needs
-- 📚 Read the [Local CLI docs](.project-workflow/cli/README.md) for advanced task scaffolding
+Project-workflow is available under the [MIT License](LICENSE).
