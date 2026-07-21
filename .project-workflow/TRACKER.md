@@ -18,5 +18,5 @@
 | TASK-038 | Lightweight Fix And Defect Workflow | Complete | `tasks/TASK-038-Lightweight-Fix-And-Defect-Workflow/IMPLEMENTATION.md` |
 | FIX-001 | Explicit Fix ID Generation Configuration | Complete | `tasks/FIX-001-Explicit-Fix-Id-Generation-Configuration/FIX.md` |
 | FIX-002 | Avoid False Workflow References In URLs | Complete | `tasks/FIX-002-Avoid-False-Workflow-References-In-Urls/FIX.md` |
-| EPIC-007 | Repo Migration And Adoption Tooling | To Do | `tasks/EPIC-007-Repo-Migration-And-Adoption-Tooling/REQUIREMENTS.md` |
+| EPIC-007 | Repo Migration And Adoption Tooling | Analysing | `tasks/EPIC-007-Repo-Migration-And-Adoption-Tooling/REQUIREMENTS.md` |
 | TASK-039 | Comprehensive README Refresh | Complete | `tasks/TASK-039-Comprehensive-Readme-Refresh/IMPLEMENTATION.md` |
