@@ -17,5 +17,6 @@ This repository uses project-workflow. Keep workflow state in `.project-workflow
 - New/adopted epics require non-placeholder `EPIC-CONTRACT.md` before decomposition, child approval/scaffolding, or movement into Ready/In Progress.
 - If requirements or claims trigger visual/reference, external contract, deployed artifact, runtime target/source, or responsive visual proof, fill child-local `EVIDENCE.json`; QA prose, tests, builds, or surrogate artifacts are invalid substitutes.
 - Use `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` for tracker lifecycle changes.
+- Keep version command ownership explicit: init refreshes managed assets, Doctor diagnoses without mutation, and upgrade transforms repository schema. Review `upgrade` first; apply only with `--apply --plan-fingerprint <SHA256>` in a clean worktree.
 - Run `./.project-workflow/cli/workflow doctor` after tracker or task-doc changes.
 <!-- project-workflow:end -->

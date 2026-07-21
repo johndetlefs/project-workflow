@@ -657,6 +657,10 @@ def _managed_project_workflow_block() -> str:
         "`EVIDENCE.json`; QA prose, tests, builds, or surrogate artifacts are invalid substitutes.\n"
         "- Use `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` "
         "for tracker lifecycle changes.\n"
+        "- Keep version command ownership explicit: init refreshes managed assets, Doctor "
+        "diagnoses without mutation, and upgrade transforms repository schema. Review "
+        "`upgrade` first; apply only with `--apply --plan-fingerprint <SHA256>` in a clean "
+        "worktree.\n"
         "- Run `./.project-workflow/cli/workflow doctor` after tracker or task-doc changes.\n"
         f"{MANAGED_BLOCK_END}"
     )
