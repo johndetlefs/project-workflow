@@ -120,5 +120,6 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 
 - Run `.project-workflow/cli/workflow doctor` when workflow state is uncertain or before continuing after tracker/task doc edits.
 - Use `.project-workflow/cli/workflow doctor --strict` when safety warnings should block autonomous work.
+- Keep command ownership explicit: init refreshes managed assets, Doctor diagnoses without mutation, and upgrade transforms repository schema. Review `upgrade` first; apply only with `--apply --plan-fingerprint <SHA256>` in a clean worktree.
 - Run the most relevant available tests, type checks, linters, or manual verification steps for the changed work.
 - If broad validation fails for unrelated pre-existing reasons, run the narrowest meaningful checks and report the limitation.

@@ -582,6 +582,35 @@ def test_compatibility_policy_retains_legacy_and_current_schema() -> None:
     assert "Refreshing generated assets does not by itself upgrade" in policy
 
 
+def test_upgrade_documentation_and_agent_guidance_match_command_contract() -> None:
+    readme = " ".join((REPO_ROOT / "README.md").read_text(encoding="utf-8").split())
+    changelog = (REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    compatibility = (REPO_ROOT / "COMPATIBILITY.md").read_text(encoding="utf-8")
+    guidance_paths = (
+        REPO_ROOT / "src" / "project_workflow" / "codex" / "AGENTS.md",
+        REPO_ROOT / "src" / "project_workflow" / "cursor" / "rules" / "project-workflow.mdc",
+    )
+
+    for required in (
+        "doctor --format json",
+        "upgrade --format json",
+        "--apply",
+        "--plan-fingerprint",
+        "clean Git worktree",
+        "PW-0001-legacy-manifest",
+        "COMPATIBILITY.md",
+    ):
+        assert required in readme
+    assert "transactional `project upgrade --apply`" in changelog
+    assert "PW-0001-legacy-manifest" in changelog
+    assert "PW-0001-legacy-manifest" in compatibility
+    for path in guidance_paths:
+        guidance = path.read_text(encoding="utf-8")
+        assert "init refreshes managed assets" in guidance
+        assert "Doctor diagnoses without mutation" in guidance
+        assert "--apply --plan-fingerprint <SHA256>" in guidance
+
+
 def test_project_init_creates_and_preserves_current_manifest(tmp_path: Path) -> None:
     first = run_project(["init"], cwd=tmp_path)
     assert first.returncode == 0, first.stdout + first.stderr

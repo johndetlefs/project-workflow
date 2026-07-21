@@ -34,6 +34,10 @@ breaking release.
 Migration IDs are ordered and immutable. A future release may append migrations but must not
 rename or reinterpret an ID already recorded by a repository.
 
+The schema-1 baseline migration is `PW-0001-legacy-manifest`. It creates only the managed manifest
+and records its own ID; historical workflow documents and user-owned content remain unchanged and
+continue to be diagnosed by Doctor.
+
 Removing a schema from the support window requires all of the following:
 
 1. A breaking package release.

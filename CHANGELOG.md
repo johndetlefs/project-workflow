@@ -6,12 +6,18 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- Added explicit package, generated-asset, and repository-schema metadata in `.project-workflow/manifest.json`.
+- Added stable structured Doctor finding codes, remediation ownership, mechanical eligibility, and `doctor --format json`.
+- Added deterministic non-mutating `project upgrade` human/JSON plans with input and predicted-output hashes.
+- Added explicit fingerprint-bound transactional `project upgrade --apply`, clean-worktree and stale-plan rejection, rollback, and idempotent no-op behavior.
+- Added immutable production migration `PW-0001-legacy-manifest` and checked-in historical preservation fixtures.
 - Added configurable sequential or unique workflow ID generation for tasks, epics, and backlog rows.
 - Added 5-character uppercase base36 unique IDs with local collision checks across trackers, backlog rows, and task folders.
 - Added config-backed accepted doctor warning fingerprints and `doctor --show-accepted`.
 
 ### Changed
 
+- Made init version-aware: fresh repositories receive a current manifest, legacy repositories remain unmigrated and receive upgrade direction, and invalid/future manifests are preserved.
 - Updated workflow validation, generated agent guidance, and README documentation to support configured unique IDs and accepted doctor warnings.
 
 ## 0.1.2 - 2026-06-04

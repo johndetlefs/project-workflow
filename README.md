@@ -43,6 +43,7 @@ The initialized agent instructions and skills tell the agent how to create the r
 - Evidence and QA gates that make completion mean more than "the code was written."
 - Proposal-first epics for coordinated work that needs decomposition and closeout.
 - Agent guidance that can be refreshed without replacing your repository-owned instructions.
+- Versioned repository upgrades with non-mutating plans, explicit apply, stale-plan rejection, and rollback.
 
 Project-workflow is not a replacement for Jira, Linear, or another planning system. It is the execution layer beside the code: the place where agents can reliably read the agreed outcome, current status, proof obligations, and next action.
 
@@ -278,6 +279,11 @@ Init is idempotent:
 - user-owned workflow files and unmarked host content are preserved;
 - when generated content cannot safely replace an unmarked existing file, init writes a `*.new` file for review.
 
+Init detects repository state before refreshing assets. A genuinely new installation receives a
+current `.project-workflow/manifest.json`. A recognized pre-versioned repository remains
+manifest-free and is directed to `project upgrade`; init does not claim its durable state was
+migrated. Invalid or future manifests are reported and preserved byte-for-byte.
+
 Older initialized repositories may not have newer commands in `./.project-workflow/cli/workflow` until the canonical UVX init command refreshes the local helper.
 
 ### Generated Structure
@@ -290,6 +296,7 @@ Every mode creates the shared workflow core:
 |-- TRACKER.md
 |-- CONSTITUTION.md
 |-- config.json
+|-- manifest.json
 |-- guidance.md
 |-- cli/
 |   |-- workflow
@@ -331,6 +338,17 @@ Strict mode makes safety warnings fail automation:
 
 Doctor checks tracker structure, linked task documents, readiness and completion evidence, epic schemas and coverage, and source-repository asset parity where applicable.
 
+For agents and CI, use the versioned JSON envelope:
+
+```bash
+./.project-workflow/cli/workflow doctor --format json
+./.project-workflow/cli/workflow doctor --strict --format json
+```
+
+Each finding includes a stable code, original and effective severity, affected artifact,
+remediation owner, mechanical-upgrade eligibility, acceptance state, legacy state, message, and
+fingerprint. Human and JSON output share the same finding evaluation and exit behavior.
+
 Warnings have stable fingerprints. A known historical warning can be accepted in `.project-workflow/config.json` with a reason:
 
 ```json
@@ -351,6 +369,41 @@ Accepted warnings are hidden from normal output and do not fail strict mode. The
 ```
 
 Run `doctor` after tracker or task-document changes and before handing work over.
+
+## Repository Upgrades
+
+The commands have separate responsibilities:
+
+- `project init` installs or refreshes managed executable and agent assets.
+- `project doctor` diagnoses repository and workflow state without mutation.
+- `project upgrade` transforms durable repository state through versioned migrations.
+
+Planning is always the default and does not change repository files:
+
+```bash
+./.project-workflow/cli/workflow upgrade
+./.project-workflow/cli/workflow upgrade --format json
+```
+
+Review the ordered migrations, exact target files, input and predicted-output hashes, blockers,
+owner decisions, and plan fingerprint. Apply requires the exact reviewed fingerprint and a clean
+Git worktree, including no untracked files:
+
+```bash
+./.project-workflow/cli/workflow upgrade \
+  --apply \
+  --plan-fingerprint sha256:<REVIEWED_PLAN_FINGERPRINT>
+```
+
+Apply rebuilds the plan, rechecks repository state and hashes, computes all outputs before writing,
+and replaces only declared targets. A failed multi-file replacement restores touched targets; a
+second apply at the current schema is a no-op. Missing approvals, stale evidence, accepted warnings,
+deferrals, and owner decisions remain visible and are never upgraded into authority.
+
+The first production migration, `PW-0001-legacy-manifest`, adopts the schema-1 manifest for a
+recognized pre-versioned repository without rewriting its tracker, backlog, config, guidance,
+task/Epic history, evidence, or unmarked content. See [COMPATIBILITY.md](COMPATIBILITY.md) for the
+support policy.
 
 ## IDs And Parallel Work
 
