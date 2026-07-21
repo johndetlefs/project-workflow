@@ -75,6 +75,25 @@ REPOSITORY_COMPATIBILITY_STATES = (
     "invalid",
     "not-initialized",
 )
+DOCTOR_OUTPUT_SCHEMA_VERSION = 1
+DOCTOR_REMEDIATION_OWNERS = ("project-workflow", "agent", "owner")
+DOCTOR_FINDING_CODES = (
+    "PW_APPROVAL_REQUIRED",
+    "PW_BACKLOG_INVALID",
+    "PW_CONFIG_INVALID",
+    "PW_DECOMPOSITION_INVALID",
+    "PW_DEFERRAL_INVALID",
+    "PW_DUPLICATE_ID",
+    "PW_EPIC_CONTRACT_INVALID",
+    "PW_EVIDENCE_REQUIRED",
+    "PW_FIX_INVALID",
+    "PW_GENERATED_ASSET_DRIFT",
+    "PW_GENERATED_UPDATE_PENDING",
+    "PW_OWNER_DECISION_REQUIRED",
+    "PW_TASK_DOCUMENT_INVALID",
+    "PW_TRACKER_INVALID",
+    "PW_WORKFLOW_INVALID",
+)
 RECOGNIZED_WORKFLOW_PATHS = (
     "TRACKER.md",
     "BACKLOG.md",
@@ -659,9 +678,37 @@ class TaskSpec:
 
 @dataclass(frozen=True)
 class DoctorIssue:
+    code: str
     severity: str
     path: str
     message: str
+    remediation_owner: str
+    mechanically_upgradeable: bool
+
+    def __post_init__(self) -> None:
+        if self.code not in DOCTOR_FINDING_CODES:
+            raise ValueError(f"Unknown Doctor finding code: {self.code}")
+        if self.remediation_owner not in DOCTOR_REMEDIATION_OWNERS:
+            raise ValueError(f"Unknown Doctor remediation owner: {self.remediation_owner}")
+
+
+@dataclass(frozen=True)
+class DoctorEvaluation:
+    issues: tuple[DoctorIssue, ...]
+    visible_issues: tuple[DoctorIssue, ...]
+    accepted_issues: tuple[DoctorIssue, ...]
+    blocking_issues: tuple[DoctorIssue, ...]
+    current_issues: tuple[DoctorIssue, ...]
+    legacy_issues: tuple[DoctorIssue, ...]
+    strict: bool
+
+    @property
+    def status(self) -> str:
+        if self.blocking_issues:
+            return "fail"
+        if self.visible_issues:
+            return "warning"
+        return "pass"
 
 
 @dataclass(frozen=True)
@@ -3244,8 +3291,56 @@ def _doctor_check_implementation_ac_mapping(
             )
 
 
+def _doctor_issue_metadata(path: Path | str, message: str) -> tuple[str, str, bool]:
+    path_text = str(path).replace("\\", "/").lower()
+    message_text = message.lower()
+
+    if "local workflow cli differs" in message_text or (
+        "source " in message_text
+        and ("mirror differs" in message_text or "does not match" in message_text)
+    ):
+        return "PW_GENERATED_ASSET_DRIFT", "project-workflow", True
+    if "generated project-workflow update is pending" in message_text:
+        return "PW_GENERATED_UPDATE_PENDING", "owner", False
+    if "approval" in message_text or "approved" in message_text:
+        return "PW_APPROVAL_REQUIRED", "owner", False
+    if "evidence" in message_text:
+        return "PW_EVIDENCE_REQUIRED", "owner", False
+    if "deferral" in message_text:
+        return "PW_DEFERRAL_INVALID", "owner", False
+    if "owner input" in message_text or "owner decision" in message_text:
+        return "PW_OWNER_DECISION_REQUIRED", "owner", False
+    if "duplicate" in message_text and "id" in message_text:
+        return "PW_DUPLICATE_ID", "agent", False
+    if "decomposition" in message_text:
+        return "PW_DECOMPOSITION_INVALID", "agent", False
+    if "epic-contract.md" in path_text or "epic contract" in message_text:
+        return "PW_EPIC_CONTRACT_INVALID", "agent", False
+    if path_text.endswith("/.project-workflow/config.json") or "namespace config" in message_text:
+        return "PW_CONFIG_INVALID", "agent", False
+    if "backlog.md" in path_text or "backlog" in message_text:
+        return "PW_BACKLOG_INVALID", "agent", False
+    if "/fix-" in path_text or message_text.startswith("fix-"):
+        return "PW_FIX_INVALID", "agent", False
+    if "tracker.md" in path_text or "tracker" in message_text:
+        return "PW_TRACKER_INVALID", "agent", False
+    if "/tasks/" in path_text:
+        return "PW_TASK_DOCUMENT_INVALID", "agent", False
+    return "PW_WORKFLOW_INVALID", "agent", False
+
+
 def _add_issue(issues: list[DoctorIssue], severity: str, path: Path | str, message: str) -> None:
-    issues.append(DoctorIssue(severity=severity, path=str(path), message=message))
+    code, remediation_owner, mechanically_upgradeable = _doctor_issue_metadata(path, message)
+    issues.append(
+        DoctorIssue(
+            code=code,
+            severity=severity,
+            path=str(path),
+            message=message,
+            remediation_owner=remediation_owner,
+            mechanically_upgradeable=mechanically_upgradeable,
+        )
+    )
 
 
 def _parse_markdown_table(
@@ -5185,6 +5280,136 @@ def _doctor_issue_is_accepted(
     return _doctor_issue_fingerprint(issue, root) in accepted_fingerprints
 
 
+def _evaluate_doctor(
+    issues: list[DoctorIssue],
+    *,
+    root: Path,
+    strict: bool,
+    accepted_fingerprints: dict[str, str],
+) -> DoctorEvaluation:
+    accepted_issues = tuple(
+        issue
+        for issue in issues
+        if _doctor_issue_is_accepted(
+            issue,
+            root=root,
+            accepted_fingerprints=accepted_fingerprints,
+        )
+    )
+    visible_issues = tuple(
+        issue
+        for issue in issues
+        if not _doctor_issue_is_accepted(
+            issue,
+            root=root,
+            accepted_fingerprints=accepted_fingerprints,
+        )
+    )
+    blocking_issues = tuple(
+        issue for issue in visible_issues if _doctor_issue_is_blocking(issue, strict=strict)
+    )
+    current_issues = tuple(issue for issue in visible_issues if not _doctor_issue_is_legacy(issue))
+    legacy_issues = tuple(issue for issue in visible_issues if _doctor_issue_is_legacy(issue))
+    return DoctorEvaluation(
+        issues=tuple(issues),
+        visible_issues=visible_issues,
+        accepted_issues=accepted_issues,
+        blocking_issues=blocking_issues,
+        current_issues=current_issues,
+        legacy_issues=legacy_issues,
+        strict=strict,
+    )
+
+
+def _doctor_effective_severity(
+    issue: DoctorIssue,
+    *,
+    strict: bool,
+    accepted: bool,
+) -> str:
+    if accepted:
+        return "accepted"
+    if strict and issue.severity == "warning":
+        return "error"
+    return issue.severity
+
+
+def _doctor_issue_record(
+    issue: DoctorIssue,
+    *,
+    root: Path,
+    strict: bool,
+    accepted_fingerprints: dict[str, str],
+) -> dict[str, object]:
+    fingerprint = _doctor_issue_fingerprint(issue, root)
+    accepted = fingerprint in accepted_fingerprints
+    return {
+        "code": issue.code,
+        "severity": issue.severity,
+        "effective_severity": _doctor_effective_severity(
+            issue,
+            strict=strict,
+            accepted=accepted,
+        ),
+        "artifact": _doctor_issue_path_for_fingerprint(issue, root),
+        "message": issue.message,
+        "remediation_owner": issue.remediation_owner,
+        "mechanically_upgradeable": issue.mechanically_upgradeable,
+        "accepted": accepted,
+        "accepted_reason": accepted_fingerprints.get(fingerprint, ""),
+        "legacy": _doctor_issue_is_legacy(issue),
+        "fingerprint": fingerprint,
+    }
+
+
+def _doctor_json_payload(
+    evaluation: DoctorEvaluation,
+    *,
+    root: Path,
+    accepted_fingerprints: dict[str, str],
+) -> dict[str, object]:
+    return {
+        "schema_version": DOCTOR_OUTPUT_SCHEMA_VERSION,
+        "root": str(root),
+        "strict": evaluation.strict,
+        "status": evaluation.status,
+        "summary": {
+            "total": len(evaluation.issues),
+            "visible": len(evaluation.visible_issues),
+            "accepted": len(evaluation.accepted_issues),
+            "errors": sum(
+                _doctor_effective_severity(
+                    issue,
+                    strict=evaluation.strict,
+                    accepted=False,
+                )
+                == "error"
+                for issue in evaluation.visible_issues
+            ),
+            "warnings": sum(
+                _doctor_effective_severity(
+                    issue,
+                    strict=evaluation.strict,
+                    accepted=False,
+                )
+                == "warning"
+                for issue in evaluation.visible_issues
+            ),
+            "legacy": len(evaluation.legacy_issues),
+            "blocking": len(evaluation.blocking_issues),
+        },
+        "findings": [
+            _doctor_issue_record(
+                issue,
+                root=root,
+                strict=evaluation.strict,
+                accepted_fingerprints=accepted_fingerprints,
+            )
+            for issue in evaluation.issues
+        ],
+    }
+
+
 def _format_doctor_issue(
     issue: DoctorIssue,
     *,
@@ -5202,9 +5427,11 @@ def _format_doctor_issue(
     fingerprint = _doctor_issue_fingerprint(issue, root)
     reason = accepted_fingerprints.get(fingerprint, "")
     reason_text = f" (accepted: {reason})" if accepted and reason else ""
+    mechanical = "yes" if issue.mechanically_upgradeable else "no"
     return (
         f"{severity.upper()}: {issue.path}: {issue.message} "
-        f"[fingerprint: {fingerprint}]{reason_text}"
+        f"[code: {issue.code}] [owner: {issue.remediation_owner}] "
+        f"[mechanical: {mechanical}] [fingerprint: {fingerprint}]{reason_text}"
     )
 
 
@@ -5212,38 +5439,41 @@ def cmd_doctor(args: argparse.Namespace) -> None:
     root = Path(args.root).resolve() if args.root else Path.cwd()
     issues = run_doctor(root)
     accepted_fingerprints = _accepted_doctor_warning_fingerprints(root)
-    accepted_issues = [
-        issue
-        for issue in issues
-        if _doctor_issue_is_accepted(
-            issue,
-            root=root,
-            accepted_fingerprints=accepted_fingerprints,
-        )
-    ]
-    visible_issues = [
-        issue
-        for issue in issues
-        if not _doctor_issue_is_accepted(
-            issue,
-            root=root,
-            accepted_fingerprints=accepted_fingerprints,
-        )
-    ]
-    blocking = [
-        issue for issue in visible_issues if _doctor_issue_is_blocking(issue, strict=args.strict)
-    ]
-    current_issues = [issue for issue in visible_issues if not _doctor_issue_is_legacy(issue)]
-    legacy_issues = [issue for issue in visible_issues if _doctor_issue_is_legacy(issue)]
+    evaluation = _evaluate_doctor(
+        issues,
+        root=root,
+        strict=args.strict,
+        accepted_fingerprints=accepted_fingerprints,
+    )
 
-    if not visible_issues and not (args.show_accepted and accepted_issues):
+    if args.format == "json":
+        print(
+            json.dumps(
+                _doctor_json_payload(
+                    evaluation,
+                    root=root,
+                    accepted_fingerprints=accepted_fingerprints,
+                ),
+                indent=2,
+            )
+        )
+        if evaluation.blocking_issues:
+            raise SystemExit(1)
+        return
+
+    if not evaluation.visible_issues and not (
+        args.show_accepted and evaluation.accepted_issues
+    ):
         print(f"project doctor: no issues found in {root}")
-        if accepted_issues:
-            print(f"project doctor: {len(accepted_issues)} accepted warning(s) hidden.")
+        if evaluation.accepted_issues:
+            print(
+                f"project doctor: {len(evaluation.accepted_issues)} "
+                "accepted warning(s) hidden."
+            )
         return
 
     print(f"project doctor: checked {root}")
-    for issue in current_issues:
+    for issue in evaluation.current_issues:
         print(
             _format_doctor_issue(
                 issue,
@@ -5252,7 +5482,7 @@ def cmd_doctor(args: argparse.Namespace) -> None:
                 accepted_fingerprints=accepted_fingerprints,
             )
         )
-    for issue in legacy_issues:
+    for issue in evaluation.legacy_issues:
         print(
             _format_doctor_issue(
                 issue,
@@ -5261,12 +5491,18 @@ def cmd_doctor(args: argparse.Namespace) -> None:
                 accepted_fingerprints=accepted_fingerprints,
             )
         )
-    if legacy_issues:
-        print(f"project doctor: {len(legacy_issues)} legacy warning(s) shown separately.")
-    if accepted_issues:
+    if evaluation.legacy_issues:
+        print(
+            f"project doctor: {len(evaluation.legacy_issues)} "
+            "legacy warning(s) shown separately."
+        )
+    if evaluation.accepted_issues:
         if args.show_accepted:
-            print(f"project doctor: {len(accepted_issues)} accepted warning(s):")
-            for issue in accepted_issues:
+            print(
+                f"project doctor: {len(evaluation.accepted_issues)} "
+                "accepted warning(s):"
+            )
+            for issue in evaluation.accepted_issues:
                 print(
                     _format_doctor_issue(
                         issue,
@@ -5277,13 +5513,19 @@ def cmd_doctor(args: argparse.Namespace) -> None:
                     )
                 )
         else:
-            print(f"project doctor: {len(accepted_issues)} accepted warning(s) hidden.")
+            print(
+                f"project doctor: {len(evaluation.accepted_issues)} "
+                "accepted warning(s) hidden."
+            )
 
-    if blocking:
-        print(f"project doctor: failed with {len(blocking)} blocking issue(s).")
+    if evaluation.blocking_issues:
+        print(
+            f"project doctor: failed with {len(evaluation.blocking_issues)} "
+            "blocking issue(s)."
+        )
         raise SystemExit(1)
 
-    if visible_issues:
+    if evaluation.visible_issues:
         print("project doctor: passed with warnings")
     else:
         print("project doctor: passed")
@@ -6781,6 +7023,12 @@ def build_parser() -> argparse.ArgumentParser:
             "--show-accepted",
             action="store_true",
             help="Show warnings accepted in .project-workflow/config.json",
+        )
+        doctor_parser.add_argument(
+            "--format",
+            choices=("human", "json"),
+            default="human",
+            help="Output format (default: human)",
         )
         doctor_parser.set_defaults(func=cmd_doctor)
 

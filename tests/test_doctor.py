@@ -550,6 +550,176 @@ def test_compatibility_policy_retains_legacy_and_current_schema() -> None:
     assert "Refreshing generated assets does not by itself upgrade" in policy
 
 
+def test_doctor_findings_classify_remediation_ownership() -> None:
+    issues: list[workflow_cli.DoctorIssue] = []
+    workflow_cli._add_issue(
+        issues,
+        "warning",
+        ".project-workflow/tasks/TASK-001/REQUIREMENTS.md",
+        "TASK-001 approval envelope is missing.",
+    )
+    workflow_cli._add_issue(
+        issues,
+        "warning",
+        ".project-workflow/tasks/TASK-001/EVIDENCE.json",
+        "TASK-001 evidence is stale.",
+    )
+    workflow_cli._add_issue(
+        issues,
+        "error",
+        ".project-workflow/cli/workflow.py",
+        "Local workflow CLI differs from packaged template.",
+    )
+
+    approval, evidence, generated_drift = issues
+    assert approval.code == "PW_APPROVAL_REQUIRED"
+    assert approval.remediation_owner == "owner"
+    assert approval.mechanically_upgradeable is False
+    assert evidence.code == "PW_EVIDENCE_REQUIRED"
+    assert evidence.remediation_owner == "owner"
+    assert evidence.mechanically_upgradeable is False
+    assert generated_drift.code == "PW_GENERATED_ASSET_DRIFT"
+    assert generated_drift.remediation_owner == "project-workflow"
+    assert generated_drift.mechanically_upgradeable is True
+
+
+def test_doctor_json_clean_output_is_versioned_and_deterministic(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    first = run_project(["doctor", "--format", "json"], cwd=tmp_path)
+    second = run_project(["doctor", "--format", "json"], cwd=tmp_path)
+    assert first.returncode == 0, first.stdout + first.stderr
+    assert second.returncode == 0, second.stdout + second.stderr
+    assert first.stdout == second.stdout
+
+    payload = json.loads(first.stdout)
+    assert payload == {
+        "schema_version": 1,
+        "root": str(tmp_path),
+        "strict": False,
+        "status": "pass",
+        "summary": {
+            "total": 0,
+            "visible": 0,
+            "accepted": 0,
+            "errors": 0,
+            "warnings": 0,
+            "legacy": 0,
+            "blocking": 0,
+        },
+        "findings": [],
+    }
+
+
+def test_doctor_json_matches_human_strict_failure(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+    task = run_project(
+        ["task", "init", "--title", "Structured Warning", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stderr
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace("| To Do |", "| In Progress |", 1),
+        encoding="utf-8",
+    )
+
+    human = run_project(["doctor"], cwd=tmp_path)
+    structured = run_project(["doctor", "--format", "json"], cwd=tmp_path)
+    strict = run_project(["doctor", "--strict", "--format", "json"], cwd=tmp_path)
+    assert human.returncode == 0
+    assert "passed with warnings" in human.stdout
+    assert structured.returncode == 0
+    assert strict.returncode == 1
+
+    payload = json.loads(structured.stdout)
+    strict_payload = json.loads(strict.stdout)
+    assert payload["status"] == "warning"
+    assert strict_payload["status"] == "fail"
+    assert payload["summary"]["visible"] == strict_payload["summary"]["visible"]
+    assert strict_payload["summary"]["blocking"] == payload["summary"]["warnings"]
+    assert strict_payload["summary"]["errors"] == strict_payload["summary"]["blocking"]
+    assert strict_payload["summary"]["warnings"] == 0
+    assert [finding["fingerprint"] for finding in payload["findings"]] == [
+        finding["fingerprint"] for finding in strict_payload["findings"]
+    ]
+    assert all(finding["effective_severity"] == "error" for finding in strict_payload["findings"])
+    assert "[code:" in human.stdout
+    assert "[owner:" in human.stdout
+    assert "[mechanical:" in human.stdout
+    assert all(
+        {
+            "code",
+            "severity",
+            "effective_severity",
+            "artifact",
+            "message",
+            "remediation_owner",
+            "mechanically_upgradeable",
+            "accepted",
+            "accepted_reason",
+            "legacy",
+            "fingerprint",
+        }
+        == set(finding)
+        for finding in payload["findings"]
+    )
+
+
+def test_doctor_json_includes_accepted_findings_when_human_hides_them(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+    task = run_project(
+        ["task", "init", "--title", "Accepted Structured Warning", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stderr
+    tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace("| To Do |", "| In Progress |", 1),
+        encoding="utf-8",
+    )
+
+    warning = next(issue for issue in workflow_cli.run_doctor(tmp_path) if issue.severity == "warning")
+    fingerprint = workflow_cli._doctor_issue_fingerprint(warning, tmp_path)
+    add_accepted_doctor_warnings(
+        tmp_path,
+        [{"fingerprint": fingerprint, "reason": "Owner retained this warning."}],
+    )
+
+    human = run_project(["doctor"], cwd=tmp_path)
+    structured = run_project(["doctor", "--format", "json"], cwd=tmp_path)
+    assert human.returncode == 0
+    assert "accepted warning(s) hidden" in human.stdout
+    payload = json.loads(structured.stdout)
+    accepted = [finding for finding in payload["findings"] if finding["accepted"]]
+    assert payload["summary"]["accepted"] == 1
+    assert len(accepted) == 1
+    assert accepted[0]["fingerprint"] == fingerprint
+    assert accepted[0]["effective_severity"] == "accepted"
+    assert accepted[0]["accepted_reason"] == "Owner retained this warning."
+
+
+def test_generated_local_workflow_exposes_structured_doctor_output(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+    local_workflow = tmp_path / ".project-workflow" / "cli" / "workflow.py"
+
+    result = subprocess.run(
+        [sys.executable, str(local_workflow), "doctor", "--format", "json"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["schema_version"] == 1
+    assert payload["status"] == "pass"
+
+
 def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
