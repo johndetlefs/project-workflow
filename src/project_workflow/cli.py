@@ -60,6 +60,30 @@ FIX_ID_PREFIX = "FIX"
 BACKLOG_ID_PREFIX = "BL"
 ID_PADDING = 3
 WORKFLOW_CONFIG_FILENAME = "config.json"
+WORKFLOW_MANIFEST_FILENAME = "manifest.json"
+CURRENT_PACKAGE_VERSION = "0.1.1"
+CURRENT_MANIFEST_VERSION = 1
+CURRENT_ASSET_VERSION = 1
+CURRENT_SCHEMA_VERSION = 1
+SUPPORTED_ASSET_VERSIONS = (1,)
+SUPPORTED_SCHEMA_VERSIONS = (0, 1)
+REPOSITORY_COMPATIBILITY_STATES = (
+    "current",
+    "upgradeable",
+    "legacy-unversioned",
+    "unsupported-future",
+    "invalid",
+    "not-initialized",
+)
+RECOGNIZED_WORKFLOW_PATHS = (
+    "TRACKER.md",
+    "BACKLOG.md",
+    "config.json",
+    "guidance.md",
+    "tasks",
+    "cli",
+)
+MIGRATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 EPIC_CONTRACT_FILENAME = "EPIC-CONTRACT.md"
 DECOMPOSITION_PLAN_FILENAME = "DECOMPOSITION.md"
 EPIC_AMENDMENTS_FILENAME = "AMENDMENTS.md"
@@ -650,8 +674,173 @@ class WorkflowConfig:
     accepted_doctor_warnings: dict[str, str]
 
 
+@dataclass(frozen=True)
+class WorkflowManifest:
+    manifest_version: int
+    package_version: str
+    asset_version: int
+    schema_version: int
+    applied_migrations: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class RepositoryCompatibility:
+    state: str
+    reason: str
+    manifest: Optional[WorkflowManifest] = None
+
+    def __post_init__(self) -> None:
+        if self.state not in REPOSITORY_COMPATIBILITY_STATES:
+            raise ValueError(f"Unknown repository compatibility state: {self.state}")
+
+
+class ManifestValidationError(ValueError):
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
 def _workflow_config_path(root: Path) -> Path:
     return root / ".project-workflow" / WORKFLOW_CONFIG_FILENAME
+
+
+def _workflow_manifest_path(root: Path) -> Path:
+    return root / ".project-workflow" / WORKFLOW_MANIFEST_FILENAME
+
+
+def _current_workflow_manifest() -> WorkflowManifest:
+    return WorkflowManifest(
+        manifest_version=CURRENT_MANIFEST_VERSION,
+        package_version=CURRENT_PACKAGE_VERSION,
+        asset_version=CURRENT_ASSET_VERSION,
+        schema_version=CURRENT_SCHEMA_VERSION,
+        applied_migrations=(),
+    )
+
+
+def _workflow_manifest_payload(manifest: WorkflowManifest) -> dict[str, object]:
+    return {
+        "manifest_version": manifest.manifest_version,
+        "package_version": manifest.package_version,
+        "asset_version": manifest.asset_version,
+        "schema_version": manifest.schema_version,
+        "applied_migrations": list(manifest.applied_migrations),
+    }
+
+
+def _serialize_workflow_manifest(manifest: WorkflowManifest) -> str:
+    payload = _workflow_manifest_payload(manifest)
+    _parse_workflow_manifest(payload)
+    return json.dumps(payload, indent=2) + "\n"
+
+
+def _write_workflow_manifest(path: Path, manifest: WorkflowManifest) -> None:
+    if not path.parent.is_dir():
+        raise FileNotFoundError(f"Manifest parent directory does not exist: {path.parent}")
+    path.write_text(_serialize_workflow_manifest(manifest), encoding="utf-8")
+
+
+def _manifest_integer(raw: dict[str, object], field: str, *, minimum: int) -> int:
+    value = raw[field]
+    if type(value) is not int or value < minimum:
+        raise ManifestValidationError(f"invalid-{field.replace('_', '-')}")
+    return value
+
+
+def _parse_workflow_manifest(raw: object) -> WorkflowManifest:
+    if not isinstance(raw, dict):
+        raise ManifestValidationError("invalid-manifest-object")
+
+    required_fields = {
+        "manifest_version",
+        "package_version",
+        "asset_version",
+        "schema_version",
+        "applied_migrations",
+    }
+    if set(raw) != required_fields:
+        raise ManifestValidationError("invalid-manifest-fields")
+
+    manifest_version = _manifest_integer(raw, "manifest_version", minimum=1)
+    package_version = raw["package_version"]
+    if not isinstance(package_version, str) or not package_version.strip():
+        raise ManifestValidationError("invalid-package-version")
+
+    asset_version = _manifest_integer(raw, "asset_version", minimum=1)
+    schema_version = _manifest_integer(raw, "schema_version", minimum=0)
+
+    raw_migrations = raw["applied_migrations"]
+    if not isinstance(raw_migrations, list):
+        raise ManifestValidationError("invalid-applied-migrations")
+    migrations: list[str] = []
+    for migration_id in raw_migrations:
+        if not isinstance(migration_id, str) or not MIGRATION_ID_PATTERN.fullmatch(migration_id):
+            raise ManifestValidationError("invalid-migration-id")
+        if migration_id in migrations:
+            raise ManifestValidationError("duplicate-migration-id")
+        migrations.append(migration_id)
+
+    return WorkflowManifest(
+        manifest_version=manifest_version,
+        package_version=package_version,
+        asset_version=asset_version,
+        schema_version=schema_version,
+        applied_migrations=tuple(migrations),
+    )
+
+
+def _is_recognized_workflow_repository(root: Path) -> bool:
+    workflow_dir = root / ".project-workflow"
+    return workflow_dir.is_dir() and any(
+        (workflow_dir / relative_path).exists()
+        for relative_path in RECOGNIZED_WORKFLOW_PATHS
+    )
+
+
+def _repository_compatibility(root: Path) -> RepositoryCompatibility:
+    manifest_path = _workflow_manifest_path(root)
+    if not manifest_path.exists():
+        if _is_recognized_workflow_repository(root):
+            return RepositoryCompatibility("legacy-unversioned", "manifest-absent")
+        return RepositoryCompatibility("not-initialized", "workflow-installation-absent")
+
+    try:
+        raw = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return RepositoryCompatibility("invalid", "invalid-manifest-json")
+    except OSError:
+        return RepositoryCompatibility("invalid", "manifest-unreadable")
+
+    if isinstance(raw, dict):
+        manifest_version = raw.get("manifest_version")
+        if type(manifest_version) is int and manifest_version > CURRENT_MANIFEST_VERSION:
+            return RepositoryCompatibility("unsupported-future", "future-manifest-version")
+
+    try:
+        manifest = _parse_workflow_manifest(raw)
+    except ManifestValidationError as exc:
+        return RepositoryCompatibility("invalid", exc.code)
+
+    if manifest.manifest_version < CURRENT_MANIFEST_VERSION:
+        return RepositoryCompatibility("invalid", "unsupported-manifest-version", manifest)
+    if manifest.asset_version > CURRENT_ASSET_VERSION:
+        return RepositoryCompatibility("unsupported-future", "future-asset-version", manifest)
+    if manifest.schema_version > CURRENT_SCHEMA_VERSION:
+        return RepositoryCompatibility("unsupported-future", "future-schema-version", manifest)
+    if manifest.asset_version not in SUPPORTED_ASSET_VERSIONS:
+        return RepositoryCompatibility("invalid", "unknown-asset-version", manifest)
+    if manifest.schema_version not in SUPPORTED_SCHEMA_VERSIONS:
+        return RepositoryCompatibility("invalid", "unknown-schema-version", manifest)
+
+    asset_behind = manifest.asset_version < CURRENT_ASSET_VERSION
+    schema_behind = manifest.schema_version < CURRENT_SCHEMA_VERSION
+    if asset_behind and schema_behind:
+        return RepositoryCompatibility("upgradeable", "assets-and-schema-behind", manifest)
+    if asset_behind:
+        return RepositoryCompatibility("upgradeable", "assets-behind", manifest)
+    if schema_behind:
+        return RepositoryCompatibility("upgradeable", "schema-behind", manifest)
+    return RepositoryCompatibility("current", "versions-current", manifest)
 
 
 def _normalize_task_id_prefix(prefix: str) -> str:
