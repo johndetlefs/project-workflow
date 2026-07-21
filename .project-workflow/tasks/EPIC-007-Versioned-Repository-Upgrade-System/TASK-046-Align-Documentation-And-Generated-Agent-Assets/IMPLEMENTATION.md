@@ -82,8 +82,8 @@ As an owner or agent, I want one accurate upgrade operating guide, so that I can
 ## QA & Code Review
 
 - Verdict: Pass; completed under autonomous Epic continuation authority.
-- Evidence: Documentation contract test passed; full suite passed with 127 tests and 1 existing skip; generated refresh, source/template/local parity, backlog validation, compilation, and strict Doctor passed.
-- Findings: No blocking findings. Release publishing/version increment remains outside EPIC-007 under BL-010.
+- Evidence: Documentation contract test passed; the checked-in legacy fixture now executes the documented canonical init, clean refresh commit, human/JSON plan, fingerprinted local-helper apply, strict Doctor owner-finding preservation, and current-schema no-op sequence; full suite, generated refresh, source/template/local parity, backlog validation, compilation, and strict Doctor passed.
+- Findings: A pre-merge review found that the original README documented each command but left owners to infer the commit boundary between init refresh and upgrade apply. The existing-repository runbook and journey regression correct that gap. Release publishing/version increment remains outside EPIC-007 under BL-010.
 
 ## Retro
 
@@ -97,3 +97,4 @@ As an owner or agent, I want one accurate upgrade operating guide, so that I can
 - Title: Align Documentation And Generated Agent Assets
 - Created: 2026-07-21
 - Scope remains inside the approved parent decomposition and autonomous continuation authority.
+- Pre-merge documentation correction on 2026-07-21 stayed within AC1 and did not change upgrade behavior or rewrite completed task history.

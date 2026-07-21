@@ -378,16 +378,38 @@ The commands have separate responsibilities:
 - `project doctor` diagnoses repository and workflow state without mutation.
 - `project upgrade` transforms durable repository state through versioned migrations.
 
-Planning is always the default and does not change repository files:
+### Upgrade An Existing Repository
+
+Start from a clean Git worktree. If the repository has an older installation, run the canonical
+init command first so the local helper and generated agent assets know the current upgrade
+contract. Use the repository's configured agent mode; this example uses Codex:
 
 ```bash
+git status --short
+uvx --from git+https://github.com/johndetlefs/project-workflow.git \
+  project init --agent codex
+```
+
+Init may refresh generated files and managed instruction blocks. Review its output, inspect
+`git status --short` and `git diff`, and resolve any reported `*.new` collision without
+overwriting unmarked content. If init changed files, commit the reviewed managed-asset refresh
+before applying an upgrade; `upgrade --apply` deliberately rejects a dirty worktree. If init was
+run when upgrade was intended, nothing needs to be undone: complete this review-and-commit step,
+then continue with Doctor and upgrade below.
+
+Run both human and machine-readable diagnosis, then produce the non-mutating upgrade plan:
+
+```bash
+./.project-workflow/cli/workflow doctor
+./.project-workflow/cli/workflow doctor --format json
 ./.project-workflow/cli/workflow upgrade
 ./.project-workflow/cli/workflow upgrade --format json
 ```
 
-Review the ordered migrations, exact target files, input and predicted-output hashes, blockers,
-owner decisions, and plan fingerprint. Apply requires the exact reviewed fingerprint and a clean
-Git worktree, including no untracked files:
+Review the detected current and target versions, ordered migrations, exact target files, input
+and predicted-output hashes, blockers, owner decisions, and plan fingerprint. Invalid or future
+repository state blocks here and must be resolved rather than forced. When the plan is accepted,
+confirm that `git status --short` is empty and apply that exact fingerprint:
 
 ```bash
 ./.project-workflow/cli/workflow upgrade \
@@ -395,7 +417,32 @@ Git worktree, including no untracked files:
   --plan-fingerprint sha256:<REVIEWED_PLAN_FINGERPRINT>
 ```
 
-Apply rebuilds the plan, rechecks repository state and hashes, computes all outputs before writing,
+Validate and commit the migration separately from the managed-asset refresh:
+
+```bash
+./.project-workflow/cli/workflow doctor --strict
+./.project-workflow/cli/workflow upgrade
+git status --short
+```
+
+The final plan should contain no pending migration. A current repository remains a no-op. Strict
+Doctor may still exit nonzero for preserved owner decisions or unrelated workflow findings; this
+does not mean the migration failed. Resolve or accept those findings through their normal workflow
+rather than treating them as migration output.
+
+Init preserves the durable state boundary in every detected repository state:
+
+| State before init | Init result | Required next action |
+| --- | --- | --- |
+| Not initialized | Creates the current manifest and managed assets. | Run Doctor; no migration is expected. |
+| Current | Refreshes managed assets without changing schema history. | Review and commit refresh changes; upgrade is a no-op. |
+| Pre-versioned legacy | Refreshes managed assets but leaves the repository manifest-free. | Commit the refresh, then plan and apply `PW-0001-legacy-manifest`. |
+| Assets behind only | Refreshes package and asset metadata without changing schema history. | Review and commit the refresh; upgrade is a no-op. |
+| Schema behind | Refreshes package/assets while preserving schema version and applied migration IDs. | Commit the refresh, then plan and apply the required migrations. |
+| Invalid or unsupported future manifest | May refresh managed assets, but preserves the manifest and reports the unsupported state. | Stop and resolve the manifest state; do not force apply. |
+
+Planning is always non-mutating. Apply rebuilds the plan, rechecks repository state and hashes,
+requires a clean Git worktree including no untracked files, computes all outputs before writing,
 and replaces only declared targets. A failed multi-file replacement restores touched targets; a
 second apply at the current schema is a no-op. Missing approvals, stale evidence, accepted warnings,
 deferrals, and owner decisions remain visible and are never upgraded into authority.

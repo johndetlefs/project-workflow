@@ -583,7 +583,8 @@ def test_compatibility_policy_retains_legacy_and_current_schema() -> None:
 
 
 def test_upgrade_documentation_and_agent_guidance_match_command_contract() -> None:
-    readme = " ".join((REPO_ROOT / "README.md").read_text(encoding="utf-8").split())
+    readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    readme = " ".join(readme_text.split())
     changelog = (REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     compatibility = (REPO_ROOT / "COMPATIBILITY.md").read_text(encoding="utf-8")
     guidance_paths = (
@@ -601,6 +602,31 @@ def test_upgrade_documentation_and_agent_guidance_match_command_contract() -> No
         "COMPATIBILITY.md",
     ):
         assert required in readme
+    runbook_text = readme_text.split("### Upgrade An Existing Repository", 1)[1].split(
+        "## IDs And Parallel Work", 1
+    )[0]
+    runbook = " ".join(runbook_text.split())
+    for required in (
+        "commit the reviewed managed-asset refresh before applying an upgrade",
+        "If init was run when upgrade was intended, nothing needs to be undone",
+        "Validate and commit the migration separately from the managed-asset refresh",
+        "Pre-versioned legacy",
+        "Schema behind",
+        "Invalid or unsupported future manifest",
+    ):
+        assert required in runbook
+    ordered_steps = (
+        "project init --agent codex",
+        "workflow doctor",
+        "workflow upgrade",
+        "--apply",
+        "workflow doctor --strict",
+    )
+    runbook_commands = " ".join(
+        "\n".join(re.findall(r"```bash\n(.*?)```", runbook_text, flags=re.DOTALL)).split()
+    )
+    positions = [runbook_commands.index(step) for step in ordered_steps]
+    assert positions == sorted(positions)
     assert "transactional `project upgrade --apply`" in changelog
     assert "PW-0001-legacy-manifest" in changelog
     assert "PW-0001-legacy-manifest" in compatibility
@@ -1467,11 +1493,24 @@ def test_production_legacy_fixture_plan_apply_preservation_and_noop(tmp_path: Pa
         for issue in workflow_cli.run_doctor(tmp_path)
         if issue.remediation_owner == "owner"
     ]
-    plan = workflow_cli._build_upgrade_plan(
-        tmp_path,
-        migrations=workflow_cli.PRODUCTION_MIGRATIONS,
-        handlers=workflow_cli.PRODUCTION_MIGRATION_HANDLERS,
+    local_workflow = tmp_path / ".project-workflow" / "cli" / "workflow.py"
+    human_plan = subprocess.run(
+        [sys.executable, str(local_workflow), "upgrade"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
     )
+    assert human_plan.returncode == 0, human_plan.stdout + human_plan.stderr
+    plan_result = subprocess.run(
+        [sys.executable, str(local_workflow), "upgrade", "--format", "json"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert plan_result.returncode == 0, plan_result.stdout + plan_result.stderr
+    plan = json.loads(plan_result.stdout)
     assert [step["migration_id"] for step in plan["steps"]] == [
         workflow_cli.LEGACY_MANIFEST_MIGRATION_ID
     ]
@@ -1483,12 +1522,24 @@ def test_production_legacy_fixture_plan_apply_preservation_and_noop(tmp_path: Pa
         if path.is_file() and ".git" not in path.parts
     } == before_plan
 
-    result = workflow_cli._apply_upgrade_plan(
-        tmp_path,
-        plan["plan_fingerprint"],
-        migrations=workflow_cli.PRODUCTION_MIGRATIONS,
-        handlers=workflow_cli.PRODUCTION_MIGRATION_HANDLERS,
+    apply_result = subprocess.run(
+        [
+            sys.executable,
+            str(local_workflow),
+            "upgrade",
+            "--apply",
+            "--plan-fingerprint",
+            plan["plan_fingerprint"],
+            "--format",
+            "json",
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
     )
+    assert apply_result.returncode == 0, apply_result.stdout + apply_result.stderr
+    result = json.loads(apply_result.stdout)
     assert result["status"] == "applied"
     assert result["changed_files"] == [".project-workflow/manifest.json"]
     manifest = workflow_cli._parse_workflow_manifest(
@@ -1506,18 +1557,47 @@ def test_production_legacy_fixture_plan_apply_preservation_and_noop(tmp_path: Pa
     ]
     assert owner_findings_after == owner_findings_before
 
+    strict_doctor = subprocess.run(
+        [sys.executable, str(local_workflow), "doctor", "--strict"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert strict_doctor.returncode == 1
+    assert "PW_APPROVAL_REQUIRED" in strict_doctor.stdout
+    assert "project upgrade" not in strict_doctor.stdout
+
     commit_git_fixture(tmp_path, "production upgrade")
-    current_plan = workflow_cli._build_upgrade_plan(
-        tmp_path,
-        migrations=workflow_cli.PRODUCTION_MIGRATIONS,
-        handlers=workflow_cli.PRODUCTION_MIGRATION_HANDLERS,
+    current_plan_result = subprocess.run(
+        [sys.executable, str(local_workflow), "upgrade", "--format", "json"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
     )
-    noop = workflow_cli._apply_upgrade_plan(
-        tmp_path,
-        current_plan["plan_fingerprint"],
-        migrations=workflow_cli.PRODUCTION_MIGRATIONS,
-        handlers=workflow_cli.PRODUCTION_MIGRATION_HANDLERS,
+    assert current_plan_result.returncode == 0, (
+        current_plan_result.stdout + current_plan_result.stderr
     )
+    current_plan = json.loads(current_plan_result.stdout)
+    noop_result = subprocess.run(
+        [
+            sys.executable,
+            str(local_workflow),
+            "upgrade",
+            "--apply",
+            "--plan-fingerprint",
+            current_plan["plan_fingerprint"],
+            "--format",
+            "json",
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert noop_result.returncode == 0, noop_result.stdout + noop_result.stderr
+    noop = json.loads(noop_result.stdout)
     assert noop["status"] == "noop"
 
 
