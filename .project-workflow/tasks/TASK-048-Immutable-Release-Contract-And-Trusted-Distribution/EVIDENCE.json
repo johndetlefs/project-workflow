@@ -1,4 +1,52 @@
 {
   "task_id": "TASK-048",
-  "claims": []
+  "claims": [
+    {
+      "id": "CLM-001",
+      "parent_ac": "AC5, AC11",
+      "claim": "The live PyPI trusted-publisher contract matches the repository, release workflow, and owner-controlled GitHub environment that published project-workflow 0.2.0 without a long-lived publication credential.",
+      "recipe": "external-contract-alignment",
+      "status": "pass",
+      "commit": "4d0aa3d414d550547837ab646a5c734bc35473d2",
+      "timestamp": "2026-07-22T13:29:32+10:00",
+      "contract_artifact": "PyPI trusted publisher: project-workflow; johndetlefs/project-workflow; release.yml; environment pypi, plus GitHub pypi environment required-reviewer and tag policy",
+      "implementation_artifact": ".github/workflows/release.yml publish-pypi job and successful release run 29888387890",
+      "comparison_method": "Inspected the registered PyPI pending publisher after submission, inspected GitHub environment rules through the API, and observed successful OIDC publication with no publication secret",
+      "evidence_artifact": "evidence/release-verification.json",
+      "evidence_artifact_hash": "sha256:230b0de92a97f6edcb44fbffcc654c2d8d2eceebe8fe73f536d67026cc42b7f3",
+      "invalid_substitutes": []
+    },
+    {
+      "id": "CLM-002",
+      "parent_ac": "AC4, AC11",
+      "claim": "The public PyPI and GitHub Release wheel and source distribution are the exact artifacts named and digested by the release receipt for v0.2.0.",
+      "recipe": "deployed-artifact-alignment",
+      "status": "pass",
+      "commit": "4d0aa3d414d550547837ab646a5c734bc35473d2",
+      "timestamp": "2026-07-22T13:29:32+10:00",
+      "execution_target": "https://pypi.org/project/project-workflow/0.2.0/ and https://github.com/johndetlefs/project-workflow/releases/tag/v0.2.0",
+      "source_artifact": "release-receipt.json and SHA256SUMS emitted by GitHub Actions run 29888387890",
+      "artifact_identity": "v0.2.0 at 4d0aa3d414d550547837ab646a5c734bc35473d2; wheel sha256 6589cdad130f972f35bd4143f98686c42c25774df30dc8cb17b3d71808e3e5f7; sdist sha256 a2f83936f63888fea3409e784e2f106e10cf05e9a2952b2bb806920f3c7ba9ef",
+      "observation_method": "Downloaded GitHub Release assets, validated SHA256SUMS, downloaded PyPI files independently, compared files byte-for-byte, and verified the GitHub SLSA provenance attestation against release.yml and the source digest",
+      "evidence_artifact": "evidence/release-verification.json",
+      "evidence_artifact_hash": "sha256:230b0de92a97f6edcb44fbffcc654c2d8d2eceebe8fe73f536d67026cc42b7f3",
+      "invalid_substitutes": []
+    },
+    {
+      "id": "CLM-003",
+      "parent_ac": "AC8, AC11",
+      "claim": "Fresh public execution resolved project-workflow 0.2.0 from PyPI and exercised version reporting, init, current upgrade, legacy upgrade, manifest identity, and Doctor against that public source.",
+      "recipe": "runtime-target-source",
+      "status": "pass",
+      "commit": "4d0aa3d414d550547837ab646a5c734bc35473d2",
+      "timestamp": "2026-07-22T13:29:32+10:00",
+      "execution_target": "Disposable Git repositories driven by /opt/homebrew/bin/uvx using fresh isolated uv cache, tool, and bin directories",
+      "source_artifact": "project-workflow==0.2.0 from public PyPI",
+      "observation_method": "Ran the canonical version command and scripts/verify_package_journeys.py with fresh uv directories after publication",
+      "target_used_source_proof": "uvx installed one public package, reported project 0.2.0, generated manifest package_version 0.2.0, passed fresh Doctor, returned current with zero findings on current upgrade, and migrated the historical legacy fixture with its one expected owner warning",
+      "evidence_artifact": "evidence/release-verification.json",
+      "evidence_artifact_hash": "sha256:230b0de92a97f6edcb44fbffcc654c2d8d2eceebe8fe73f536d67026cc42b7f3",
+      "invalid_substitutes": []
+    }
+  ]
 }
