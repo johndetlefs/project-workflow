@@ -32,6 +32,9 @@ uv run --locked python -m build --no-isolation
 The release workflow repeats the full locked validation and builds exactly once. It then inspects
 the archives, creates `release-receipt.json` and `SHA256SUMS`, runs the wheel through fresh-init,
 current-upgrade, and legacy-upgrade journeys, attests the files, and uploads one workflow bundle.
+Inspect workflow annotations as part of closeout. Treat action-runtime deprecation warnings as
+future-pipeline maintenance: update to the current reviewed SHA pin and revalidate the workflow,
+but never move or rebuild an already published tag to silence a later tooling warning.
 
 ## One-time trusted-publisher setup
 
@@ -83,4 +86,3 @@ receipt, digests, and disposable journey output in the task-local evidence file.
   correction as `0.2.1`.
 - A yanked PyPI release remains part of history; yanking is an owner decision for harmful releases,
   not a mechanism for replacing files.
-

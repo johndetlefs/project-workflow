@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-07-22T13:29:32+10:00",
+  "release": {
+    "project": "project-workflow",
+    "version": "0.2.0",
+    "tag": "v0.2.0",
+    "commit": "4d0aa3d414d550547837ab646a5c734bc35473d2",
+    "changelog_heading": "## 0.2.0 - 2026-07-22",
+    "asset_version": 1,
+    "repository_schema_version": 1,
+    "pypi_url": "https://pypi.org/project/project-workflow/0.2.0/",
+    "github_release_url": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.2.0",
+    "workflow_run_url": "https://github.com/johndetlefs/project-workflow/actions/runs/29888387890",
+    "reviewed_main_run_url": "https://github.com/johndetlefs/project-workflow/actions/runs/29886889928",
+    "pull_request_url": "https://github.com/johndetlefs/project-workflow/pull/7"
+  },
+  "publisher": {
+    "type": "PyPI pending trusted publisher promoted on first publish",
+    "repository": "johndetlefs/project-workflow",
+    "workflow": "release.yml",
+    "environment": "pypi",
+    "credential": "GitHub OIDC; no long-lived PyPI publication secret"
+  },
+  "artifacts": [
+    {
+      "filename": "project_workflow-0.2.0-py3-none-any.whl",
+      "size": 222699,
+      "sha256": "6589cdad130f972f35bd4143f98686c42c25774df30dc8cb17b3d71808e3e5f7"
+    },
+    {
+      "filename": "project_workflow-0.2.0.tar.gz",
+      "size": 245044,
+      "sha256": "a2f83936f63888fea3409e784e2f106e10cf05e9a2952b2bb806920f3c7ba9ef"
+    }
+  ],
+  "public_comparison": {
+    "github_release_sha256sums": "passed",
+    "pypi_json_filename_size_digest_match": "passed",
+    "pypi_and_github_downloads_byte_identical": true
+  },
+  "attestation": {
+    "verification": "passed",
+    "predicate_type": "https://slsa.dev/provenance/v1",
+    "signer_workflow": "johndetlefs/project-workflow/.github/workflows/release.yml",
+    "source_digest": "4d0aa3d414d550547837ab646a5c734bc35473d2",
+    "transparency_log": "https://rekor.sigstore.dev",
+    "verified_subject_sha256": [
+      "6589cdad130f972f35bd4143f98686c42c25774df30dc8cb17b3d71808e3e5f7",
+      "a2f83936f63888fea3409e784e2f106e10cf05e9a2952b2bb806920f3c7ba9ef",
+      "48bcf21ccbed12a40403f094bf364880aa936a1dd1c609df7f1df41b37d1a632",
+      "0cd61ebec4825d34391c4c1def6deafcd4f61ef74ae5d28a21b3e020c7748162"
+    ]
+  },
+  "public_runtime": {
+    "source": "project-workflow==0.2.0 from a fresh uv cache and tool directory",
+    "version_output": "project 0.2.0",
+    "fresh_init_doctor": "no issues found",
+    "current_upgrade": "current; 0 findings; 0 owner-owned",
+    "legacy_upgrade": "current; 1 expected owner-owned historical warning"
+  },
+  "canonical_commands": {
+    "init": "uvx --from project-workflow==0.2.0 project init",
+    "upgrade": "uvx --from project-workflow==0.2.0 project upgrade"
+  }
+}

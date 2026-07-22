@@ -56,21 +56,42 @@ Deliver and prove the first governed `project-workflow` release, version `0.2.0`
 | 3 | Add locked CI and one-build release workflow | Add pull-request/main CI and a `v*` tag workflow that validates reviewed main ancestry, builds once, uploads/attests artifacts, publishes via PyPI OIDC, and creates the GitHub Release from the same bytes. | AC3, AC4, AC5, AC6: required checks gate publication; artifact digests remain stable across jobs; only OIDC publication is permitted. | Inspect workflow permissions and a successful candidate/release run; compare downloaded workflow, PyPI, and GitHub files by SHA-256. | Done |
 | 4 | Prove packaged init and upgrade journeys | Add disposable-repository verification for wheel/staged/public installs, current version and manifest identity, fresh init, representative legacy/current upgrade, asset parity, and Doctor. | AC4, AC8: the exact built artifact satisfies the packaged user journeys and identity checks. | Run the verifier first against `dist/`, then against `project-workflow==0.2.0` after publication. | Done |
 | 5 | Publish release documentation and changelog contract | Create the release runbook; cut the `0.2.0` changelog entry; replace canonical mutable installs with version-pinned commands; document states, authority, receipts, abort, and forward-fix behavior. | AC7, AC10: documentation is pinned, executable from a clean clone, and explicit about candidate versus public release state. | Follow the runbook through validation and confirm automated documentation checks reject unpinned canonical commands. | Done |
-| 6 | Configure trusted external authorities | Create/protect the GitHub `pypi` environment and register the matching pending PyPI trusted publisher for repository `johndetlefs/project-workflow` and workflow `release.yml`, without adding a publication secret. | AC5, AC10: GitHub and PyPI identities match the workflow and retain an owner-controlled approval boundary. | Inspect GitHub environment settings and PyPI publisher configuration before triggering the release. | In Progress |
-| 7 | Publish and independently verify `0.2.0` | Merge the reviewed change, create the immutable `v0.2.0` tag, approve the governed publish, verify public PyPI/GitHub artifacts and attestation, and run clean public init/upgrade proof. Proof recipes: external-contract-alignment, deployed-artifact-alignment, runtime-target-source. Evidence: release receipt, digests, workflow/attestation URLs, registry files, clean journey logs, and task-local `EVIDENCE.json`. | AC5, AC8, AC11: every public identity and exact target/source proof resolves to one release receipt. | Install via the canonical public commands in disposable repositories and independently compare reported identities and downloaded hashes. | To Do |
-| 8 | Run QA, closeout, and retro | Review code, workflows, permissions, tests, docs, live evidence, and residual risk by AC; complete only after the public proof passes, then record durable release lessons. | AC1-AC11: no blocking findings, complete evidence mapping, clean Doctor, and explicit completed public outcome. | Review the QA matrix, live release links, and retro updates. | To Do |
+| 6 | Configure trusted external authorities | Create/protect the GitHub `pypi` environment and register the matching pending PyPI trusted publisher for repository `johndetlefs/project-workflow` and workflow `release.yml`, without adding a publication secret. | AC5, AC10: GitHub and PyPI identities match the workflow and retain an owner-controlled approval boundary. | Inspect GitHub environment settings and PyPI publisher configuration before triggering the release. | Done |
+| 7 | Publish and independently verify `0.2.0` | Merge the reviewed change, create the immutable `v0.2.0` tag, approve the governed publish, verify public PyPI/GitHub artifacts and attestation, and run clean public init/upgrade proof. Proof recipes: external-contract-alignment, deployed-artifact-alignment, runtime-target-source. Evidence: release receipt, digests, workflow/attestation URLs, registry files, clean journey logs, and task-local `EVIDENCE.json`. | AC5, AC8, AC11: every public identity and exact target/source proof resolves to one release receipt. | Install via the canonical public commands in disposable repositories and independently compare reported identities and downloaded hashes. | Done |
+| 8 | Run QA, closeout, and retro | Review code, workflows, permissions, tests, docs, live evidence, and residual risk by AC; complete only after the public proof passes, then record durable release lessons. | AC1-AC11: no blocking findings, complete evidence mapping, clean Doctor, and explicit completed public outcome. | Review the QA matrix, live release links, and retro updates. | Done |
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Date: 2026-07-22
+- Reviewed areas: version/package authority; CLI and managed-helper parity; lock and local environment; candidate and receipt validation; archive contents and entry point; CI/release permissions and action pinning; OIDC publisher/environment identity; public registry and GitHub artifacts; attestation; disposable public runtime journeys; documentation, recovery rules, task evidence, and workflow state.
+- Acceptance evidence:
+  - AC1: `scripts/release_contract.py` emitted the complete release receipt; nine focused regressions cover valid identity plus version/tag, mutable guidance, archive metadata, digest, and existing-public-version failures.
+  - AC2: source `0.2.0`, runtime output, package metadata, three byte-identical CLI helpers, manifest, changelog, tag, and receipt agree.
+  - AC3: PR run `29886730124`, reviewed-main run `29886889928`, and release run `29888387890` passed locked validation; tag commit is `4d0aa3d414d550547837ab646a5c734bc35473d2` on protected `main`.
+  - AC4: CI built one wheel and one sdist once; GitHub Release and PyPI downloads are byte-identical and match receipt hashes `6589cdad...e5f7` and `a2f83936...a9ef`.
+  - AC5: PyPI trusted publishing succeeded through required-reviewer environment `pypi`; repository publication secrets list is empty.
+  - AC6: live tag, GitHub Release, and PyPI collision preflights passed before publication; workflow rejects non-creation tag pushes, wrong tag/source, dirty candidates, digest drift, and existing PyPI versions.
+  - AC7: canonical init and upgrade commands are version-pinned to `project-workflow==0.2.0`; the source contract rejects mutable Git release guidance.
+  - AC8: a fresh isolated public `uvx` run reported `project 0.2.0` and passed fresh init, current upgrade, legacy upgrade, manifest, and Doctor checks.
+  - AC9: `uv.lock`, locked Python 3.10 setup, lock check, and the complete 158-test suite passed locally and in GitHub Actions.
+  - AC10: `RELEASING.md` was followed through candidate, publisher setup, protected approval, publication, byte comparison, attestation, and public runtime verification.
+  - AC11: PyPI `0.2.0`, GitHub Release `v0.2.0`, tag, receipt, digests, SLSA provenance, workflow, changelog, commands, and public execution resolve to the same release identity; structured proof is in `EVIDENCE.json` and `evidence/release-verification.json`.
+- Findings: No blocking correctness, security, permission, privacy, data-integrity, or operational findings. The live run warned that pinned artifact upload/download actions targeted deprecated Node 20; the branch updates them to current SHA-pinned `upload-artifact@v7.0.1` and `download-artifact@v8.0.1`, with YAML, source-contract, lock, and all 158 tests passing afterward.
+- Workflow validation: backlog validation passed; Doctor found no issues and hid 69 previously accepted historical warnings.
+- Verdict: Pass.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Date: 2026-07-22
+- Reusable lessons:
+  - A checked-in Codex setup is useful when it is only a repeatable bootstrap over committed project state: Python 3.10 plus `uv sync --locked`, not a shared mutable virtual environment copied between worktrees.
+  - First-time trusted publication has two distinct owner-controlled identities: the GitHub environment and the PyPI pending publisher. Exact repository, workflow filename, and environment agreement is testable only in the live OIDC publish.
+  - Build-once promotion is practical: the workflow artifact can feed PyPI, GitHub Releases, receipt verification, and independent byte comparison without rebuilding.
+  - Public runtime proof needs fresh package-manager cache and tool directories; an existing `uvx` cache or editable checkout is not strong target/source evidence.
+  - Live workflow annotations can reveal platform drift that source review and a successful result do not. Fix future action pins on `main`; never mutate the already published tag or artifacts.
+- Conventions or agent assets updated: `.codex/environments/environment.toml` now defines locked worktree bootstrap; `RELEASING.md`, release-contract scripts, package-journey verifier, CI/release workflows, and structured task evidence establish the durable release convention. `RELEASING.md` now explicitly routes action-runtime warnings to future-pipeline maintenance without retagging.
+- Follow-up tasks: None required for TASK-048. The Node 20 action warning observed in the first release was corrected in the closeout branch with current reviewed SHA pins.
+- Missed in-scope work: None.
 
 ## Notes
 
