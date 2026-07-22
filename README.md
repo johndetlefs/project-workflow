@@ -47,6 +47,30 @@ The initialized agent instructions and skills tell the agent how to create the r
 
 Project-workflow is not a replacement for Jira, Linear, or another planning system. It is the execution layer beside the code: the place where agents can reliably read the agreed outcome, current status, proof obligations, and next action.
 
+## See Operational Status And The Next Action
+
+Run status when arriving at a repository or deciding what to do next:
+
+```bash
+./.project-workflow/cli/workflow status
+./.project-workflow/cli/workflow status --id TASK-001
+./.project-workflow/cli/workflow status --strict
+./.project-workflow/cli/workflow status --format json
+```
+
+Status is a read-only projection over the manifest, Git, trackers, requirements, implementation and QA records, Epic acceptance, structured evidence, Doctor findings, and repository-local delivery receipts. It reports one sourced primary action plus stable secondary actions. `--id <WORK-ID>` focuses active work; `--strict` makes visible Doctor warnings blocking; `--format json` emits schema version 1 with the same conclusions as the human report.
+
+Use the related commands for their narrower jobs:
+
+- `project status` explains current operational truth and the next safe action; it never runs that action.
+- `project doctor` diagnoses workflow structure and compatibility. Use `--show-accepted` to audit hidden historical warnings.
+- `project upgrade` applies managed-asset and repository-schema changes after review; status only recommends it when appropriate.
+- task, Fix, and Epic lifecycle commands perform transitions and enforce their existing gates.
+- QA/review records acceptance evidence; a passing Doctor result does not prove implementation or delivery.
+- Git, release, publication, and deployment remain separate stages. A `Complete` row, clean branch, tag, URL, test, or prose statement cannot substitute for the source required by a later stage.
+
+When the repository cannot prove a claim, status says `unknown` or `not-recorded`. It does not make live service calls, accept warnings, approve requirements, repair files, merge branches, publish releases, or verify deployments.
+
 ## How Collaboration Works
 
 Project-workflow is human-directed and agent-operated.

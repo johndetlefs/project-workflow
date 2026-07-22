@@ -156,6 +156,131 @@ SMOKE_BOMB_FAILURE_CODES = (
     "PW_SMOKE_BOMB_ARCHIVE_BLOCKED",
     "PW_SMOKE_BOMB_VALIDATION_FAILED",
 )
+OPERATIONAL_STATUS_SCHEMA_VERSION = 1
+OPERATIONAL_STATUS_SOURCE_KINDS = (
+    "acceptance",
+    "backlog",
+    "delivery-receipt",
+    "doctor",
+    "epic-tracker",
+    "git",
+    "global-tracker",
+    "implementation",
+    "local-helper",
+    "manifest",
+    "repository-compatibility",
+    "requirements",
+    "structured-evidence",
+)
+OPERATIONAL_STATUS_SOURCE_PRECEDENCE = (
+    ("installation", ("repository-compatibility", "manifest", "local-helper")),
+    ("work", ("epic-tracker", "global-tracker")),
+    ("approval", ("requirements",)),
+    ("implementation", ("implementation",)),
+    ("qa", ("implementation",)),
+    ("acceptance", ("acceptance", "epic-tracker")),
+    ("proof", ("structured-evidence", "implementation", "requirements")),
+    ("integration", ("git",)),
+    ("delivery", ("delivery-receipt", "structured-evidence", "git")),
+    ("health", ("doctor", "repository-compatibility")),
+    ("backlog", ("backlog",)),
+)
+OPERATIONAL_STATUS_DIMENSION_STATES = (
+    (
+        "installation",
+        (
+            "unknown",
+            "current",
+            "upgradeable",
+            "legacy-unversioned",
+            "unsupported-future",
+            "invalid",
+            "not-initialized",
+            "helper-limited",
+        ),
+    ),
+    ("git", ("unknown", "unavailable", "clean", "dirty", "detached")),
+    ("health", ("unknown", "pass", "warning", "fail")),
+    (
+        "proof",
+        (
+            "unknown",
+            "not-recorded",
+            "declared",
+            "approved",
+            "ready",
+            "implementation-recorded",
+            "repository-validated",
+            "recorded-evidence",
+        ),
+    ),
+    (
+        "delivery",
+        (
+            "unknown",
+            "not-recorded",
+            "repository-complete",
+            "integrated",
+            "released",
+            "published",
+            "deployed",
+        ),
+    ),
+)
+OPERATIONAL_STATUS_WORK_ITEM_KINDS = ("task", "fix", "epic", "epic-child")
+OPERATIONAL_STATUS_FINDING_SEVERITIES = ("info", "warning", "error")
+OPERATIONAL_STATUS_RESPONSIBLE_PARTIES = ("agent", "owner", "external-authority")
+OPERATIONAL_STATUS_PROOF_LAYER_NAMES = (
+    "requirements-approval",
+    "readiness",
+    "implementation",
+    "qa-review",
+    "parent-acceptance",
+    "structured-evidence",
+)
+OPERATIONAL_STATUS_PROOF_LAYER_STATES = (
+    "unknown",
+    "not-recorded",
+    "not-required",
+    "pending",
+    "pass",
+    "fail",
+)
+OPERATIONAL_STATUS_ACTION_PRECEDENCE = (
+    "installation-safety",
+    "blocking-current-finding",
+    "owner-decision",
+    "missing-workflow-gate",
+    "lifecycle-progress",
+    "delivery-follow-up",
+    "backlog-selection",
+    "no-action",
+)
+OPERATIONAL_STATUS_GLOBAL_TERMINAL_STATES = ("Complete", "N/A")
+OPERATIONAL_STATUS_EPIC_CHILD_TERMINAL_STATES = ("Complete",)
+OPERATIONAL_STATUS_EPIC_CHILD_UNSCAFFOLDED_STATES = ("Proposed", "Approved")
+OPERATIONAL_STATUS_GLOBAL_LIFECYCLE_MEANINGS = (
+    ("To Do", "Requirements or triage have not begun."),
+    ("Analysing", "Requirements or implementation planning is underway."),
+    ("Ready", "Approved work is ready for implementation."),
+    ("Plan Confirmed", "Legacy-compatible ready state; implementation may begin."),
+    ("In Progress", "Implementation is underway."),
+    ("Closeout", "Epic delivery is in acceptance and closeout."),
+    ("Blocked", "Progress cannot continue until a named blocker is resolved."),
+    ("Testing", "Implementation validation is underway."),
+    ("Review", "QA and code review are underway."),
+    ("Complete", "Repository work passed its completion gates."),
+    ("N/A", "Work is closed without implementation."),
+)
+OPERATIONAL_STATUS_EPIC_CHILD_LIFECYCLE_MEANINGS = (
+    ("Proposed", "The authorised child is planned but not approved for scaffolding."),
+    ("Approved", "The child is approved and awaiting scaffold or implementation start."),
+    ("In Progress", "Child implementation is underway."),
+    ("Testing", "Child implementation validation is underway."),
+    ("Review", "Child QA and code review are underway."),
+    ("Blocked", "Child progress cannot continue until a named blocker is resolved."),
+    ("Complete", "The child passed its completion gates."),
+)
 RECOGNIZED_WORKFLOW_PATHS = (
     "TRACKER.md",
     "BACKLOG.md",
@@ -683,6 +808,11 @@ def _managed_project_workflow_block() -> str:
         "first.\n"
         "- Use `./.project-workflow/cli/workflow` for supported backlog, Fix, task, epic, "
         "and validation commands.\n"
+        "- Run `./.project-workflow/cli/workflow status` for a read-only operational summary "
+        "and sourced next action. Use `--id <WORK-ID>` to focus active work, `--strict` to "
+        "make visible Doctor warnings blocking, and `--format json` for schema-versioned output. "
+        "Status does not replace Doctor diagnosis, canonical upgrade, lifecycle gates, QA, Git "
+        "integration, or service verification, and never executes its recommended action.\n"
         "- Route one bounded post-completion correction to a Fix, new outcomes or multiple "
         "independent items to a Task, and coordinated workstreams to an Epic. The user's label "
         "is evidence, not a binding classification. Fixes use one `FIX.md`, the shared tasks "
@@ -941,6 +1071,474 @@ class SmokeBombFailure(RuntimeError):
         self.message = message
 
 
+def _operational_status_choices(
+    entries: tuple[tuple[str, tuple[str, ...]], ...],
+    key: str,
+) -> tuple[str, ...]:
+    for entry_key, values in entries:
+        if entry_key == key:
+            return values
+    return ()
+
+
+def _require_operational_status_text(label: str, value: str) -> None:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"Operational status {label} must be non-empty text.")
+
+
+def _require_operational_status_choice(
+    label: str,
+    value: str,
+    choices: tuple[str, ...],
+) -> None:
+    if value not in choices:
+        raise ValueError(
+            f"Unknown operational status {label}: {value}. "
+            f"Allowed: {', '.join(choices)}."
+        )
+
+
+def _require_operational_status_sources(
+    label: str,
+    sources: tuple[OperationalStatusSource, ...],
+    *,
+    allow_empty: bool,
+) -> None:
+    if not isinstance(sources, tuple):
+        raise ValueError(f"Operational status {label} sources must be a tuple.")
+    if not allow_empty and not sources:
+        raise ValueError(f"Operational status {label} sources must be a non-empty tuple.")
+    if any(not isinstance(source, OperationalStatusSource) for source in sources):
+        raise ValueError(
+            f"Operational status {label} sources must contain OperationalStatusSource records."
+        )
+
+
+@dataclass(frozen=True)
+class OperationalStatusSource:
+    kind: str
+    artifact: str
+    detail: str = ""
+
+    def __post_init__(self) -> None:
+        _require_operational_status_choice(
+            "source kind", self.kind, OPERATIONAL_STATUS_SOURCE_KINDS
+        )
+        _require_operational_status_text("source artifact", self.artifact)
+        if not isinstance(self.detail, str):
+            raise ValueError("Operational status source detail must be text.")
+
+
+@dataclass(frozen=True)
+class OperationalStatusFact:
+    key: str
+    value: str | int | bool | None | tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", self.key):
+            raise ValueError(f"Invalid operational status fact key: {self.key}")
+        if isinstance(self.value, str) and not self.value.strip():
+            raise ValueError("Operational status string fact values must be non-empty.")
+        if isinstance(self.value, tuple) and any(
+            not isinstance(entry, str) or not entry.strip() for entry in self.value
+        ):
+            raise ValueError(
+                "Operational status tuple fact values must contain non-empty strings."
+            )
+        if not isinstance(self.value, (str, int, bool, tuple)) and self.value is not None:
+            raise ValueError(
+                "Operational status fact values must be text, integer, boolean, "
+                "a string tuple, or None."
+            )
+
+
+@dataclass(frozen=True)
+class OperationalStatusValue:
+    dimension: str
+    state: str
+    summary: str
+    sources: tuple[OperationalStatusSource, ...] = ()
+    facts: tuple[OperationalStatusFact, ...] = ()
+
+    def __post_init__(self) -> None:
+        allowed_states = _operational_status_choices(
+            OPERATIONAL_STATUS_DIMENSION_STATES, self.dimension
+        )
+        if not allowed_states:
+            dimensions = tuple(key for key, _values in OPERATIONAL_STATUS_DIMENSION_STATES)
+            _require_operational_status_choice("dimension", self.dimension, dimensions)
+        _require_operational_status_choice(
+            f"{self.dimension} state", self.state, allowed_states
+        )
+        _require_operational_status_text("state summary", self.summary)
+        _require_operational_status_sources("value", self.sources, allow_empty=True)
+        if not isinstance(self.facts, tuple) or any(
+            not isinstance(fact, OperationalStatusFact) for fact in self.facts
+        ):
+            raise ValueError(
+                "Operational status value facts must be a tuple of OperationalStatusFact records."
+            )
+        fact_keys = [fact.key for fact in self.facts]
+        if len(fact_keys) != len(set(fact_keys)):
+            raise ValueError("Operational status value fact keys must be unique.")
+
+
+@dataclass(frozen=True)
+class OperationalStatusProofLayer:
+    name: str
+    state: str
+    summary: str
+    sources: tuple[OperationalStatusSource, ...]
+
+    def __post_init__(self) -> None:
+        _require_operational_status_choice(
+            "proof layer name", self.name, OPERATIONAL_STATUS_PROOF_LAYER_NAMES
+        )
+        _require_operational_status_choice(
+            "proof layer state", self.state, OPERATIONAL_STATUS_PROOF_LAYER_STATES
+        )
+        _require_operational_status_text("proof layer summary", self.summary)
+        _require_operational_status_sources("proof layer", self.sources, allow_empty=False)
+
+
+@dataclass(frozen=True)
+class OperationalStatusWorkItem:
+    item_id: str
+    title: str
+    kind: str
+    lifecycle: str
+    operational_meaning: str
+    sources: tuple[OperationalStatusSource, ...]
+    facts: tuple[OperationalStatusFact, ...] = ()
+    proof_layers: tuple[OperationalStatusProofLayer, ...] = ()
+    delivery: Optional[OperationalStatusValue] = None
+
+    def __post_init__(self) -> None:
+        _require_operational_status_text("work item ID", self.item_id)
+        _require_operational_status_text("work item title", self.title)
+        _require_operational_status_choice(
+            "work item kind", self.kind, OPERATIONAL_STATUS_WORK_ITEM_KINDS
+        )
+        _require_operational_status_text("work item lifecycle", self.lifecycle)
+        _require_operational_status_text(
+            "work item operational meaning", self.operational_meaning
+        )
+        _require_operational_status_sources("work item", self.sources, allow_empty=False)
+        if not isinstance(self.facts, tuple) or any(
+            not isinstance(fact, OperationalStatusFact) for fact in self.facts
+        ):
+            raise ValueError("Operational status work item facts contain an invalid record.")
+        fact_keys = [fact.key for fact in self.facts]
+        if len(fact_keys) != len(set(fact_keys)):
+            raise ValueError("Operational status work item fact keys must be unique.")
+        if not isinstance(self.proof_layers, tuple) or any(
+            not isinstance(layer, OperationalStatusProofLayer) for layer in self.proof_layers
+        ):
+            raise ValueError("Operational status work item proof layers contain an invalid record.")
+        layer_names = [layer.name for layer in self.proof_layers]
+        if len(layer_names) != len(set(layer_names)):
+            raise ValueError("Operational status work item proof layer names must be unique.")
+        if self.delivery is not None:
+            if not isinstance(self.delivery, OperationalStatusValue):
+                raise ValueError("Operational status work item delivery must be a status value.")
+            if self.delivery.dimension != "delivery":
+                raise ValueError("Operational status work item delivery has the wrong dimension.")
+
+
+@dataclass(frozen=True)
+class OperationalStatusFinding:
+    code: str
+    severity: str
+    message: str
+    sources: tuple[OperationalStatusSource, ...]
+
+    def __post_init__(self) -> None:
+        if not re.fullmatch(r"PW_[A-Z0-9_]+", self.code):
+            raise ValueError(f"Invalid operational status finding code: {self.code}")
+        _require_operational_status_choice(
+            "finding severity", self.severity, OPERATIONAL_STATUS_FINDING_SEVERITIES
+        )
+        _require_operational_status_text("finding message", self.message)
+        _require_operational_status_sources("finding", self.sources, allow_empty=False)
+
+
+@dataclass(frozen=True)
+class OperationalStatusAction:
+    code: str
+    title: str
+    responsible_party: str
+    reason: str
+    sources: tuple[OperationalStatusSource, ...]
+    command: Optional[str] = None
+    request: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not re.fullmatch(r"PW_STATUS_[A-Z0-9_]+", self.code):
+            raise ValueError(f"Invalid operational status action code: {self.code}")
+        _require_operational_status_text("action title", self.title)
+        _require_operational_status_choice(
+            "responsible party",
+            self.responsible_party,
+            OPERATIONAL_STATUS_RESPONSIBLE_PARTIES,
+        )
+        _require_operational_status_text("action reason", self.reason)
+        _require_operational_status_sources("action", self.sources, allow_empty=False)
+        if self.command is not None and not isinstance(self.command, str):
+            raise ValueError("Operational status action command must be text or None.")
+        if self.request is not None and not isinstance(self.request, str):
+            raise ValueError("Operational status action request must be text or None.")
+        if isinstance(self.command, str) and not self.command.strip():
+            raise ValueError("Operational status action command must be non-empty text or None.")
+        if isinstance(self.request, str) and not self.request.strip():
+            raise ValueError("Operational status action request must be non-empty text or None.")
+        has_command = self.command is not None
+        has_request = self.request is not None
+        if has_command == has_request:
+            raise ValueError(
+                "Operational status action must define exactly one non-empty command or request."
+            )
+
+
+@dataclass(frozen=True)
+class _OperationalStatusActionCandidate:
+    precedence: str
+    work_order: int
+    item_id: str
+    action: OperationalStatusAction
+
+    def __post_init__(self) -> None:
+        _require_operational_status_choice(
+            "action precedence", self.precedence, OPERATIONAL_STATUS_ACTION_PRECEDENCE
+        )
+        if self.work_order < 0:
+            raise ValueError("Operational status action work order cannot be negative.")
+        if not isinstance(self.item_id, str):
+            raise ValueError("Operational status action item ID must be text.")
+
+
+@dataclass(frozen=True)
+class OperationalStatusSnapshot:
+    root: str
+    installation: OperationalStatusValue
+    git: OperationalStatusValue
+    health: OperationalStatusValue
+    proof: OperationalStatusValue
+    delivery: OperationalStatusValue
+    active_work: tuple[OperationalStatusWorkItem, ...] = ()
+    findings: tuple[OperationalStatusFinding, ...] = ()
+    blockers: tuple[OperationalStatusFinding, ...] = ()
+    primary_action: Optional[OperationalStatusAction] = None
+    secondary_actions: tuple[OperationalStatusAction, ...] = ()
+
+    def __post_init__(self) -> None:
+        _require_operational_status_text("root", self.root)
+        expected_dimensions = (
+            ("installation", self.installation),
+            ("git", self.git),
+            ("health", self.health),
+            ("proof", self.proof),
+            ("delivery", self.delivery),
+        )
+        for expected, value in expected_dimensions:
+            if not isinstance(value, OperationalStatusValue):
+                raise ValueError(
+                    f"Operational status snapshot field '{expected}' must be an "
+                    "OperationalStatusValue."
+                )
+            if value.dimension != expected:
+                raise ValueError(
+                    f"Operational status snapshot field '{expected}' received "
+                    f"dimension '{value.dimension}'."
+                )
+        tuple_fields = (
+            ("active work", self.active_work),
+            ("findings", self.findings),
+            ("blockers", self.blockers),
+            ("secondary actions", self.secondary_actions),
+        )
+        for label, value in tuple_fields:
+            if not isinstance(value, tuple):
+                raise ValueError(f"Operational status snapshot {label} must be a tuple.")
+        expected_types = (
+            ("active work", self.active_work, OperationalStatusWorkItem),
+            ("findings", self.findings, OperationalStatusFinding),
+            ("blockers", self.blockers, OperationalStatusFinding),
+            ("secondary actions", self.secondary_actions, OperationalStatusAction),
+        )
+        for label, values, expected_type in expected_types:
+            if any(not isinstance(value, expected_type) for value in values):
+                raise ValueError(
+                    f"Operational status snapshot {label} contains an invalid record."
+                )
+        if self.primary_action is not None and not isinstance(
+            self.primary_action, OperationalStatusAction
+        ):
+            raise ValueError(
+                "Operational status snapshot primary action must be an "
+                "OperationalStatusAction or None."
+            )
+
+
+@dataclass(frozen=True)
+class OperationalStatusInspection:
+    installation: OperationalStatusValue
+    git: OperationalStatusValue
+    active_work: tuple[OperationalStatusWorkItem, ...]
+    findings: tuple[OperationalStatusFinding, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.installation, OperationalStatusValue):
+            raise ValueError("Operational inspection installation must be a status value.")
+        if self.installation.dimension != "installation":
+            raise ValueError("Operational inspection installation has the wrong dimension.")
+        if not isinstance(self.git, OperationalStatusValue):
+            raise ValueError("Operational inspection Git state must be a status value.")
+        if self.git.dimension != "git":
+            raise ValueError("Operational inspection Git state has the wrong dimension.")
+        if not isinstance(self.active_work, tuple) or any(
+            not isinstance(item, OperationalStatusWorkItem) for item in self.active_work
+        ):
+            raise ValueError("Operational inspection active work contains an invalid record.")
+        if not isinstance(self.findings, tuple) or any(
+            not isinstance(finding, OperationalStatusFinding) for finding in self.findings
+        ):
+            raise ValueError("Operational inspection findings contain an invalid record.")
+
+
+def _operational_status_source_payload(source: OperationalStatusSource) -> dict[str, str]:
+    return {
+        "kind": source.kind,
+        "artifact": source.artifact,
+        "detail": source.detail,
+    }
+
+
+def _operational_status_value_payload(value: OperationalStatusValue) -> dict[str, object]:
+    return {
+        "state": value.state,
+        "summary": value.summary,
+        "sources": [_operational_status_source_payload(source) for source in value.sources],
+        "facts": [
+            {
+                "key": fact.key,
+                "value": list(fact.value) if isinstance(fact.value, tuple) else fact.value,
+            }
+            for fact in value.facts
+        ],
+    }
+
+
+def _operational_status_work_item_payload(
+    work_item: OperationalStatusWorkItem,
+) -> dict[str, object]:
+    return {
+        "id": work_item.item_id,
+        "title": work_item.title,
+        "kind": work_item.kind,
+        "lifecycle": work_item.lifecycle,
+        "operational_meaning": work_item.operational_meaning,
+        "sources": [
+            _operational_status_source_payload(source) for source in work_item.sources
+        ],
+        "facts": [
+            {
+                "key": fact.key,
+                "value": list(fact.value) if isinstance(fact.value, tuple) else fact.value,
+            }
+            for fact in work_item.facts
+        ],
+        "proof_layers": [
+            {
+                "name": layer.name,
+                "state": layer.state,
+                "summary": layer.summary,
+                "sources": [
+                    _operational_status_source_payload(source) for source in layer.sources
+                ],
+            }
+            for layer in work_item.proof_layers
+        ],
+        "delivery": (
+            _operational_status_value_payload(work_item.delivery)
+            if work_item.delivery is not None
+            else None
+        ),
+    }
+
+
+def _operational_status_finding_payload(
+    finding: OperationalStatusFinding,
+) -> dict[str, object]:
+    return {
+        "code": finding.code,
+        "severity": finding.severity,
+        "message": finding.message,
+        "sources": [_operational_status_source_payload(source) for source in finding.sources],
+    }
+
+
+def _operational_status_action_payload(
+    action: OperationalStatusAction,
+) -> dict[str, object]:
+    return {
+        "code": action.code,
+        "title": action.title,
+        "responsible_party": action.responsible_party,
+        "reason": action.reason,
+        "command": action.command,
+        "request": action.request,
+        "sources": [_operational_status_source_payload(source) for source in action.sources],
+    }
+
+
+def operational_status_payload(snapshot: OperationalStatusSnapshot) -> dict[str, object]:
+    return {
+        "schema_version": OPERATIONAL_STATUS_SCHEMA_VERSION,
+        "root": snapshot.root,
+        "installation": _operational_status_value_payload(snapshot.installation),
+        "git": _operational_status_value_payload(snapshot.git),
+        "health": _operational_status_value_payload(snapshot.health),
+        "proof": _operational_status_value_payload(snapshot.proof),
+        "delivery": _operational_status_value_payload(snapshot.delivery),
+        "active_work": [
+            _operational_status_work_item_payload(work_item)
+            for work_item in snapshot.active_work
+        ],
+        "findings": [
+            _operational_status_finding_payload(finding) for finding in snapshot.findings
+        ],
+        "blockers": [
+            _operational_status_finding_payload(blocker) for blocker in snapshot.blockers
+        ],
+        "primary_action": (
+            _operational_status_action_payload(snapshot.primary_action)
+            if snapshot.primary_action is not None
+            else None
+        ),
+        "secondary_actions": [
+            _operational_status_action_payload(action)
+            for action in snapshot.secondary_actions
+        ],
+    }
+
+
+def operational_status_inspection_payload(
+    inspection: OperationalStatusInspection,
+) -> dict[str, object]:
+    return {
+        "installation": _operational_status_value_payload(inspection.installation),
+        "git": _operational_status_value_payload(inspection.git),
+        "active_work": [
+            _operational_status_work_item_payload(work_item)
+            for work_item in inspection.active_work
+        ],
+        "findings": [
+            _operational_status_finding_payload(finding)
+            for finding in inspection.findings
+        ],
+    }
+
+
 def _workflow_config_path(root: Path) -> Path:
     return root / ".project-workflow" / WORKFLOW_CONFIG_FILENAME
 
@@ -1082,6 +1680,1992 @@ def _repository_compatibility(root: Path) -> RepositoryCompatibility:
     if schema_behind:
         return RepositoryCompatibility("upgradeable", "schema-behind", manifest)
     return RepositoryCompatibility("current", "versions-current", manifest)
+
+
+def _operational_status_artifact(root: Path, path: Path | str) -> str:
+    artifact_path = Path(path)
+    if not artifact_path.is_absolute():
+        return artifact_path.as_posix()
+    try:
+        return artifact_path.relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return artifact_path.as_posix()
+
+
+def _operational_status_fact(
+    key: str,
+    value: str | int | bool | None | tuple[str, ...],
+) -> OperationalStatusFact:
+    return OperationalStatusFact(key, value)
+
+
+def _inspect_operational_installation(root: Path) -> OperationalStatusValue:
+    compatibility = _repository_compatibility(root)
+    workflow_source = OperationalStatusSource(
+        "repository-compatibility",
+        ".project-workflow",
+        compatibility.reason,
+    )
+    manifest_path = _workflow_manifest_path(root)
+    sources = [workflow_source]
+    if manifest_path.exists():
+        sources.append(
+            OperationalStatusSource(
+                "manifest",
+                _operational_status_artifact(root, manifest_path),
+            )
+        )
+
+    facts: list[OperationalStatusFact] = [
+        _operational_status_fact("compatibility_reason", compatibility.reason),
+        _operational_status_fact("helper_package_version", CURRENT_PACKAGE_VERSION),
+        _operational_status_fact("helper_asset_version", CURRENT_ASSET_VERSION),
+        _operational_status_fact("helper_schema_version", CURRENT_SCHEMA_VERSION),
+        _operational_status_fact("manifest_present", manifest_path.exists()),
+        _operational_status_fact("manifest_parsed", compatibility.manifest is not None),
+    ]
+    if compatibility.manifest is not None:
+        manifest = compatibility.manifest
+        facts.extend(
+            (
+                _operational_status_fact("manifest_version", manifest.manifest_version),
+                _operational_status_fact("package_version", manifest.package_version),
+                _operational_status_fact("asset_version", manifest.asset_version),
+                _operational_status_fact("schema_version", manifest.schema_version),
+                _operational_status_fact("applied_migrations", manifest.applied_migrations),
+            )
+        )
+    if compatibility.state in {"upgradeable", "legacy-unversioned"}:
+        facts.append(_operational_status_fact("upgrade_command", CANONICAL_UPGRADE_COMMAND))
+
+    summaries = {
+        "current": "Installed project-workflow contract is current.",
+        "upgradeable": "Installed project-workflow contract can be upgraded.",
+        "legacy-unversioned": "Recognized project-workflow installation has no version manifest.",
+        "unsupported-future": "Repository contract is newer than this helper supports.",
+        "invalid": "Repository contract is invalid or cannot be classified safely.",
+        "not-initialized": "Repository is not initialized with project-workflow.",
+    }
+    return OperationalStatusValue(
+        "installation",
+        compatibility.state,
+        summaries[compatibility.state],
+        tuple(sources),
+        tuple(facts),
+    )
+
+
+def _operational_git_optional(args: list[str], root: Path) -> str | None:
+    try:
+        return _run_git(args, cwd=root)
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+
+
+def _inspect_operational_git(
+    root: Path,
+) -> tuple[OperationalStatusValue, tuple[OperationalStatusFinding, ...]]:
+    source = OperationalStatusSource("git", ".git", "read-only local Git inspection")
+    top_level = _operational_git_optional(["rev-parse", "--show-toplevel"], root)
+    if top_level is None:
+        finding = OperationalStatusFinding(
+            "PW_STATUS_GIT_UNAVAILABLE",
+            "warning",
+            "Git state is unavailable because the root is not a readable Git worktree.",
+            (source,),
+        )
+        return (
+            OperationalStatusValue(
+                "git",
+                "unavailable",
+                "Local Git state is unavailable.",
+                (source,),
+                (_operational_status_fact("available", False),),
+            ),
+            (finding,),
+        )
+
+    branch = _operational_git_optional(["symbolic-ref", "--quiet", "--short", "HEAD"], root)
+    head = _operational_git_optional(["rev-parse", "HEAD"], root)
+    upstream = _operational_git_optional(
+        ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"], root
+    )
+    porcelain = _operational_git_optional(["status", "--porcelain"], root)
+    findings: list[OperationalStatusFinding] = []
+    resolved_root = str(root.resolve())
+    resolved_top = str(Path(top_level).resolve())
+    if resolved_top != resolved_root:
+        findings.append(
+            OperationalStatusFinding(
+                "PW_STATUS_GIT_ROOT_MISMATCH",
+                "error",
+                f"Requested root {resolved_root} differs from Git worktree root {resolved_top}.",
+                (source,),
+            )
+        )
+    if head is None:
+        findings.append(
+            OperationalStatusFinding(
+                "PW_STATUS_GIT_HEAD_UNAVAILABLE",
+                "warning",
+                "Git worktree has no readable HEAD commit.",
+                (source,),
+            )
+        )
+    if porcelain is None:
+        findings.append(
+            OperationalStatusFinding(
+                "PW_STATUS_GIT_STATUS_UNAVAILABLE",
+                "warning",
+                "Git worktree cleanliness could not be determined.",
+                (source,),
+            )
+        )
+
+    clean = porcelain == "" if porcelain is not None else None
+    detached = branch is None and head is not None
+    if head is None or porcelain is None:
+        state = "unavailable"
+        summary = "Git worktree state is only partially available."
+    elif detached:
+        state = "detached"
+        summary = f"Git HEAD is detached at {head[:12]}."
+    elif clean is False:
+        state = "dirty"
+        summary = f"Git branch {branch} has uncommitted changes."
+    else:
+        state = "clean"
+        summary = f"Git branch {branch} is clean."
+
+    facts = (
+        _operational_status_fact("available", True),
+        _operational_status_fact("top_level", resolved_top),
+        _operational_status_fact("branch", branch),
+        _operational_status_fact("detached", detached),
+        _operational_status_fact("head", head),
+        _operational_status_fact("upstream", upstream),
+        _operational_status_fact("clean", clean),
+    )
+    return OperationalStatusValue("git", state, summary, (source,), facts), tuple(findings)
+
+
+def _operational_status_lifecycle_meaning(kind: str, lifecycle: str) -> str | None:
+    entries = (
+        OPERATIONAL_STATUS_EPIC_CHILD_LIFECYCLE_MEANINGS
+        if kind == "epic-child"
+        else OPERATIONAL_STATUS_GLOBAL_LIFECYCLE_MEANINGS
+    )
+    for stored_status, meaning in entries:
+        if stored_status == lifecycle:
+            return meaning
+    return None
+
+
+def _operational_status_global_kind(item_id: str) -> str:
+    if item_id.startswith(f"{FIX_ID_PREFIX}-"):
+        return "fix"
+    if item_id.startswith(f"{EPIC_ID_PREFIX}-"):
+        return "epic"
+    return "task"
+
+
+def _operational_tracker_issue_finding(
+    root: Path,
+    issue: DoctorIssue,
+    source_kind: str,
+) -> OperationalStatusFinding:
+    source = OperationalStatusSource(
+        source_kind,
+        _operational_status_artifact(root, issue.path),
+        "tracker parsing",
+    )
+    severity = "error" if issue.severity == "error" else "warning"
+    return OperationalStatusFinding(issue.code, severity, issue.message, (source,))
+
+
+def _operational_work_item_from_row(
+    row: dict[str, str],
+    *,
+    kind: str,
+    source: OperationalStatusSource,
+    owner_epic: str | None = None,
+) -> OperationalStatusWorkItem | None:
+    item_id = row.get("ID", "").strip()
+    title = row.get("Title", "").strip()
+    lifecycle = row.get("Status", "").strip()
+    meaning = _operational_status_lifecycle_meaning(kind, lifecycle)
+    if not item_id or not title or meaning is None:
+        return None
+    docs_path = _clean_markdown_cell_path(row.get("Docs", "")) or None
+    tracker_branch = _clean_markdown_cell_path(row.get("Branch", "")) or None
+    facts = [
+        _operational_status_fact("docs_path", docs_path),
+        _operational_status_fact("tracker_branch", tracker_branch),
+    ]
+    if owner_epic is not None:
+        facts.extend(
+            (
+                _operational_status_fact("owner_epic", owner_epic),
+                _operational_status_fact(
+                    "parent_acs",
+                    tuple(sorted(_extract_ac_ids(_extract_parent_ac_coverage(row)))),
+                ),
+            )
+        )
+    return OperationalStatusWorkItem(
+        item_id,
+        title,
+        kind,
+        lifecycle,
+        meaning,
+        (source,),
+        tuple(facts),
+    )
+
+
+def _parse_operational_epic_tracker(
+    tracker_path: Path,
+    *,
+    issues: list[DoctorIssue],
+    label: str,
+) -> list[dict[str, str]]:
+    try:
+        lines = tracker_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return _parse_markdown_table(
+            tracker_path,
+            expected_columns=EPIC_TRACKER_COLUMNS,
+            issues=issues,
+            label=label,
+        )
+    columns: tuple[str, ...] | None = None
+    for line in lines:
+        cells = _parse_markdown_table_cells(line)
+        if cells == list(EPIC_TRACKER_COLUMNS):
+            columns = EPIC_TRACKER_COLUMNS
+            break
+        if cells == list(LEGACY_EPIC_TRACKER_COLUMNS):
+            columns = LEGACY_EPIC_TRACKER_COLUMNS
+            break
+    rows = _parse_markdown_table(
+        tracker_path,
+        expected_columns=columns or EPIC_TRACKER_COLUMNS,
+        issues=issues,
+        label=label,
+    )
+    for row in rows:
+        row.setdefault("Parent ACs", "")
+    return rows
+
+
+def _inspect_operational_active_work(
+    root: Path,
+) -> tuple[tuple[OperationalStatusWorkItem, ...], tuple[OperationalStatusFinding, ...]]:
+    workflow_dir = root / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+    global_source = OperationalStatusSource("global-tracker", ".project-workflow/TRACKER.md")
+    if not tracker_path.exists():
+        return (), (
+            OperationalStatusFinding(
+                "PW_STATUS_GLOBAL_TRACKER_MISSING",
+                "error",
+                "Global workflow tracker is missing.",
+                (global_source,),
+            ),
+        )
+
+    parse_issues: list[DoctorIssue] = []
+    global_rows = _parse_markdown_table(
+        tracker_path,
+        expected_columns=GLOBAL_TRACKER_COLUMNS,
+        issues=parse_issues,
+        label="Global tracker",
+    )
+    findings = [
+        _operational_tracker_issue_finding(root, issue, "global-tracker")
+        for issue in parse_issues
+    ]
+    active_work: list[OperationalStatusWorkItem] = []
+    seen_ids: dict[str, list[tuple[str, OperationalStatusSource]]] = {}
+    active_epic_rows: list[dict[str, str]] = []
+    terminal_epic_rows: list[dict[str, str]] = []
+
+    def record_id(item_id: str, owner: str, source: OperationalStatusSource) -> None:
+        previous = seen_ids.setdefault(item_id, [])
+        if previous:
+            previous_owners = [previous_owner for previous_owner, _source in previous]
+            finding_sources = tuple(
+                dict.fromkeys([previous_source for _owner, previous_source in previous] + [source])
+            )
+            findings.append(
+                OperationalStatusFinding(
+                    "PW_STATUS_DUPLICATE_WORK_ITEM",
+                    "error",
+                    f"Workflow ID {item_id} appears in multiple tracker records: "
+                    + ", ".join([*previous_owners, owner])
+                    + ".",
+                    finding_sources,
+                )
+            )
+            if owner.startswith("EPIC-") and any(
+                previous_owner.startswith("EPIC-") for previous_owner in previous_owners
+            ):
+                findings.append(
+                    OperationalStatusFinding(
+                        "PW_STATUS_MULTIPLE_EPIC_OWNERS",
+                        "error",
+                        f"Epic child {item_id} is owned by multiple Epics: "
+                        + ", ".join([*previous_owners, owner])
+                        + ".",
+                        finding_sources,
+                    )
+                )
+        previous.append((owner, source))
+
+    for row in global_rows:
+        item_id = row.get("ID", "").strip()
+        title = row.get("Title", "").strip()
+        lifecycle = row.get("Status", "").strip()
+        kind = _operational_status_global_kind(item_id)
+        record_id(item_id or "<missing>", "global tracker", global_source)
+        meaning = _operational_status_lifecycle_meaning(kind, lifecycle)
+        if not item_id or not title or meaning is None:
+            findings.append(
+                OperationalStatusFinding(
+                    "PW_STATUS_WORK_ITEM_INVALID",
+                    "error",
+                    f"Global tracker line {row.get('_line_idx', '?')} has missing or invalid "
+                    "ID, title, or lifecycle.",
+                    (global_source,),
+                )
+            )
+            continue
+        docs_path = row.get("Docs", "").strip().strip("`")
+        if lifecycle not in OPERATIONAL_STATUS_GLOBAL_TERMINAL_STATES and not docs_path:
+            findings.append(
+                OperationalStatusFinding(
+                    "PW_STATUS_REQUIRED_DOCS_MISSING",
+                    "warning",
+                    f"Active global item {item_id} has no docs path.",
+                    (global_source,),
+                )
+            )
+        if lifecycle not in OPERATIONAL_STATUS_GLOBAL_TERMINAL_STATES:
+            work_item = _operational_work_item_from_row(row, kind=kind, source=global_source)
+            if work_item is not None:
+                active_work.append(work_item)
+        if kind == "epic":
+            if lifecycle in OPERATIONAL_STATUS_GLOBAL_TERMINAL_STATES:
+                terminal_epic_rows.append(row)
+            else:
+                active_epic_rows.append(row)
+
+    tasks_dir = workflow_dir / "tasks"
+    for parent_row in [*active_epic_rows, *terminal_epic_rows]:
+        epic_id = parent_row["ID"].strip()
+        matches = sorted(
+            path for path in tasks_dir.glob(f"{epic_id}-*") if path.is_dir()
+        )
+        if len(matches) != 1:
+            findings.append(
+                OperationalStatusFinding(
+                    "PW_STATUS_EPIC_TRACKER_MISSING",
+                    "error",
+                    f"Epic {epic_id} does not resolve to exactly one task directory.",
+                    (global_source,),
+                )
+            )
+            continue
+        epic_tracker_path = matches[0] / "TRACKER.md"
+        epic_source = OperationalStatusSource(
+            "epic-tracker",
+            _operational_status_artifact(root, epic_tracker_path),
+            f"owner {epic_id}",
+        )
+        if not epic_tracker_path.exists():
+            findings.append(
+                OperationalStatusFinding(
+                    "PW_STATUS_EPIC_TRACKER_MISSING",
+                    "error",
+                    f"Epic {epic_id} tracker is missing.",
+                    (epic_source,),
+                )
+            )
+            continue
+        epic_parse_issues: list[DoctorIssue] = []
+        epic_rows = _parse_operational_epic_tracker(
+            epic_tracker_path,
+            issues=epic_parse_issues,
+            label=f"{epic_id} tracker",
+        )
+        findings.extend(
+            _operational_tracker_issue_finding(root, issue, "epic-tracker")
+            for issue in epic_parse_issues
+        )
+        parent_is_active = parent_row["Status"].strip() not in (
+            OPERATIONAL_STATUS_GLOBAL_TERMINAL_STATES
+        )
+        for row in epic_rows:
+            item_id = row.get("ID", "").strip()
+            title = row.get("Title", "").strip()
+            lifecycle = row.get("Status", "").strip()
+            record_id(item_id or "<missing>", epic_id, epic_source)
+            meaning = _operational_status_lifecycle_meaning("epic-child", lifecycle)
+            if not item_id or not title or meaning is None:
+                findings.append(
+                    OperationalStatusFinding(
+                        "PW_STATUS_WORK_ITEM_INVALID",
+                        "error",
+                        f"{epic_id} tracker line {row.get('_line_idx', '?')} has missing or "
+                        "invalid ID, title, or lifecycle.",
+                        (epic_source,),
+                    )
+                )
+                continue
+            docs_path = row.get("Docs", "").strip().strip("`")
+            if (
+                lifecycle not in OPERATIONAL_STATUS_EPIC_CHILD_UNSCAFFOLDED_STATES
+                and lifecycle not in OPERATIONAL_STATUS_EPIC_CHILD_TERMINAL_STATES
+                and not docs_path
+            ):
+                findings.append(
+                    OperationalStatusFinding(
+                        "PW_STATUS_REQUIRED_DOCS_MISSING",
+                        "warning",
+                        f"Scaffolded Epic child {item_id} has no docs path.",
+                        (epic_source,),
+                    )
+                )
+            child_is_active = lifecycle not in OPERATIONAL_STATUS_EPIC_CHILD_TERMINAL_STATES
+            if parent_is_active and child_is_active:
+                work_item = _operational_work_item_from_row(
+                    row,
+                    kind="epic-child",
+                    source=epic_source,
+                    owner_epic=epic_id,
+                )
+                if work_item is not None:
+                    active_work.append(work_item)
+            elif not parent_is_active and child_is_active:
+                findings.append(
+                    OperationalStatusFinding(
+                        "PW_STATUS_CLOSED_EPIC_HAS_ACTIVE_CHILD",
+                        "error",
+                        f"Closed Epic {epic_id} still owns non-terminal child {item_id} "
+                        f"in status {lifecycle}.",
+                        (epic_source, global_source),
+                    )
+                )
+
+    return tuple(active_work), tuple(findings)
+
+
+def inspect_operational_status_repository(root: Path) -> OperationalStatusInspection:
+    inspected_root = root.resolve()
+    installation = _inspect_operational_installation(inspected_root)
+    git, git_findings = _inspect_operational_git(inspected_root)
+    active_work, work_findings = _inspect_operational_active_work(inspected_root)
+    return OperationalStatusInspection(
+        installation,
+        git,
+        active_work,
+        (*git_findings, *work_findings),
+    )
+
+
+def _operational_work_item_facts(item: OperationalStatusWorkItem) -> dict[str, object]:
+    return {fact.key: fact.value for fact in item.facts}
+
+
+def _operational_status_unique_sources(
+    sources: list[OperationalStatusSource],
+) -> tuple[OperationalStatusSource, ...]:
+    return tuple(dict.fromkeys(sources))
+
+
+def _operational_proof_layer(
+    name: str,
+    state: str,
+    summary: str,
+    *sources: OperationalStatusSource,
+) -> OperationalStatusProofLayer:
+    return OperationalStatusProofLayer(name, state, summary, tuple(sources))
+
+
+def _operational_work_item_paths(
+    root: Path,
+    item: OperationalStatusWorkItem,
+) -> tuple[Path | None, Path | None, Path | None]:
+    item_facts = _operational_work_item_facts(item)
+    docs_value = item_facts.get("docs_path")
+    docs_path = (
+        root / ".project-workflow" / str(docs_value)
+        if isinstance(docs_value, str) and docs_value
+        else None
+    )
+    owner_value = item_facts.get("owner_epic")
+    epic_dir: Path | None = None
+    if isinstance(owner_value, str) and owner_value:
+        matches = sorted(
+            path
+            for path in (root / ".project-workflow" / "tasks").glob(f"{owner_value}-*")
+            if path.is_dir()
+        )
+        if len(matches) == 1:
+            epic_dir = matches[0]
+    elif item.kind == "epic" and docs_path is not None:
+        epic_dir = docs_path.parent
+
+    if item.kind == "epic":
+        requirements_path = docs_path
+        implementation_path = None
+    elif item.kind == "fix":
+        requirements_path = None
+        implementation_path = docs_path
+    else:
+        implementation_path = docs_path
+        requirements_path = docs_path.parent / "REQUIREMENTS.md" if docs_path else None
+    return requirements_path, implementation_path, epic_dir
+
+
+def _operational_status_document_source(
+    root: Path,
+    kind: str,
+    path: Path | None,
+    fallback: OperationalStatusSource,
+) -> OperationalStatusSource:
+    if path is None:
+        return fallback
+    return OperationalStatusSource(kind, _operational_status_artifact(root, path))
+
+
+def _operational_implementation_complete(implementation_text: str) -> bool:
+    table_found, rows, malformed_rows = _implementation_task_table_rows(implementation_text)
+    return bool(
+        table_found
+        and rows
+        and not malformed_rows
+        and all(row.get("Status", "").strip() == "Done" for row in rows)
+    )
+
+
+def _operational_item_proof_layers(
+    root: Path,
+    item: OperationalStatusWorkItem,
+) -> tuple[OperationalStatusProofLayer, ...]:
+    fallback = item.sources[0]
+    requirements_path, implementation_path, epic_dir = _operational_work_item_paths(root, item)
+    requirements_source = _operational_status_document_source(
+        root, "requirements", requirements_path, fallback
+    )
+    implementation_source = _operational_status_document_source(
+        root, "implementation", implementation_path, fallback
+    )
+    owner_epic = _operational_work_item_facts(item).get("owner_epic")
+    parent_requirements_path = epic_dir / "REQUIREMENTS.md" if epic_dir is not None else None
+    parent_requirements_source = _operational_status_document_source(
+        root, "requirements", parent_requirements_path, fallback
+    )
+    requirements_text = (
+        requirements_path.read_text(encoding="utf-8")
+        if requirements_path is not None and requirements_path.exists()
+        else ""
+    )
+    implementation_text = (
+        implementation_path.read_text(encoding="utf-8")
+        if implementation_path is not None and implementation_path.exists()
+        else ""
+    )
+
+    if item.kind == "fix":
+        approval = _operational_proof_layer(
+            "requirements-approval",
+            "not-required",
+            "Fix authority is recorded in FIX.md rather than a requirements approval envelope.",
+            implementation_source,
+        )
+    elif item.kind == "epic-child" and parent_requirements_path is not None:
+        parent_text = (
+            parent_requirements_path.read_text(encoding="utf-8")
+            if parent_requirements_path.exists()
+            else ""
+        )
+        approval_issues = _approval_envelope_issues(
+            parent_text,
+            require_decomposition=True,
+        )
+        approval = _operational_proof_layer(
+            "requirements-approval",
+            "pass" if not approval_issues else "fail",
+            (
+                f"Child authority is inherited from approved Epic {owner_epic}."
+                if not approval_issues
+                else f"Parent Epic approval has {len(approval_issues)} blocking issue(s)."
+            ),
+            parent_requirements_source,
+        )
+    elif requirements_text:
+        approval_issues = _approval_envelope_issues(
+            requirements_text,
+            require_decomposition=item.kind == "epic",
+            require_implementation=item.kind == "task",
+        )
+        approval = _operational_proof_layer(
+            "requirements-approval",
+            "pass" if not approval_issues else "fail",
+            (
+                "Owner approval envelope is current."
+                if not approval_issues
+                else f"Approval envelope has {len(approval_issues)} blocking issue(s)."
+            ),
+            requirements_source,
+        )
+    else:
+        approval = _operational_proof_layer(
+            "requirements-approval",
+            "not-recorded",
+            "No requirements approval source is recorded.",
+            fallback,
+        )
+
+    if item.kind == "epic-child" and item.lifecycle in {
+        "Proposed",
+        "Approved",
+    }:
+        readiness = _operational_proof_layer(
+            "readiness",
+            "pending",
+            "Child readiness begins after scaffolding.",
+            fallback,
+        )
+    elif item.kind == "fix":
+        ready = item.lifecycle not in {"To Do", "N/A"}
+        readiness = _operational_proof_layer(
+            "readiness",
+            "pass" if ready else "pending",
+            "Fix triage has advanced beyond To Do." if ready else "Fix triage is pending.",
+            implementation_source,
+        )
+    elif item.kind == "epic" and epic_dir is not None and requirements_text:
+        ready_issues = [
+            *_epic_requirements_readiness_issues(requirements_text),
+            *_approval_envelope_issues(requirements_text, require_decomposition=True),
+            *_epic_contract_issues(epic_dir, requirements_text),
+        ]
+        readiness = _operational_proof_layer(
+            "readiness",
+            "pass" if not ready_issues else "fail",
+            (
+                "Epic readiness requirements and contract pass."
+                if not ready_issues
+                else f"Epic readiness has {len(ready_issues)} blocking issue(s)."
+            ),
+            requirements_source,
+        )
+    elif requirements_path is not None and implementation_path is not None:
+        ready_issues = _task_ready_issues_for_paths(
+            requirements_path=requirements_path,
+            implementation_path=implementation_path,
+            parent_ac_ids=(
+                set(_operational_work_item_facts(item).get("parent_acs", ()))
+                if item.kind == "epic-child"
+                else None
+            ),
+        )
+        readiness = _operational_proof_layer(
+            "readiness",
+            "pass" if not ready_issues else "fail",
+            (
+                "Task readiness gate passes."
+                if not ready_issues
+                else f"Task readiness has {len(ready_issues)} blocking issue(s)."
+            ),
+            implementation_source,
+        )
+    else:
+        readiness = _operational_proof_layer(
+            "readiness",
+            "not-recorded",
+            "No readiness source is recorded.",
+            fallback,
+        )
+
+    if item.kind == "epic":
+        child_rows: list[dict[str, str]] = []
+        if epic_dir is not None and (epic_dir / "TRACKER.md").exists():
+            try:
+                _lines, _header, child_rows = _epic_tracker_rows(epic_dir / "TRACKER.md")
+            except SystemExit:
+                child_rows = []
+        all_children_complete = bool(child_rows) and all(
+            row.get("Status") == "Complete" for row in child_rows
+        )
+        implementation_state = "pass" if all_children_complete else "pending"
+        implementation_summary = (
+            "All Epic children are complete."
+            if all_children_complete
+            else "Epic child implementation remains in progress."
+        )
+    elif item.kind == "fix":
+        implementation_state = (
+            "pass" if item.lifecycle in {"Testing", "Review", "Complete"} else "pending"
+        )
+        implementation_summary = (
+            "Fix implementation reached validation."
+            if implementation_state == "pass"
+            else "Fix implementation remains in progress."
+        )
+    elif not implementation_text:
+        implementation_state = "not-recorded"
+        implementation_summary = "No implementation document is recorded."
+    else:
+        complete = _operational_implementation_complete(implementation_text)
+        if complete:
+            implementation_state = "pass"
+            implementation_summary = "Every implementation task row is Done."
+        elif item.lifecycle in {"Testing", "Review", "Complete"}:
+            implementation_state = "fail"
+            implementation_summary = "Lifecycle advanced beyond implementation with unfinished rows."
+        else:
+            implementation_state = "pending"
+            implementation_summary = "Implementation task rows remain in progress."
+    implementation = _operational_proof_layer(
+        "implementation",
+        implementation_state,
+        implementation_summary,
+        implementation_source,
+    )
+
+    qa_pass = bool(implementation_text and _qa_passed(implementation_text))
+    if qa_pass:
+        qa_state = "pass"
+        qa_summary = "QA and code review verdict is Pass."
+    elif item.lifecycle in {"Review", "Complete"}:
+        qa_state = "fail"
+        qa_summary = "Lifecycle requires a passing QA verdict, but none is recorded."
+    else:
+        qa_state = "not-recorded"
+        qa_summary = "No passing QA verdict is recorded yet."
+    qa = _operational_proof_layer(
+        "qa-review",
+        qa_state,
+        qa_summary,
+        implementation_source,
+    )
+
+    if item.kind == "epic-child":
+        parent_acs = set(_operational_work_item_facts(item).get("parent_acs", ()))
+        evidence_pass = bool(parent_acs) and bool(implementation_text) and all(
+            _parent_ac_evidence_present(implementation_text, ac_id) for ac_id in parent_acs
+        )
+        acceptance_state = "pass" if evidence_pass else "pending"
+        acceptance_summary = (
+            "Parent AC evidence is recorded for every owned AC."
+            if evidence_pass
+            else "Parent AC evidence remains incomplete."
+        )
+        acceptance_source = implementation_source
+    elif item.kind == "epic":
+        audit_path = epic_dir / "ACCEPTANCE-AUDIT.md" if epic_dir is not None else None
+        audit_text = (
+            audit_path.read_text(encoding="utf-8")
+            if audit_path is not None and audit_path.exists()
+            else ""
+        )
+        audit_pass = bool(audit_text) and "| Pass |" in audit_text and "| Gap |" not in audit_text
+        acceptance_state = "pass" if audit_pass else "pending"
+        acceptance_summary = (
+            "Epic acceptance audit records passing coverage."
+            if audit_pass
+            else "Epic acceptance audit is not yet passing."
+        )
+        acceptance_source = _operational_status_document_source(
+            root, "acceptance", audit_path, fallback
+        )
+    else:
+        acceptance_state = "not-required"
+        acceptance_summary = "This work item has no parent Epic acceptance obligation."
+        acceptance_source = fallback
+    acceptance = _operational_proof_layer(
+        "parent-acceptance",
+        acceptance_state,
+        acceptance_summary,
+        acceptance_source,
+    )
+
+    triggered_recipes = _triggered_proof_recipes(requirements_text, implementation_text)
+    if not triggered_recipes:
+        evidence_state = "not-required"
+        evidence_summary = "No structured proof recipe is triggered."
+    else:
+        evidence_issues = _structured_evidence_issues(
+            requirements_path=requirements_path or Path("missing-requirements"),
+            implementation_path=implementation_path or Path("missing-implementation"),
+            parent_ac_ids=(
+                set(_operational_work_item_facts(item).get("parent_acs", ()))
+                if item.kind == "epic-child"
+                else None
+            ),
+        )
+        if evidence_issues:
+            evidence_state = "fail" if item.lifecycle in {"Review", "Complete"} else "pending"
+            evidence_summary = f"Structured evidence has {len(evidence_issues)} issue(s)."
+        else:
+            evidence_state = "pass"
+            evidence_summary = "Every triggered structured proof recipe has passing evidence."
+    evidence = _operational_proof_layer(
+        "structured-evidence",
+        evidence_state,
+        evidence_summary,
+        _operational_status_document_source(
+            root,
+            "structured-evidence",
+            implementation_path.parent / STRUCTURED_EVIDENCE_FILENAME
+            if implementation_path is not None
+            else None,
+            fallback,
+        ),
+    )
+    return approval, readiness, implementation, qa, acceptance, evidence
+
+
+def _operational_aggregate_proof_state(
+    layers: tuple[OperationalStatusProofLayer, ...],
+) -> str:
+    by_name = {layer.name: layer.state for layer in layers}
+    state = "declared"
+    if by_name.get("requirements-approval") not in {"pass", "not-required"}:
+        return state
+    state = "approved"
+    if by_name.get("readiness") not in {"pass", "not-required"}:
+        return state
+    state = "ready"
+    if by_name.get("implementation") != "pass":
+        return state
+    state = "implementation-recorded"
+    if by_name.get("qa-review") != "pass" or by_name.get("parent-acceptance") not in {
+        "pass",
+        "not-required",
+    }:
+        return state
+    state = "repository-validated"
+    if by_name.get("structured-evidence") == "pass":
+        return "recorded-evidence"
+    return state
+
+
+def classify_operational_proof(
+    root: Path,
+    work_items: tuple[OperationalStatusWorkItem, ...],
+) -> tuple[OperationalStatusValue, tuple[OperationalStatusWorkItem, ...]]:
+    classified: list[OperationalStatusWorkItem] = []
+    aggregate_states: list[str] = []
+    all_sources: list[OperationalStatusSource] = []
+    state_rank = {
+        "unknown": 0,
+        "not-recorded": 1,
+        "declared": 2,
+        "approved": 3,
+        "ready": 4,
+        "implementation-recorded": 5,
+        "repository-validated": 6,
+        "recorded-evidence": 7,
+    }
+    for item in work_items:
+        layers = _operational_item_proof_layers(root, item)
+        aggregate_state = _operational_aggregate_proof_state(layers)
+        aggregate_states.append(aggregate_state)
+        all_sources.extend(source for layer in layers for source in layer.sources)
+        item_facts = tuple(
+            fact for fact in item.facts if fact.key != "aggregate_proof_state"
+        ) + (
+            _operational_status_fact("aggregate_proof_state", aggregate_state),
+        )
+        classified.append(
+            OperationalStatusWorkItem(
+                item.item_id,
+                item.title,
+                item.kind,
+                item.lifecycle,
+                item.operational_meaning,
+                item.sources,
+                item_facts,
+                layers,
+                item.delivery,
+            )
+        )
+    if not classified:
+        aggregate = "not-recorded"
+        summary = "No active work item proof is recorded."
+        sources = (OperationalStatusSource("global-tracker", ".project-workflow/TRACKER.md"),)
+    else:
+        aggregate = min(aggregate_states, key=lambda value: state_rank[value])
+        summary = f"Weakest active work proof state is {aggregate}."
+        sources = _operational_status_unique_sources(all_sources)
+    return (
+        OperationalStatusValue("proof", aggregate, summary, sources),
+        tuple(classified),
+    )
+
+
+def classify_operational_health(
+    root: Path,
+    *,
+    strict: bool = False,
+) -> tuple[OperationalStatusValue, tuple[OperationalStatusFinding, ...]]:
+    issues = run_doctor(root)
+    accepted = _accepted_doctor_warning_fingerprints(root)
+    evaluation = _evaluate_doctor(
+        issues,
+        root=root,
+        strict=strict,
+        accepted_fingerprints=accepted,
+    )
+    source = OperationalStatusSource("doctor", ".project-workflow", "Doctor evaluation")
+    facts = (
+        _operational_status_fact("strict", strict),
+        _operational_status_fact("total_count", len(evaluation.issues)),
+        _operational_status_fact("visible_count", len(evaluation.visible_issues)),
+        _operational_status_fact("accepted_count", len(evaluation.accepted_issues)),
+        _operational_status_fact("current_count", len(evaluation.current_issues)),
+        _operational_status_fact("legacy_count", len(evaluation.legacy_issues)),
+        _operational_status_fact("blocking_count", len(evaluation.blocking_issues)),
+    )
+    health = OperationalStatusValue(
+        "health",
+        evaluation.status,
+        (
+            "Doctor found no visible issues."
+            if evaluation.status == "pass"
+            else f"Doctor reports {len(evaluation.visible_issues)} visible issue(s)."
+        ),
+        (source,),
+        facts,
+    )
+    findings = tuple(
+        OperationalStatusFinding(
+            issue.code,
+            "error" if issue in evaluation.blocking_issues else "warning",
+            issue.message,
+            (
+                OperationalStatusSource(
+                    "doctor",
+                    _doctor_issue_path_for_fingerprint(issue, root),
+                    f"owner {issue.remediation_owner}; mechanical {str(issue.mechanically_upgradeable).lower()}",
+                ),
+            ),
+        )
+        for issue in evaluation.visible_issues
+    )
+    return health, findings
+
+
+def _operational_delivery_receipt_paths(
+    root: Path,
+    item: OperationalStatusWorkItem,
+) -> tuple[Path, ...]:
+    item_facts = _operational_work_item_facts(item)
+    candidates: list[Path] = []
+    explicit = item_facts.get("delivery_receipt")
+    if isinstance(explicit, str) and explicit:
+        candidates.append(root / explicit)
+    _requirements_path, implementation_path, _epic_dir = _operational_work_item_paths(root, item)
+    if implementation_path is not None:
+        evidence_path = implementation_path.parent / STRUCTURED_EVIDENCE_FILENAME
+        if evidence_path.exists():
+            try:
+                payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                payload = {}
+            records = payload.get("claims", []) if isinstance(payload, dict) else []
+            if isinstance(records, list):
+                for record in records:
+                    if not isinstance(record, dict):
+                        continue
+                    if str(record.get("status", "")).strip().lower() != "pass":
+                        continue
+                    artifact = record.get("evidence_artifact")
+                    if not isinstance(artifact, str) or not artifact.strip():
+                        continue
+                    if re.match(r"^[a-z][a-z0-9+.-]*://", artifact, flags=re.IGNORECASE):
+                        continue
+                    candidate = Path(artifact)
+                    if not candidate.is_absolute():
+                        candidate = implementation_path.parent / candidate
+                    candidates.append(candidate)
+    return tuple(dict.fromkeys(candidates))
+
+
+def _operational_receipt_state(payload: object) -> str | None:
+    if not isinstance(payload, dict):
+        return None
+    deployment = payload.get("deployment")
+    if (
+        isinstance(deployment, dict)
+        and deployment.get("status") in {"verified", "deployed"}
+        and all(deployment.get(key) for key in ("target", "source", "observed_at", "result"))
+    ):
+        return "deployed"
+    release = payload.get("release")
+    if not isinstance(release, dict) or not release.get("version"):
+        return None
+    publication = release.get("publication")
+    if (
+        isinstance(publication, dict)
+        and publication.get("status") in {"verified", "published"}
+        and all(
+            publication.get(key)
+            for key in ("target", "source", "observed_at", "result")
+        )
+    ):
+        return "published"
+    return "released"
+
+
+def classify_operational_delivery(
+    root: Path,
+    item: OperationalStatusWorkItem,
+) -> tuple[OperationalStatusValue, tuple[OperationalStatusFinding, ...]]:
+    tracker_source = item.sources[0]
+    if item.lifecycle != "Complete":
+        return (
+            OperationalStatusValue(
+                "delivery",
+                "not-recorded",
+                "Non-terminal work has no completed delivery state.",
+                (tracker_source,),
+            ),
+            (),
+        )
+
+    state = "repository-complete"
+    summary = "Repository workflow completion is recorded."
+    sources: list[OperationalStatusSource] = [tracker_source]
+    findings: list[OperationalStatusFinding] = []
+    item_facts = _operational_work_item_facts(item)
+    tracker_branch = item_facts.get("tracker_branch")
+    if isinstance(tracker_branch, str) and tracker_branch:
+        remote_default = _operational_git_optional(
+            ["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"], root
+        )
+        target = remote_default or next(
+            (
+                candidate
+                for candidate in ("main", "master")
+                if _operational_git_optional(["rev-parse", "--verify", candidate], root)
+                is not None
+            ),
+            None,
+        )
+        if target is not None and _operational_git_optional(
+            ["merge-base", "--is-ancestor", tracker_branch, target], root
+        ) is not None:
+            state = "integrated"
+            summary = f"Git proves {tracker_branch} is contained in {target}."
+            sources.append(OperationalStatusSource("git", ".git", f"{tracker_branch} -> {target}"))
+
+    for receipt_path in _operational_delivery_receipt_paths(root, item):
+        receipt_source = OperationalStatusSource(
+            "delivery-receipt",
+            _operational_status_artifact(root, receipt_path),
+        )
+        if not receipt_path.exists():
+            findings.append(
+                OperationalStatusFinding(
+                    "PW_STATUS_DELIVERY_RECEIPT_MISSING",
+                    "warning",
+                    "The referenced delivery receipt does not exist.",
+                    (receipt_source,),
+                )
+            )
+            continue
+        try:
+            receipt_payload = json.loads(receipt_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            findings.append(
+                OperationalStatusFinding(
+                    "PW_STATUS_DELIVERY_RECEIPT_INVALID",
+                    "warning",
+                    f"Delivery receipt is unavailable or malformed: {exc}",
+                    (receipt_source,),
+                )
+            )
+            continue
+        receipt_state = _operational_receipt_state(receipt_payload)
+        if receipt_state is None:
+            findings.append(
+                OperationalStatusFinding(
+                    "PW_STATUS_DELIVERY_RECEIPT_INVALID",
+                    "warning",
+                    "Delivery receipt lacks a recognized release or deployment record.",
+                    (receipt_source,),
+                )
+            )
+            continue
+        receipt_rank = {"released": 1, "published": 2, "deployed": 3}
+        current_rank = receipt_rank.get(state, 0)
+        if receipt_rank[receipt_state] >= current_rank:
+            state = receipt_state
+            summary = f"Repository-local receipt records {receipt_state} delivery."
+            sources.append(receipt_source)
+    return (
+        OperationalStatusValue(
+            "delivery",
+            state,
+            summary,
+            _operational_status_unique_sources(sources),
+        ),
+        tuple(findings),
+    )
+
+
+def _operational_action(
+    code: str,
+    title: str,
+    responsible_party: str,
+    reason: str,
+    sources: tuple[OperationalStatusSource, ...],
+    *,
+    command: str | None = None,
+    request: str | None = None,
+) -> OperationalStatusAction:
+    return OperationalStatusAction(
+        code,
+        title,
+        responsible_party,
+        reason,
+        sources,
+        command,
+        request,
+    )
+
+
+def _operational_action_candidate(
+    precedence: str,
+    action: OperationalStatusAction,
+    *,
+    work_order: int = 0,
+    item_id: str = "",
+) -> _OperationalStatusActionCandidate:
+    return _OperationalStatusActionCandidate(
+        precedence,
+        work_order,
+        item_id,
+        action,
+    )
+
+
+def _operational_installation_action(
+    installation: OperationalStatusValue,
+) -> _OperationalStatusActionCandidate | None:
+    sources = installation.sources or (
+        OperationalStatusSource("repository-compatibility", ".project-workflow"),
+    )
+    if installation.state in {"upgradeable", "legacy-unversioned"}:
+        action = _operational_action(
+            "PW_STATUS_UPGRADE_REQUIRED",
+            "Upgrade project-workflow",
+            "agent",
+            installation.summary,
+            sources,
+            command=CANONICAL_UPGRADE_COMMAND,
+        )
+    elif installation.state == "not-initialized":
+        action = _operational_action(
+            "PW_STATUS_INIT_REQUIRED",
+            "Initialize project-workflow",
+            "agent",
+            installation.summary,
+            sources,
+            command=CANONICAL_INIT_COMMAND,
+        )
+    elif installation.state == "helper-limited":
+        action = _operational_action(
+            "PW_STATUS_HELPER_UPGRADE_REQUIRED",
+            "Use the current project-workflow helper",
+            "agent",
+            installation.summary,
+            sources,
+            command=CANONICAL_UPGRADE_COMMAND,
+        )
+    elif installation.state == "unsupported-future":
+        action = _operational_action(
+            "PW_STATUS_UNSUPPORTED_FUTURE",
+            "Use a compatible helper",
+            "owner",
+            installation.summary,
+            sources,
+            request=(
+                "Select a project-workflow helper version that supports the repository's "
+                "newer contract before making workflow changes."
+            ),
+        )
+    elif installation.state in {"invalid", "unknown"}:
+        action = _operational_action(
+            "PW_STATUS_INSTALLATION_INVALID",
+            "Repair installation identity",
+            "owner",
+            installation.summary,
+            sources,
+            request=(
+                "Review the manifest and repository contract, decide the authoritative "
+                "version, and repair the invalid installation before continuing."
+            ),
+        )
+    else:
+        return None
+    return _operational_action_candidate("installation-safety", action)
+
+
+def _operational_finding_candidates(
+    findings: tuple[OperationalStatusFinding, ...],
+) -> list[_OperationalStatusActionCandidate]:
+    candidates: list[_OperationalStatusActionCandidate] = []
+    for order, finding in enumerate(findings):
+        if finding.severity != "error":
+            continue
+        detail = " ".join(source.detail.lower() for source in finding.sources)
+        responsible_party = "owner" if "owner owner" in detail else "agent"
+        candidates.append(
+            _operational_action_candidate(
+                "blocking-current-finding",
+                _operational_action(
+                    "PW_STATUS_REPAIR_BLOCKER",
+                    f"Resolve {finding.code}",
+                    responsible_party,
+                    finding.message,
+                    finding.sources,
+                    request=(
+                        f"Resolve {finding.code} at its cited source, then rerun "
+                        "`project doctor --strict` and `project status`."
+                    ),
+                ),
+                work_order=order,
+                item_id=finding.code,
+            )
+        )
+    return candidates
+
+
+def _operational_item_layer_map(
+    item: OperationalStatusWorkItem,
+) -> dict[str, OperationalStatusProofLayer]:
+    return {layer.name: layer for layer in item.proof_layers}
+
+
+def _operational_item_action(
+    item: OperationalStatusWorkItem,
+    work_order: int,
+) -> _OperationalStatusActionCandidate | None:
+    layers = _operational_item_layer_map(item)
+    facts = _operational_work_item_facts(item)
+    owner_epic = facts.get("owner_epic")
+    fallback_sources = item.sources
+
+    if item.lifecycle == "Blocked":
+        return _operational_action_candidate(
+            "blocking-current-finding",
+            _operational_action(
+                "PW_STATUS_BLOCKER_DECISION_REQUIRED",
+                f"Resolve blocker for {item.item_id}",
+                "owner",
+                f"{item.item_id} is explicitly Blocked.",
+                fallback_sources,
+                request=(
+                    f"Record the decision or changed condition that unblocks {item.item_id}, "
+                    "then move it to the appropriate prior lifecycle state."
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+
+    if item.kind == "epic-child" and item.lifecycle == "Proposed" and owner_epic:
+        return _operational_action_candidate(
+            "lifecycle-progress",
+            _operational_action(
+                "PW_STATUS_APPROVE_EPIC_CHILD",
+                f"Approve {item.item_id}",
+                "agent",
+                "The child is authorized by the parent decomposition and remains Proposed.",
+                fallback_sources,
+                command=(
+                    f"./.project-workflow/cli/workflow epic approve --epic-id "
+                    f"{owner_epic} --id {item.item_id}"
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+    if item.kind == "epic-child" and item.lifecycle == "Approved" and owner_epic:
+        return _operational_action_candidate(
+            "lifecycle-progress",
+            _operational_action(
+                "PW_STATUS_SCAFFOLD_EPIC_CHILD",
+                f"Scaffold {item.item_id}",
+                "agent",
+                "The approved child has not been scaffolded.",
+                fallback_sources,
+                command=(
+                    f"./.project-workflow/cli/workflow epic scaffold-child --epic-id "
+                    f"{owner_epic} --id {item.item_id}"
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+
+    approval = layers.get("requirements-approval")
+    if approval is not None and approval.state not in {"pass", "not-required"}:
+        return _operational_action_candidate(
+            "owner-decision",
+            _operational_action(
+                "PW_STATUS_REQUIREMENTS_APPROVAL_REQUIRED",
+                f"Approve requirements for {item.item_id}",
+                "owner",
+                approval.summary,
+                approval.sources,
+                request=(
+                    f"Review and approve the requirements and acceptance criteria envelope "
+                    f"for {item.item_id}."
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+
+    if item.kind == "fix" and item.lifecycle == "To Do":
+        return _operational_action_candidate(
+            "lifecycle-progress",
+            _operational_action(
+                "PW_STATUS_TRIAGE_FIX",
+                f"Triage {item.item_id}",
+                "agent",
+                "The Fix remains in To Do and must pass its triage gate.",
+                fallback_sources,
+                command=f"./.project-workflow/cli/workflow fix triage --id {item.item_id}",
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+
+    readiness = layers.get("readiness")
+    if readiness is not None and readiness.state not in {"pass", "not-required"}:
+        return _operational_action_candidate(
+            "missing-workflow-gate",
+            _operational_action(
+                "PW_STATUS_READINESS_REQUIRED",
+                f"Repair readiness for {item.item_id}",
+                "agent",
+                readiness.summary,
+                readiness.sources,
+                request=(
+                    f"Complete the cited readiness requirements for {item.item_id}, then "
+                    "run its supported readiness command."
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+
+    implementation = layers.get("implementation")
+    if (
+        implementation is not None
+        and implementation.state != "pass"
+        and item.lifecycle in {"In Progress", "Testing", "Review", "Closeout", "Complete"}
+    ):
+        return _operational_action_candidate(
+            "missing-workflow-gate",
+            _operational_action(
+                "PW_STATUS_IMPLEMENTATION_REQUIRED",
+                f"Complete implementation for {item.item_id}",
+                "agent",
+                implementation.summary,
+                implementation.sources,
+                request=(
+                    f"Finish and record the implementation work for {item.item_id} before "
+                    "advancing its lifecycle."
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+
+    qa = layers.get("qa-review")
+    if qa is not None and qa.state != "pass" and item.lifecycle in {"Review", "Complete"}:
+        return _operational_action_candidate(
+            "missing-workflow-gate",
+            _operational_action(
+                "PW_STATUS_QA_REQUIRED",
+                f"Review {item.item_id}",
+                "agent",
+                qa.summary,
+                qa.sources,
+                request=(
+                    f"Run QA and code review for {item.item_id}, record an evidence-backed "
+                    "verdict, and address any findings."
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+
+    acceptance = layers.get("parent-acceptance")
+    if (
+        acceptance is not None
+        and acceptance.state not in {"pass", "not-required"}
+        and item.lifecycle in {"Review", "Closeout", "Complete"}
+    ):
+        return _operational_action_candidate(
+            "missing-workflow-gate",
+            _operational_action(
+                "PW_STATUS_PARENT_ACCEPTANCE_REQUIRED",
+                f"Record acceptance for {item.item_id}",
+                "agent",
+                acceptance.summary,
+                acceptance.sources,
+                request=(
+                    f"Record the cited parent acceptance evidence for {item.item_id} before "
+                    "completion."
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+
+    evidence = layers.get("structured-evidence")
+    if (
+        evidence is not None
+        and evidence.state not in {"pass", "not-required"}
+        and item.lifecycle in {"Review", "Closeout", "Complete"}
+    ):
+        return _operational_action_candidate(
+            "missing-workflow-gate",
+            _operational_action(
+                "PW_STATUS_STRUCTURED_EVIDENCE_REQUIRED",
+                f"Collect evidence for {item.item_id}",
+                "external-authority",
+                evidence.summary,
+                evidence.sources,
+                request=(
+                    f"Collect and record passing evidence for every triggered proof recipe "
+                    f"owned by {item.item_id}."
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+
+    command: str | None = None
+    code = ""
+    title = ""
+    reason = f"{item.item_id} is ready for its next legal lifecycle transition."
+    if item.kind == "epic-child" and owner_epic:
+        transitions = {
+            "In Progress": ("PW_STATUS_TEST_EPIC_CHILD", "Move child to Testing", "Testing"),
+            "Testing": ("PW_STATUS_REVIEW_EPIC_CHILD", "Move child to Review", "Review"),
+            "Review": ("PW_STATUS_COMPLETE_EPIC_CHILD", "Complete child", "Complete"),
+        }
+        if item.lifecycle in transitions:
+            code, title, target = transitions[item.lifecycle]
+            command = (
+                f"./.project-workflow/cli/workflow epic status --epic-id {owner_epic} "
+                f"--id {item.item_id} --to {target}"
+            )
+    elif item.kind == "epic":
+        transitions = {
+            "To Do": ("PW_STATUS_ANALYSE_EPIC", "Begin Epic analysis", "Analysing"),
+            "Analysing": ("PW_STATUS_READY_EPIC", "Mark Epic ready", "Ready"),
+            "Ready": ("PW_STATUS_START_EPIC", "Start Epic", "In Progress"),
+            "In Progress": ("PW_STATUS_CLOSEOUT_EPIC", "Begin Epic closeout", "Closeout"),
+        }
+        if item.lifecycle in transitions:
+            code, title, target = transitions[item.lifecycle]
+            command = (
+                f"./.project-workflow/cli/workflow epic lifecycle --epic-id "
+                f"{item.item_id} --to '{target}'"
+            )
+        elif item.lifecycle == "Closeout":
+            code = "PW_STATUS_COMPLETE_EPIC"
+            title = "Complete Epic closeout"
+            command = (
+                f"./.project-workflow/cli/workflow epic closeout --epic-id {item.item_id}"
+            )
+    elif item.kind == "fix":
+        transitions = {
+            "Ready": ("PW_STATUS_START_FIX", "Start Fix", "In Progress"),
+            "In Progress": ("PW_STATUS_TEST_FIX", "Move Fix to Testing", "Testing"),
+            "Testing": ("PW_STATUS_REVIEW_FIX", "Move Fix to Review", "Review"),
+        }
+        if item.lifecycle in transitions:
+            code, title, target = transitions[item.lifecycle]
+            command = (
+                f"./.project-workflow/cli/workflow fix status --id {item.item_id} "
+                f"--to '{target}'"
+            )
+    else:
+        transitions = {
+            "To Do": ("PW_STATUS_ANALYSE_TASK", "Begin task analysis", "Analysing"),
+            "Analysing": ("PW_STATUS_READY_TASK", "Mark task ready", "Ready"),
+            "Ready": ("PW_STATUS_START_TASK", "Start task", "In Progress"),
+            "Plan Confirmed": ("PW_STATUS_START_TASK", "Start task", "In Progress"),
+            "In Progress": ("PW_STATUS_TEST_TASK", "Move task to Testing", "Testing"),
+            "Testing": ("PW_STATUS_REVIEW_TASK", "Move task to Review", "Review"),
+            "Review": ("PW_STATUS_COMPLETE_TASK", "Complete task", "Complete"),
+        }
+        if item.lifecycle in transitions:
+            code, title, target = transitions[item.lifecycle]
+            command = (
+                f"./.project-workflow/cli/workflow task status --id {item.item_id} "
+                f"--to '{target}'"
+            )
+    if command is not None:
+        return _operational_action_candidate(
+            "lifecycle-progress",
+            _operational_action(
+                code,
+                f"{title}: {item.item_id}",
+                "agent",
+                reason,
+                fallback_sources,
+                command=command,
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+
+    if item.kind == "fix" and item.lifecycle == "Review":
+        return _operational_action_candidate(
+            "lifecycle-progress",
+            _operational_action(
+                "PW_STATUS_CLOSE_FIX",
+                f"Close Fix: {item.item_id}",
+                "agent",
+                "The Fix reached Review and its recorded proof gates pass.",
+                fallback_sources,
+                request=(
+                    f"Record disposition, decision, closing identity, and verification for "
+                    f"{item.item_id}, then run the supported `fix close` command with those "
+                    "values."
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+
+    if item.delivery is not None and item.delivery.state in {
+        "repository-complete",
+        "integrated",
+        "released",
+        "published",
+    }:
+        delivery_requests = {
+            "repository-complete": ("Authorize and record branch integration.", "owner"),
+            "integrated": ("Create and record the intended release.", "owner"),
+            "released": ("Verify and record public publication.", "external-authority"),
+            "published": ("Verify and record the intended deployment.", "external-authority"),
+        }
+        request, party = delivery_requests[item.delivery.state]
+        return _operational_action_candidate(
+            "delivery-follow-up",
+            _operational_action(
+                "PW_STATUS_DELIVERY_FOLLOW_UP",
+                f"Advance delivery for {item.item_id}",
+                party,
+                item.delivery.summary,
+                item.delivery.sources or fallback_sources,
+                request=request,
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+    return None
+
+
+def _operational_backlog_candidate(
+    root: Path,
+) -> _OperationalStatusActionCandidate | None:
+    backlog_path = root / ".project-workflow" / "BACKLOG.md"
+    if not backlog_path.exists():
+        return None
+    issues: list[DoctorIssue] = []
+    source = OperationalStatusSource("backlog", ".project-workflow/BACKLOG.md")
+    try:
+        rows = _backlog_rows(backlog_path, issues=issues)
+    except (OSError, SystemExit):
+        rows = []
+        issues.append(
+            DoctorIssue(
+                "PW_BACKLOG_INVALID",
+                "error",
+                str(backlog_path),
+                "Backlog cannot be parsed using the required schema.",
+                "agent",
+                False,
+            )
+        )
+    if issues:
+        return _operational_action_candidate(
+            "blocking-current-finding",
+            _operational_action(
+                "PW_STATUS_BACKLOG_INVALID",
+                "Repair backlog structure",
+                "agent",
+                f"Backlog parsing found {len(issues)} issue(s).",
+                (source,),
+                request="Repair the cited backlog rows, then rerun backlog validation.",
+            ),
+        )
+    eligible = [
+        (order, row)
+        for order, row in enumerate(rows)
+        if row.get("Status") in {"Accepted", "Proposed"}
+        and not row.get("Promoted To", "").strip()
+    ]
+    if not eligible:
+        return None
+    priority_rank = {"High": 0, "Medium": 1, "Low": 2, "Unset": 3}
+    order, row = min(
+        eligible,
+        key=lambda entry: (
+            priority_rank.get(entry[1].get("Priority", "Unset"), 4),
+            entry[0],
+        ),
+    )
+    row_id = row.get("ID", "").strip()
+    title = row.get("Title", "").strip() or row_id
+    return _operational_action_candidate(
+        "backlog-selection",
+        _operational_action(
+            "PW_STATUS_SELECT_BACKLOG_ITEM",
+            f"Select backlog item {row_id}",
+            "owner",
+            (
+                f"{row_id} is the highest recorded actionable backlog item "
+                f"({row.get('Priority', 'Unset')}, file order {order + 1})."
+            ),
+            (source,),
+            request=(
+                f"Confirm whether to promote or otherwise advance {row_id}: {title}."
+            ),
+        ),
+        work_order=order,
+        item_id=row_id,
+    )
+
+
+def resolve_operational_actions(
+    root: Path,
+    *,
+    installation: OperationalStatusValue,
+    work_items: tuple[OperationalStatusWorkItem, ...],
+    findings: tuple[OperationalStatusFinding, ...] = (),
+    focus_id: str | None = None,
+) -> tuple[OperationalStatusAction, tuple[OperationalStatusAction, ...]]:
+    candidates: list[_OperationalStatusActionCandidate] = []
+    installation_candidate = _operational_installation_action(installation)
+    if installation_candidate is not None:
+        candidates.append(installation_candidate)
+    candidates.extend(_operational_finding_candidates(findings))
+
+    selected_work = tuple(
+        item for item in work_items if focus_id is None or item.item_id == focus_id
+    )
+    for order, item in enumerate(selected_work):
+        candidate = _operational_item_action(item, order)
+        if candidate is not None:
+            candidates.append(candidate)
+
+    if focus_id is not None and not selected_work:
+        candidates.append(
+            _operational_action_candidate(
+                "blocking-current-finding",
+                _operational_action(
+                    "PW_STATUS_FOCUS_NOT_FOUND",
+                    f"Locate work item {focus_id}",
+                    "agent",
+                    f"The active operational projection contains no item named {focus_id}.",
+                    (
+                        OperationalStatusSource(
+                            "global-tracker", ".project-workflow/TRACKER.md"
+                        ),
+                    ),
+                    request=(
+                        f"Check the item ID and its tracker lifecycle, then rerun status for "
+                        f"{focus_id}."
+                    ),
+                ),
+                item_id=focus_id,
+            )
+        )
+    elif not selected_work:
+        backlog_candidate = _operational_backlog_candidate(root)
+        if backlog_candidate is not None:
+            candidates.append(backlog_candidate)
+
+    if not candidates:
+        candidates.append(
+            _operational_action_candidate(
+                "no-action",
+                _operational_action(
+                    "PW_STATUS_NO_ACTION",
+                    "No repository action is required",
+                    "owner",
+                    "No compatibility blocker, active-work gate, or actionable backlog item was found.",
+                    (
+                        OperationalStatusSource(
+                            "global-tracker", ".project-workflow/TRACKER.md"
+                        ),
+                    ),
+                    request="Select a future outcome when more work is desired.",
+                ),
+            )
+        )
+
+    rank = {
+        name: index for index, name in enumerate(OPERATIONAL_STATUS_ACTION_PRECEDENCE)
+    }
+    ordered = sorted(
+        candidates,
+        key=lambda candidate: (
+            rank[candidate.precedence],
+            candidate.work_order,
+            candidate.item_id,
+            candidate.action.code,
+        ),
+    )
+    unique: list[OperationalStatusAction] = []
+    seen: set[tuple[str, str, str | None, str | None, tuple[str, ...]]] = set()
+    for candidate in ordered:
+        action = candidate.action
+        identity = (
+            action.code,
+            action.title,
+            action.command,
+            action.request,
+            tuple(source.artifact for source in action.sources),
+        )
+        if identity in seen:
+            continue
+        seen.add(identity)
+        unique.append(action)
+    return unique[0], tuple(unique[1:])
+
+
+def _operational_aggregate_delivery(
+    work_items: tuple[OperationalStatusWorkItem, ...],
+) -> OperationalStatusValue:
+    values = tuple(item.delivery for item in work_items if item.delivery is not None)
+    if not values:
+        return OperationalStatusValue(
+            "delivery",
+            "not-recorded",
+            "No selected work item has a recorded delivery state.",
+            (OperationalStatusSource("global-tracker", ".project-workflow/TRACKER.md"),),
+        )
+    rank = {
+        "unknown": 0,
+        "not-recorded": 1,
+        "repository-complete": 2,
+        "integrated": 3,
+        "released": 4,
+        "published": 5,
+        "deployed": 6,
+    }
+    weakest = min(values, key=lambda value: rank[value.state])
+    sources = _operational_status_unique_sources(
+        [source for value in values for source in value.sources]
+    )
+    return OperationalStatusValue(
+        "delivery",
+        weakest.state,
+        f"Weakest selected work delivery state is {weakest.state}.",
+        sources,
+    )
+
+
+def build_operational_status_snapshot(
+    root: Path,
+    *,
+    strict: bool = False,
+    focus_id: str | None = None,
+) -> OperationalStatusSnapshot:
+    inspected_root = root.resolve()
+    inspection = inspect_operational_status_repository(inspected_root)
+    selected = tuple(
+        item
+        for item in inspection.active_work
+        if focus_id is None or item.item_id == focus_id
+    )
+    proof, proof_work = classify_operational_proof(inspected_root, selected)
+    health, health_findings = classify_operational_health(inspected_root, strict=strict)
+    delivered_work: list[OperationalStatusWorkItem] = []
+    delivery_findings: list[OperationalStatusFinding] = []
+    for item in proof_work:
+        delivery, item_findings = classify_operational_delivery(inspected_root, item)
+        delivery_findings.extend(item_findings)
+        delivered_work.append(
+            OperationalStatusWorkItem(
+                item.item_id,
+                item.title,
+                item.kind,
+                item.lifecycle,
+                item.operational_meaning,
+                item.sources,
+                item.facts,
+                item.proof_layers,
+                delivery,
+            )
+        )
+    work_items = tuple(delivered_work)
+    delivery = _operational_aggregate_delivery(work_items)
+    findings = tuple(
+        [*inspection.findings, *health_findings, *delivery_findings]
+    )
+    blockers = tuple(finding for finding in findings if finding.severity == "error")
+    primary, secondary = resolve_operational_actions(
+        inspected_root,
+        installation=inspection.installation,
+        work_items=work_items,
+        findings=findings,
+        focus_id=focus_id,
+    )
+    return OperationalStatusSnapshot(
+        str(inspected_root),
+        inspection.installation,
+        inspection.git,
+        health,
+        proof,
+        delivery,
+        work_items,
+        findings,
+        blockers,
+        primary,
+        secondary,
+    )
+
+
+def _operational_status_fact_value(
+    value: OperationalStatusValue,
+    key: str,
+    default: object = None,
+) -> object:
+    return next((fact.value for fact in value.facts if fact.key == key), default)
+
+
+def _operational_human_sources(
+    snapshot: OperationalStatusSnapshot,
+) -> tuple[OperationalStatusSource, ...]:
+    sources: list[OperationalStatusSource] = []
+    for value in (
+        snapshot.installation,
+        snapshot.git,
+        snapshot.health,
+        snapshot.proof,
+        snapshot.delivery,
+    ):
+        sources.extend(value.sources)
+    for item in snapshot.active_work:
+        sources.extend(item.sources)
+        for layer in item.proof_layers:
+            sources.extend(layer.sources)
+        if item.delivery is not None:
+            sources.extend(item.delivery.sources)
+    for finding in (*snapshot.findings, *snapshot.blockers):
+        sources.extend(finding.sources)
+    if snapshot.primary_action is not None:
+        sources.extend(snapshot.primary_action.sources)
+    for action in snapshot.secondary_actions:
+        sources.extend(action.sources)
+    return _operational_status_unique_sources(sources)
+
+
+def render_operational_status_human(snapshot: OperationalStatusSnapshot) -> str:
+    action = snapshot.primary_action
+    if action is None:
+        raise ValueError("Operational status snapshot requires a primary action.")
+    lines = [
+        "Next action",
+        f"- [{action.code}] {action.title}",
+        f"- Responsible: {action.responsible_party}",
+        f"- Why: {action.reason}",
+        (
+            f"- Run: {action.command}"
+            if action.command is not None
+            else f"- Request: {action.request}"
+        ),
+        "",
+        "Status",
+        f"- Installation: {snapshot.installation.state} — {snapshot.installation.summary}",
+        f"- Git: {snapshot.git.state} — {snapshot.git.summary}",
+        (
+            f"- Health: {snapshot.health.state} — {snapshot.health.summary} "
+            f"(accepted warnings: "
+            f"{_operational_status_fact_value(snapshot.health, 'accepted_count', 0)})"
+        ),
+        f"- Proof: {snapshot.proof.state} — {snapshot.proof.summary}",
+        f"- Delivery: {snapshot.delivery.state} — {snapshot.delivery.summary}",
+        "",
+        "Active work",
+    ]
+    if snapshot.active_work:
+        for item in snapshot.active_work:
+            aggregate_proof = next(
+                (
+                    fact.value
+                    for fact in item.facts
+                    if fact.key == "aggregate_proof_state"
+                ),
+                "not-recorded",
+            )
+            delivery_state = item.delivery.state if item.delivery is not None else "unknown"
+            lines.append(
+                f"- {item.item_id} [{item.lifecycle}] {item.title} — "
+                f"proof {aggregate_proof}; delivery {delivery_state}"
+            )
+    else:
+        lines.append("- None selected or active.")
+
+    lines.extend(("", "Findings"))
+    if snapshot.findings:
+        lines.extend(
+            f"- {finding.severity}: {finding.code} — {finding.message}"
+            for finding in snapshot.findings
+        )
+    else:
+        lines.append("- None.")
+
+    lines.extend(("", "Secondary actions"))
+    if snapshot.secondary_actions:
+        for secondary in snapshot.secondary_actions:
+            instruction = secondary.command or secondary.request
+            lines.append(
+                f"- [{secondary.code}] {secondary.title} "
+                f"({secondary.responsible_party}): {instruction}"
+            )
+    else:
+        lines.append("- None.")
+
+    lines.extend(("", "Sources"))
+    lines.extend(
+        f"- {source.kind}: {source.artifact}"
+        + (f" — {source.detail}" if source.detail else "")
+        for source in _operational_human_sources(snapshot)
+    )
+    return "\n".join(lines) + "\n"
+
+
+def cmd_status(args: argparse.Namespace) -> None:
+    root = Path(args.root).resolve() if args.root else Path.cwd()
+    snapshot = build_operational_status_snapshot(
+        root,
+        strict=args.strict,
+        focus_id=args.id,
+    )
+    if args.format == "json":
+        print(json.dumps(operational_status_payload(snapshot), indent=2))
+    else:
+        print(render_operational_status_human(snapshot), end="")
 
 
 def _migration_target_is_safe(target: str) -> bool:
@@ -9420,6 +12004,35 @@ def build_parser() -> argparse.ArgumentParser:
             help="Output format (default: human)",
         )
         doctor_parser.set_defaults(func=cmd_doctor)
+
+    status_parser = subparsers.add_parser(
+        "status",
+        help="Report operational state and the next safe action without mutation",
+        description=(
+            "Report installation, Git, health, active work, proof, delivery, sources, "
+            "and the next safe action without mutation."
+        ),
+    )
+    status_parser.add_argument(
+        "--root",
+        help="Repository root to inspect (default: current directory)",
+    )
+    status_parser.add_argument(
+        "--id",
+        help="Focus the report and action resolver on one active work-item ID",
+    )
+    status_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Treat visible Doctor warnings as blocking health findings",
+    )
+    status_parser.add_argument(
+        "--format",
+        choices=("human", "json"),
+        default="human",
+        help="Output format (default: human)",
+    )
+    status_parser.set_defaults(func=cmd_status)
 
     upgrade_parser = subparsers.add_parser(
         "upgrade",

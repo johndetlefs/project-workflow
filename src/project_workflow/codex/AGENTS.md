@@ -28,6 +28,8 @@ Backlog is optional and sits between constitution and tracker state. Keep `.proj
 
 Project Workflow is owner-directed and agent-operated. The owner supplies intent, constraints, examples, decisions, and approvals; the agent runs commands, drafts artifacts, asks focused questions, validates readiness, implements, reviews, and records evidence. Do not make manual template completion the normal user path.
 
+Run `./.project-workflow/cli/workflow status` when arriving at a repository or choosing the next action. It is a read-only, sourced projection; use `--id <WORK-ID>` for active-work focus, `--strict` for blocking visible Doctor warnings, and `--format json` for schema-versioned output. Status never performs its action and does not replace Doctor diagnosis, canonical upgrade, lifecycle gates, QA, Git integration, or service verification.
+
 The user's work-item label is non-binding. The agent must make and state an evidence-based routing
 recommendation. Clear authorized cases may proceed; genuinely ambiguous or materially different
 cases require one focused question. Do not reopen or rewrite completed work by default.

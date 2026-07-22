@@ -35,6 +35,7 @@ Product outcomes and mission belong in `.project-workflow/CONSTITUTION.md`.
   - `.cursor/agents/*.md` and `.cursor/rules/project-workflow.mdc` when Cursor mode is selected
 - `project task init` must continue scaffolding task docs and optional tracker updates/branch creation.
 - `project backlog` commands must keep backlog state separate from tracker execution lifecycle state.
+- `project status` must remain a read-only composition of repository/Git truth. Human and JSON output must share one snapshot and must not execute the recommended action or substitute for Doctor, upgrade, lifecycle, QA, integration, or service verification.
 - Prefer extending behavior with additive flags/options; avoid changing defaults without explicit task scope.
 
 ## Prompt/Agent Sync Rules
