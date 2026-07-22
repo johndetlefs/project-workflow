@@ -454,6 +454,49 @@ recognized pre-versioned repository without rewriting its tracker, backlog, conf
 task/Epic history, evidence, or unmarked content. See [COMPATIBILITY.md](COMPATIBILITY.md) for the
 support policy.
 
+## Sanitized Client Handoffs With Smoke Bomb
+
+Smoke Bomb prepares a client ZIP from an agency- or freelancer-owned repository without handing
+over Git history or internal project-workflow state. The recommended operating pattern is to create
+a disposable branch, prepare useful client-facing context, review a deterministic cleanup plan,
+apply that exact plan, and hand over the validated ZIP and its SHA-256. Smoke Bomb warns on a
+detected default branch but leaves branch creation, commits, pushes, merges, and deletion to normal
+Git operations.
+
+The handoff is intentionally not a bare source dump. `README.md` and a canonical `AGENTS.md` must
+remain substantive, and selected client targets receive their conventional instruction entry point
+for Codex, Claude Code, Cursor, or GitHub Copilot. Missing guidance, unmarked ownership conflicts,
+dirty state, unsafe file types, secret-like paths, residual project-workflow references, or failed
+reviewed validation commands block export.
+
+Plan without mutation from a clean dedicated worktree. Repeat `--client-agent` and
+`--validation-command` when needed; the ZIP path must be outside the repository:
+
+```bash
+project smoke-bomb \
+  --client-agent codex \
+  --validation-command "npm test" \
+  --output ../client-handoff.zip \
+  --plan --format json
+```
+
+After reviewing every action, ownership decision, client artifact, exclusion, validation command,
+warning, blocker, and the fingerprint, apply that exact plan. Authorized non-interactive agents add
+`--yes`; human invocation otherwise confirms in a TTY:
+
+```bash
+project smoke-bomb \
+  --client-agent codex \
+  --validation-command "npm test" \
+  --output ../client-handoff.zip \
+  --apply --plan-fingerprint <REVIEWED_FINGERPRINT> --yes --format json
+```
+
+The archive inventory comes from Git-tracked and non-ignored existing worktree files after apply.
+It excludes `.git`, `.project-workflow`, ignored build/transient files, and unsafe or secret-like
+paths. Smoke Bomb is not a legal, licensing, security, or data-loss-prevention audit; those handoff
+responsibilities remain separate.
+
 ## IDs And Parallel Work
 
 `.project-workflow/config.json` controls prefixes and ID generation.

@@ -12,6 +12,7 @@ import secrets
 import shutil
 import subprocess
 import tempfile
+import zipfile
 from dataclasses import dataclass
 from datetime import date
 from importlib.resources import files
@@ -38,6 +39,7 @@ PROMPT_FILES = [
     "QAReview.prompt.md",
     "Requirements.prompt.md",
     "Retro.prompt.md",
+    "SmokeBomb.prompt.md",
     "Task.prompt.md",
 ]
 
@@ -54,6 +56,7 @@ CODEX_SKILL_NAMES = [
     "project-implement",
     "project-qa-review",
     "project-retro",
+    "project-smoke-bomb",
 ]
 
 TASK_ID_PREFIX = "TASK"
@@ -134,6 +137,24 @@ UPGRADE_APPLY_FAILURE_CODES = (
     "PW_UPGRADE_APPLY_STALE_FILE",
     "PW_UPGRADE_APPLY_STALE_PLAN",
     "PW_UPGRADE_APPLY_STALE_STATE",
+)
+SMOKE_BOMB_PLAN_SCHEMA_VERSION = 1
+SMOKE_BOMB_RESULT_SCHEMA_VERSION = 1
+SMOKE_BOMB_BLOCKER_CODES = (
+    "PW_SMOKE_BOMB_AMBIGUOUS_ROOT",
+    "PW_SMOKE_BOMB_CLIENT_GUIDANCE_REQUIRED",
+    "PW_SMOKE_BOMB_DIRTY_WORKTREE",
+    "PW_SMOKE_BOMB_OUTPUT_UNSAFE",
+    "PW_SMOKE_BOMB_RESIDUAL_REFERENCE",
+    "PW_SMOKE_BOMB_UNSAFE_TARGET",
+    "PW_SMOKE_BOMB_VALIDATION_REQUIRED",
+)
+SMOKE_BOMB_FAILURE_CODES = (
+    "PW_SMOKE_BOMB_APPLY_BLOCKED",
+    "PW_SMOKE_BOMB_APPLY_FAILED",
+    "PW_SMOKE_BOMB_APPLY_STALE_PLAN",
+    "PW_SMOKE_BOMB_ARCHIVE_BLOCKED",
+    "PW_SMOKE_BOMB_VALIDATION_FAILED",
 )
 RECOGNIZED_WORKFLOW_PATHS = (
     "TRACKER.md",
@@ -689,6 +710,9 @@ def _managed_project_workflow_block() -> str:
         "diagnoses without mutation, and canonical UVX upgrade refreshes managed assets and "
         "transforms repository schema in one reviewed transaction. Use `upgrade --plan` and "
         "fingerprinted apply for automation.\n"
+        "- For a sanitized client handoff, use canonical `project smoke-bomb` from a clean "
+        "dedicated worktree to review exact removal, run explicit validations, preserve useful "
+        "client agent guidance, and export a ZIP without Git or workflow internals.\n"
         "- Run `./.project-workflow/cli/workflow doctor` after tracker or task-doc changes.\n"
         f"{MANAGED_BLOCK_END}"
     )
@@ -892,6 +916,25 @@ class UpgradeApplyFailure(RuntimeError):
     def __init__(self, code: str, message: str) -> None:
         if code not in UPGRADE_APPLY_FAILURE_CODES:
             raise ValueError(f"Unknown upgrade apply failure code: {code}")
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+@dataclass(frozen=True)
+class SmokeBombBlocker:
+    code: str
+    message: str
+
+    def __post_init__(self) -> None:
+        if self.code not in SMOKE_BOMB_BLOCKER_CODES:
+            raise ValueError(f"Unknown Smoke Bomb blocker code: {self.code}")
+
+
+class SmokeBombFailure(RuntimeError):
+    def __init__(self, code: str, message: str) -> None:
+        if code not in SMOKE_BOMB_FAILURE_CODES:
+            raise ValueError(f"Unknown Smoke Bomb failure code: {code}")
         super().__init__(message)
         self.code = code
         self.message = message
@@ -2048,6 +2091,1013 @@ def _format_upgrade_apply_human(result: dict[str, object]) -> str:
             f"{post_upgrade['owner_finding_count']} owner-owned"
         )
     return "\n".join(lines)
+
+
+def _smoke_bomb_hash(content: bytes | None) -> str:
+    if content is None:
+        return ABSENT_FILE_HASH
+    return "sha256:" + hashlib.sha256(content).hexdigest()
+
+
+def _smoke_bomb_git_optional(args: list[str], root: Path) -> str | None:
+    try:
+        return _run_git(args, cwd=root)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
+def _smoke_bomb_repository_identity(root: Path) -> tuple[dict[str, object], list[SmokeBombBlocker]]:
+    blockers: list[SmokeBombBlocker] = []
+    top_level = _smoke_bomb_git_optional(["rev-parse", "--show-toplevel"], root)
+    branch = _smoke_bomb_git_optional(["branch", "--show-current"], root)
+    commit = _smoke_bomb_git_optional(["rev-parse", "HEAD"], root)
+    if top_level is None or branch is None or commit is None:
+        blockers.append(
+            SmokeBombBlocker(
+                "PW_SMOKE_BOMB_AMBIGUOUS_ROOT",
+                "Smoke Bomb requires an existing Git worktree with a current commit and branch.",
+            )
+        )
+        return {
+            "root": str(root),
+            "top_level": top_level,
+            "branch": branch,
+            "commit": commit,
+            "default_branch": None,
+            "on_default_branch": False,
+        }, blockers
+
+    resolved_top = Path(top_level).resolve()
+    if resolved_top != root:
+        blockers.append(
+            SmokeBombBlocker(
+                "PW_SMOKE_BOMB_AMBIGUOUS_ROOT",
+                f"Requested root {root} is not the Git worktree root {resolved_top}.",
+            )
+        )
+
+    remote_default = _smoke_bomb_git_optional(
+        ["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"], root
+    )
+    default_branch = remote_default.removeprefix("origin/") if remote_default else None
+    if default_branch is None and branch in {"main", "master"}:
+        default_branch = branch
+    return {
+        "root": str(root),
+        "top_level": str(resolved_top),
+        "branch": branch,
+        "commit": commit,
+        "default_branch": default_branch,
+        "on_default_branch": bool(default_branch and branch == default_branch),
+    }, blockers
+
+
+def _smoke_bomb_remove_managed_block(content: str) -> str:
+    pattern = re.compile(
+        rf"^{re.escape(MANAGED_BLOCK_START)}\n.*?^{re.escape(MANAGED_BLOCK_END)}(?:\n)?",
+        flags=re.DOTALL | re.MULTILINE,
+    )
+    match = pattern.search(content)
+    if not match:
+        return content
+    before = content[: match.start()].rstrip("\n")
+    after = content[match.end() :].lstrip("\n")
+    if before and after:
+        return f"{before}\n\n{after}"
+    if before:
+        return before + "\n"
+    return after
+
+
+def _smoke_bomb_useful_markdown(content: str) -> bool:
+    stripped = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL).strip()
+    if len(stripped) < 80:
+        return False
+    placeholders = (
+        "Describe the user outcome",
+        "Add local conventions, validation commands",
+        "As a ____, I want ____, so that ____",
+        "____",
+    )
+    return not any(value in stripped for value in placeholders)
+
+
+def _smoke_bomb_client_agents_text(guidance: str, validation_commands: tuple[str, ...]) -> str:
+    guidance_body = guidance.strip()
+    if guidance_body.startswith("# Project Workflow Guidance"):
+        guidance_body = guidance_body.removeprefix("# Project Workflow Guidance").strip()
+    validations = "\n".join(f"- `{command}`" for command in validation_commands)
+    return (
+        "# Agent Instructions\n\n"
+        "Read `README.md` before changing the project. Treat the repository's existing "
+        "architecture and conventions as authoritative, and preserve user-owned content.\n\n"
+        "## Repository Guidance\n\n"
+        f"{guidance_body}\n\n"
+        "## Validation\n\n"
+        f"{validations}\n"
+    )
+
+
+def _smoke_bomb_adapter_text(agent: str) -> str:
+    if agent == "claude-code":
+        return (
+            "# Claude Code Instructions\n\n"
+            "Read `README.md` and `AGENTS.md` before making changes. "
+            "Follow the repository guidance and validation commands in `AGENTS.md`.\n"
+        )
+    if agent == "cursor":
+        return (
+            "---\ndescription: Client project guidance\nalwaysApply: true\n---\n\n"
+            "Read `README.md` and `AGENTS.md` before making changes. "
+            "Follow the repository guidance and validation commands in `AGENTS.md`.\n"
+        )
+    if agent == "github-copilot":
+        return (
+            "# GitHub Copilot Instructions\n\n"
+            "Read `README.md` and `AGENTS.md` before making changes. "
+            "Follow the repository guidance and validation commands in `AGENTS.md`.\n"
+        )
+    return ""
+
+
+def _smoke_bomb_generated_asset_paths(root: Path) -> set[Path]:
+    candidates: set[Path] = set()
+    for skill_name in CODEX_SKILL_NAMES:
+        candidates.add(root / ".agents" / "skills" / skill_name / "SKILL.md")
+    for prompt_file in PROMPT_FILES:
+        name = _prompt_filename_to_agent_name(prompt_file)
+        candidates.add(root / ".claude" / "agents" / f"{name}.md")
+        candidates.add(root / ".cursor" / "agents" / f"{name}.md")
+        candidates.add(root / ".github" / "prompts" / prompt_file)
+    candidates.add(root / ".cursor" / "rules" / "project-workflow.mdc")
+
+    expanded = set(candidates)
+    for candidate in tuple(candidates):
+        parent = candidate.parent
+        if not parent.is_dir():
+            continue
+        for sibling in parent.glob(f"{candidate.name}.new*"):
+            expanded.add(sibling)
+    return expanded
+
+
+def _smoke_bomb_action(
+    root: Path,
+    path: Path,
+    after: bytes | None,
+    *,
+    reason: str,
+    ownership: str,
+    source: str,
+) -> tuple[dict[str, object], bytes | None]:
+    relative = path.relative_to(root).as_posix()
+    before = path.read_bytes() if path.exists() and path.is_file() else None
+    return {
+        "path": relative,
+        "action": "delete" if after is None else ("create" if before is None else "replace"),
+        "before_sha256": _smoke_bomb_hash(before),
+        "after_sha256": _smoke_bomb_hash(after),
+        "reason": reason,
+        "ownership": ownership,
+        "source": source,
+    }, after
+
+
+def _smoke_bomb_target_is_safe(root: Path, path: Path) -> bool:
+    try:
+        relative = path.relative_to(root)
+        path.resolve(strict=False).relative_to(root)
+    except ValueError:
+        return False
+    current = root
+    for part in relative.parts[:-1]:
+        current /= part
+        if current.is_symlink() or (current.exists() and not current.is_dir()):
+            return False
+    return not path.is_symlink() and (not path.exists() or path.is_file())
+
+
+def _smoke_bomb_plan_outputs(
+    root: Path,
+    client_agents: tuple[str, ...],
+    validation_commands: tuple[str, ...],
+) -> tuple[list[dict[str, object]], dict[str, bytes | None], list[SmokeBombBlocker]]:
+    actions: list[dict[str, object]] = []
+    outputs: dict[str, bytes | None] = {}
+    blockers: list[SmokeBombBlocker] = []
+
+    def record(path: Path, after: bytes | None, *, reason: str, ownership: str, source: str) -> None:
+        if not _smoke_bomb_target_is_safe(root, path):
+            blockers.append(
+                SmokeBombBlocker(
+                    "PW_SMOKE_BOMB_UNSAFE_TARGET",
+                    f"Planned target must be a regular file or absent: {path.relative_to(root)}.",
+                )
+            )
+            return
+        action, content = _smoke_bomb_action(
+            root, path, after, reason=reason, ownership=ownership, source=source
+        )
+        if action["before_sha256"] != action["after_sha256"]:
+            actions.append(action)
+            outputs[action["path"]] = content
+
+    workflow_dir = root / ".project-workflow"
+    if (
+        not _smoke_bomb_target_is_safe(root, workflow_dir / "sentinel")
+        or workflow_dir.is_symlink()
+        or (workflow_dir.exists() and not workflow_dir.is_dir())
+    ):
+        blockers.append(
+            SmokeBombBlocker(
+                "PW_SMOKE_BOMB_UNSAFE_TARGET",
+                ".project-workflow must be a real directory or absent.",
+            )
+        )
+    elif workflow_dir.is_dir():
+        for path in sorted(workflow_dir.rglob("*")):
+            if path.is_symlink() or (path.exists() and not path.is_file() and not path.is_dir()):
+                blockers.append(
+                    SmokeBombBlocker(
+                        "PW_SMOKE_BOMB_UNSAFE_TARGET",
+                        f"Unsafe project-workflow entry: {path.relative_to(root)}.",
+                    )
+                )
+            elif path.is_file():
+                record(
+                    path,
+                    None,
+                    reason="Remove agency-owned project-workflow internal state.",
+                    ownership="project-workflow-directory",
+                    source=".project-workflow",
+                )
+
+    for path in sorted(_smoke_bomb_generated_asset_paths(root)):
+        if not path.exists():
+            continue
+        if not _smoke_bomb_target_is_safe(root, path):
+            blockers.append(
+                SmokeBombBlocker(
+                    "PW_SMOKE_BOMB_UNSAFE_TARGET",
+                    f"Generated asset target is unsafe: {path.relative_to(root)}.",
+                )
+            )
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            content = ""
+        if not _is_generated_content(content):
+            blockers.append(
+                SmokeBombBlocker(
+                    "PW_SMOKE_BOMB_UNSAFE_TARGET",
+                    f"Known generated path lacks ownership marker: {path.relative_to(root)}.",
+                )
+            )
+            continue
+        record(
+            path,
+            None,
+            reason="Remove generated project-workflow agent surface.",
+            ownership="generated-marker",
+            source=GENERATED_MARKER,
+        )
+
+    guidance_path = workflow_dir / "guidance.md"
+    guidance = ""
+    if guidance_path.is_file():
+        try:
+            guidance = guidance_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            guidance = ""
+
+    agents_path = root / "AGENTS.md"
+    existing_agents = ""
+    if agents_path.is_file() and not agents_path.is_symlink():
+        try:
+            existing_agents = agents_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            existing_agents = ""
+    stripped_agents = _smoke_bomb_remove_managed_block(existing_agents)
+    if _smoke_bomb_useful_markdown(stripped_agents):
+        client_agents_text = stripped_agents
+        agent_source = "existing AGENTS.md outside the managed block"
+    elif stripped_agents.strip():
+        client_agents_text = stripped_agents
+        agent_source = "existing AGENTS.md outside the managed block"
+        blockers.append(
+            SmokeBombBlocker(
+                "PW_SMOKE_BOMB_CLIENT_GUIDANCE_REQUIRED",
+                "Existing user-authored AGENTS.md content is too limited for client handoff; "
+                "review and improve it rather than allowing Smoke Bomb to replace it.",
+            )
+        )
+    elif _smoke_bomb_useful_markdown(guidance):
+        client_agents_text = _smoke_bomb_client_agents_text(guidance, validation_commands)
+        agent_source = ".project-workflow/guidance.md and reviewed validation commands"
+    else:
+        client_agents_text = ""
+        agent_source = "missing"
+        blockers.append(
+            SmokeBombBlocker(
+                "PW_SMOKE_BOMB_CLIENT_GUIDANCE_REQUIRED",
+                "Useful client agent guidance is missing. Add substantive content outside the "
+                "managed AGENTS.md block or to .project-workflow/guidance.md and re-plan.",
+            )
+        )
+    if client_agents_text:
+        record(
+            agents_path,
+            client_agents_text.encode("utf-8"),
+            reason="Preserve one canonical client-facing agent guide.",
+            ownership="mixed-host-file",
+            source=agent_source,
+        )
+
+    adapter_paths = {
+        "claude-code": root / "CLAUDE.md",
+        "cursor": root / ".cursor" / "rules" / "client-project.mdc",
+        "github-copilot": root / ".github" / "copilot-instructions.md",
+    }
+    for agent in client_agents:
+        if agent == "codex":
+            continue
+        path = adapter_paths[agent]
+        existing = ""
+        if path.is_file() and not path.is_symlink():
+            try:
+                existing = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                existing = ""
+        stripped = _smoke_bomb_remove_managed_block(existing)
+        if _smoke_bomb_useful_markdown(stripped):
+            after_text = stripped
+        elif stripped.strip():
+            after_text = stripped
+            blockers.append(
+                SmokeBombBlocker(
+                    "PW_SMOKE_BOMB_CLIENT_GUIDANCE_REQUIRED",
+                    f"Existing user-authored {path.relative_to(root)} is too limited for client "
+                    "handoff; review and improve it rather than allowing replacement.",
+                )
+            )
+        else:
+            after_text = _smoke_bomb_adapter_text(agent)
+        record(
+            path,
+            after_text.encode("utf-8"),
+            reason=f"Provide client-facing instructions for {AGENT_CHOICES[agent]}.",
+            ownership="client-agent-adapter",
+            source="AGENTS.md",
+        )
+
+    copilot_path = root / ".github" / "copilot-instructions.md"
+    if "github-copilot" not in client_agents and copilot_path.is_file():
+        try:
+            current = copilot_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            current = ""
+        stripped = _smoke_bomb_remove_managed_block(current)
+        record(
+            copilot_path,
+            stripped.encode("utf-8") if stripped else None,
+            reason="Remove only the project-workflow managed host block.",
+            ownership="mixed-host-file",
+            source=MANAGED_BLOCK_START,
+        )
+
+    readme_path = root / "README.md"
+    readme = ""
+    if readme_path.is_file() and not readme_path.is_symlink():
+        try:
+            readme = readme_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            readme = ""
+    if not _smoke_bomb_useful_markdown(readme):
+        blockers.append(
+            SmokeBombBlocker(
+                "PW_SMOKE_BOMB_CLIENT_GUIDANCE_REQUIRED",
+                "A substantive client-facing README.md is required before sanitization.",
+            )
+        )
+    return sorted(actions, key=lambda item: str(item["path"])), outputs, blockers
+
+
+def _smoke_bomb_dirty(root: Path) -> bool:
+    status = _smoke_bomb_git_optional(["status", "--porcelain"], root)
+    return status is None or bool(status)
+
+
+def _smoke_bomb_planned_archive(
+    root: Path,
+    outputs: dict[str, bytes | None],
+    client_agents: tuple[str, ...],
+) -> tuple[list[str], list[SmokeBombBlocker]]:
+    blockers: list[SmokeBombBlocker] = []
+    try:
+        inventory = set(_smoke_bomb_inventory(root))
+    except SmokeBombFailure:
+        return [], blockers
+    for relative, content in outputs.items():
+        if content is None:
+            inventory.discard(relative)
+        else:
+            inventory.add(relative)
+    planned = sorted(inventory)
+    residuals: list[str] = []
+    for relative in planned:
+        path = root / relative
+        content = outputs.get(relative)
+        if relative not in outputs:
+            if path.is_symlink() or not path.is_file():
+                blockers.append(
+                    SmokeBombBlocker(
+                        "PW_SMOKE_BOMB_UNSAFE_TARGET",
+                        f"Unsafe archive file type requires resolution: {relative}.",
+                    )
+                )
+                continue
+            if path.stat().st_size > 2_000_000:
+                continue
+            try:
+                content = path.read_bytes()
+            except OSError:
+                content = None
+        if _smoke_bomb_secret_like(relative):
+            blockers.append(
+                SmokeBombBlocker(
+                    "PW_SMOKE_BOMB_UNSAFE_TARGET",
+                    f"Secret-like path requires explicit removal or review: {relative}.",
+                )
+            )
+        if content is None:
+            continue
+        try:
+            text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        if "project-workflow" in text or ".project-workflow" in text:
+            residuals.append(relative)
+    if residuals:
+        blockers.append(
+            SmokeBombBlocker(
+                "PW_SMOKE_BOMB_RESIDUAL_REFERENCE",
+                "Unclassified project-workflow references would remain in the ZIP: "
+                + ", ".join(residuals),
+            )
+        )
+    required_guidance = {"README.md", "AGENTS.md"}
+    adapter_paths = {
+        "claude-code": "CLAUDE.md",
+        "cursor": ".cursor/rules/client-project.mdc",
+        "github-copilot": ".github/copilot-instructions.md",
+    }
+    required_guidance.update(
+        adapter_paths[agent] for agent in client_agents if agent in adapter_paths
+    )
+    inventory_set = set(planned)
+    for relative in sorted(required_guidance):
+        content = outputs.get(relative)
+        if relative not in outputs:
+            path = root / relative
+            try:
+                content = path.read_bytes()
+            except OSError:
+                content = None
+        if content is None:
+            continue
+        try:
+            text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        if "____" in text or re.search(r"\b(?:TODO|TBD)\b", text):
+            blockers.append(
+                SmokeBombBlocker(
+                    "PW_SMOKE_BOMB_CLIENT_GUIDANCE_REQUIRED",
+                    f"Client guidance contains an unresolved placeholder: {relative}.",
+                )
+            )
+        for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", text):
+            target = target.strip().split("#", 1)[0]
+            if not target or "://" in target or target.startswith(("#", "mailto:")):
+                continue
+            decoded = target.replace("%20", " ")
+            resolved = (root / relative).parent.joinpath(decoded).resolve()
+            try:
+                target_relative = resolved.relative_to(root).as_posix()
+            except ValueError:
+                target_relative = ""
+            target_present = target_relative in inventory_set or any(
+                value.startswith(target_relative.rstrip("/") + "/") for value in inventory_set
+            )
+            if not target_relative or not target_present:
+                blockers.append(
+                    SmokeBombBlocker(
+                        "PW_SMOKE_BOMB_CLIENT_GUIDANCE_REQUIRED",
+                        f"Client guidance link would be broken: {relative} -> {target}.",
+                    )
+                )
+    return planned, blockers
+
+
+def _build_smoke_bomb_plan(
+    root: Path,
+    client_agents: tuple[str, ...],
+    validation_commands: tuple[str, ...],
+    output_path: Path,
+) -> tuple[dict[str, object], dict[str, bytes | None]]:
+    identity, blockers = _smoke_bomb_repository_identity(root)
+    if not validation_commands:
+        blockers.append(
+            SmokeBombBlocker(
+                "PW_SMOKE_BOMB_VALIDATION_REQUIRED",
+                "At least one explicit --validation-command is required.",
+            )
+        )
+    try:
+        output_path.relative_to(root)
+    except ValueError:
+        pass
+    else:
+        blockers.append(
+            SmokeBombBlocker(
+                "PW_SMOKE_BOMB_OUTPUT_UNSAFE",
+                "The ZIP output must be outside the repository root.",
+            )
+        )
+    if _smoke_bomb_dirty(root):
+        blockers.append(
+            SmokeBombBlocker(
+                "PW_SMOKE_BOMB_DIRTY_WORKTREE",
+                "Smoke Bomb apply requires a clean worktree, including no untracked files.",
+            )
+        )
+    actions, outputs, output_blockers = _smoke_bomb_plan_outputs(
+        root, client_agents, validation_commands
+    )
+    blockers.extend(output_blockers)
+    planned_inventory, archive_blockers = _smoke_bomb_planned_archive(
+        root, outputs, client_agents
+    )
+    blockers.extend(archive_blockers)
+    plan: dict[str, object] = {
+        "schema_version": SMOKE_BOMB_PLAN_SCHEMA_VERSION,
+        "operation": "smoke-bomb",
+        "package_version": CURRENT_PACKAGE_VERSION,
+        "repository": identity,
+        "workflow_installed": (root / ".project-workflow").is_dir(),
+        "client_agents": list(client_agents),
+        "validation_commands": list(validation_commands),
+        "output_path": str(output_path),
+        "actions": actions,
+        "archive": {
+            "source": "git tracked and non-ignored existing files after apply",
+            "excluded": [".git", "ignored files", "unsafe or secret-like paths", "output ZIP"],
+            "included_paths": planned_inventory,
+            "entry_count": len(planned_inventory),
+        },
+        "warnings": [
+            "Current branch appears to be the default branch; use a disposable Smoke Bomb branch."
+        ]
+        if identity["on_default_branch"]
+        else [],
+        "blockers": [
+            {"code": blocker.code, "message": blocker.message}
+            for blocker in sorted(blockers, key=lambda value: (value.code, value.message))
+        ],
+    }
+    fingerprint_payload = json.dumps(plan, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    plan["plan_fingerprint"] = hashlib.sha256(fingerprint_payload).hexdigest()
+    return plan, outputs
+
+
+def _format_smoke_bomb_plan_human(plan: dict[str, object]) -> str:
+    repository = plan["repository"]
+    lines = [
+        "project smoke-bomb plan",
+        f"repository: {repository['root']}",
+        f"branch: {repository['branch']} @ {repository['commit']}",
+        f"plan fingerprint: {plan['plan_fingerprint']}",
+        "client agents: " + ", ".join(plan["client_agents"]),
+        f"output ZIP: {plan['output_path']}",
+        f"planned actions: {len(plan['actions'])}",
+    ]
+    for warning in plan["warnings"]:
+        lines.append(f"warning: {warning}")
+    for action in plan["actions"]:
+        lines.append(f"- {action['action']}: {action['path']} ({action['reason']})")
+    for blocker in plan["blockers"]:
+        lines.append(f"blocker: {blocker['code']}: {blocker['message']}")
+    if not plan["blockers"]:
+        lines.append(
+            "Apply this exact plan with --apply --plan-fingerprint "
+            f"{plan['plan_fingerprint']} (add --yes for authorized non-interactive use)."
+        )
+    return "\n".join(lines)
+
+
+def _smoke_bomb_remove_empty_managed_dirs(root: Path) -> None:
+    candidates = (
+        root / ".project-workflow",
+        root / ".agents" / "skills",
+        root / ".agents",
+        root / ".claude" / "agents",
+        root / ".claude",
+        root / ".cursor" / "agents",
+        root / ".github" / "prompts",
+    )
+    for candidate in candidates:
+        if not candidate.is_dir() or candidate.is_symlink():
+            continue
+        for directory in sorted(
+            (path for path in candidate.rglob("*") if path.is_dir()),
+            key=lambda path: len(path.parts),
+            reverse=True,
+        ):
+            try:
+                directory.rmdir()
+            except OSError:
+                pass
+        try:
+            candidate.rmdir()
+        except OSError:
+            pass
+
+
+def _smoke_bomb_run_validations(
+    root: Path, validation_commands: tuple[str, ...]
+) -> list[dict[str, object]]:
+    results: list[dict[str, object]] = []
+    for command in validation_commands:
+        completed = subprocess.run(
+            command,
+            cwd=root,
+            shell=True,
+            executable="/bin/sh",
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        result = {
+            "command": command,
+            "exit_code": completed.returncode,
+            "stdout_bytes": len(completed.stdout.encode("utf-8")),
+            "stdout_sha256": hashlib.sha256(completed.stdout.encode("utf-8")).hexdigest(),
+            "stderr_bytes": len(completed.stderr.encode("utf-8")),
+            "stderr_sha256": hashlib.sha256(completed.stderr.encode("utf-8")).hexdigest(),
+        }
+        results.append(result)
+        if completed.returncode != 0:
+            raise SmokeBombFailure(
+                "PW_SMOKE_BOMB_VALIDATION_FAILED",
+                f"Reviewed validation command failed ({completed.returncode}): {command}",
+            )
+    return results
+
+
+def _smoke_bomb_inventory(root: Path) -> list[str]:
+    try:
+        completed = subprocess.run(
+            ["git", "ls-files", "-co", "--exclude-standard", "-z"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
+        raise SmokeBombFailure(
+            "PW_SMOKE_BOMB_ARCHIVE_BLOCKED",
+            "Unable to inventory tracked and non-ignored worktree files.",
+        ) from exc
+    paths = sorted(
+        {
+            value.decode("utf-8")
+            for value in completed.stdout.split(b"\0")
+            if value
+        }
+    )
+    return [relative for relative in paths if (root / relative).exists()]
+
+
+def _smoke_bomb_secret_like(relative: str) -> bool:
+    path = Path(relative)
+    lower_name = path.name.lower()
+    if lower_name == ".env.example" or lower_name.endswith(".example"):
+        return False
+    if lower_name == ".env" or lower_name.startswith(".env."):
+        return True
+    if path.suffix.lower() in {".pem", ".key", ".p12", ".pfx"}:
+        return True
+    return lower_name in {
+        "id_rsa",
+        "id_ed25519",
+        "credentials.json",
+        "service-account.json",
+        "secrets.json",
+    }
+
+
+def _smoke_bomb_markdown_issues(root: Path, relative: str) -> list[str]:
+    path = root / relative
+    if path.suffix.lower() not in {".md", ".mdc"}:
+        return []
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return [f"Client guidance is unreadable: {relative}"]
+    issues: list[str] = []
+    if "____" in content or re.search(r"\b(?:TODO|TBD)\b", content):
+        issues.append(f"Client guidance contains an unresolved placeholder: {relative}")
+    for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", content):
+        target = target.strip().split("#", 1)[0]
+        if not target or "://" in target or target.startswith(("#", "mailto:")):
+            continue
+        decoded_target = target.replace("%20", " ")
+        resolved = (path.parent / decoded_target).resolve()
+        try:
+            resolved.relative_to(root)
+        except ValueError:
+            issues.append(f"Client guidance link escapes the repository: {relative} -> {target}")
+            continue
+        if not resolved.exists():
+            issues.append(f"Client guidance link is broken: {relative} -> {target}")
+    return issues
+
+
+def _smoke_bomb_validate_inventory(
+    root: Path,
+    inventory: list[str],
+    client_agents: tuple[str, ...],
+) -> list[str]:
+    issues: list[str] = []
+    required = {"README.md", "AGENTS.md"}
+    adapters = {
+        "claude-code": "CLAUDE.md",
+        "cursor": ".cursor/rules/client-project.mdc",
+        "github-copilot": ".github/copilot-instructions.md",
+    }
+    required.update(adapters[agent] for agent in client_agents if agent in adapters)
+    missing = sorted(required - set(inventory))
+    if missing:
+        issues.append("Required client guidance is missing: " + ", ".join(missing))
+    if any(relative == ".git" or relative.startswith(".git/") for relative in inventory):
+        issues.append("Git metadata is present in the archive inventory.")
+    for relative in inventory:
+        path = root / relative
+        if path.is_symlink() or not path.is_file():
+            issues.append(f"Unsafe archive file type: {relative}")
+        if relative == ".project-workflow" or relative.startswith(".project-workflow/"):
+            issues.append(f"Project-workflow internal state remains: {relative}")
+        if _smoke_bomb_secret_like(relative):
+            issues.append(f"Secret-like path requires explicit removal or review: {relative}")
+        if relative in required:
+            issues.extend(_smoke_bomb_markdown_issues(root, relative))
+            try:
+                content = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            if not _smoke_bomb_useful_markdown(content):
+                issues.append(f"Client guidance is not substantive: {relative}")
+    residuals: list[str] = []
+    for relative in inventory:
+        path = root / relative
+        if path.stat().st_size > 2_000_000:
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if "project-workflow" in content or ".project-workflow" in content:
+            residuals.append(relative)
+    if residuals:
+        issues.append(
+            "Unclassified project-workflow references remain: " + ", ".join(sorted(residuals))
+        )
+    return issues
+
+
+def _smoke_bomb_changed_paths(root: Path) -> set[str]:
+    completed = subprocess.run(
+        ["git", "status", "--porcelain=v1", "-z"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    paths: set[str] = set()
+    entries = [entry for entry in completed.stdout.split(b"\0") if entry]
+    index = 0
+    while index < len(entries):
+        entry = entries[index].decode("utf-8")
+        status = entry[:2]
+        paths.add(entry[3:])
+        if "R" in status or "C" in status:
+            index += 1
+            if index < len(entries):
+                paths.add(entries[index].decode("utf-8"))
+        index += 1
+    return paths
+
+
+def _smoke_bomb_write_zip(root: Path, output_path: Path, inventory: list[str]) -> dict[str, object]:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temp_name = tempfile.mkstemp(
+        prefix=f".{output_path.name}.", suffix=".tmp", dir=output_path.parent
+    )
+    os.close(descriptor)
+    temp_path = Path(temp_name)
+    try:
+        with zipfile.ZipFile(temp_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for relative in inventory:
+                path = root / relative
+                info = zipfile.ZipInfo(relative, date_time=(1980, 1, 1, 0, 0, 0))
+                info.compress_type = zipfile.ZIP_DEFLATED
+                info.create_system = 3
+                mode = path.stat().st_mode & 0o777
+                info.external_attr = ((0o100000 | mode) & 0xFFFF) << 16
+                archive.writestr(info, path.read_bytes())
+        archive_sha256 = _sha256_file(temp_path)
+        if output_path.exists() and _sha256_file(output_path) == archive_sha256:
+            temp_path.unlink()
+        else:
+            os.replace(temp_path, output_path)
+        return {
+            "path": str(output_path),
+            "sha256": archive_sha256,
+            "entries": inventory,
+            "entry_count": len(inventory),
+        }
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+def _apply_smoke_bomb_plan(
+    root: Path,
+    plan: dict[str, object],
+    outputs: dict[str, bytes | None],
+    supplied_fingerprint: str,
+    *,
+    fail_after_replacements: int | None = None,
+) -> dict[str, object]:
+    base_result: dict[str, object] = {
+        "schema_version": SMOKE_BOMB_RESULT_SCHEMA_VERSION,
+        "status": "failed",
+        "plan_fingerprint": plan["plan_fingerprint"],
+        "repository": plan["repository"],
+        "client_agents": plan["client_agents"],
+        "changed_files": [],
+        "validation": [],
+        "archive": None,
+        "failure": None,
+    }
+    try:
+        if supplied_fingerprint != plan["plan_fingerprint"]:
+            raise SmokeBombFailure(
+                "PW_SMOKE_BOMB_APPLY_STALE_PLAN",
+                "Supplied plan fingerprint does not match the current deterministic plan.",
+            )
+        if plan["blockers"]:
+            raise SmokeBombFailure(
+                "PW_SMOKE_BOMB_APPLY_BLOCKED",
+                "The current Smoke Bomb plan contains blockers.",
+            )
+        expected_outputs = {action["path"] for action in plan["actions"]}
+        if expected_outputs != set(outputs):
+            raise SmokeBombFailure(
+                "PW_SMOKE_BOMB_APPLY_STALE_PLAN",
+                "Computed outputs do not match the reviewed action inventory.",
+            )
+        try:
+            changed = _apply_upgrade_outputs(
+                root,
+                outputs,
+                fail_after_replacements=fail_after_replacements,
+            )
+        except UpgradeApplyFailure as exc:
+            raise SmokeBombFailure("PW_SMOKE_BOMB_APPLY_FAILED", exc.message) from exc
+        _smoke_bomb_remove_empty_managed_dirs(root)
+        base_result["changed_files"] = changed
+        validations = _smoke_bomb_run_validations(
+            root, tuple(str(value) for value in plan["validation_commands"])
+        )
+        base_result["validation"] = validations
+        actual_changed = _smoke_bomb_changed_paths(root)
+        if actual_changed != set(changed):
+            unexpected = sorted(actual_changed.symmetric_difference(set(changed)))
+            raise SmokeBombFailure(
+                "PW_SMOKE_BOMB_ARCHIVE_BLOCKED",
+                "The post-validation worktree differs from the reviewed plan: "
+                + ", ".join(unexpected),
+            )
+        stale_outputs: list[str] = []
+        for action in plan["actions"]:
+            path = root / action["path"]
+            if path.exists() and (path.is_symlink() or not path.is_file()):
+                actual_hash = "not-a-file"
+            else:
+                actual_content = path.read_bytes() if path.exists() else None
+                actual_hash = _smoke_bomb_hash(actual_content)
+            if actual_hash != action["after_sha256"]:
+                stale_outputs.append(action["path"])
+        if stale_outputs:
+            raise SmokeBombFailure(
+                "PW_SMOKE_BOMB_ARCHIVE_BLOCKED",
+                "Post-validation content differs from the reviewed plan: "
+                + ", ".join(sorted(stale_outputs)),
+            )
+        inventory = _smoke_bomb_inventory(root)
+        planned_inventory = list(plan["archive"]["included_paths"])
+        if inventory != planned_inventory:
+            changed_inventory = sorted(set(inventory).symmetric_difference(planned_inventory))
+            raise SmokeBombFailure(
+                "PW_SMOKE_BOMB_ARCHIVE_BLOCKED",
+                "The final archive inventory differs from the reviewed plan: "
+                + ", ".join(changed_inventory),
+            )
+        inventory_issues = _smoke_bomb_validate_inventory(
+            root, inventory, tuple(str(value) for value in plan["client_agents"])
+        )
+        if inventory_issues:
+            raise SmokeBombFailure(
+                "PW_SMOKE_BOMB_ARCHIVE_BLOCKED",
+                " ".join(inventory_issues),
+            )
+        archive = _smoke_bomb_write_zip(root, Path(str(plan["output_path"])), inventory)
+        archive["source_repository"] = plan["repository"]
+        archive["plan_fingerprint"] = plan["plan_fingerprint"]
+        archive["client_agents"] = plan["client_agents"]
+        archive["exclusions"] = plan["archive"]["excluded"]
+        base_result["archive"] = archive
+        base_result["status"] = "exported"
+    except SmokeBombFailure as failure:
+        base_result["failure"] = {"code": failure.code, "message": failure.message}
+    return base_result
+
+
+def _format_smoke_bomb_result_human(result: dict[str, object]) -> str:
+    lines = [
+        f"project smoke-bomb: {result['status']}",
+        f"plan fingerprint: {result['plan_fingerprint']}",
+    ]
+    if result["changed_files"]:
+        lines.append("changed files: " + ", ".join(result["changed_files"]))
+    for validation in result["validation"]:
+        lines.append(
+            f"validation ({validation['exit_code']}): {validation['command']}"
+        )
+    if result["archive"]:
+        lines.append(f"ZIP: {result['archive']['path']}")
+        lines.append(f"SHA-256: {result['archive']['sha256']}")
+        lines.append(f"entries: {result['archive']['entry_count']}")
+    if result["failure"]:
+        lines.append(f"failure: {result['failure']['code']}: {result['failure']['message']}")
+    return "\n".join(lines)
+
+
+def cmd_smoke_bomb(args: argparse.Namespace) -> None:
+    root = Path(args.root).resolve() if args.root else Path.cwd().resolve()
+    output_path = Path(args.output).expanduser().resolve()
+    client_agents = tuple(sorted(set(args.client_agent)))
+    validation_commands = tuple(args.validation_command)
+    if args.plan and args.apply:
+        raise SystemExit("--plan cannot be combined with --apply.")
+    if args.yes and not args.apply:
+        raise SystemExit("--yes requires --apply.")
+    if args.plan_fingerprint and not args.apply:
+        raise SystemExit("--plan-fingerprint requires --apply.")
+    if args.apply and not args.plan_fingerprint:
+        raise SystemExit("--apply requires --plan-fingerprint <SHA256>.")
+    plan, outputs = _build_smoke_bomb_plan(
+        root, client_agents, validation_commands, output_path
+    )
+    if not args.apply:
+        if args.format == "json":
+            print(json.dumps(plan, indent=2))
+        else:
+            print(_format_smoke_bomb_plan_human(plan))
+        if plan["blockers"]:
+            raise SystemExit(1)
+        return
+
+    if not args.yes:
+        if not os.isatty(0):
+            raise SystemExit("Interactive apply requires a TTY; authorized agents add --yes.")
+        print(_format_smoke_bomb_plan_human(plan))
+        confirmation = input("Apply this Smoke Bomb plan and export the client ZIP? [y/N] ")
+        if confirmation.strip().lower() not in {"y", "yes"}:
+            raise SystemExit("Smoke Bomb cancelled; no changes made.")
+    result = _apply_smoke_bomb_plan(
+        root,
+        plan,
+        outputs,
+        args.plan_fingerprint,
+        fail_after_replacements=args.fail_after_replacements,
+    )
+    if args.format == "json":
+        print(json.dumps(result, indent=2))
+    else:
+        print(_format_smoke_bomb_result_human(result))
+    if result["status"] != "exported":
+        raise SystemExit(1)
 
 
 def cmd_upgrade(args: argparse.Namespace) -> None:
@@ -8412,6 +9462,73 @@ def build_parser() -> argparse.ArgumentParser:
         help="Exact plan fingerprint previously reviewed by the caller",
     )
     upgrade_parser.set_defaults(func=cmd_upgrade)
+
+    smoke_bomb_parser = subparsers.add_parser(
+        "smoke-bomb",
+        help="Sanitize one reviewed worktree and export a validated client ZIP",
+        description=(
+            "Plan and apply an ownership-safe removal of project-workflow internals, run "
+            "reviewed validation commands, and export the sanitized Git-visible tree."
+        ),
+    )
+    smoke_bomb_parser.add_argument(
+        "--root",
+        help="Git worktree root to sanitize (default: current directory)",
+    )
+    smoke_bomb_parser.add_argument(
+        "--client-agent",
+        action="append",
+        type=_normalize_agent,
+        required=True,
+        metavar="AGENT",
+        help=(
+            "Client agent target; repeat for multiple targets: codex, claude-code, "
+            "cursor, or github-copilot"
+        ),
+    )
+    smoke_bomb_parser.add_argument(
+        "--validation-command",
+        action="append",
+        required=True,
+        metavar="COMMAND",
+        help="Reviewed non-interactive validation command; repeat to add commands",
+    )
+    smoke_bomb_parser.add_argument(
+        "--output",
+        required=True,
+        help="ZIP output path outside the repository root",
+    )
+    smoke_bomb_parser.add_argument(
+        "--format",
+        choices=("human", "json"),
+        default="human",
+        help="Output format (default: human)",
+    )
+    smoke_bomb_parser.add_argument(
+        "--plan",
+        action="store_true",
+        help="Print the complete non-mutating plan (the default without --apply)",
+    )
+    smoke_bomb_parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply an exact reviewed plan and export its validated ZIP",
+    )
+    smoke_bomb_parser.add_argument(
+        "--plan-fingerprint",
+        help="Exact plan fingerprint previously reviewed by the caller",
+    )
+    smoke_bomb_parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Authorized non-interactive confirmation for --apply",
+    )
+    smoke_bomb_parser.add_argument(
+        "--fail-after-replacements",
+        type=int,
+        help=argparse.SUPPRESS,
+    )
+    smoke_bomb_parser.set_defaults(func=cmd_smoke_bomb)
 
     # ===== project backlog ... =====
     backlog_parser = subparsers.add_parser(

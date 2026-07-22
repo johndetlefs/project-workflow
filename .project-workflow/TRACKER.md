@@ -20,3 +20,5 @@
 | FIX-002 | Avoid False Workflow References In URLs | Complete | `tasks/FIX-002-Avoid-False-Workflow-References-In-Urls/FIX.md` |
 | EPIC-007 | Versioned Repository Upgrade System | Complete | `tasks/EPIC-007-Versioned-Repository-Upgrade-System/REQUIREMENTS.md` |
 | TASK-039 | Comprehensive README Refresh | Complete | `tasks/TASK-039-Comprehensive-Readme-Refresh/IMPLEMENTATION.md` |
+| FIX-004 | Backlog Epic Promotion Creates Current Epic Artifacts | N/A | `tasks/FIX-004-Backlog-Epic-Promotion-Creates-Current-Epic-Artifacts/FIX.md` |
+| TASK-047 | Smoke Bomb | Complete | `tasks/TASK-047-Smoke-Bomb/IMPLEMENTATION.md` |

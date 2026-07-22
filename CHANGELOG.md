@@ -14,6 +14,7 @@ All notable changes to this project are documented in this file.
 - Added configurable sequential or unique workflow ID generation for tasks, epics, and backlog rows.
 - Added 5-character uppercase base36 unique IDs with local collision checks across trackers, backlog rows, and task folders.
 - Added config-backed accepted doctor warning fingerprints and `doctor --show-accepted`.
+- Added deterministic `project smoke-bomb` planning, fingerprint-bound transactional sanitization, explicit validation, client-agent handoff guidance, and safe deterministic ZIP export for agency-to-client delivery.
 
 ### Changed
 
