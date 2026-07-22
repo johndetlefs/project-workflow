@@ -14,14 +14,13 @@ Allowed `Status` values: `Proposed`, `Accepted`, `Deferred`, `Rejected`, `Supers
 
 This is sequencing guidance, not a second lifecycle tracker. Re-evaluate the order when evidence or owner priorities change.
 
-Recently completed: **BL-018 Smoke Bomb → TASK-047** delivered the sanitized client ZIP workflow and manual demo proof.
+Recently completed: **BL-018 Smoke Bomb → TASK-047** delivered the sanitized client ZIP workflow and manual demo proof; **BL-010 Immutable Release Contract And Trusted Distribution → TASK-048** delivered the governed public `0.2.0` release, trusted publisher, receipt, attestations, and public install proof.
 
-1. **Next — BL-010 Immutable Release Contract And Trusted Distribution:** make install and release identity unambiguous and immutable. Promote this accepted Task Candidate before starting later portfolio items.
-2. **Then — BL-004 Operational Status And Next Action:** expose real state, proof strength, blockers, and the next action.
-3. **Proportionate trust — BL-019 Progressive Assurance And Verified Authority:** scale from lightweight solo use to governed organizational proof.
-4. **Extensible core — BL-009 Modular Architecture And Extension Platform:** create maintainable boundaries for distributions, policy, identity, evidence, and platform adapters.
-5. **Repository scale — BL-017 Workspace Mode And Multi-Repo Coordination:** coordinate nested repositories without creating competing truth.
-6. **Durable adoption — BL-020 Adoption Proof Governance And Ecosystem:** prove outcomes in real repositories and mature the open product around that evidence.
+1. **Next — BL-004 Operational Status And Next Action:** expose real state, proof strength, blockers, and the next action.
+2. **Then — BL-019 Progressive Assurance And Verified Authority:** scale from lightweight solo use to governed organizational proof.
+3. **Extensible core — BL-009 Modular Architecture And Extension Platform:** create maintainable boundaries for distributions, policy, identity, evidence, and platform adapters.
+4. **Repository scale — BL-017 Workspace Mode And Multi-Repo Coordination:** coordinate nested repositories without creating competing truth.
+5. **Durable adoption — BL-020 Adoption Proof Governance And Ecosystem:** prove outcomes in real repositories and mature the open product around that evidence.
 
 Before promoting an item, confirm that it materially improves a user outcome, removes a real blocker, or reduces meaningful risk beyond an adequate existing workaround. Otherwise defer it or absorb it into a broader outcome.
 
