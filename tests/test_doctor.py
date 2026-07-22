@@ -423,7 +423,7 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
     assert workflow_cli._serialize_workflow_manifest(manifest) == (
         "{\n"
         '  "manifest_version": 1,\n'
-        '  "package_version": "0.1.1",\n'
+        '  "package_version": "0.2.0",\n'
         '  "asset_version": 1,\n'
         '  "schema_version": 1,\n'
         '  "applied_migrations": []\n'
@@ -2472,7 +2472,7 @@ def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
     )
     assert missing_tracker.returncode != 0
     assert (
-        "uvx --from git+https://github.com/johndetlefs/project-workflow.git project init"
+        "uvx --from project-workflow==0.2.0 project init"
         in missing_tracker.stderr
     )
 
@@ -2934,7 +2934,7 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "# Existing Agent Notes" in codex_agents
     assert "<!-- project-workflow:start -->" in codex_agents
     assert (
-        "uvx --from git+https://github.com/johndetlefs/project-workflow.git project init"
+        "uvx --from project-workflow==0.2.0 project init"
         in codex_agents
     )
     assert "To initialize a new repository" in codex_agents

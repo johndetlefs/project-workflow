@@ -5,8 +5,7 @@ name = "project-workflow"
 [setup]
 script = """
 export PATH="/opt/homebrew/bin:$PATH"
-uv venv --allow-existing --python 3.10 .venv
-uv pip install --python .venv/bin/python -e '.[dev]'
+uv sync --locked --extra dev --python 3.10
 """
 
 [[actions]]

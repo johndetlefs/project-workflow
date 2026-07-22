@@ -6,18 +6,6 @@
 - Title: Immutable Release Contract And Trusted Distribution
 - Last updated: 2026-07-22
 
-## Owner Approval
-
-- Requirements reviewed by owner: No
-- Acceptance criteria reviewed by owner: No
-- Approved for decomposition: No
-- Approved for implementation: No
-- Approved scope envelope: No
-- Approved by: Not approved
-- Approval date: Not approved
-- Approval note / source: Not approved
-- Approved artifact identity: Not approved
-
 ## Backlog Source
 
 - ID: BL-010
@@ -27,6 +15,18 @@
 - Status before promotion: Accepted
 - Outcome: Make every published project-workflow release an immutable, attributable, reproducible contract across version, commit, tag, package, changelog, generated assets, CI result, and canonical install command.
 - Notes: Unambiguous next execution item after completed TASK-047. Establish the immutable release and trusted distribution foundation before operational status, assurance, extensions, workspace coordination, or adoption work.
+
+## Owner Approval
+
+- Requirements reviewed by owner: Yes
+- Acceptance criteria reviewed by owner: Yes
+- Approved for decomposition: No
+- Approved for implementation: Yes
+- Approved scope envelope: Yes
+- Approved by: Repository owner
+- Approval date: 2026-07-22
+- Approval note / source: Owner accepted all recommended options and authorized end-to-end execution in Codex on 2026-07-22.
+- Approved artifact identity: sha256:6425619d79439d6358aab547604effacc047c0fb6eb8ccb71516da62d5a98b8c
 
 ## Goal
 
@@ -80,15 +80,7 @@ Give maintainers and adopters one trustworthy answer to "what exact project-work
 
 ## Open Questions (Answer Needed)
 
-- OQ1. What is the first trusted public distribution target?
-  - Option A (recommended): PyPI `project-workflow` through GitHub Actions trusted publishing, with the same artifacts attached to a GitHub Release. The package name currently returns `Not Found` from the PyPI JSON API, but repository ownership/publisher configuration still requires owner action.
-  - Option B: GitHub Releases only, with version-pinned `uvx --from git+...@<tag>` commands and artifact digests. This avoids PyPI setup but leaves installation coupled to Git and provides a weaker Python-package distribution experience.
-- OQ2. Must TASK-048 include the first real public release?
-  - Option A (recommended): Yes. Build and validate the machinery, then pause at the explicit external-publication gate for owner authorization and prove the contract with one real release.
-  - Option B: Deliver only a dry-run/staged release workflow. This proves mechanics but not the public trusted-distribution outcome, so closeout must remain limited rather than claiming live delivery.
-- OQ3. What version should inaugurate the contract?
-  - Option A (recommended): `0.2.0`, reflecting the substantial new backlog, Fix, Epic control, upgrade, and Smoke Bomb capabilities accumulated since the declared `0.1.1` state.
-  - Option B: `0.1.2`, treating the release machinery as a patch-level continuation despite the larger unreleased product change set.
+- None. The owner accepted all recommended options on 2026-07-22.
 
 ## Decisions (Resolved)
 
@@ -99,6 +91,10 @@ Give maintainers and adopters one trustworthy answer to "what exact project-work
 - Treat package publication as an external action requiring an explicit owner-controlled gate even after the requirements envelope is approved.
 - Preserve version command ownership: `init` remains new-repository-only and `upgrade` remains the atomic existing-repository path.
 - Treat built package contents, published artifact digests, CI identity, and clean packaged init/upgrade runs as authoritative proof. Source tests alone and prose-only release claims are invalid substitutes.
+- Publish `project-workflow` to PyPI through GitHub Actions trusted publishing and attach the identical wheel, source distribution, receipt, and digests to a GitHub Release.
+- Include the first real public release in TASK-048; a staged or dry-run-only result is not sufficient completion evidence.
+- Use `0.2.0` as the first governed release version.
+- The owner's 2026-07-22 instruction to "do everything you've said" and confirmation that all recommendations were accepted authorizes these decisions and the real external publication after the release gates pass.
 
 ## Validation Plan
 

@@ -11,16 +11,16 @@ Use it with GitHub Copilot, Claude Code, OpenAI Codex, or Cursor.
 From the root of an existing Git repository:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent codex
+uvx --from project-workflow==0.2.0 project init --agent codex
 ```
 
 Choose the mode that matches your agent:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent github-copilot
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent claude-code
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent codex
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init --agent cursor
+uvx --from project-workflow==0.2.0 project init --agent github-copilot
+uvx --from project-workflow==0.2.0 project init --agent claude-code
+uvx --from project-workflow==0.2.0 project init --agent codex
+uvx --from project-workflow==0.2.0 project init --agent cursor
 ```
 
 Then tell the agent what you want in ordinary language:
@@ -274,7 +274,7 @@ PATH="/opt/homebrew/bin:$PATH" uvx --version
 Run the canonical init command from the repository root:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+uvx --from project-workflow==0.2.0 project init
 ```
 
 Without `--agent`, the default mode is `github-copilot`. Pass an explicit mode when the repository uses another agent.
@@ -397,7 +397,7 @@ project-workflow package, so this works even when the repository's local helper 
 yet contain the upgrade command:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git \
+uvx --from project-workflow==0.2.0 \
   project upgrade --agent codex
 ```
 
@@ -410,7 +410,7 @@ Agents and other non-interactive callers use the same canonical command with `--
 owner has authorized the upgrade:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git \
+uvx --from project-workflow==0.2.0 \
   project upgrade --agent codex --yes
 ```
 
@@ -423,10 +423,10 @@ Automation can retain an explicitly separated, non-mutating plan and fingerprint
 commands must use the same package source and version:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git \
+uvx --from project-workflow==0.2.0 \
   project upgrade --agent codex --plan --format json
 
-uvx --from git+https://github.com/johndetlefs/project-workflow.git \
+uvx --from project-workflow==0.2.0 \
   project upgrade --agent codex \
   --apply \
   --plan-fingerprint sha256:<REVIEWED_PLAN_FINGERPRINT>

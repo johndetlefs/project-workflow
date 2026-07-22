@@ -66,7 +66,7 @@ BACKLOG_ID_PREFIX = "BL"
 ID_PADDING = 3
 WORKFLOW_CONFIG_FILENAME = "config.json"
 WORKFLOW_MANIFEST_FILENAME = "manifest.json"
-CURRENT_PACKAGE_VERSION = "0.1.1"
+CURRENT_PACKAGE_VERSION = "0.2.0"
 CURRENT_MANIFEST_VERSION = 1
 CURRENT_ASSET_VERSION = 1
 CURRENT_SCHEMA_VERSION = 1
@@ -459,9 +459,10 @@ GENERATED_MARKER_HTML = f"<!-- {GENERATED_MARKER} -->"
 GENERATED_MARKER_COMMENT = f"# {GENERATED_MARKER}"
 MANAGED_BLOCK_START = "<!-- project-workflow:start -->"
 MANAGED_BLOCK_END = "<!-- project-workflow:end -->"
-CANONICAL_INIT_COMMAND = "uvx --from git+https://github.com/johndetlefs/project-workflow.git project init"
+CANONICAL_PACKAGE_SPEC = f"project-workflow=={CURRENT_PACKAGE_VERSION}"
+CANONICAL_INIT_COMMAND = f"uvx --from {CANONICAL_PACKAGE_SPEC} project init"
 CANONICAL_UPGRADE_COMMAND = (
-    "uvx --from git+https://github.com/johndetlefs/project-workflow.git project upgrade"
+    f"uvx --from {CANONICAL_PACKAGE_SPEC} project upgrade"
 )
 
 
@@ -9366,6 +9367,11 @@ def build_parser() -> argparse.ArgumentParser:
             "Project workflow: Spec-driven development for GitHub Copilot, "
             "Claude Code, OpenAI Codex, and Cursor."
         ),
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {CURRENT_PACKAGE_VERSION}",
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
