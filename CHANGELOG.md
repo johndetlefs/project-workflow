@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## 0.2.0 - 2026-07-22
+
 ### Added
 
 - Added explicit package, generated-asset, and repository-schema metadata in `.project-workflow/manifest.json`.
@@ -15,6 +17,7 @@ All notable changes to this project are documented in this file.
 - Added 5-character uppercase base36 unique IDs with local collision checks across trackers, backlog rows, and task folders.
 - Added config-backed accepted doctor warning fingerprints and `doctor --show-accepted`.
 - Added deterministic `project smoke-bomb` planning, fingerprint-bound transactional sanitization, explicit validation, client-agent handoff guidance, and safe deterministic ZIP export for agency-to-client delivery.
+- Added a governed release contract with one authoritative version, locked validation, exact artifact receipts and digests, trusted PyPI publication, GitHub attestations, and immutable public install commands.
 
 ### Changed
 

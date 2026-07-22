@@ -103,7 +103,7 @@ project doctor
 Use init only to create project-workflow in a new repository. Upgrade an existing repository with the canonical UVX command from the target repository root:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project upgrade --agent codex
+uvx --from project-workflow==0.2.0 project upgrade --agent codex
 ```
 
 Canonical upgrade obtains the current package and plans managed assets plus repository schema as one transaction. It shows the plan and asks for confirmation; authorized agents can add `--yes`. Use `--plan --format json` and fingerprinted `--apply` only when automation requires a separated review. Unmarked existing files are preserved and receive generated `*.new` content for review.

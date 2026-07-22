@@ -37,13 +37,13 @@ For epic-managed work, preserve parent epic acceptance criteria coverage from th
 When a user asks to initialize project-workflow in a new repository, run the canonical UVX init command from that repository root:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project init
+uvx --from project-workflow==0.2.0 project init
 ```
 
 When a user asks to update, refresh, reinstall, align, or upgrade an existing repository, use canonical UVX upgrade instead; do not run init first:
 
 ```bash
-uvx --from git+https://github.com/johndetlefs/project-workflow.git project upgrade
+uvx --from project-workflow==0.2.0 project upgrade
 ```
 
 Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github-copilot` for the target mode. Canonical UVX upgrade obtains current software and plans managed assets and repository schema together. Use `--yes` for an authorized non-interactive one-command apply, or `--plan --format json` followed by `--apply --plan-fingerprint <SHA256>` when automation requires separate review.

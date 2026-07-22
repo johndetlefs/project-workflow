@@ -1,0 +1,130 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.10"
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.9.30"
+          enable-cache: true
+      - name: Require immutable tag on reviewed main history
+        run: |
+          test "${{ github.event.before }}" = "0000000000000000000000000000000000000000"
+          test "$GITHUB_REF_NAME" = "v0.2.0"
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          test -z "$(git status --porcelain)"
+          python scripts/release_contract.py check-source \
+            --version 0.2.0 \
+            --tag "$GITHUB_REF_NAME" \
+            --clean
+          uv lock --check
+          python scripts/release_contract.py check-public-availability --version 0.2.0
+      - name: Run complete locked repository validation
+        run: |
+          uv sync --locked --extra dev --python 3.10
+          uv run --locked pytest -q
+      - name: Build distributions once
+        run: uv run --locked python -m build --no-isolation
+      - name: Inspect distributions and create release receipt
+        run: |
+          uv run --locked python scripts/release_contract.py build-receipt \
+            --version 0.2.0 \
+            --tag "$GITHUB_REF_NAME" \
+            --commit "$GITHUB_SHA" \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --dist dist \
+            --output release
+          uv run --locked python scripts/release_contract.py verify-receipt \
+            --receipt release/release-receipt.json \
+            --dist dist
+      - name: Exercise exact built wheel
+        run: |
+          wheel="$(find "$PWD/dist" -maxdepth 1 -name '*.whl' -print -quit)"
+          uv run --locked python scripts/verify_package_journeys.py \
+            --from "$wheel" \
+            --version 0.2.0 \
+            --output release/package-journeys.json
+      - name: Attest exact release files
+        uses: actions/attest@36051bcae73b7c2a8a6945a48cbf80953c6baa35 # v4
+        with:
+          subject-path: |
+            dist/*
+            release/release-receipt.json
+            release/SHA256SUMS
+      - name: Upload the one release bundle
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: project-workflow-${{ github.ref_name }}
+          path: |
+            dist/*
+            release/*
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/project-workflow/0.2.0/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: project-workflow-${{ github.ref_name }}
+          path: bundle
+      - name: Publish exact distributions with trusted publishing
+        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # release/v1
+        with:
+          packages-dir: bundle/dist/
+
+  publish-github:
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: project-workflow-${{ github.ref_name }}
+          path: bundle
+      - name: Create GitHub Release from the same files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            bundle/dist/* \
+            bundle/release/release-receipt.json \
+            bundle/release/SHA256SUMS \
+            bundle/release/package-journeys.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "project-workflow $GITHUB_REF_NAME" \
+            --notes-file bundle/release/release-notes.md \
+            --verify-tag

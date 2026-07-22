@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.10"
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.9.30"
+          enable-cache: true
+      - name: Validate locked candidate source
+        run: |
+          uv lock --check
+          python scripts/release_contract.py check-source --version 0.2.0
+      - name: Install locked development environment
+        run: uv sync --locked --extra dev --python 3.10
+      - name: Run complete repository validation
+        run: uv run --locked pytest -q
+      - name: Build distributions once
+        run: uv run --locked python -m build --no-isolation
+      - name: Inspect distributions and create candidate receipt
+        run: |
+          uv run --locked python scripts/release_contract.py build-receipt \
+            --version 0.2.0 \
+            --tag v0.2.0 \
+            --commit "$GITHUB_SHA" \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --dist dist \
+            --output release
+          uv run --locked python scripts/release_contract.py verify-receipt \
+            --receipt release/release-receipt.json \
+            --dist dist
+      - name: Exercise exact built wheel
+        run: |
+          wheel="$(find "$PWD/dist" -maxdepth 1 -name '*.whl' -print -quit)"
+          uv run --locked python scripts/verify_package_journeys.py \
+            --from "$wheel" \
+            --version 0.2.0 \
+            --output release/package-journeys.json
+
