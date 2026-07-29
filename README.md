@@ -11,16 +11,16 @@ Use it with GitHub Copilot, Claude Code, OpenAI Codex, or Cursor.
 From the root of an existing Git repository:
 
 ```bash
-uvx --from project-workflow==0.2.0 project init --agent codex
+uvx --from project-workflow==0.3.0 project init --agent codex
 ```
 
 Choose the mode that matches your agent:
 
 ```bash
-uvx --from project-workflow==0.2.0 project init --agent github-copilot
-uvx --from project-workflow==0.2.0 project init --agent claude-code
-uvx --from project-workflow==0.2.0 project init --agent codex
-uvx --from project-workflow==0.2.0 project init --agent cursor
+uvx --from project-workflow==0.3.0 project init --agent github-copilot
+uvx --from project-workflow==0.3.0 project init --agent claude-code
+uvx --from project-workflow==0.3.0 project init --agent codex
+uvx --from project-workflow==0.3.0 project init --agent cursor
 ```
 
 Then tell the agent what you want in ordinary language:
@@ -54,11 +54,12 @@ Run status when arriving at a repository or deciding what to do next:
 ```bash
 ./.project-workflow/cli/workflow status
 ./.project-workflow/cli/workflow status --id TASK-001
+./.project-workflow/cli/workflow status --repository next
 ./.project-workflow/cli/workflow status --strict
 ./.project-workflow/cli/workflow status --format json
 ```
 
-Status is a read-only projection over the manifest, Git, trackers, requirements, implementation and QA records, Epic acceptance, structured evidence, Doctor findings, and repository-local delivery receipts. It reports one sourced primary action plus stable secondary actions. `--id <WORK-ID>` focuses active work; `--strict` makes visible Doctor warnings blocking; `--format json` emits schema version 1 with the same conclusions as the human report.
+Status is a read-only projection over the manifest, Git, trackers, requirements, implementation and QA records, Epic acceptance, structured evidence, Doctor findings, and repository-local delivery receipts. It reports one sourced primary action plus stable secondary actions. `--id <WORK-ID>` focuses active work; `--repository <ID>` focuses one registered workspace repository; `--strict` makes visible Doctor warnings blocking; `--format json` emits schema version 1 with the same conclusions as the human report.
 
 Use the related commands for their narrower jobs:
 
@@ -298,7 +299,7 @@ PATH="/opt/homebrew/bin:$PATH" uvx --version
 Run the canonical init command from the repository root:
 
 ```bash
-uvx --from project-workflow==0.2.0 project init
+uvx --from project-workflow==0.3.0 project init
 ```
 
 Without `--agent`, the default mode is `github-copilot`. Pass an explicit mode when the repository uses another agent.
@@ -421,7 +422,7 @@ project-workflow package, so this works even when the repository's local helper 
 yet contain the upgrade command:
 
 ```bash
-uvx --from project-workflow==0.2.0 \
+uvx --from project-workflow==0.3.0 \
   project upgrade --agent codex
 ```
 
@@ -434,7 +435,7 @@ Agents and other non-interactive callers use the same canonical command with `--
 owner has authorized the upgrade:
 
 ```bash
-uvx --from project-workflow==0.2.0 \
+uvx --from project-workflow==0.3.0 \
   project upgrade --agent codex --yes
 ```
 
@@ -447,10 +448,10 @@ Automation can retain an explicitly separated, non-mutating plan and fingerprint
 commands must use the same package source and version:
 
 ```bash
-uvx --from project-workflow==0.2.0 \
+uvx --from project-workflow==0.3.0 \
   project upgrade --agent codex --plan --format json
 
-uvx --from project-workflow==0.2.0 \
+uvx --from project-workflow==0.3.0 \
   project upgrade --agent codex \
   --apply \
   --plan-fingerprint sha256:<REVIEWED_PLAN_FINGERPRINT>
@@ -557,6 +558,40 @@ For one task, force a configured namespace with:
 ```bash
 ./.project-workflow/cli/workflow task init --title "Responsive account view" --prefix UI --update-tracker
 ```
+
+## Parent Workspaces With Independent Repositories
+
+A parent repository can own the only live Project Workflow state while work spans nested,
+independently versioned Git repositories. Declare the registry in the existing
+`.project-workflow/config.json`; do not create child trackers or a second workspace config:
+
+```json
+{
+  "workspace": {
+    "authority_repository": "workspace",
+    "repositories": [
+      {"id": "workspace", "path": ".", "role": "control"},
+      {"id": "next", "path": "next", "role": "implementation"},
+      {"id": "email", "path": "email", "role": "implementation"}
+    ]
+  }
+}
+```
+
+Run workflow commands from the parent authority root. Every path must be relative, remain inside
+that root, exist, and resolve to a unique independent Git worktree. The authority repository must
+be the parent path `.` and the only repository with role `control`. Doctor reports a blocking
+authority conflict if a registered non-authority repository contains a competing
+`.project-workflow` directory.
+
+Workspace tasks record `Primary repository` and `Repositories touched` in `REQUIREMENTS.md`.
+Before Review or Complete, `IMPLEMENTATION.md` must contain one `Repository Evidence` row per
+touched repository, attributing branch or PR state, validation, delivery state, and evidence.
+Explicit `not applicable` or `not authorized` boundaries are valid records; placeholders and
+`not recorded` may remain explicit for a branch/PR or later delivery stage that is outside scope.
+Validation and its evidence source must be recorded before Review. Status inspects Git read-only
+and never creates branches, commits, pushes, pull requests, releases, or deployments in any
+repository.
 
 ## Existing Work And Repository History
 

@@ -66,7 +66,7 @@ BACKLOG_ID_PREFIX = "BL"
 ID_PADDING = 3
 WORKFLOW_CONFIG_FILENAME = "config.json"
 WORKFLOW_MANIFEST_FILENAME = "manifest.json"
-CURRENT_PACKAGE_VERSION = "0.2.0"
+CURRENT_PACKAGE_VERSION = "0.3.0"
 CURRENT_MANIFEST_VERSION = 1
 CURRENT_ASSET_VERSION = 1
 CURRENT_SCHEMA_VERSION = 1
@@ -104,6 +104,7 @@ DOCTOR_FINDING_CODES = (
     "PW_TASK_DOCUMENT_INVALID",
     "PW_TRACKER_INVALID",
     "PW_WORKFLOW_INVALID",
+    "PW_WORKSPACE_AUTHORITY_CONFLICT",
 )
 UPGRADE_PLAN_SCHEMA_VERSION = 1
 UPGRADE_APPLY_RESULT_SCHEMA_VERSION = 1
@@ -170,14 +171,18 @@ OPERATIONAL_STATUS_SOURCE_KINDS = (
     "manifest",
     "repository-compatibility",
     "requirements",
+    "repository-evidence",
     "structured-evidence",
+    "workspace-config",
 )
 OPERATIONAL_STATUS_SOURCE_PRECEDENCE = (
     ("installation", ("repository-compatibility", "manifest", "local-helper")),
+    ("workspace", ("workspace-config", "git")),
     ("work", ("epic-tracker", "global-tracker")),
     ("approval", ("requirements",)),
     ("implementation", ("implementation",)),
     ("qa", ("implementation",)),
+    ("repository-evidence", ("repository-evidence",)),
     ("acceptance", ("acceptance", "epic-tracker")),
     ("proof", ("structured-evidence", "implementation", "requirements")),
     ("integration", ("git",)),
@@ -798,7 +803,12 @@ def _managed_project_workflow_block() -> str:
         "- Use `.project-workflow/BACKLOG.md` for optional future intent before work is "
         "promoted into task or epic execution state. Promoted rows stay in the backlog; "
         "active execution status belongs in trackers and task/epic docs.\n"
-        "- Read task ID namespace and generation config from `.project-workflow/config.json`.\n"
+        "- Read task ID namespace, generation config, and optional parent-workspace registry "
+        "from `.project-workflow/config.json`.\n"
+        "- In workspace mode, run workflow commands from the parent authority root, keep the "
+        "only live workflow state there, and use registered repository IDs in task scope and "
+        "evidence. Status Git inspection is read-only and never authorizes cross-repository "
+        "mutation.\n"
         f"- To initialize a new repository, run `{CANONICAL_INIT_COMMAND}` from the repository "
         "root with `--agent codex`, `--agent cursor`, `--agent claude-code`, or "
         "`--agent github-copilot`.\n"
@@ -809,7 +819,8 @@ def _managed_project_workflow_block() -> str:
         "- Use `./.project-workflow/cli/workflow` for supported backlog, Fix, task, epic, "
         "and validation commands.\n"
         "- Run `./.project-workflow/cli/workflow status` for a read-only operational summary "
-        "and sourced next action. Use `--id <WORK-ID>` to focus active work, `--strict` to "
+        "and sourced next action. Use `--id <WORK-ID>` to focus active work, "
+        "`--repository <REPOSITORY-ID>` to focus one registered workspace repository, `--strict` to "
         "make visible Doctor warnings blocking, and `--format json` for schema-versioned output. "
         "Status does not replace Doctor diagnosis, canonical upgrade, lifecycle gates, QA, Git "
         "integration, or service verification, and never executes its recommended action.\n"
@@ -957,6 +968,26 @@ class DoctorEvaluation:
 
 
 @dataclass(frozen=True)
+class WorkspaceRepository:
+    repository_id: str
+    path: str
+    role: str
+    resolved_path: Path
+
+
+@dataclass(frozen=True)
+class WorkspaceDefinition:
+    authority_repository: str
+    repositories: tuple[WorkspaceRepository, ...]
+
+    def repository(self, repository_id: str) -> WorkspaceRepository:
+        for repository in self.repositories:
+            if repository.repository_id == repository_id:
+                return repository
+        raise KeyError(repository_id)
+
+
+@dataclass(frozen=True)
 class WorkflowConfig:
     task_id_prefixes: tuple[str, ...]
     default_task_id_prefix: str
@@ -964,6 +995,7 @@ class WorkflowConfig:
     id_generation: dict[str, str]
     unique_id_length: int
     accepted_doctor_warnings: dict[str, str]
+    workspace: Optional[WorkspaceDefinition] = None
 
 
 @dataclass(frozen=True)
@@ -1184,6 +1216,36 @@ class OperationalStatusValue:
 
 
 @dataclass(frozen=True)
+class OperationalStatusRepository:
+    repository_id: str
+    path: str
+    role: str
+    authority: bool
+    git: OperationalStatusValue
+    evidence: tuple[OperationalStatusFact, ...] = ()
+    sources: tuple[OperationalStatusSource, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not re.fullmatch(r"[a-z][a-z0-9-]*", self.repository_id):
+            raise ValueError("Operational status repository ID must be a lowercase slug.")
+        _require_operational_status_text("repository path", self.path)
+        _require_operational_status_choice(
+            "repository role", self.role, ("control", "implementation")
+        )
+        if not isinstance(self.authority, bool):
+            raise ValueError("Operational status repository authority must be boolean.")
+        if not isinstance(self.git, OperationalStatusValue) or self.git.dimension != "git":
+            raise ValueError("Operational status repository Git state is invalid.")
+        if not isinstance(self.evidence, tuple) or any(
+            not isinstance(fact, OperationalStatusFact) for fact in self.evidence
+        ):
+            raise ValueError("Operational status repository evidence is invalid.")
+        _require_operational_status_sources(
+            "repository evidence", self.sources, allow_empty=True
+        )
+
+
+@dataclass(frozen=True)
 class OperationalStatusProofLayer:
     name: str
     state: str
@@ -1329,6 +1391,8 @@ class OperationalStatusSnapshot:
     blockers: tuple[OperationalStatusFinding, ...] = ()
     primary_action: Optional[OperationalStatusAction] = None
     secondary_actions: tuple[OperationalStatusAction, ...] = ()
+    workspace_authority: Optional[str] = None
+    repositories: tuple[OperationalStatusRepository, ...] = ()
 
     def __post_init__(self) -> None:
         _require_operational_status_text("root", self.root)
@@ -1355,6 +1419,7 @@ class OperationalStatusSnapshot:
             ("findings", self.findings),
             ("blockers", self.blockers),
             ("secondary actions", self.secondary_actions),
+            ("repositories", self.repositories),
         )
         for label, value in tuple_fields:
             if not isinstance(value, tuple):
@@ -1364,6 +1429,7 @@ class OperationalStatusSnapshot:
             ("findings", self.findings, OperationalStatusFinding),
             ("blockers", self.blockers, OperationalStatusFinding),
             ("secondary actions", self.secondary_actions, OperationalStatusAction),
+            ("repositories", self.repositories, OperationalStatusRepository),
         )
         for label, values, expected_type in expected_types:
             if any(not isinstance(value, expected_type) for value in values):
@@ -1385,6 +1451,8 @@ class OperationalStatusInspection:
     git: OperationalStatusValue
     active_work: tuple[OperationalStatusWorkItem, ...]
     findings: tuple[OperationalStatusFinding, ...]
+    workspace_authority: Optional[str] = None
+    repositories: tuple[OperationalStatusRepository, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.installation, OperationalStatusValue):
@@ -1403,6 +1471,15 @@ class OperationalStatusInspection:
             not isinstance(finding, OperationalStatusFinding) for finding in self.findings
         ):
             raise ValueError("Operational inspection findings contain an invalid record.")
+        if self.workspace_authority is not None:
+            _require_operational_status_text(
+                "inspection workspace authority", self.workspace_authority
+            )
+        if not isinstance(self.repositories, tuple) or any(
+            not isinstance(repository, OperationalStatusRepository)
+            for repository in self.repositories
+        ):
+            raise ValueError("Operational inspection repositories contain an invalid record.")
 
 
 def _operational_status_source_payload(source: OperationalStatusSource) -> dict[str, str]:
@@ -1424,6 +1501,28 @@ def _operational_status_value_payload(value: OperationalStatusValue) -> dict[str
                 "value": list(fact.value) if isinstance(fact.value, tuple) else fact.value,
             }
             for fact in value.facts
+        ],
+    }
+
+
+def _operational_status_repository_payload(
+    repository: OperationalStatusRepository,
+) -> dict[str, object]:
+    return {
+        "id": repository.repository_id,
+        "path": repository.path,
+        "role": repository.role,
+        "authority": repository.authority,
+        "git": _operational_status_value_payload(repository.git),
+        "evidence": [
+            {
+                "key": fact.key,
+                "value": list(fact.value) if isinstance(fact.value, tuple) else fact.value,
+            }
+            for fact in repository.evidence
+        ],
+        "sources": [
+            _operational_status_source_payload(source) for source in repository.sources
         ],
     }
 
@@ -1492,7 +1591,7 @@ def _operational_status_action_payload(
 
 
 def operational_status_payload(snapshot: OperationalStatusSnapshot) -> dict[str, object]:
-    return {
+    payload: dict[str, object] = {
         "schema_version": OPERATIONAL_STATUS_SCHEMA_VERSION,
         "root": snapshot.root,
         "installation": _operational_status_value_payload(snapshot.installation),
@@ -1520,12 +1619,22 @@ def operational_status_payload(snapshot: OperationalStatusSnapshot) -> dict[str,
             for action in snapshot.secondary_actions
         ],
     }
+    if snapshot.workspace_authority is not None:
+        payload["workspace"] = {
+            "enabled": True,
+            "authority_repository": snapshot.workspace_authority,
+        }
+        payload["repositories"] = [
+            _operational_status_repository_payload(repository)
+            for repository in snapshot.repositories
+        ]
+    return payload
 
 
 def operational_status_inspection_payload(
     inspection: OperationalStatusInspection,
 ) -> dict[str, object]:
-    return {
+    payload: dict[str, object] = {
         "installation": _operational_status_value_payload(inspection.installation),
         "git": _operational_status_value_payload(inspection.git),
         "active_work": [
@@ -1537,6 +1646,16 @@ def operational_status_inspection_payload(
             for finding in inspection.findings
         ],
     }
+    if inspection.workspace_authority is not None:
+        payload["workspace"] = {
+            "enabled": True,
+            "authority_repository": inspection.workspace_authority,
+        }
+        payload["repositories"] = [
+            _operational_status_repository_payload(repository)
+            for repository in inspection.repositories
+        ]
+    return payload
 
 
 def _workflow_config_path(root: Path) -> Path:
@@ -1764,14 +1883,22 @@ def _operational_git_optional(args: list[str], root: Path) -> str | None:
 
 def _inspect_operational_git(
     root: Path,
+    *,
+    source_artifact: str = ".git",
+    source_detail: str = "read-only local Git inspection",
+    repository_id: str | None = None,
 ) -> tuple[OperationalStatusValue, tuple[OperationalStatusFinding, ...]]:
-    source = OperationalStatusSource("git", ".git", "read-only local Git inspection")
+    source = OperationalStatusSource("git", source_artifact, source_detail)
+    repository_label = (
+        f"Workspace repository '{repository_id}'" if repository_id is not None else "Git worktree"
+    )
     top_level = _operational_git_optional(["rev-parse", "--show-toplevel"], root)
     if top_level is None:
         finding = OperationalStatusFinding(
             "PW_STATUS_GIT_UNAVAILABLE",
             "warning",
-            "Git state is unavailable because the root is not a readable Git worktree.",
+            f"{repository_label} state is unavailable because its root is not a readable "
+            "Git worktree.",
             (source,),
         )
         return (
@@ -1799,7 +1926,8 @@ def _inspect_operational_git(
             OperationalStatusFinding(
                 "PW_STATUS_GIT_ROOT_MISMATCH",
                 "error",
-                f"Requested root {resolved_root} differs from Git worktree root {resolved_top}.",
+                f"{repository_label} requested root {resolved_root} differs from Git "
+                f"worktree root {resolved_top}.",
                 (source,),
             )
         )
@@ -1808,7 +1936,7 @@ def _inspect_operational_git(
             OperationalStatusFinding(
                 "PW_STATUS_GIT_HEAD_UNAVAILABLE",
                 "warning",
-                "Git worktree has no readable HEAD commit.",
+                f"{repository_label} has no readable HEAD commit.",
                 (source,),
             )
         )
@@ -1817,7 +1945,7 @@ def _inspect_operational_git(
             OperationalStatusFinding(
                 "PW_STATUS_GIT_STATUS_UNAVAILABLE",
                 "warning",
-                "Git worktree cleanliness could not be determined.",
+                f"{repository_label} cleanliness could not be determined.",
                 (source,),
             )
         )
@@ -1847,6 +1975,41 @@ def _inspect_operational_git(
         _operational_status_fact("clean", clean),
     )
     return OperationalStatusValue("git", state, summary, (source,), facts), tuple(findings)
+
+
+def _workspace_git_state_findings(
+    repository: WorkspaceRepository,
+    git: OperationalStatusValue,
+) -> tuple[OperationalStatusFinding, ...]:
+    source = git.sources[0]
+    if git.state == "dirty":
+        return (
+            OperationalStatusFinding(
+                "PW_STATUS_WORKSPACE_REPOSITORY_DIRTY",
+                "error",
+                f"Workspace repository '{repository.repository_id}' has uncommitted changes.",
+                (source,),
+            ),
+        )
+    if git.state == "detached":
+        return (
+            OperationalStatusFinding(
+                "PW_STATUS_WORKSPACE_REPOSITORY_DETACHED",
+                "error",
+                f"Workspace repository '{repository.repository_id}' has a detached HEAD.",
+                (source,),
+            ),
+        )
+    if git.state == "unavailable":
+        return (
+            OperationalStatusFinding(
+                "PW_STATUS_WORKSPACE_REPOSITORY_UNAVAILABLE",
+                "error",
+                f"Workspace repository '{repository.repository_id}' Git state is unavailable.",
+                (source,),
+            ),
+        )
+    return ()
 
 
 def _operational_status_lifecycle_meaning(kind: str, lifecycle: str) -> str | None:
@@ -2160,16 +2323,95 @@ def _inspect_operational_active_work(
     return tuple(active_work), tuple(findings)
 
 
-def inspect_operational_status_repository(root: Path) -> OperationalStatusInspection:
+def inspect_operational_status_repository(
+    root: Path,
+    *,
+    repository_id: str | None = None,
+) -> OperationalStatusInspection:
     inspected_root = root.resolve()
     installation = _inspect_operational_installation(inspected_root)
-    git, git_findings = _inspect_operational_git(inspected_root)
+    config = _load_workflow_config(inspected_root)
+    if config.workspace is None:
+        if repository_id is not None:
+            raise SystemExit(
+                "The --repository selector requires a workspace declaration in "
+                ".project-workflow/config.json."
+            )
+        git, git_findings = _inspect_operational_git(inspected_root)
+        repositories: tuple[OperationalStatusRepository, ...] = ()
+        workspace_authority = None
+    else:
+        workspace = config.workspace
+        if repository_id is not None:
+            try:
+                selected_repositories = (workspace.repository(repository_id),)
+            except KeyError as exc:
+                registered = ", ".join(
+                    repository.repository_id for repository in workspace.repositories
+                )
+                raise SystemExit(
+                    f"Unknown workspace repository '{repository_id}'. Registered: {registered}."
+                ) from exc
+        else:
+            selected_repositories = workspace.repositories
+        repository_records: list[OperationalStatusRepository] = []
+        repository_findings: list[OperationalStatusFinding] = []
+        authority_git: OperationalStatusValue | None = None
+        for repository in selected_repositories:
+            source_artifact = (
+                ".git" if repository.path == "." else f"{repository.path}/.git"
+            )
+            repository_git, findings = _inspect_operational_git(
+                repository.resolved_path,
+                source_artifact=source_artifact,
+                source_detail=f"workspace repository {repository.repository_id}",
+                repository_id=repository.repository_id,
+            )
+            repository_records.append(
+                OperationalStatusRepository(
+                    repository.repository_id,
+                    repository.path,
+                    repository.role,
+                    repository.repository_id == workspace.authority_repository,
+                    repository_git,
+                    (),
+                    (
+                        OperationalStatusSource(
+                            "workspace-config",
+                            ".project-workflow/config.json",
+                            f"registration for {repository.repository_id}",
+                        ),
+                    ),
+                )
+            )
+            repository_findings.extend(findings)
+            repository_findings.extend(
+                _workspace_git_state_findings(repository, repository_git)
+            )
+            if repository.repository_id == workspace.authority_repository:
+                authority_git = repository_git
+        if authority_git is None:
+            authority = workspace.repository(workspace.authority_repository)
+            authority_artifact = ".git" if authority.path == "." else f"{authority.path}/.git"
+            authority_git, findings = _inspect_operational_git(
+                authority.resolved_path,
+                source_artifact=authority_artifact,
+                source_detail=f"workspace authority repository {authority.repository_id}",
+                repository_id=authority.repository_id,
+            )
+            repository_findings.extend(findings)
+        git = authority_git
+        git_findings = tuple(repository_findings)
+        repositories = tuple(repository_records)
+        workspace_authority = workspace.authority_repository
     active_work, work_findings = _inspect_operational_active_work(inspected_root)
     return OperationalStatusInspection(
         installation,
         git,
         active_work,
         (*git_findings, *work_findings),
+        workspace_authority,
+        repositories,
     )
 
 
@@ -2226,6 +2468,149 @@ def _operational_work_item_paths(
         implementation_path = docs_path
         requirements_path = docs_path.parent / "REQUIREMENTS.md" if docs_path else None
     return requirements_path, implementation_path, epic_dir
+
+
+def _operational_repository_evidence(
+    root: Path,
+    repositories: tuple[OperationalStatusRepository, ...],
+    work_items: tuple[OperationalStatusWorkItem, ...],
+) -> tuple[OperationalStatusRepository, ...]:
+    enriched: list[OperationalStatusRepository] = []
+    for repository in repositories:
+        primary_work: list[str] = []
+        touched_work: list[str] = []
+        branch_pr: list[str] = []
+        validation: list[str] = []
+        delivery: list[str] = []
+        evidence: list[str] = []
+        sources: list[OperationalStatusSource] = []
+        for item in work_items:
+            requirements_path, implementation_path, _epic_dir = _operational_work_item_paths(
+                root, item
+            )
+            scope_path = (
+                implementation_path
+                if item.kind == "fix"
+                else requirements_path
+            )
+            if scope_path is None or not scope_path.exists():
+                continue
+            requirements_text = scope_path.read_text(encoding="utf-8")
+            primary, touched = _repository_scope_values(requirements_text)
+            if repository.repository_id not in touched:
+                continue
+            touched_work.append(item.item_id)
+            if primary == repository.repository_id:
+                primary_work.append(item.item_id)
+            sources.append(
+                OperationalStatusSource(
+                    "implementation" if item.kind == "fix" else "requirements",
+                    _operational_status_artifact(root, scope_path),
+                    f"repository scope for {item.item_id}",
+                )
+            )
+            if implementation_path is None or not implementation_path.exists():
+                continue
+            rows = _repository_evidence_rows(
+                implementation_path.read_text(encoding="utf-8")
+            )
+            row = rows.get(repository.repository_id)
+            if row is None:
+                continue
+            branch_pr.append(f"{item.item_id}: {row['branch_pr']}")
+            validation.append(f"{item.item_id}: {row['validation']}")
+            delivery.append(f"{item.item_id}: {row['delivery']}")
+            evidence.append(f"{item.item_id}: {row['evidence']}")
+            sources.append(
+                OperationalStatusSource(
+                    "repository-evidence",
+                    _operational_status_artifact(root, implementation_path),
+                    f"repository evidence for {item.item_id}",
+                )
+            )
+        facts: list[OperationalStatusFact] = []
+        for key, values in (
+            ("primary_work", primary_work),
+            ("touched_work", touched_work),
+            ("branch_pr", branch_pr),
+            ("validation", validation),
+            ("delivery", delivery),
+            ("evidence_artifacts", evidence),
+        ):
+            if values:
+                facts.append(_operational_status_fact(key, tuple(values)))
+        enriched.append(
+            OperationalStatusRepository(
+                repository.repository_id,
+                repository.path,
+                repository.role,
+                repository.authority,
+                repository.git,
+                tuple(facts),
+                _operational_status_unique_sources([*repository.sources, *sources]),
+            )
+        )
+    return tuple(enriched)
+
+
+def _workspace_repository_evidence_findings(
+    repositories: tuple[OperationalStatusRepository, ...],
+) -> tuple[OperationalStatusFinding, ...]:
+    findings: list[OperationalStatusFinding] = []
+    for repository in repositories:
+        live_branch = next(
+            (fact.value for fact in repository.git.facts if fact.key == "branch"),
+            None,
+        )
+        branch_records = next(
+            (fact.value for fact in repository.evidence if fact.key == "branch_pr"),
+            (),
+        )
+        if not isinstance(live_branch, str) or not isinstance(branch_records, tuple):
+            continue
+        for record in branch_records:
+            _item_id, separator, recorded_state = record.partition(":")
+            if not separator:
+                continue
+            expected_branch = recorded_state.strip()
+            if expected_branch.lower().startswith("branch "):
+                expected_branch = expected_branch[7:].strip().strip("`")
+            if not re.fullmatch(r"[A-Za-z0-9._/-]+", expected_branch):
+                continue
+            if expected_branch == live_branch:
+                continue
+            sources = _operational_status_unique_sources(
+                [*repository.git.sources, *repository.sources]
+            )
+            findings.append(
+                OperationalStatusFinding(
+                    "PW_STATUS_WORKSPACE_REPOSITORY_BRANCH_MISMATCH",
+                    "error",
+                    f"Workspace repository '{repository.repository_id}' is on branch "
+                    f"'{live_branch}' but recorded work expects '{expected_branch}'.",
+                    sources,
+                )
+            )
+    return tuple(findings)
+
+
+def _operational_relevant_repository_ids(
+    root: Path,
+    work_items: tuple[OperationalStatusWorkItem, ...],
+) -> set[str]:
+    repository_ids: set[str] = set()
+    for item in work_items:
+        requirements_path, implementation_path, _epic_dir = _operational_work_item_paths(
+            root, item
+        )
+        scope_path = implementation_path if item.kind == "fix" else requirements_path
+        if scope_path is None or not scope_path.exists():
+            continue
+        _primary, touched = _repository_scope_values(
+            scope_path.read_text(encoding="utf-8")
+        )
+        repository_ids.update(touched)
+    return repository_ids
 
 
 def _operational_status_document_source(
@@ -3489,14 +3874,36 @@ def build_operational_status_snapshot(
     *,
     strict: bool = False,
     focus_id: str | None = None,
+    repository_id: str | None = None,
 ) -> OperationalStatusSnapshot:
     inspected_root = root.resolve()
-    inspection = inspect_operational_status_repository(inspected_root)
+    inspection = inspect_operational_status_repository(
+        inspected_root,
+        repository_id=repository_id,
+    )
     selected = tuple(
         item
         for item in inspection.active_work
         if focus_id is None or item.item_id == focus_id
     )
+    selected_repositories = inspection.repositories
+    if inspection.workspace_authority is not None and focus_id is not None:
+        relevant_repository_ids = _operational_relevant_repository_ids(
+            inspected_root,
+            selected,
+        )
+        if repository_id is not None and relevant_repository_ids:
+            if repository_id not in relevant_repository_ids:
+                raise SystemExit(
+                    f"Workspace repository '{repository_id}' is not in the recorded scope "
+                    f"for active work item '{focus_id}'."
+                )
+        elif relevant_repository_ids:
+            selected_repositories = tuple(
+                repository
+                for repository in selected_repositories
+                if repository.repository_id in relevant_repository_ids
+            )
     proof, proof_work = classify_operational_proof(inspected_root, selected)
     health, health_findings = classify_operational_health(inspected_root, strict=strict)
     delivered_work: list[OperationalStatusWorkItem] = []
@@ -3518,9 +3925,20 @@ def build_operational_status_snapshot(
             )
         )
     work_items = tuple(delivered_work)
+    repositories = _operational_repository_evidence(
+        inspected_root,
+        selected_repositories,
+        work_items,
+    )
     delivery = _operational_aggregate_delivery(work_items)
+    workspace_evidence_findings = _workspace_repository_evidence_findings(repositories)
     findings = tuple(
-        [*inspection.findings, *health_findings, *delivery_findings]
+        [
+            *inspection.findings,
+            *health_findings,
+            *delivery_findings,
+            *workspace_evidence_findings,
+        ]
     )
     blockers = tuple(finding for finding in findings if finding.severity == "error")
     primary, secondary = resolve_operational_actions(
@@ -3542,6 +3960,8 @@ def build_operational_status_snapshot(
         blockers,
         primary,
         secondary,
+        inspection.workspace_authority,
+        repositories,
     )
 
 
@@ -3565,6 +3985,9 @@ def _operational_human_sources(
         snapshot.delivery,
     ):
         sources.extend(value.sources)
+    for repository in snapshot.repositories:
+        sources.extend(repository.git.sources)
+        sources.extend(repository.sources)
     for item in snapshot.active_work:
         sources.extend(item.sources)
         for layer in item.proof_layers:
@@ -3605,9 +4028,16 @@ def render_operational_status_human(snapshot: OperationalStatusSnapshot) -> str:
         ),
         f"- Proof: {snapshot.proof.state} — {snapshot.proof.summary}",
         f"- Delivery: {snapshot.delivery.state} — {snapshot.delivery.summary}",
-        "",
-        "Active work",
     ]
+    if snapshot.workspace_authority is not None:
+        lines.extend(("", "Workspace repositories"))
+        for repository in snapshot.repositories:
+            authority = " (authority)" if repository.authority else ""
+            lines.append(
+                f"- {repository.repository_id}{authority} [{repository.role}] "
+                f"{repository.path} — Git {repository.git.state}: {repository.git.summary}"
+            )
+    lines.extend(("", "Active work"))
     if snapshot.active_work:
         for item in snapshot.active_work:
             aggregate_proof = next(
@@ -3661,6 +4091,7 @@ def cmd_status(args: argparse.Namespace) -> None:
         root,
         strict=args.strict,
         focus_id=args.id,
+        repository_id=args.repository,
     )
     if args.format == "json":
         print(json.dumps(operational_status_payload(snapshot), indent=2))
@@ -5791,6 +6222,137 @@ def _normalize_id_generation_mode(value: str) -> str:
     return normalized
 
 
+def _load_workspace_definition(
+    root: Path,
+    config_path: Path,
+    raw_workspace: object,
+) -> WorkspaceDefinition | None:
+    if raw_workspace is None:
+        return None
+    if not isinstance(raw_workspace, dict):
+        raise SystemExit(f"{config_path} field 'workspace' must be an object.")
+
+    authority = raw_workspace.get("authority_repository")
+    if not isinstance(authority, str) or not authority.strip():
+        raise SystemExit(
+            f"{config_path} field 'workspace.authority_repository' must be a non-empty string."
+        )
+    authority = authority.strip()
+
+    raw_repositories = raw_workspace.get("repositories")
+    if not isinstance(raw_repositories, list) or not raw_repositories:
+        raise SystemExit(
+            f"{config_path} field 'workspace.repositories' must be a non-empty list."
+        )
+
+    root_resolved = root.resolve()
+    repositories: list[WorkspaceRepository] = []
+    repository_ids: set[str] = set()
+    repository_paths: set[str] = set()
+    git_roots: set[Path] = set()
+    for index, raw_repository in enumerate(raw_repositories, start=1):
+        label = f"workspace.repositories entry {index}"
+        if not isinstance(raw_repository, dict):
+            raise SystemExit(f"{config_path} {label} must be an object.")
+        repository_id = raw_repository.get("id")
+        repository_path = raw_repository.get("path")
+        role = raw_repository.get("role")
+        if not isinstance(repository_id, str) or not re.fullmatch(
+            r"[a-z][a-z0-9-]*", repository_id
+        ):
+            raise SystemExit(
+                f"{config_path} {label} field 'id' must be a lowercase slug."
+            )
+        if repository_id in repository_ids:
+            raise SystemExit(
+                f"{config_path} workspace repository ID '{repository_id}' is duplicated."
+            )
+        if not isinstance(repository_path, str) or not repository_path.strip():
+            raise SystemExit(f"{config_path} {label} field 'path' must be non-empty text.")
+        path_value = Path(repository_path.strip())
+        if path_value.is_absolute() or ".." in path_value.parts:
+            raise SystemExit(
+                f"{config_path} workspace repository path '{repository_path}' must be "
+                "relative to the authority root and cannot contain '..'."
+            )
+        normalized_path = path_value.as_posix().rstrip("/") or "."
+        if normalized_path in repository_paths:
+            raise SystemExit(
+                f"{config_path} workspace repository path '{normalized_path}' is duplicated."
+            )
+        if role not in {"control", "implementation"}:
+            raise SystemExit(
+                f"{config_path} {label} field 'role' must be 'control' or 'implementation'."
+            )
+
+        resolved_path = (root_resolved / path_value).resolve()
+        try:
+            resolved_path.relative_to(root_resolved)
+        except ValueError as exc:
+            raise SystemExit(
+                f"{config_path} workspace repository path '{normalized_path}' escapes "
+                "the authority root."
+            ) from exc
+        if not resolved_path.is_dir():
+            raise SystemExit(
+                f"{config_path} workspace repository path '{normalized_path}' "
+                "does not exist as a directory."
+            )
+        git_root = _operational_git_optional(["rev-parse", "--show-toplevel"], resolved_path)
+        if git_root is None:
+            raise SystemExit(
+                f"{config_path} workspace repository '{repository_id}' is not a readable "
+                "Git worktree."
+            )
+        resolved_git_root = Path(git_root).resolve()
+        if resolved_git_root != resolved_path:
+            raise SystemExit(
+                f"{config_path} workspace repository '{repository_id}' path "
+                f"'{normalized_path}' is not an independent Git root."
+            )
+        if resolved_git_root in git_roots:
+            raise SystemExit(
+                f"{config_path} workspace repositories must resolve to unique Git roots; "
+                f"'{repository_id}' aliases an existing repository."
+            )
+
+        repository_ids.add(repository_id)
+        repository_paths.add(normalized_path)
+        git_roots.add(resolved_git_root)
+        repositories.append(
+            WorkspaceRepository(
+                repository_id,
+                normalized_path,
+                role,
+                resolved_path,
+            )
+        )
+
+    if authority not in repository_ids:
+        raise SystemExit(
+            f"{config_path} workspace authority repository '{authority}' is not registered."
+        )
+    authority_repository = next(
+        repository for repository in repositories if repository.repository_id == authority
+    )
+    if authority_repository.resolved_path != root_resolved:
+        raise SystemExit(
+            f"{config_path} workspace authority repository '{authority}' must use path '.' "
+            "because the parent repository owns .project-workflow."
+        )
+    control_repositories = [
+        repository.repository_id
+        for repository in repositories
+        if repository.role == "control"
+    ]
+    if control_repositories != [authority]:
+        raise SystemExit(
+            f"{config_path} workspace must define exactly one control repository and it "
+            f"must be authority_repository '{authority}'."
+        )
+    return WorkspaceDefinition(authority, tuple(repositories))
+
+
 def _default_workflow_config() -> WorkflowConfig:
     return WorkflowConfig(
         task_id_prefixes=(TASK_ID_PREFIX,),
@@ -5799,6 +6361,7 @@ def _default_workflow_config() -> WorkflowConfig:
         id_generation=dict(DEFAULT_ID_GENERATION),
         unique_id_length=DEFAULT_UNIQUE_ID_LENGTH,
         accepted_doctor_warnings={},
+        workspace=None,
     )
 
 
@@ -5921,6 +6484,8 @@ def _load_workflow_config(root: Path) -> WorkflowConfig:
             )
         accepted_doctor_warnings[fingerprint] = reason
 
+    workspace = _load_workspace_definition(root, config_path, raw.get("workspace"))
+
     return WorkflowConfig(
         task_id_prefixes=tuple(prefixes),
         default_task_id_prefix=default_prefix,
@@ -5928,6 +6493,7 @@ def _load_workflow_config(root: Path) -> WorkflowConfig:
         id_generation=id_generation,
         unique_id_length=raw_unique_id_length,
         accepted_doctor_warnings=accepted_doctor_warnings,
+        workspace=workspace,
     )
 
 
@@ -6037,7 +6603,20 @@ def _write_file(path: Path, content: str, *, overwrite: bool) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _implementation_template(task_id: str, title: str) -> str:
+def _template_repository_id(root: Path | None) -> str:
+    if root is None:
+        return "."
+    workspace = _load_workflow_config(root).workspace
+    return workspace.authority_repository if workspace is not None else "."
+
+
+def _implementation_template(
+    task_id: str,
+    title: str,
+    *,
+    root: Path | None = None,
+) -> str:
+    repository_id = _template_repository_id(root)
     return (
         f"## User Story\n\n"
         f"As a ____, I want ____, so that ____.\n\n"
@@ -6045,6 +6624,10 @@ def _implementation_template(task_id: str, title: str) -> str:
         f"- [ ] AC1: ____\n\n"
         f"## Validation\n\n"
         f"- AC1: ____\n\n"
+        f"## Repository Evidence\n\n"
+        f"| Repository | Branch / PR | Validation | Delivery | Evidence |\n"
+        f"| ---------- | ----------- | ---------- | -------- | -------- |\n"
+        f"| {repository_id} | not recorded | not recorded | not recorded | not recorded |\n\n"
         f"## Task List\n\n"
         f"| ID | Title | Description | Acceptance Criteria | User Verification | Status |\n"
         f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ |\n"
@@ -6064,7 +6647,13 @@ def _implementation_template(task_id: str, title: str) -> str:
     )
 
 
-def _requirements_template(task_id: str, title: str) -> str:
+def _requirements_template(
+    task_id: str,
+    title: str,
+    *,
+    root: Path | None = None,
+) -> str:
+    repository_id = _template_repository_id(root)
     return (
         f"# Requirements\n\n"
         f"## Summary\n\n"
@@ -6087,6 +6676,9 @@ def _requirements_template(task_id: str, title: str) -> str:
         f"List what is explicitly out-of-scope.\n\n"
         f"## Users & Context\n\n"
         f"Who is affected and in what situation?\n\n"
+        f"## Repository Scope\n\n"
+        f"- Primary repository: {repository_id}\n"
+        f"- Repositories touched: {repository_id}\n\n"
         f"## Requirements (Outcome-Focused)\n\n"
         f"- ____\n\n"
         f"## Acceptance Criteria (Verifiable)\n\n"
@@ -6100,7 +6692,13 @@ def _requirements_template(task_id: str, title: str) -> str:
     )
 
 
-def _fix_template(fix_id: str, title: str) -> str:
+def _fix_template(
+    fix_id: str,
+    title: str,
+    *,
+    root: Path | None = None,
+) -> str:
+    repository_id = _template_repository_id(root)
     return (
         f"# Fix\n\n"
         f"## Summary\n\n"
@@ -6139,14 +6737,18 @@ def _fix_template(fix_id: str, title: str) -> str:
         f"- Scope: ____\n"
         f"- Non-goals: ____\n"
         f"- Affected target: ____\n"
-        f"- Primary repo: .\n"
-        f"- Repos touched: .\n"
+        f"- Primary repo: {repository_id}\n"
+        f"- Repos touched: {repository_id}\n"
         f"- Branch, PR, and evidence links: ____\n"
         f"- Verification plan: ____\n\n"
         f"### Repository Links\n\n"
         f"| Repo | Branch | PR | Evidence |\n"
         f"|---|---|---|---|\n"
-        f"| . | ____ | ____ | ____ |\n\n"
+        f"| {repository_id} | ____ | ____ | ____ |\n\n"
+        f"## Repository Evidence\n\n"
+        f"| Repository | Branch / PR | Validation | Delivery | Evidence |\n"
+        f"| ---------- | ----------- | ---------- | -------- | -------- |\n"
+        f"| {repository_id} | not recorded | not recorded | not recorded | not recorded |\n\n"
         f"## Verification\n\n"
         f"- Delivered scope: ____\n"
         f"- Verification result: ____\n"
@@ -7920,9 +8522,15 @@ def _update_global_epic_status(
 
 
 def _epic_child_implementation_template(
-    task_id: str, title: str, parent_ac_coverage: str, child_charter: str = ""
+    task_id: str,
+    title: str,
+    parent_ac_coverage: str,
+    child_charter: str = "",
+    *,
+    root: Path | None = None,
 ) -> str:
     parent_ac_value = parent_ac_coverage or "____"
+    repository_id = _template_repository_id(root)
     return (
         f"## User Story\n\n"
         f"As a ____, I want ____, so that ____.\n\n"
@@ -7933,6 +8541,10 @@ def _epic_child_implementation_template(
         f"- [ ] AC1: Covers parent AC(s) {parent_ac_value}: ____\n\n"
         f"## Validation\n\n"
         f"- AC1 / parent AC(s) {parent_ac_value}: ____\n\n"
+        f"## Repository Evidence\n\n"
+        f"| Repository | Branch / PR | Validation | Delivery | Evidence |\n"
+        f"| ---------- | ----------- | ---------- | -------- | -------- |\n"
+        f"| {repository_id} | not recorded | not recorded | not recorded | not recorded |\n\n"
         f"## Task List\n\n"
         f"| ID | Title | Description | Acceptance Criteria | User Verification | Status |\n"
         f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ |\n"
@@ -7956,42 +8568,25 @@ def _epic_child_implementation_template(
 
 
 def _structured_evidence_template(task_id: str, parent_ac_coverage: str) -> str:
-    parent_ac_ids = sorted(
-        _extract_ac_ids(parent_ac_coverage),
-        key=lambda ac_id: int(ac_id[2:]),
-    )
-    if not parent_ac_ids:
-        parent_ac_ids = [parent_ac_coverage or "____"]
     return json.dumps(
         {
             "task_id": task_id,
-            "claims": [
-                {
-                    "id": f"CLM-{index:03d}",
-                    "parent_ac": parent_ac,
-                    "claim": "____",
-                    "recipe": "visual-reference-fidelity",
-                    "status": "pending",
-                    "commit": "____",
-                    "timestamp": "____",
-                    "reference_artifact": "____",
-                    "delivered_artifact": "____",
-                    "comparison_method": "____",
-                    "evidence_artifact": "____",
-                    "evidence_artifact_hash": "____",
-                    "invalid_substitutes": [],
-                }
-                for index, parent_ac in enumerate(parent_ac_ids, start=1)
-            ],
+            "claims": [],
         },
         indent=2,
     ) + "\n"
 
 
 def _epic_child_requirements_template(
-    task_id: str, title: str, parent_ac_coverage: str, child_charter: str = ""
+    task_id: str,
+    title: str,
+    parent_ac_coverage: str,
+    child_charter: str = "",
+    *,
+    root: Path | None = None,
 ) -> str:
     parent_ac_value = parent_ac_coverage or "____"
+    repository_id = _template_repository_id(root)
     return (
         f"# Requirements\n\n"
         f"## Summary\n\n"
@@ -8016,6 +8611,9 @@ def _epic_child_requirements_template(
         f"List what is explicitly out-of-scope.\n\n"
         f"## Users & Context\n\n"
         f"Who is affected and in what situation?\n\n"
+        f"## Repository Scope\n\n"
+        f"- Primary repository: {repository_id}\n"
+        f"- Repositories touched: {repository_id}\n\n"
         f"## Requirements (Outcome-Focused)\n\n"
         f"- ____\n\n"
         f"## Acceptance Criteria (Verifiable)\n\n"
@@ -8576,11 +9174,202 @@ def _task_ready_issues_for_paths(
         return [f"agent action required: create implementation file `{implementation_path.name}`."]
     requirements_text = requirements_path.read_text(encoding="utf-8")
     implementation_text = implementation_path.read_text(encoding="utf-8")
-    return _task_readiness_issues(
+    issues = _task_readiness_issues(
         requirements_text=requirements_text,
         implementation_text=implementation_text,
         parent_ac_ids=parent_ac_ids,
     )
+    root = next(
+        (
+            parent
+            for parent in requirements_path.parents
+            if (parent / ".project-workflow").is_dir()
+        ),
+        None,
+    )
+    if root is not None:
+        issues.extend(_repository_scope_issues(root, requirements_text))
+    return issues
+
+
+def _repository_scope_values(requirements_text: str) -> tuple[str | None, tuple[str, ...]]:
+    section = _markdown_section(requirements_text, "Repository Scope")
+    primary_match = re.search(
+        r"(?im)^\s*-\s*Primary repository:\s*(.+?)\s*$",
+        section,
+    )
+    touched_match = re.search(
+        r"(?im)^\s*-\s*Repositories touched:\s*(.+?)\s*$",
+        section,
+    )
+    primary = primary_match.group(1).strip().strip("`") if primary_match else None
+    touched = (
+        tuple(
+            value.strip().strip("`")
+            for value in touched_match.group(1).split(",")
+            if value.strip()
+        )
+        if touched_match
+        else ()
+    )
+    if primary is None and not touched:
+        fix_plan = _fix_values(requirements_text, "Fix Plan")
+        fix_primary = fix_plan.get("primary repo")
+        fix_touched = fix_plan.get("repos touched", "")
+        primary = fix_primary.strip().strip("`") if fix_primary else None
+        touched = tuple(
+            value.strip().strip("`")
+            for value in _split_fix_repos(fix_touched)
+            if value.strip()
+        )
+    return primary, touched
+
+
+def _repository_scope_issues(root: Path, requirements_text: str) -> list[str]:
+    config = _load_workflow_config(root)
+    if config.workspace is None:
+        return []
+    registered = {
+        repository.repository_id for repository in config.workspace.repositories
+    }
+    primary, touched = _repository_scope_values(requirements_text)
+    issues: list[str] = []
+    if primary is None or primary in {"____", "not recorded"}:
+        issues.append(
+            "agent action required: record `Primary repository` in the Repository Scope section."
+        )
+    elif primary not in registered:
+        issues.append(
+            f"agent action required: primary repository `{primary}` is not registered in "
+            ".project-workflow/config.json."
+        )
+    if not touched or any(value in {"____", "not recorded"} for value in touched):
+        issues.append(
+            "agent action required: record `Repositories touched` in the Repository Scope section."
+        )
+    else:
+        duplicates = sorted(
+            value for value in set(touched) if touched.count(value) > 1
+        )
+        if duplicates:
+            issues.append(
+                "agent action required: remove duplicate repository scope entries: "
+                + ", ".join(duplicates)
+                + "."
+            )
+        unknown = sorted(set(touched) - registered)
+        if unknown:
+            issues.append(
+                "agent action required: repository scope contains unregistered repositories: "
+                + ", ".join(unknown)
+                + "."
+            )
+        if primary is not None and primary not in touched:
+            issues.append(
+                f"agent action required: primary repository `{primary}` must also appear in "
+                "`Repositories touched`."
+            )
+    return issues
+
+
+def _repository_evidence_rows(implementation_text: str) -> dict[str, dict[str, str]]:
+    section = _markdown_section(implementation_text, "Repository Evidence")
+    rows: dict[str, dict[str, str]] = {}
+    for line in section.splitlines():
+        cells = _parse_markdown_table_cells(line)
+        if cells is None or len(cells) != 5:
+            continue
+        if cells[0] in {"Repository", "----------"} or set(cells[0]) <= {"-", ":"}:
+            continue
+        rows[cells[0].strip("`")] = {
+            "branch_pr": cells[1],
+            "validation": cells[2],
+            "delivery": cells[3],
+            "evidence": cells[4],
+        }
+    return rows
+
+
+def _repository_evidence_duplicate_ids(implementation_text: str) -> set[str]:
+    section = _markdown_section(implementation_text, "Repository Evidence")
+    repository_ids: list[str] = []
+    for line in section.splitlines():
+        cells = _parse_markdown_table_cells(line)
+        if cells is None or len(cells) != 5:
+            continue
+        if cells[0] in {"Repository", "----------"} or set(cells[0]) <= {"-", ":"}:
+            continue
+        repository_ids.append(cells[0].strip("`"))
+    return {
+        repository_id
+        for repository_id in set(repository_ids)
+        if repository_ids.count(repository_id) > 1
+    }
+
+
+def _repository_evidence_issues(
+    root: Path,
+    requirements_text: str,
+    implementation_text: str,
+) -> list[str]:
+    config = _load_workflow_config(root)
+    if config.workspace is None:
+        return []
+    _primary, touched = _repository_scope_values(requirements_text)
+    rows = _repository_evidence_rows(implementation_text)
+    issues: list[str] = []
+    duplicates = sorted(_repository_evidence_duplicate_ids(implementation_text))
+    if duplicates:
+        issues.append(
+            "agent action required: remove duplicate Repository Evidence rows for: "
+            + ", ".join(duplicates)
+            + "."
+        )
+    registered = {
+        repository.repository_id for repository in config.workspace.repositories
+    }
+    unknown = sorted(set(rows) - registered)
+    if unknown:
+        issues.append(
+            "agent action required: Repository Evidence contains unregistered repositories: "
+            + ", ".join(unknown)
+            + "."
+        )
+    out_of_scope = sorted(set(rows) - set(touched))
+    if out_of_scope:
+        issues.append(
+            "agent action required: Repository Evidence contains repositories outside the "
+            "recorded scope: "
+            + ", ".join(out_of_scope)
+            + "."
+        )
+    missing = sorted(set(touched) - set(rows))
+    if missing:
+        issues.append(
+            "agent action required: add Repository Evidence rows for: "
+            + ", ".join(missing)
+            + "."
+        )
+    universal_placeholders = {"", "____"}
+    proof_placeholders = {*universal_placeholders, "not recorded"}
+    for repository_id in sorted(set(touched) & set(rows)):
+        missing_fields = [
+            field.replace("_", " / " if field == "branch_pr" else " ")
+            for field, value in rows[repository_id].items()
+            if value.strip().lower()
+            in (
+                proof_placeholders
+                if field in {"validation", "evidence"}
+                else universal_placeholders
+            )
+        ]
+        if missing_fields:
+            issues.append(
+                f"agent action required: repository `{repository_id}` must record "
+                + ", ".join(missing_fields)
+                + " evidence."
+            )
+    return issues
 
 
 def _resolve_fix_doc(
@@ -8602,6 +9391,16 @@ def _resolve_fix_doc(
 
 
 def _fix_workspace_targets(root: Path) -> set[str] | None:
+    config = _load_workflow_config(root)
+    if config.workspace is not None:
+        targets: set[str] = set()
+        for repository in config.workspace.repositories:
+            targets.add(repository.repository_id)
+            targets.add(repository.path)
+        return targets
+
+    # Compatibility only: older installations may still have the pre-registry
+    # workspace.json metadata used by Fix triage.
     workspace_path = root / ".project-workflow" / "workspace.json"
     if not workspace_path.exists():
         return None
@@ -8732,7 +9531,7 @@ def _fix_hotfix_safety_issues(root: Path, fix_text: str) -> list[str]:
 
 
 def _fix_closeout_issues(root: Path, fix_text: str) -> list[str]:
-    issues: list[str] = []
+    issues = _repository_evidence_issues(root, fix_text, fix_text)
     verification = _fix_values(fix_text, "Verification")
     for field in (
         "delivered scope",
@@ -8812,6 +9611,10 @@ def _update_fix_tracker_status(
             issues = _fix_triage_issues(root, fix_text)
             if issues:
                 raise SystemExit(_format_readiness_block(fix_id, issues))
+        if new_status == "Review":
+            repository_issues = _repository_evidence_issues(root, fix_text, fix_text)
+            if repository_issues:
+                raise SystemExit(_format_readiness_block(fix_id, repository_issues))
         if new_status == "Complete":
             raise SystemExit("Use `project fix close` to complete a Fix.")
         if new_status == "N/A":
@@ -8888,6 +9691,13 @@ def _update_global_tracker_row_status(
             )
             if structured_issues:
                 raise SystemExit(_format_readiness_block(row_id, structured_issues))
+            repository_issues = _repository_evidence_issues(
+                root,
+                requirements_text,
+                docs_text,
+            )
+            if repository_issues:
+                raise SystemExit(_format_readiness_block(row_id, repository_issues))
         if new_status == "Complete":
             if current_status != "Review":
                 raise SystemExit(
@@ -9110,6 +9920,18 @@ def _update_epic_child_status(
             )
             if structured_issues:
                 raise SystemExit(_format_readiness_block(row_id, structured_issues))
+            requirements_text = (
+                requirements_path.read_text(encoding="utf-8")
+                if requirements_path.exists()
+                else ""
+            )
+            repository_issues = _repository_evidence_issues(
+                root,
+                requirements_text,
+                docs_text,
+            )
+            if repository_issues:
+                raise SystemExit(_format_readiness_block(row_id, repository_issues))
             if not _has_qa_review_evidence(docs_text):
                 raise SystemExit(
                     f"{row_id} cannot move to Complete without non-placeholder "
@@ -9149,6 +9971,15 @@ def _update_epic_child_status(
                         requirements_path=requirements_path,
                         implementation_path=docs_path,
                         parent_ac_ids=parent_ac_ids,
+                    )
+                )
+                requirements_text = requirements_path.read_text(encoding="utf-8")
+                implementation_text = docs_path.read_text(encoding="utf-8")
+                readiness_issues.extend(
+                    _repository_evidence_issues(
+                        root,
+                        requirements_text,
+                        implementation_text,
                     )
                 )
             if readiness_issues:
@@ -9632,6 +10463,31 @@ def _doctor_check_namespace_config(root: Path, issues: list[DoctorIssue]) -> Wor
         return None
 
 
+def _doctor_check_workspace_authority(
+    root: Path,
+    config: WorkflowConfig | None,
+    issues: list[DoctorIssue],
+) -> None:
+    if config is None or config.workspace is None:
+        return
+    for repository in config.workspace.repositories:
+        if repository.repository_id == config.workspace.authority_repository:
+            continue
+        workflow_path = repository.resolved_path / ".project-workflow"
+        if workflow_path.exists():
+            _add_issue(
+                issues,
+                "error",
+                workflow_path,
+                f"Registered non-authority repository '{repository.repository_id}' contains "
+                "a competing .project-workflow state. Remove or archive the child workflow "
+                "state outside the repository and keep the parent authority authoritative.",
+                code="PW_WORKSPACE_AUTHORITY_CONFLICT",
+                remediation_owner="owner",
+                mechanically_upgradeable=False,
+            )
+
+
 def _doctor_check_row_namespace(
     row_id: str,
     *,
@@ -9782,6 +10638,17 @@ def _doctor_check_task_doc(
                 docs_path,
                 f"{row_id} {evidence_issue}",
             )
+        for repository_issue in _repository_evidence_issues(
+            root,
+            requirements_text or "",
+            docs_text,
+        ):
+            _add_issue(
+                issues,
+                "error",
+                docs_path,
+                f"{row_id} {repository_issue}",
+            )
     if parent_requirements_path is not None and status in (
         "Approved",
         "In Progress",
@@ -9845,6 +10712,18 @@ def _doctor_check_task_doc(
                     docs_path,
                     f"{row_id} readiness gate: {readiness_issue}",
                 )
+    if (
+        docs_path.name == "IMPLEMENTATION.md"
+        and requirements_text is not None
+        and _status_requires_task_readiness(status)
+    ):
+        for repository_issue in _repository_scope_issues(root, requirements_text):
+            _add_issue(
+                issues,
+                "error",
+                requirements_path,
+                f"{row_id} repository scope: {repository_issue}",
+            )
     if docs_path.name == "REQUIREMENTS.md" and row_id.startswith(f"{EPIC_ID_PREFIX}-"):
         if status not in ("To Do", "N/A"):
             for readiness_issue in _epic_requirements_readiness_issues(docs_text):
@@ -9934,6 +10813,18 @@ def _doctor_check_fix_doc(
             triage_issues = [str(exc)]
         for triage_issue in triage_issues:
             _add_issue(issues, "error", fix_path, f"{row_id} triage: {triage_issue}.")
+    if status in {"Review", "Complete"}:
+        for repository_issue in _repository_evidence_issues(
+            root,
+            fix_text,
+            fix_text,
+        ):
+            _add_issue(
+                issues,
+                "error",
+                fix_path,
+                f"{row_id} {repository_issue}",
+            )
     if status == "Complete":
         for closeout_issue in _fix_closeout_issues(root, fix_text):
             _add_issue(issues, "error", fix_path, f"{row_id} closeout: {closeout_issue}.")
@@ -10171,6 +11062,7 @@ def run_doctor(root: Path) -> list[DoctorIssue]:
     issues: list[DoctorIssue] = []
     _doctor_check_repository_compatibility(root, issues)
     config = _doctor_check_namespace_config(root, issues)
+    _doctor_check_workspace_authority(root, config, issues)
     _doctor_check_source_mirrors(root, issues)
     _doctor_check_pending_generated_updates(root, issues)
     _doctor_check_backlog(root, issues, config=config)
@@ -10625,13 +11517,13 @@ def cmd_backlog_promote(args: argparse.Namespace) -> None:
         task_dir.mkdir(parents=True, exist_ok=True)
         _write_file(
             task_dir / "IMPLEMENTATION.md",
-            _implementation_template(spec.task_id, spec.title),
+            _implementation_template(spec.task_id, spec.title, root=root),
             overwrite=True,
         )
         _write_file(
             task_dir / "REQUIREMENTS.md",
             _requirements_with_backlog_source(
-                _requirements_template(spec.task_id, spec.title),
+                _requirements_template(spec.task_id, spec.title, root=root),
                 source_row,
             ),
             overwrite=True,
@@ -10665,7 +11557,7 @@ def cmd_backlog_promote(args: argparse.Namespace) -> None:
         _write_file(
             epic_dir / "REQUIREMENTS.md",
             _requirements_with_backlog_source(
-                _requirements_template(spec.task_id, spec.title),
+                _requirements_template(spec.task_id, spec.title, root=root),
                 source_row,
             ),
             overwrite=True,
@@ -10877,7 +11769,7 @@ def cmd_fix_init(args: argparse.Namespace) -> None:
     if fix_dir.exists():
         raise SystemExit(f"Fix folder already exists: {fix_dir}")
     fix_dir.mkdir(parents=True, exist_ok=False)
-    fix_text = _fix_template(fix_id, args.title)
+    fix_text = _fix_template(fix_id, args.title, root=root)
     if args.classification:
         fix_text = _replace_fix_field(
             fix_text, "Classification", "Type", args.classification
@@ -11010,13 +11902,13 @@ def cmd_fix_promote(args: argparse.Namespace) -> None:
         promoted_dir.mkdir(parents=True, exist_ok=False)
         _write_file(
             promoted_dir / "IMPLEMENTATION.md",
-            _implementation_template(promoted_id, title),
+            _implementation_template(promoted_id, title, root=root),
             overwrite=True,
         )
         _write_file(
             promoted_dir / "REQUIREMENTS.md",
             _requirements_with_fix_source(
-                _requirements_template(promoted_id, title), fix_id, args.reason
+                _requirements_template(promoted_id, title, root=root), fix_id, args.reason
             ),
             overwrite=True,
         )
@@ -11031,7 +11923,7 @@ def cmd_fix_promote(args: argparse.Namespace) -> None:
         _write_file(
             promoted_dir / "REQUIREMENTS.md",
             _requirements_with_fix_source(
-                _requirements_template(promoted_id, title), fix_id, args.reason
+                _requirements_template(promoted_id, title, root=root), fix_id, args.reason
             ),
             overwrite=True,
         )
@@ -11137,9 +12029,17 @@ def cmd_task_init(args: argparse.Namespace) -> None:
 
     task_dir.mkdir(parents=True, exist_ok=True)
     if args.overwrite or not impl_path.exists():
-        _write_file(impl_path, _implementation_template(spec.task_id, spec.title), overwrite=True)
+        _write_file(
+            impl_path,
+            _implementation_template(spec.task_id, spec.title, root=cwd),
+            overwrite=True,
+        )
     if args.overwrite or not reqs_path.exists():
-        _write_file(reqs_path, _requirements_template(spec.task_id, spec.title), overwrite=True)
+        _write_file(
+            reqs_path,
+            _requirements_template(spec.task_id, spec.title, root=cwd),
+            overwrite=True,
+        )
 
     docs_rel = f"tasks/{spec.task_folder_name}/IMPLEMENTATION.md"
     if args.update_tracker:
@@ -11332,7 +12232,11 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
 
     epic_dir.mkdir(parents=True, exist_ok=True)
     if args.overwrite or not reqs_path.exists():
-        _write_file(reqs_path, _requirements_template(spec.task_id, spec.title), overwrite=True)
+        _write_file(
+            reqs_path,
+            _requirements_template(spec.task_id, spec.title, root=cwd),
+            overwrite=True,
+        )
     if args.overwrite or not contract_path.exists():
         _write_file(
             contract_path,
@@ -11849,6 +12753,7 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
                 child_spec.title,
                 parent_ac_coverage,
                 child_charter,
+                root=cwd,
             ),
             overwrite=True,
         )
@@ -11860,6 +12765,7 @@ def cmd_epic_scaffold_child(args: argparse.Namespace) -> None:
                 child_spec.title,
                 parent_ac_coverage,
                 child_charter,
+                root=cwd,
             ),
             overwrite=True,
         )
@@ -12020,6 +12926,10 @@ def build_parser() -> argparse.ArgumentParser:
     status_parser.add_argument(
         "--id",
         help="Focus the report and action resolver on one active work-item ID",
+    )
+    status_parser.add_argument(
+        "--repository",
+        help="Inspect one registered workspace repository by ID",
     )
     status_parser.add_argument(
         "--strict",

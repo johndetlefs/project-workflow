@@ -24,3 +24,5 @@
 | TASK-047 | Smoke Bomb | Complete | `tasks/TASK-047-Smoke-Bomb/IMPLEMENTATION.md` |
 | TASK-048 | Immutable Release Contract And Trusted Distribution | Complete | `tasks/TASK-048-Immutable-Release-Contract-And-Trusted-Distribution/IMPLEMENTATION.md` |
 | EPIC-008 | Operational Status And Next Action | Complete | `tasks/EPIC-008-Operational-Status-And-Next-Action/REQUIREMENTS.md` |
+| EPIC-009 | Workspace Mode And Multi-Repo Coordination | Complete | `tasks/EPIC-009-Workspace-Mode-And-Multi-Repo-Coordination/REQUIREMENTS.md` |
+| FIX-005 | Harden Workspace Journey Proof | Complete | `tasks/FIX-005-Harden-Workspace-Journey-Proof/FIX.md` |

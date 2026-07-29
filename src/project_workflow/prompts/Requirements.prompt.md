@@ -135,6 +135,16 @@ List requirements as outcomes/expectations, not implementation details.
 - AC1:
 - AC2:
 
+## Repository Scope
+
+When `.project-workflow/config.json` declares `workspace`, record:
+
+- Primary repository: `<registered repository ID>`
+- Repositories touched: `<comma-separated registered repository IDs>`
+
+The parent authority owns the only live workflow state. Registration does not authorize Git or
+delivery mutations in another repository.
+
 ## Assumptions
 
 -

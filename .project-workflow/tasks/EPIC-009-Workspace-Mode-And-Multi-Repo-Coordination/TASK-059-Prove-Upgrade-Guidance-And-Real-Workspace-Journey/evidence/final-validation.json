@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "validated_at": "2026-07-29T13:37:01+10:00",
+  "source": {
+    "branch": "codex/BL-017-workspace-mode",
+    "base_commit": "9c329aaa6a66ccba62c25c704ea071419cbe7911",
+    "cli_sha256": "583c366e8546e08533d3c672cfdd0c97dbdac93d1c9974a315f18432ae0047b5",
+    "release_candidate_version": "0.3.0",
+    "release_candidate_tag": "v0.3.0"
+  },
+  "environment": {
+    "python": "3.10.20",
+    "setup": "TMPDIR=/private/tmp UV_CACHE_DIR=/private/tmp/project-workflow-uv-cache uv sync --locked --extra dev",
+    "result": "pass"
+  },
+  "validation": [
+    {
+      "name": "full test suite",
+      "command": ".venv/bin/python -m pytest -q",
+      "result": "262 passed in 52.16s"
+    },
+    {
+      "name": "Python compilation",
+      "command": ".venv/bin/python -m py_compile src/project_workflow/cli.py src/project_workflow/templates/workflow.py .project-workflow/cli/workflow.py",
+      "result": "pass"
+    },
+    {
+      "name": "new-code undefined-name check",
+      "command": "TMPDIR=/private/tmp UV_CACHE_DIR=/private/tmp/project-workflow-uv-cache UV_TOOL_DIR=/private/tmp/project-workflow-uv-tools /opt/homebrew/bin/uvx ruff check --select F --ignore F541 src/project_workflow/cli.py tests/test_workspace_mode.py",
+      "result": "pass",
+      "boundary": "F541 is ignored because four unrelated pre-existing f-strings in the legacy CLI baseline use no interpolation."
+    },
+    {
+      "name": "source and helper parity",
+      "command": "sha256 source CLI, packaged template, and checked-in local helper",
+      "result": "pass",
+      "sha256": "583c366e8546e08533d3c672cfdd0c97dbdac93d1c9974a315f18432ae0047b5"
+    },
+    {
+      "name": "workflow Doctor",
+      "command": "./.project-workflow/cli/workflow doctor --format json",
+      "result": "pass",
+      "visible": 0,
+      "blocking": 0,
+      "accepted_legacy_warnings": 69
+    },
+    {
+      "name": "diff whitespace validation",
+      "command": "git diff --check",
+      "result": "pass"
+    },
+    {
+      "name": "package build",
+      "command": ".venv/bin/python -m build --no-isolation --outdir /private/tmp/project-workflow-0.3.0-dist-1",
+      "result": "pass",
+      "artifacts": [
+        {
+          "path": "/private/tmp/project-workflow-0.3.0-dist-1/project_workflow-0.3.0.tar.gz",
+          "sha256": "3da746c057c8da3e8b5af4ace5f387bc849d3390e42b500a8b5ae6a6001a695b"
+        },
+        {
+          "path": "/private/tmp/project-workflow-0.3.0-dist-1/project_workflow-0.3.0-py3-none-any.whl",
+          "sha256": "16a4dba43d11dc00849d99d61a1d90fe59d8ed024dd9c09390b5a4d3368891ee"
+        }
+      ]
+    },
+    {
+      "name": "release source contract",
+      "command": ".venv/bin/python scripts/release_contract.py check-source --version 0.3.0 --tag v0.3.0",
+      "result": "pass"
+    },
+    {
+      "name": "release version availability",
+      "command": ".venv/bin/python scripts/release_contract.py check-public-availability --version 0.3.0",
+      "result": "pass",
+      "observation": "project-workflow 0.3.0 was not present on PyPI before publication"
+    },
+    {
+      "name": "exact wheel package journey",
+      "command": ".venv/bin/python scripts/verify_package_journeys.py --from /private/tmp/project-workflow-0.3.0-dist-1/project_workflow-0.3.0-py3-none-any.whl --version 0.3.0",
+      "result": "pass",
+      "receipt": "/private/tmp/project-workflow-0.3.0-package-journeys.json"
+    }
+  ],
+  "disposable_journey": {
+    "source": "tests/test_workspace_mode.py plus FIX-005 evidence/disposable-cli-journey.json",
+    "tests": 14,
+    "coverage": [
+      "valid parent, next, and email registry",
+      "implicit single-repository compatibility",
+      "duplicate, escaped, missing, non-root, aliased, and symlink-escaped registries",
+      "competing child workflow authority",
+      "workspace scaffold defaults",
+      "repository scope and lifecycle evidence gates",
+      "repository-scoped Git status and focused selection",
+      "detached, unavailable, and recorded-branch mismatch findings with repository-named safe actions",
+      "human and JSON projection",
+      "repository evidence attribution",
+      "managed upgrade preservation",
+      "subprocess-driven CLI journey from init and approval through readiness, status, Testing, Review, Complete, and retained handoff artifacts"
+    ],
+    "retained_receipt": "../../FIX-005-Harden-Workspace-Journey-Proof/evidence/disposable-cli-journey.json",
+    "retained_receipt_sha256": "24218f0c72f50afca532b8243ceff7b8f39498c710b5470d34148a301fa3cc26",
+    "result": "pass"
+  },
+  "approval_semantics": {
+    "epic_approved_for_implementation_field": "No",
+    "explanation": "Correct by schema: epic approve-requirements approves decomposition, while Approved scope envelope: Yes authorizes unchanged child implementation.",
+    "result": "pass"
+  },
+  "managed_guidance": {
+    "reviewed_surfaces": [
+      "README.md",
+      "AGENTS.md",
+      "src/project_workflow/codex/AGENTS.md",
+      "src/project_workflow/cursor/rules/project-workflow.mdc",
+      "project requirements, planner, implement, QA, epic, and Fix skills",
+      "project requirements, planner, implement, QA, epic, and Fix prompts"
+    ],
+    "contract": "Parent-root invocation, one live authority, registered repository IDs, read-only status, per-repository evidence, and no implicit cross-repository Git or delivery mutation.",
+    "result": "pass"
+  },
+  "real_target_evidence": "evidence/real-workspace-readonly-inspection.json",
+  "proof_boundary": "The validation proves the local 0.3.0 release-candidate source, its exact wheel package journey, a retained CLI-level disposable workspace lifecycle, unavailable-repository handling, and read-only exact-target inspection. It does not yet prove GitHub integration, release publication, adoption, deployment, or any mutation of the JohnDetlefs repositories."
+}

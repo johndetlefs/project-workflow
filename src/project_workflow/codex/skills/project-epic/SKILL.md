@@ -111,6 +111,10 @@ Validate epic closeout, optionally completing the global epic row when gates pas
 - Invalid substitutes are rejected. Visual/reference fidelity needs rendered comparison against the delivered user-facing artifact, not code review, tests, build output, or surrogate surfaces. Runtime target/source proof needs the exact execution target, source/artifact under test, observation method, and positive proof that the target used that source.
 - `epic status` moves planned child rows through `Testing`, `Review`, and `Complete`; `Complete` requires QA/code-review evidence and parent AC evidence.
 - Scaffolded epic child task docs must include parent AC coverage, child charter, and parent AC evidence sections. Their implementation plans must map every task row to one or more stable child AC IDs and keep the parent AC mapping visible.
+- In workspace mode, every child requirements document must identify its registered primary
+  repository and all registered repositories touched. Review and Complete require a matching
+  repository-evidence row for each touched repository; no child repository owns a competing
+  tracker or gains implicit Git/delivery mutation authority.
 - `epic ready-child` must pass before implementation/testing; if it fails, remediate missing child requirements, planning, validation, parent AC coverage, or owner decisions first.
 - The global tracker summarizes epic rows; the epic tracker owns child rows. Proposed child rows must stay in the epic tracker and must not be added to the global tracker.
 - `epic audit` writes `ACCEPTANCE-AUDIT.md` with parent AC coverage, child evidence, deferrals, and verdicts. The audit is the closeout evidence artifact; the acceptance map is the in-progress coverage view.

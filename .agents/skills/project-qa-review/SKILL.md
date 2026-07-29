@@ -2,7 +2,6 @@
 name: project-qa-review
 description: Use after implementation validation to run the QA and code review gate before a project-workflow task is completed.
 ---
-<!-- project-workflow:generated -->
 
 # Project QA & Code Review
 
@@ -32,11 +31,15 @@ Run the post-implementation quality gate for a project-workflow task.
 6. If requirements or claims trigger a proof recipe, verify child-local `EVIDENCE.json` has passing structured claim records. QA prose cannot satisfy recipe-triggered visual/reference fidelity, external contract alignment, deployed artifact alignment, runtime target/source, or responsive visual behavior claims.
 7. Run any missing narrow validation needed to support the review. Do not ask the user to manually test behavior that the agent can validate directly with available commands, tests, scripts, or local tools.
 8. Review the changed code for correctness, scope control, maintainability, edge cases, tests, docs, security, permissions, privacy, data integrity, and operational risk.
-9. Record results in `IMPLEMENTATION.md` under `## QA & Code Review` with date, reviewed areas, validation evidence, findings, and verdict. Clearly separate verified evidence from deferred setup, owner-only actions, unavailable connector/OAuth checks, and invalid substitutes.
-10. Run `./.project-workflow/cli/workflow doctor` and include any workflow-state warnings or errors in the review output.
-11. If findings exist, report them first with severity and file references. Keep status as `Review` or set `Blocked` for release-blocking issues.
-12. If review passes, say so. Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to Complete` only when the user explicitly asks to complete the task after review.
-13. After completion, route to `project-retro`.
+9. In workspace mode, verify every touched repository has an explicit `Repository Evidence` row
+   and that its branch/PR, validation, delivery, and evidence claims match repository-scoped
+   read-only Git/status proof. Treat `not applicable` and `not authorized` as boundaries, not as
+   delivered proof.
+10. Record results in `IMPLEMENTATION.md` under `## QA & Code Review` with date, reviewed areas, validation evidence, findings, and verdict. Clearly separate verified evidence from deferred setup, owner-only actions, unavailable connector/OAuth checks, and invalid substitutes.
+11. Run `./.project-workflow/cli/workflow doctor` and include any workflow-state warnings or errors in the review output.
+12. If findings exist, report them first with severity and file references. Keep status as `Review` or set `Blocked` for release-blocking issues.
+13. If review passes, say so. Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to Complete` only when the user explicitly asks to complete the task after review.
+14. After completion, route to `project-retro`.
 
 ## Verdicts
 

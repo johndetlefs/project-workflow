@@ -4,6 +4,22 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## 0.3.0 - 2026-07-29
+
+### Added
+
+- Added read-only operational status in human and versioned JSON forms, with focused work-item inspection, strict health handling, explicit proof and delivery layers, and deterministic next actions.
+- Added optional parent-workspace mode with one authoritative workflow repository and a registry of nested independent Git repositories.
+- Added workspace-aware repository selectors and Git inspection so dirty, detached, unavailable, or wrong-branch child state cannot be hidden by the parent repository.
+- Added registered primary/touched repository scope and repository-attributed validation, branch/PR, integration, release, and deployment evidence across task, Fix, and Epic-child lifecycle gates.
+- Added retained generated-helper acceptance coverage for the complete disposable workspace lifecycle from initialization and approval through readiness, focused status, QA, completion, and handoff.
+
+### Changed
+
+- Reframed the product constitution around Project Workflow as an open, owner-usable delivery enabler driven by real adoption evidence rather than hypothetical scale.
+- Updated README, managed agent instructions, prompts, skills, Doctor, upgrade behavior, and packaged/local CLI surfaces for workspace authority and evidence attribution.
+- Updated the saved Codex worktree environment to use the locked Python 3.10 development setup with a writable UV cache.
+
 ## 0.2.0 - 2026-07-22
 
 ### Added

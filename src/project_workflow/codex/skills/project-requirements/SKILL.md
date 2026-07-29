@@ -42,6 +42,8 @@ authority, requested/high-risk plan review, or an explicit setup-only boundary.
    - Goal
    - Non-Goals
    - Users & Context
+   - Repository Scope with one registered primary repository and every registered repository
+     touched when `.project-workflow/config.json` declares workspace mode
    - Outcome-focused requirements
    - Verifiable acceptance criteria with stable IDs (`AC1`, `AC2`, etc.)
    - Open questions
@@ -50,11 +52,13 @@ authority, requested/high-risk plan review, or an explicit setup-only boundary.
 5. Preserve existing AC IDs when requirements change. Do not renumber existing
    ACs unless the user explicitly approves the requirements change.
 6. If requirements mention matching a visual/reference, deployed/runtime behavior, external contract, or responsive/multi-context behavior, record the relevant proof recipe, artifact identity, and invalid substitutes in the validation plan.
-7. Keep only the `## User Story` section in `IMPLEMENTATION.md` synced with `REQUIREMENTS.md`. Do not add implementation tasks here.
-8. If critical requirements are ambiguous, record them as open questions in `REQUIREMENTS.md`, then ask the user the minimum questions needed.
-9. Do not proceed to planning or implementation until open questions are resolved or explicitly accepted as risks and recorded.
-10. After requirements and ACs are complete, ask the owner to confirm that exact requirements/AC envelope once, then record approval with the workflow CLI. Downstream work inside that unchanged envelope should not ask for repeated approval.
-11. After approval, move to `Analysing`, run `project-planner`, run a post-plan
+7. In workspace mode, use repository IDs from the parent registry. Do not create child workflow
+   trackers, and do not treat repository registration as authority for Git or delivery mutations.
+8. Keep only the `## User Story` section in `IMPLEMENTATION.md` synced with `REQUIREMENTS.md`. Do not add implementation tasks here.
+9. If critical requirements are ambiguous, record them as open questions in `REQUIREMENTS.md`, then ask the user the minimum questions needed.
+10. Do not proceed to planning or implementation until open questions are resolved or explicitly accepted as risks and recorded.
+11. After requirements and ACs are complete, ask the owner to confirm that exact requirements/AC envelope once, then record approval with the workflow CLI. Downstream work inside that unchanged envelope should not ask for repeated approval.
+12. After approval, move to `Analysing`, run `project-planner`, run a post-plan
     `project-clarify` pass, validate with `task ready`, and move to `Ready` without another generic
     approval request.
-12. If the work is intentionally exploratory, record it as discovery with a question, decision enabled, boundary, output artifact, and validation signal.
+13. If the work is intentionally exploratory, record it as discovery with a question, decision enabled, boundary, output artifact, and validation signal.

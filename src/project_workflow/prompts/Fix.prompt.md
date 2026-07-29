@@ -54,5 +54,8 @@ baseline and report evidence.
     only when the Fix reveals a reusable workflow, process, quality, or prevention gap; never
     reopen the completed originating work for that follow-up.
 
-For a workspace, use canonical component identities/paths for `Primary repo` and `Repos touched`
-and keep per-repo branch, PR, and evidence links in `FIX.md`. In a single repo, `.` is sufficient.
+For a workspace, use registered repository IDs for `Primary repo` and `Repos touched`, keep
+per-repo branch, PR, and evidence links in `FIX.md`, and complete one `Repository Evidence` row
+per touched repository before Review with explicit branch/PR, validation, delivery, and evidence
+state. Registration does not authorize cross-repository Git or delivery mutations. In a single
+repo, `.` is sufficient.

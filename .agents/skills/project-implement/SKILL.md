@@ -2,7 +2,6 @@
 name: project-implement
 description: Use when implementing one project-workflow work item with requirements alignment, tracker updates, validation, and concise reporting.
 ---
-<!-- project-workflow:generated -->
 
 # Project Implement
 
@@ -39,9 +38,13 @@ Implement one scoped work item from a project-workflow task and move it to testi
 8. Make the smallest safe code change that satisfies the selected work item.
 9. Add or update tests when appropriate.
 10. Run relevant automated checks and any required manual verification steps.
-11. Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to Testing` after implementation and validation have run.
-12. Run `./.project-workflow/cli/workflow doctor` and report workflow-state warnings or errors.
-13. Do not set status to `Complete`; completion is owned by `project-qa-review` after QA/code review passes and the user explicitly asks.
-14. Report changed files, validation results, remaining risks, and that `project-qa-review` is the next required lifecycle step.
+11. In workspace mode, keep Git and validation commands repository-scoped and update each touched
+    repository's `Repository Evidence` row with branch/PR state, validation, delivery boundary,
+    and evidence artifact. Registration is not authority to create branches, commit, push, merge,
+    release, or deploy.
+12. Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to Testing` after implementation and validation have run.
+13. Run `./.project-workflow/cli/workflow doctor` and report workflow-state warnings or errors.
+14. Do not set status to `Complete`; completion is owned by `project-qa-review` after QA/code review passes and the user explicitly asks.
+15. Report changed files, validation results, remaining risks, and that `project-qa-review` is the next required lifecycle step.
 
 If requirements conflict with repo constraints or validation is not testable, stop and use `project-clarify`.

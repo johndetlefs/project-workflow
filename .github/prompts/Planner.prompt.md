@@ -65,6 +65,11 @@ Task quality rules (must follow):
 
 If the repo uses a task table, include at least: `Title`, `Description`, `Acceptance Criteria`, `User Verification`, `Status`.
 
+For workspace-mode tasks, preserve `Repository Scope` from requirements and add a `Repository
+Evidence` table with one row per touched repository. Plan branch/PR state, repository-scoped
+validation, delivery state, and evidence attribution without assuming authority for
+cross-repository Git actions.
+
 Use this exact table format in `IMPLEMENTATION.md` (copy/paste):
 
 ```md

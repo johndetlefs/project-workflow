@@ -91,6 +91,10 @@ Validation alignment guardrail:
 
 - Use `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` as the validation checklist source of truth.
 - Explicitly map each `## Acceptance Criteria` item by AC ID (and any must-have `## Requirements`) to at least one validation step (automated test, manual verification, or query).
+- In workspace mode, run Git/status and validation commands against the recorded repository IDs
+  and update every touched repository's `Repository Evidence` row with explicit branch/PR,
+  validation, delivery, and evidence state. Do not create branches, commit, push, merge, release,
+  or deploy in another repository without separate authority.
 - After running validation, report results in AC-by-AC form (`AC1 -> validation evidence/result`, `AC2 -> ...`) for the current work item.
 - If a requirement is not verifiable, stop and route to Clarify to make it testable and record the decision/update in `REQUIREMENTS.md`.
 

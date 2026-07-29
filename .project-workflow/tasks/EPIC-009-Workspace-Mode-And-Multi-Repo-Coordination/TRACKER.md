@@ -1,0 +1,9 @@
+# Stories
+
+| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |
+|---|---|---|---|---|---|---|---|
+| TASK-055 | Define Backward-Compatible Workspace Registry | Complete | Task | AC1, AC2, AC3, AC13 | tasks/EPIC-009-Workspace-Mode-And-Multi-Repo-Coordination/TASK-055-Define-Backward-Compatible-Workspace-Registry/IMPLEMENTATION.md |  | Covers AC1, AC2, AC3, AC13; Prefix TASK: default prefix; no guidance match; Decomposition plan: Proposed Child Work |
+| TASK-056 | Enforce Workflow Authority And Repository Scope | Complete | Task | AC3, AC4, AC5 | tasks/EPIC-009-Workspace-Mode-And-Multi-Repo-Coordination/TASK-056-Enforce-Workflow-Authority-And-Repository-Scope/IMPLEMENTATION.md |  | Covers AC3, AC4, AC5; Prefix TASK: matched guidance: repository; Decomposition plan: Proposed Child Work |
+| TASK-057 | Add Workspace-Aware Git And Status Inspection | Complete | Task | AC6, AC7, AC8, AC10 | tasks/EPIC-009-Workspace-Mode-And-Multi-Repo-Coordination/TASK-057-Add-Workspace-Aware-Git-And-Status-Inspection/IMPLEMENTATION.md |  | Covers AC6, AC7, AC8, AC10; Prefix TASK: default prefix; no guidance match; Decomposition plan: Proposed Child Work |
+| TASK-058 | Attribute Validation And Delivery Evidence By Repository | Complete | Task | AC5, AC9, AC10 | tasks/EPIC-009-Workspace-Mode-And-Multi-Repo-Coordination/TASK-058-Attribute-Validation-And-Delivery-Evidence-By-Repository/IMPLEMENTATION.md |  | Covers AC5, AC9, AC10; Prefix TASK: matched guidance: repository; Decomposition plan: Proposed Child Work |
+| TASK-059 | Prove Upgrade, Guidance, And Real Workspace Journey | Complete | Task | AC11, AC12, AC13, AC14, AC15 | tasks/EPIC-009-Workspace-Mode-And-Multi-Repo-Coordination/TASK-059-Prove-Upgrade-Guidance-And-Real-Workspace-Journey/IMPLEMENTATION.md |  | Covers AC11, AC12, AC13, AC14, AC15; Prefix TASK: default prefix; no guidance match; Decomposition plan: Proposed Child Work |
