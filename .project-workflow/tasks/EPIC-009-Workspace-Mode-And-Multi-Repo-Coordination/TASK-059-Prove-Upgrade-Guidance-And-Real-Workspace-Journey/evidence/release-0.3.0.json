@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-07-29T13:50:37+10:00",
+  "release": {
+    "version": "0.3.0",
+    "tag": "v0.3.0",
+    "commit": "7c42360aaad43f209a651ad48fdffe23c6a7a303",
+    "pull_request": "https://github.com/johndetlefs/project-workflow/pull/10",
+    "pull_request_ci": "https://github.com/johndetlefs/project-workflow/actions/runs/30420261382",
+    "main_ci": "https://github.com/johndetlefs/project-workflow/actions/runs/30420326920",
+    "release_workflow": "https://github.com/johndetlefs/project-workflow/actions/runs/30420414682",
+    "github_release": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.3.0",
+    "pypi": "https://pypi.org/project/project-workflow/0.3.0/",
+    "trusted_publishing": "pass"
+  },
+  "artifacts": [
+    {
+      "filename": "project_workflow-0.3.0-py3-none-any.whl",
+      "size": 275389,
+      "sha256": "5e003b2c41050e3615e48bbbc4d6dbd01b5443e3f4deb60afc5308b11c62ba09",
+      "github_and_pypi_bytes_identical": true,
+      "receipt_and_sha256sums_match": true,
+      "slsa_provenance": "pass"
+    },
+    {
+      "filename": "project_workflow-0.3.0.tar.gz",
+      "size": 315708,
+      "sha256": "2de3f36e1f74ab9b2d7ec894d85b07a4e26be3baf71579411f2394a20a9e05ef",
+      "github_and_pypi_bytes_identical": true,
+      "receipt_and_sha256sums_match": true,
+      "slsa_provenance": "pass"
+    }
+  ],
+  "release_assets": {
+    "release_receipt_sha256": "4b36a304986a5ea4c57a2294928885c2cab773e71f9be456b1e644f2016a8eee",
+    "sha256sums_sha256": "ed8e17911570648012e805b5eda888a23de21b0386e62e615c13465bd7c93823",
+    "package_journeys_sha256": "405532f342a9403a7d1efa44e88ef0f3cae34041dd62b6bcee2e9ff561d51474"
+  },
+  "provenance": {
+    "predicate_type": "https://slsa.dev/provenance/v1",
+    "signer_workflow": "johndetlefs/project-workflow/.github/workflows/release.yml",
+    "source_ref": "refs/tags/v0.3.0",
+    "source_digest": "7c42360aaad43f209a651ad48fdffe23c6a7a303",
+    "runner_environment": "github-hosted",
+    "wheel_verified": true,
+    "sdist_verified": true
+  },
+  "public_journey": {
+    "version_command": "uvx --from project-workflow==0.3.0 project --version",
+    "version_result": "project 0.3.0",
+    "fresh_init_doctor_upgrade": "pass",
+    "legacy_upgrade_doctor": "pass with the one expected owner-owned legacy warning",
+    "source": "project-workflow==0.3.0"
+  },
+  "proof_boundary": "This proves that the reviewed 0.3.0 source was integrated on main, published through PyPI Trusted Publishing, released on GitHub from the same byte-identical wheel and sdist, bound to the retained release receipt and SHA256SUMS, covered by SLSA provenance, and usable through fresh public package journeys. It does not prove deployment or adoption in the JohnDetlefs workspace, and no JohnDetlefs repository was modified."
+}

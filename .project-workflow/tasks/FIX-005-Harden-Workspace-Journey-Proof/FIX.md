@@ -64,7 +64,7 @@
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | `codex/BL-017-workspace-mode`; PR not created | 14 focused workspace cases, retained CLI journey, 262-test locked suite, compilation, Ruff, package build, backlog validation, Doctor, parity, and diff check passed | Local correction complete; commit, push, merge, release, and deployment not authorized | `evidence/disposable-cli-journey.json`; EPIC-009 TASK-059 `evidence/final-validation.json` and `EVIDENCE.json` |
+| . | `codex/BL-017-workspace-mode`; PR #10 merged to `main` at `7c42360aaad43f209a651ad48fdffe23c6a7a303` | 14 focused workspace cases, retained CLI journey, 262-test locked suite, compilation, Ruff, package build, backlog validation, Doctor, parity, diff check, public package journeys, artifact identity, and SLSA provenance passed | Included in public `v0.3.0` on PyPI and GitHub Release; no JohnDetlefs repository mutation or adoption/deployment was performed | `evidence/disposable-cli-journey.json`; EPIC-009 TASK-059 `evidence/release-0.3.0.json`, `evidence/final-validation.json`, and `EVIDENCE.json` |
 
 ## Verification
 

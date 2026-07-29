@@ -94,7 +94,7 @@ Align distribution/guidance and produce layered automated, disposable-journey, a
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | `codex/BL-017-workspace-mode`; PR not created | Locked Python 3.10 sync, compilation, 262 tests, retained CLI journey, Doctor, diff check, parity, and package build passed | Local implementation complete; push, merge, release, publication, and deployment not authorized | `evidence/final-validation.json`; `evidence/real-workspace-readonly-inspection.json`; `../../FIX-005-Harden-Workspace-Journey-Proof/evidence/disposable-cli-journey.json`; `EVIDENCE.json` |
+| . | `codex/BL-017-workspace-mode`; PR #10 merged to `main` at `7c42360aaad43f209a651ad48fdffe23c6a7a303` | Locked Python 3.10 sync, compilation, 262 tests, retained CLI journey, Doctor, diff check, parity, package build, PR/main CI, public package journeys, artifact identity, and SLSA provenance passed | `v0.3.0` published to PyPI and GitHub Release through Trusted Publishing; JohnDetlefs repositories remained read-only and adoption/deployment were not performed | `evidence/release-0.3.0.json`; `evidence/final-validation.json`; `evidence/real-workspace-readonly-inspection.json`; `../../FIX-005-Harden-Workspace-Journey-Proof/evidence/disposable-cli-journey.json`; `EVIDENCE.json` |
 
 ## Task List
 
