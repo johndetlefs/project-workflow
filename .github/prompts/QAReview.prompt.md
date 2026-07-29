@@ -59,6 +59,8 @@ Required workflow:
    - files or areas reviewed
    - validation evidence
    - a clear distinction between verified evidence and deferred setup, owner-only actions, or unavailable connector/OAuth checks
+   - for workspace mode, confirmation that every touched repository has explicit branch/PR,
+     validation, delivery, and evidence attribution consistent with read-only repository status
    - findings, if any
    - verdict: `Pass`, `Pass with follow-ups`, or `Changes requested`
 9. Run `./.project-workflow/cli/workflow doctor` when available and include any workflow-state warnings or errors in the review output.

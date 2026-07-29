@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-07-29T12:17:23+10:00",
+  "execution_target": "/Users/johndetlefs/repos/johndetlefs",
+  "source": {
+    "repository": "/Users/johndetlefs/.codex/worktrees/245d/project-workflow",
+    "branch": "codex/BL-017-workspace-mode",
+    "base_commit": "9c329aaa6a66ccba62c25c704ea071419cbe7911",
+    "entrypoint": "src/project_workflow/cli.py",
+    "entrypoint_sha256": "032393f71dff7eb9d8e86b0acb2175e55e35212aa493a6a687ecab49e1a74eef",
+    "registry_injection": "In-process only; the real target config and repositories were not written."
+  },
+  "registry": {
+    "authority_repository": "workspace",
+    "repositories": [
+      {
+        "id": "workspace",
+        "path": ".",
+        "role": "control"
+      },
+      {
+        "id": "next",
+        "path": "next",
+        "role": "implementation"
+      },
+      {
+        "id": "email",
+        "path": "email",
+        "role": "implementation"
+      }
+    ]
+  },
+  "observations": [
+    {
+      "id": "workspace",
+      "git_root": "/Users/johndetlefs/repos/johndetlefs",
+      "branch": "main",
+      "head": "aaafbe75c15b454971269fd3504dadf00d828cb3",
+      "git_state": "dirty",
+      "dirty_entries": 1,
+      "porcelain_sha256": "883c270fa87b49e02b5df3a4cda719c1ad4bdcafbca61a97967bc844df8da955",
+      "authority": true
+    },
+    {
+      "id": "next",
+      "git_root": "/Users/johndetlefs/repos/johndetlefs/next",
+      "branch": "main",
+      "head": "7973ffd7f3286c739e5c5476a801461801cee354",
+      "git_state": "clean",
+      "dirty_entries": 0,
+      "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "authority": false
+    },
+    {
+      "id": "email",
+      "git_root": "/Users/johndetlefs/repos/johndetlefs/email",
+      "branch": "main",
+      "head": "2996bdff96f9a4ed68d948b07a5b3356181a96e2",
+      "git_state": "clean",
+      "dirty_entries": 0,
+      "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "authority": false
+    }
+  ],
+  "proof": {
+    "top_level_git_is_authority": true,
+    "registered_git_roots_are_distinct": true,
+    "competing_child_workflow_state_found": false,
+    "before_after_git_facts_equal": true,
+    "target_files_written": false
+  },
+  "existing_target_findings_outside_epic_scope": [
+    {
+      "code": "PW_REPOSITORY_LEGACY_UNVERSIONED",
+      "severity": "warning"
+    },
+    {
+      "code": "PW_APPROVAL_REQUIRED",
+      "severity": "warning",
+      "work_item": "COACH-001"
+    },
+    {
+      "code": "PW_EVIDENCE_REQUIRED",
+      "severity": "error",
+      "work_item": "COACH-002"
+    },
+    {
+      "code": "PW_APPROVAL_REQUIRED",
+      "severity": "warning",
+      "work_item": "COACH-002"
+    },
+    {
+      "code": "PW_APPROVAL_REQUIRED",
+      "severity": "warning",
+      "work_item": "COACH-003"
+    }
+  ],
+  "proof_boundary": "This proves read-only topology, repository-scoped Git inspection, authority identity, and non-mutation on the exact target. It does not prove target adoption, upgrade, branch creation, pull requests, integration, release, publication, or deployment."
+}

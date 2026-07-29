@@ -2,7 +2,6 @@
 name: project-planner
 description: Use when turning confirmed project-workflow requirements into a phased implementation plan and testable work-item table.
 ---
-<!-- project-workflow:generated -->
 
 # Project Planner
 
@@ -58,13 +57,17 @@ Turn confirmed requirements into a safe, incremental implementation plan.
 8. Keep each table row on one physical line. Use `<br>` for multiple items
    inside a cell and escape literal `|` characters.
 9. Include validation steps for each phase.
-10. Move to `Analysing`, write the plan, then run `project-clarify` as a post-plan consistency pass.
-11. Run `./.project-workflow/cli/workflow task ready --id <TASK-ID>` and fix repo-gatherable
+10. In workspace mode, preserve the approved `Repository Scope` and add one `Repository
+    Evidence` row per touched repository. Plan explicit branch/PR state, repository-specific
+    validation, delivery state, and evidence attribution; do not plan automatic cross-repository
+    Git mutations unless separately authorized.
+11. Move to `Analysing`, write the plan, then run `project-clarify` as a post-plan consistency pass.
+12. Run `./.project-workflow/cli/workflow task ready --id <TASK-ID>` and fix repo-gatherable
     gaps. If it passes, move to `Ready` and continue inside the approved envelope. `Plan Confirmed`
     remains legacy-compatible; explicit human plan review is optional for requested or exceptional
     high-risk plans, not the default checkpoint.
-12. Return to the owner if the plan exposes material scope drift, a new product decision,
+13. Return to the owner if the plan exposes material scope drift, a new product decision,
     exceptional authority, or changed proof obligations/artifact identity.
-13. Include QA/code review as the required gate after implementation validation
+14. Include QA/code review as the required gate after implementation validation
     and before completion.
-14. Do not implement code during planning.
+15. Do not implement code during planning.

@@ -187,6 +187,9 @@ Constraints to enforce in responses:
 - Decomposition is proposal-first: it writes Proposed rows and does not scaffold child folders.
 - `ACCEPTANCE-MAP.md` is the in-progress parent AC coverage view. It is created on `epic init` and refreshed by epic lifecycle commands from requirements, tracker rows, deferrals, and child evidence.
 - Proposed child rows should preserve source AC IDs in the epic tracker `Parent ACs` field when they come from numbered acceptance criteria. Legacy trackers may still carry coverage in `Notes` as `Covers AC1, AC3`.
+- In workspace mode, every child records a registered primary repository and all registered
+  repositories touched. Review and Complete require one matching repository-evidence row per
+  touched repository; child repositories do not own competing workflow trackers.
 - Proposed child rows should preserve configured task prefixes such as `UI`, `MCP`, `DEV`, or `WF`, and their `Notes` should include prefix classification rationale.
 - Scaffolded epic child tasks must carry parent AC coverage and parent AC evidence sections forward into their docs. Their `IMPLEMENTATION.md` planning table must map each row to child AC IDs while keeping the parent AC mapping visible.
 - The global tracker summarizes epic rows; the epic tracker owns child rows. Proposed child rows must stay in the epic tracker and must not be added to the global tracker.

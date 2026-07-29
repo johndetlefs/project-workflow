@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "executed_at": "2026-07-29T13:37:01+10:00",
+  "execution_target": "/private/tmp/pw-fix005-workspace-journey-20260729-5",
+  "source": {
+    "bootstrap_entrypoint": "python -m project_workflow.cli",
+    "journey_entrypoint": ".project-workflow/cli/workflow",
+    "source_cli_sha256": "583c366e8546e08533d3c672cfdd0c97dbdac93d1c9974a315f18432ae0047b5",
+    "generated_helper_sha256": "583c366e8546e08533d3c672cfdd0c97dbdac93d1c9974a315f18432ae0047b5",
+    "runner": "tests/test_workspace_mode.py"
+  },
+  "workspace": {
+    "authority_repository": "workspace",
+    "repositories": [
+      "workspace",
+      "next",
+      "email"
+    ],
+    "child_workflow_state_created": false
+  },
+  "lifecycle": {
+    "task": "TASK-001",
+    "commands": [
+      "init --agent codex",
+      "doctor",
+      "task init --title Coordinate Site Delivery --update-tracker",
+      "task approve-requirements --id TASK-001",
+      "task status --id TASK-001 --to Analysing",
+      "task ready --id TASK-001",
+      "task status --id TASK-001 --to Ready",
+      "task status --id TASK-001 --to In Progress",
+      "status --id TASK-001 --format json",
+      "status --id TASK-001 --repository email --format json",
+      "task status --id TASK-001 --to Testing",
+      "task status --id TASK-001 --to Review",
+      "task status --id TASK-001 --to Complete"
+    ],
+    "all_return_codes": 0,
+    "final_status": "Complete"
+  },
+  "status_observation": {
+    "workspace": "dirty",
+    "next": "dirty",
+    "email": "detached",
+    "repository_selector": "email",
+    "focused_status_sha256": "cd45918660b77f92fe38657f6510a327a3e89733fb01bc78df99dd103957587a",
+    "selected_status_sha256": "ad46956d3400f24875300ae1ccd2383ba08b7415c81a424032fb1f6c5ac4baba",
+    "before_after_read_only_git_state_equal": true
+  },
+  "git_mutation_boundary": {
+    "heads_and_branches_unchanged_by_workflow_lifecycle": true,
+    "next_and_email_git_state_unchanged_by_workflow_lifecycle": true,
+    "commit_push_merge_release_deploy_performed": false
+  },
+  "retained_artifacts": {
+    "requirements": {
+      "path": "journey-artifacts/REQUIREMENTS.md",
+      "sha256": "2476d69795edc22cd38da7815dfc6eeeb7f503f698935431f22968b9a237cd40"
+    },
+    "implementation": {
+      "path": "journey-artifacts/IMPLEMENTATION.md",
+      "sha256": "1122639804cee6a640536e17f687179ad4217fe54ee8bcf1049fa4b54eb55f91"
+    },
+    "tracker": {
+      "path": "journey-artifacts/TRACKER.md",
+      "sha256": "15bfc44eea59942d6054eb73c37b6899bb781cd9ae9b28154a79307e1bfc662b"
+    },
+    "repository_evidence": [
+      {
+        "path": "journey-artifacts/evidence/email-validation.txt",
+        "sha256": "a754a8f7965c16d048367d91ce13f0962f27d57fede31998cb68499eeb79af3c"
+      },
+      {
+        "path": "journey-artifacts/evidence/next-validation.txt",
+        "sha256": "bc04bc1d8dda5f98961a1a322aa4c4a6d1677f415e0928b05fc4866ed3a6937d"
+      },
+      {
+        "path": "journey-artifacts/evidence/workspace-validation.txt",
+        "sha256": "8706709ab342424faad5d51df2ab5aa42a16aa79bd800678a55f23de5df7e95e"
+      }
+    ]
+  },
+  "proof_boundary": "This proves the generated local workflow helper, hash-identical to the source CLI used for bootstrap, completed a parent-owned three-repository task lifecycle with focused status, repository evidence, QA, completion, retained handoff artifacts, and no workflow-caused Git branch, HEAD, or child-repository state mutation. The disposable fixture intentionally dirtied next and detached email before observation. It does not prove adoption, delivery, release, or deployment in the real JohnDetlefs workspace."
+}

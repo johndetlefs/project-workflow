@@ -28,6 +28,8 @@ Backlog is optional and sits between constitution and tracker state. Keep `.proj
 
 Project Workflow is owner-directed and agent-operated. The owner supplies intent, constraints, examples, decisions, and approvals; the agent runs commands, drafts artifacts, asks focused questions, validates readiness, implements, reviews, and records evidence. Do not make manual template completion the normal user path.
 
+Run `./.project-workflow/cli/workflow status` when arriving at a repository or choosing the next action. It is a read-only, sourced projection; use `--id <WORK-ID>` for active-work focus, `--repository <REPOSITORY-ID>` for one registered workspace repository, `--strict` for blocking visible Doctor warnings, and `--format json` for schema-versioned output. Status never performs its action and does not replace Doctor diagnosis, canonical upgrade, lifecycle gates, QA, Git integration, or service verification.
+
 The user's work-item label is non-binding. The agent must make and state an evidence-based routing
 recommendation. Clear authorized cases may proceed; genuinely ambiguous or materially different
 cases require one focused question. Do not reopen or rewrite completed work by default.
@@ -37,13 +39,13 @@ For epic-managed work, preserve parent epic acceptance criteria coverage from th
 When a user asks to initialize project-workflow in a new repository, run the canonical UVX init command from that repository root:
 
 ```bash
-uvx --from project-workflow==0.2.0 project init
+uvx --from project-workflow==0.3.0 project init
 ```
 
 When a user asks to update, refresh, reinstall, align, or upgrade an existing repository, use canonical UVX upgrade instead; do not run init first:
 
 ```bash
-uvx --from project-workflow==0.2.0 project upgrade
+uvx --from project-workflow==0.3.0 project upgrade
 ```
 
 Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github-copilot` for the target mode. Canonical UVX upgrade obtains current software and plans managed assets and repository schema together. Use `--yes` for an authorized non-interactive one-command apply, or `--plan --format json` followed by `--apply --plan-fingerprint <SHA256>` when automation requires separate review.
@@ -96,7 +98,8 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 - Read `.project-workflow/guidance.md` before changing workflow state when the file exists.
 - For broad future objectives, use `project-backlog` to draft outcome-focused backlog candidates from project context. Do not create tracker rows, task folders, or epic folders until the owner accepts or promotes the row.
 - Existing roadmap/backlog documents outside `.project-workflow/BACKLOG.md` are preserved. Do not import or transform them automatically; create a repo-local migration task if needed.
-- Read `.project-workflow/config.json` for repo-owned task ID namespaces, ID generation, and accepted doctor warning fingerprints when it exists. Sequential IDs look like `TASK-001`; unique IDs keep the prefix and use a 5-character base36 suffix by default, such as `WF-K7F3Q`.
+- Read `.project-workflow/config.json` for repo-owned task ID namespaces, ID generation, accepted doctor warning fingerprints, and the optional parent-workspace repository registry when it exists. Sequential IDs look like `TASK-001`; unique IDs keep the prefix and use a 5-character base36 suffix by default, such as `WF-K7F3Q`.
+- When workspace mode is declared, run workflow commands from the parent authority root and keep the only live `.project-workflow` state there. Use registered repository IDs in `Repository Scope` and `Repository Evidence`; never infer authority to mutate branches, commits, PRs, releases, or deployments in another repository from the registry.
 - Do not report accepted doctor warnings as active issues after `doctor` hides them. Use `doctor --show-accepted` only when auditing accepted workflow debt.
 - If a task folder does not exist, run `./.project-workflow/cli/workflow task init --title "<TITLE>" --update-tracker` from the repo root and let the CLI assign the next configured task ID. Add `--prefix <PREFIX>` only when the user or repo guidance calls for a configured non-default prefix.
 - Read `.project-workflow/tasks/<ID>-*/REQUIREMENTS.md` before planning, implementing, reviewing, or running retro.
@@ -120,6 +123,7 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 - Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to Testing` after implementation and validation have been run.
 - Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to Review` while QA/code review is running.
 - Run `./.project-workflow/cli/workflow task status --id <TASK-ID> --to Complete` only after QA/code review passes and the user explicitly requests it.
+- For workspace tasks, Review and Complete require one repository-evidence row per touched repository with explicit branch/PR, validation, delivery, and evidence attribution. `not applicable`, `not authorized`, and `not recorded` can preserve real later-stage boundaries, but validation and its evidence source must be recorded.
 - Leave the tracker row as `Complete` during retro unless the user explicitly asks to reopen the task.
 
 ## Validation
