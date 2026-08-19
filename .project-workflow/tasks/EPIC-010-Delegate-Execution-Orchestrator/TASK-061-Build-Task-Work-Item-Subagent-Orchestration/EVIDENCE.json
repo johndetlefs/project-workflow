@@ -144,6 +144,21 @@
       "evidence_artifact": "evidence/task-mode-live-run.json",
       "evidence_artifact_hash": "sha256:cdfb979cfb3675afdfba1ca4ddc8348ca67e81263a934f672a2fc904fb65fee2",
       "invalid_substitutes": []
+    },
+    {
+      "id": "TASK-061-CONTRACT",
+      "recipe": "external-contract-alignment",
+      "status": "Pass",
+      "commit": "9c3d9bd177fa9c5d881221010bc9a4b34217f79e",
+      "timestamp": "2026-08-19T16:15:40+10:00",
+      "parent_ac": "AC7",
+      "claim": "The approved TASK-061 bounded-worker, coordinator-authority, verification, failure, recovery, and lifecycle contract is implemented consistently by the shared source, generated helpers, installed console, focused regressions, and retained current-Codex journey.",
+      "contract_artifact": "EPIC-010 EPIC-CONTRACT.md plus TASK-061 REQUIREMENTS.md and IMPLEMENTATION.md AC1-AC6",
+      "implementation_artifact": "src/project_workflow/cli.py, byte-identical generated helper mirrors, tests/test_delegate_task_mode.py, and project-workflow 0.3.0 wheel 83ab8c6db140a47918840d0eebd3c6b991201ff44ed37dab1ab0e6829427bece",
+      "comparison_method": "Independent reviewer mapped the approved child and parent criteria to 65 focused checks, the 327-test locked suite, exact mirror/package identities, installed-console lifecycle behavior, and the dated sanitised Task-mode receipt.",
+      "evidence_artifact": "evidence/2026-08-19-validation.md",
+      "evidence_artifact_hash": "sha256:91873f5df60abc5b9f756c1a6ce16e8f2be16c314453b99f73461a23cfa2ed19",
+      "invalid_substitutes": []
     }
   ]
 }
