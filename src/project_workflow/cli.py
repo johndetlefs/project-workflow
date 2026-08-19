@@ -3046,9 +3046,15 @@ class EpicOrchestrator:
             raise EpicOrchestrationError(
                 "PW_EPIC_HANDLE_REUSE", "Every persistent child requires a unique native handle."
             )
-        if not branch.strip() or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", branch):
+        named_branch = bool(
+            branch.strip() and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", branch)
+        )
+        detached_identity = branch == f"detached@{self.state.base_commit}"
+        if not named_branch and not detached_identity:
             raise EpicOrchestrationError(
-                "PW_EPIC_BRANCH_INVALID", "Persistent child branch identity is invalid."
+                "PW_EPIC_BRANCH_INVALID",
+                "Persistent child checkout identity must be a named branch or the exact "
+                "detached@<base-commit> observed from the host.",
             )
         resolved_worktree = worktree.resolve()
         if resolved_worktree == Path(self.state.coordinator_worktree).resolve():

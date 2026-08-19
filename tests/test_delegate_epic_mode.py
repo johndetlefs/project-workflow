@@ -298,6 +298,25 @@ def test_register_prevents_duplicate_intent_handle_branch_and_worktree(tmp_path:
     assert handle_reuse.value.code == "PW_EPIC_HANDLE_REUSE"
 
 
+def test_register_accepts_exact_host_observed_detached_checkout_identity(tmp_path: Path) -> None:
+    built = plan(unit("A"))
+    run = coordinator(built, tmp_path)
+    intent = run.creation_intents()[0]
+
+    packet = run.register_creation(
+        intent,
+        handle="native-a",
+        branch=f"detached@{BASE}",
+        worktree=tmp_path.parent / "worktree-a",
+        coordinator_token=TOKEN,
+    )
+
+    assert packet.base_commit == BASE
+    assert run.state.units["A"].branch == f"detached@{BASE}"
+    accepted = verify(run, result(run, "A"))
+    assert accepted.accepted
+
+
 def test_dependent_intent_waits_for_coordinator_branch_diff_validation_and_evidence(
     tmp_path: Path,
 ) -> None:
