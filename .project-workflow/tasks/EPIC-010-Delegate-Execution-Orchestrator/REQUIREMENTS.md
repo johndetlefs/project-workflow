@@ -6,21 +6,21 @@
 - Title: Delegate Execution Orchestrator
 - Last updated: 2026-08-19
 
-## Owner Approval
-
-- Requirements reviewed by owner: No
-- Acceptance criteria reviewed by owner: No
-- Approved for decomposition: No
-- Approved for implementation: No
-- Approved scope envelope: No
-- Approved by: Not approved
-- Approval date: Not approved
-- Approval note / source: Not approved
-- Approved artifact identity: Not approved
-
 ## User Story
 
 As a Project Workflow owner, I want Project Delegate to execute an approved Epic or Task plan through the appropriate Codex tasks, subagents, or coordinating agent while preserving dependencies, authority, workflow state, evidence, recovery, and QA boundaries, so that multi-unit delivery is faster and more reliable than ad hoc task creation without weakening Project Workflow governance.
+
+## Owner Approval
+
+- Requirements reviewed by owner: Yes
+- Acceptance criteria reviewed by owner: Yes
+- Approved for decomposition: Yes
+- Approved for implementation: No
+- Approved scope envelope: Yes
+- Approved by: John Detlefs
+- Approval date: 2026-08-19
+- Approval note / source: Codex task owner message: Approved. Go for it. (2026-08-19)
+- Approved artifact identity: sha256:5e4b09452b861ac5b13fd700c4320fd2702dc4f51eab3808f200f6e3ceb83038
 
 ## Goal
 
