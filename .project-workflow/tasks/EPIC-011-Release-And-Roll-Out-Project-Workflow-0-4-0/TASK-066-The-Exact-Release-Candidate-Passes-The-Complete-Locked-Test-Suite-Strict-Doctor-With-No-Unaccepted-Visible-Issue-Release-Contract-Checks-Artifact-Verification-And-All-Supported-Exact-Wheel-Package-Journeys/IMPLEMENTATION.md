@@ -34,11 +34,11 @@ As the release maintainer, I want the exact 0.4.0 candidate proven at source and
 
 ### Parent AC Proof Ownership
 
-- AC2: owner `TASK-065`; required evidence: Complete tests, strict Doctor, release contract, exact-artifact journeys
+- AC2: owner `TASK-066`; required evidence: Complete tests, strict Doctor, release contract, exact-artifact journeys
 
 ## Acceptance Criteria
 
-- [ ] AC1: The candidate passes the full locked suite, strict Doctor, release contract, artifact verification, and every exact-wheel host journey.
+- [x] AC1: The candidate passes the full locked suite, strict Doctor, release contract, artifact verification, and every exact-wheel host journey.
 
 ## Validation
 
@@ -48,23 +48,23 @@ As the release maintainer, I want the exact 0.4.0 candidate proven at source and
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | not recorded | not recorded | not recorded | not recorded |
+| . | `codex/EPIC-010-delegate-execution-orchestrator`; candidate commit `977c3eb1aa0a74b27c9d1d59bb34fd46ae14e20c` | 377/377 tests, strict Doctor, lock/source contract, wheel/sdist receipt verification, and exact-wheel journeys for Codex, Claude Code, Cursor, and GitHub Copilot passed | Validated release candidate; not yet merged or published | `evidence/candidate/` plus 2026-08-20 command outputs |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ |
-| 1 | Validate exact candidate | Exercise all source and built-artifact gates against the same 0.4.0 candidate. | AC1: every required command passes | Re-run logged release validation | To Do |
+| 1 | Validate exact candidate | Exercise all source and built-artifact gates against the same 0.4.0 candidate. | AC1: every required command passes | Re-run logged release validation | Done |
 
 ## Parent AC Evidence
 
-- AC2: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC2: Candidate commit `977c3eb1aa0a74b27c9d1d59bb34fd46ae14e20c` passed 377 tests in 61.85s, strict Doctor with 69 accepted historical warnings hidden and no issue, `uv lock --check`, source contract, clean artifact receipt verification, and exact-wheel journeys for all four packaged host modes. The retained wheel SHA-256 is `f6094f1025542d9edd3bc2f2cc9bf1ee3486b49c80f5351d43af96afdf25e1df`.
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass
+- Evidence: `evidence/candidate/release-receipt.json`, `SHA256SUMS`, `package-journeys.json`, full-suite output, strict Doctor output, and source-contract output.
+- Findings: None. The local receipt proves the pre-merge candidate commit; GitHub CI will independently build and bind the reviewed merge lineage before tagging.
 
 ## Retro
 
