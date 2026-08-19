@@ -60,11 +60,11 @@ As a Project Workflow consumer, I want Delegate guidance and installation to ref
 
 ## Acceptance Criteria
 
-- [ ] AC1: Tri-state capability/provenance rules govern native launch, capacity, fallback, and truthful claims. Parent AC6, AC9, AC15.
-- [ ] AC2: All host adapters carry the bounded packet and authority/lifecycle contract in host-valid syntax. Parent AC7, AC20.
-- [ ] AC3: Runtime privacy exclusions hold across Git, generated assets, distributions, Smoke Bomb, and evidence. Parent AC13.
-- [ ] AC4: Init/upgrade/collision/rollback and managed mirrors deliver semantically aligned Delegate assets for all hosts. Parent AC16.
-- [ ] AC5: README and installed examples precisely distinguish orchestration units, tools, and QA/closeout boundaries. Parent AC20.
+- [x] AC1: Tri-state capability/provenance rules govern native launch, capacity, fallback, and truthful claims. Parent AC6, AC9, AC15.
+- [x] AC2: All host adapters carry the bounded packet and authority/lifecycle contract in host-valid syntax. Parent AC7, AC20.
+- [x] AC3: Runtime privacy exclusions hold across Git, generated assets, distributions, Smoke Bomb, and evidence. Parent AC13.
+- [x] AC4: Init/upgrade/collision/rollback and managed mirrors deliver semantically aligned Delegate assets for all hosts. Parent AC16.
+- [x] AC5: README and installed examples precisely distinguish orchestration units, tools, and QA/closeout boundaries. Parent AC20.
 
 ## Validation
 
@@ -78,34 +78,42 @@ As a Project Workflow consumer, I want Delegate guidance and installation to ref
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | not recorded | not recorded | not recorded | not recorded |
+| . | detached implementation commit `16c158c0c0db4a990459e138f347a14ac7a9308d`; no branch, PR, or push authorized | Focused locked 273/273; full locked 377/377; independent cache-free 122/122 and 377/377; strict Doctor, compile, source release contract, mirror, diff, build, exact-wheel four-host journey, legacy collision, package inventory, Smoke Bomb, and privacy gates pass | Implemented and evidence-complete locally; not pushed, merged, released, deployed, or adopted | `evidence/2026-08-19-validation.md`; `evidence/package-journey.json`; `EVIDENCE.json` |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ |
-| 1 | Capability Contract | Implement tri-state runtime capability/provenance evaluation, capacity bounds, and explicit fallback/block reporting. | AC1 | Run full capability matrix and inspect truthful requested/effective outputs. | To Do |
-| 2 | Host Adapter Guidance | Rewrite Codex and common host Delegate contracts plus Planner/Epic/Implement/QA guidance using host-valid syntax. Depends on row 1. | AC2 | Inspect generated outputs for all four hosts and verify packet/authority/failure/QA invariants. | To Do |
-| 3 | Managed Asset And Upgrade Alignment | Add runtime ignore, asset/schema migration as required, install/upgrade mirrors, collision handling, fingerprints, no-op, and rollback. Depends on row 2. | AC3, AC4 | Run parameterised install/upgrade/collision/rollback fixtures and inspect Git/package privacy. | To Do |
-| 4 | Release And Doctor Coverage | Extend semantic parity, Doctor, release-contract, exact-wheel, package inventory, and Smoke Bomb checks. Depends on row 3. | AC3, AC4 | Run focused distribution and generated-helper parity gates. | To Do |
-| 5 | Documentation Contract | Update README and installed managed guidance with positive/negative examples and precise unit/tool/gate boundaries. Depends on rows 2-4. | AC5 | Verify every example against actual CLI/adapter behavior. | To Do |
-| 6 | Child QA Handoff | Run focused/full tests, strict Doctor, build/package/privacy checks, record evidence, and submit to independent QA. Depends on row 5. | AC1, AC2, AC3, AC4, AC5 | Review commands, results, cross-host proof limits, and unresolved `.new` behavior. | To Do |
+| 1 | Capability Contract | Implement tri-state runtime capability/provenance evaluation, capacity bounds, and explicit fallback/block reporting. | AC1 | Run full capability matrix and inspect truthful requested/effective outputs. | Done |
+| 2 | Host Adapter Guidance | Rewrite Codex and common host Delegate contracts plus Planner/Epic/Implement/QA guidance using host-valid syntax. Depends on row 1. | AC2 | Inspect generated outputs for all four hosts and verify packet/authority/failure/QA invariants. | Done |
+| 3 | Managed Asset And Upgrade Alignment | Add runtime ignore, asset/schema migration as required, install/upgrade mirrors, collision handling, fingerprints, no-op, and rollback. Depends on row 2. | AC3, AC4 | Run parameterised install/upgrade/collision/rollback fixtures and inspect Git/package privacy. | Done |
+| 4 | Release And Doctor Coverage | Extend semantic parity, Doctor, release-contract, exact-wheel, package inventory, and Smoke Bomb checks. Depends on row 3. | AC3, AC4 | Run focused distribution and generated-helper parity gates. | Done |
+| 5 | Documentation Contract | Update README and installed managed guidance with positive/negative examples and precise unit/tool/gate boundaries. Depends on rows 2-4. | AC5 | Verify every example against actual CLI/adapter behavior. | Done |
+| 6 | Child QA Handoff | Run focused/full tests, strict Doctor, build/package/privacy checks, record evidence, and submit to independent QA. Depends on row 5. | AC1, AC2, AC3, AC4, AC5 | Review commands, results, cross-host proof limits, and unresolved `.new` behavior. | Done |
 
 ## Parent AC Evidence
 
-- AC6, AC7, AC9, AC13, AC15, AC16, AC20: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC6: Epic persistent execution requires explicit owner authority and dated verified persistent-task, isolated-worktree, monitoring, reconciliation, and available-capacity observations. Missing gates emit no persistent executor, and Epic children never fall through to Task-row subagents. TASK-063 does not claim live persistent-host support; TASK-062 retains that separate proof.
+- AC7: Common and host-native assets require bounded packets carrying exact identity/authority, ACs, verified dependencies, repository/write scope, validation/evidence, forbidden shared-state/delivery actions, stop conditions, exact source, and coordinator-verifiable return data.
+- AC9: Effective child concurrency is bounded by requested concurrency, observed available capacity excluding the coordinator, eligibility, dependency readiness, and collision-free `Parallel Safe` scope; fixed worker counts and silent downgrades are rejected.
+- AC13: Runtime delegation paths are ignored; package and Smoke Bomb inventories exclude handles/private content while sanitized child evidence remains reviewable.
+- AC15: `unsupported` and `unknown` fail closed for native paths; safe Task coordinator/sequential fallback is explicit, and no installed asset or current-session observation is generalized into cross-host capability.
+- AC16: Asset version 2 aligns source/generated/local/package assets; all four hosts pass fresh init, Doctor, and no-op upgrade. The shared upgrade mechanism retains fingerprint/rollback coverage, while the Codex legacy fixture separately proves owner-owned `.new` preservation.
+- AC20: README, AGENTS, prompts, skills, Cursor rules, and generated host agents now distinguish Task/Epic units, host executors, Implement, Delegate, independent QA, lifecycle, and closeout with positive and negative examples.
+- Recipe evidence: `EVIDENCE.json` contains one `runtime-target-source` claim for every required parent AC plus `external-contract-alignment`, all tied to implementation commit `16c158c0c0db4a990459e138f347a14ac7a9308d`, exact wheel/helper hashes, and empty `invalid_substitutes` arrays.
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass — independent read-only code, managed-asset, documentation, test, and final child-evidence review on 2026-08-19 found no open findings.
+- Evidence: Independent reviewer repeated cache-free focused 122/122 and full locked 377/377, strict Doctor, source release contract, mirror/diff/runtime-ignore/tracked-runtime checks, exact wheel/sdist and embedded CLI/helper identity, claim schema/hashes, and forbidden parent/global diff inspection against implementation commit `16c158c0c0db4a990459e138f347a14ac7a9308d`.
+- Findings fixed: Epic child plans incorrectly falling through to Task-row subagents; persistent creation omitting reconciliation; undated capability provenance; Codex packaged/installed semantic drift escaping exact parity detection.
+- Review boundary: TASK-063 remains `In Progress` because the parent coordinator exclusively owns global/Epic tracker and lifecycle mutation. Its Testing/Review transition, evidence commit, parent integration, release, deployment, native cross-host runtime support, and owner acceptance are not implementation-QA claims.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: Host capability truth needs a dated tri-state observation plus observed capacity, not installed-text inference; Task-row subagents and Epic persistent children need separate executor gates; reconciliation belongs in the persistent creation contract, not only resume; managed-asset parity must compare normalized full content, not keywords; privacy tests must inject hostile ignored runtime content and inspect user-facing output as well as package paths.
+- Conventions or agent assets updated: Delegate, Planner, Epic, Implement, QA, AGENTS, Cursor rule, README, CLI help, release/package validation, Doctor mirrors, runtime ignore, all generated/installed host surfaces, and deterministic semantic/upgrade/privacy tests now carry the shared contract. Parent/global workflow artifacts were not changed.
+- Follow-up tasks: None created. Parent tracker/acceptance-map integration, child lifecycle transition, EPIC-010 closeout, release/deployment, and any native cross-host capability proof remain with the parent coordinator or later authorized work.
 
 ## Notes
 

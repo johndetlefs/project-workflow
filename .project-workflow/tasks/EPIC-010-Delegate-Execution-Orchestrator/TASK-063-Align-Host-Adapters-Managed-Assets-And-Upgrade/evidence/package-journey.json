@@ -1,0 +1,41 @@
+{
+  "task_id": "TASK-063",
+  "timestamp": "2026-08-19T17:59:09+10:00",
+  "commit": "16c158c0c0db4a990459e138f347a14ac7a9308d",
+  "version": "0.3.0",
+  "source": {
+    "artifact": "project_workflow-0.3.0-py3-none-any.whl",
+    "sha256": "c6b9288e7ec18ffa4149651a285fb605f998c5e3d7853fb54c5ec10746cc48e8"
+  },
+  "fresh": {
+    "codex": {
+      "init": "Pass",
+      "doctor": "no issues found",
+      "upgrade": "current; 0 findings; 0 owner-owned"
+    },
+    "github-copilot": {
+      "init": "Pass",
+      "doctor": "no issues found",
+      "upgrade": "current; 0 findings; 0 owner-owned"
+    },
+    "claude-code": {
+      "init": "Pass",
+      "doctor": "no issues found",
+      "upgrade": "current; 0 findings; 0 owner-owned"
+    },
+    "cursor": {
+      "init": "Pass",
+      "doctor": "no issues found",
+      "upgrade": "current; 0 findings; 0 owner-owned"
+    }
+  },
+  "legacy": {
+    "fixture": "tests/fixtures/legacy-unversioned",
+    "upgrade": "current; 2 findings; 2 owner-owned",
+    "doctor": "passed with expected owner-owned warnings",
+    "owner_collision_preserved": true,
+    "owner_sha256": "b024db4eca938e12187cc539c6795e85cd466a08687ba3354654715e97f7b161",
+    "pending_delegate_sha256": "aaff9fa1864fa055bd123369c56744eb1a54a121ae20bd2075efc7e1239f3352"
+  },
+  "normalization": "Ephemeral absolute temporary-directory paths were removed; result values and artifact identities are unchanged."
+}
