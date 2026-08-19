@@ -10,13 +10,13 @@
 
 ## Authorized Child Rows
 
-| ID | Title | Parent ACs | Source |
-|---|---|---|---|
-| TASK-060 | Define Delegation Graph, Plan Metadata, And Runtime State | AC1, AC2, AC3, AC4, AC9, AC12, AC13 | Proposed Child Work |
-| TASK-061 | Build Task Work-Item Subagent Orchestration | AC5, AC7, AC8, AC9, AC10, AC11, AC12, AC14, AC18 | Proposed Child Work |
-| TASK-062 | Build Epic Child-Task Orchestration | AC3, AC6, AC7, AC9, AC10, AC11, AC12, AC14, AC19 | Proposed Child Work |
-| TASK-063 | Align Host Adapters, Managed Assets, And Upgrade | AC6, AC7, AC9, AC13, AC15, AC16, AC20 | Proposed Child Work |
-| TASK-064 | Prove End-To-End Delegation And Backward Compatibility | AC4, AC10, AC11, AC12, AC14, AC15, AC16, AC17, AC18, AC19, AC20 | Proposed Child Work |
+| ID | Title | Parent ACs | Source | Dependencies |
+|---|---|---|---|---|
+| TASK-060 | Define Delegation Graph, Plan Metadata, And Runtime State | AC1, AC2, AC3, AC4, AC9, AC12, AC13 | Proposed Child Work | None |
+| TASK-061 | Build Task Work-Item Subagent Orchestration | AC5, AC7, AC8, AC9, AC10, AC11, AC12, AC14, AC18 | Proposed Child Work | TASK-060 |
+| TASK-062 | Build Epic Child-Task Orchestration | AC3, AC6, AC7, AC9, AC10, AC11, AC12, AC14, AC19 | Proposed Child Work | TASK-060 |
+| TASK-063 | Align Host Adapters, Managed Assets, And Upgrade | AC6, AC7, AC9, AC13, AC15, AC16, AC20 | Proposed Child Work | TASK-061, TASK-062 |
+| TASK-064 | Prove End-To-End Delegation And Backward Compatibility | AC4, AC10, AC11, AC12, AC14, AC15, AC16, AC17, AC18, AC19, AC20 | Proposed Child Work | TASK-060, TASK-061, TASK-062, TASK-063 |
 
 ## Authority Rules
 

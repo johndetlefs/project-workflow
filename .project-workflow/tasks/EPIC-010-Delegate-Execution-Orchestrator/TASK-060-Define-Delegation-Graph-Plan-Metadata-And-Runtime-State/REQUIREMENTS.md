@@ -121,7 +121,7 @@ Project Workflow owners and host adapters need one stable plan contract that can
 - The host-neutral core owns validation, graph/state transitions, work-packet data, and reporting; host adapters own native launch and monitoring calls.
 - JSON begins at schema version 1 and uses stable unit ordering for reproducible automation and tests.
 - Legacy plans remain valid for ordinary workflow use; Delegate requires sufficient metadata or reports a precise remediation rather than guessing.
-- Runtime handles live beneath an ignored `.project-workflow/runtime/delegate/` boundary and canonical workflow documents win every reconciliation conflict.
+- Runtime handles live beneath an ignored `.project-workflow/runtime/delegations/` boundary and canonical workflow documents win every reconciliation conflict.
 
 ## Validation Plan
 

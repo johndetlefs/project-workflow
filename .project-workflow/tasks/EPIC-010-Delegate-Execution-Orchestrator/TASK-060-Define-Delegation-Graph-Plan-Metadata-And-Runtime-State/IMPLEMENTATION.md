@@ -112,9 +112,9 @@ As a Project Workflow owner, I want an approved plan resolved into a determinist
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: Land dual-schema readers before emitting richer managed templates; require explicit safety metadata for Delegate rather than inferring it from legacy plans. Runtime-state writers must verify both Git-ignore protection and resolved path containment, and privacy changes must be rechecked against Smoke Bomb sanitisation.
+- Conventions or agent assets updated: New Task plans use dependency/write-scope/parallel-safety columns; Epic decomposition supports explicit dependencies; the host-neutral `delegate plan`, `status`, `state-init`, and `state-reconcile` surfaces now define the execution contract; runtime state is ignored under `.project-workflow/runtime/delegations/`.
+- Follow-up tasks: TASK-061 implements Task-mode coordination, TASK-062 implements Epic-mode host intent/reconciliation, TASK-063 aligns host assets and upgrades, and TASK-064 independently proves the integrated journeys and compatibility.
 
 ## Notes
 
