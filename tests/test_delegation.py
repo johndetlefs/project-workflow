@@ -270,8 +270,18 @@ def test_persistent_task_executor_requires_separate_owner_authority() -> None:
         persistent_task_authority="owner approval EPIC-001",
         available_child_capacity=1,
     )
-    assert authorized.units[0].executor == "persistent-task"
+    assert authorized.units[0].executor == "coordinator"
     assert authorized.persistent_task_authority == "owner approval EPIC-001"
+
+    fully_supported = workflow_cli.build_delegation_plan(
+        target=target("epic"),
+        units=epic_units,
+        observed_capabilities=("persistent-task", "isolated-worktree", "task-monitoring"),
+        capability_source="current codex adapter observation",
+        persistent_task_authority="owner approval EPIC-001",
+        available_child_capacity=1,
+    )
+    assert fully_supported.units[0].executor == "persistent-task"
 
 
 def test_exact_target_resolution_rejects_mixed_unknown_and_unapproved(tmp_path: Path) -> None:
