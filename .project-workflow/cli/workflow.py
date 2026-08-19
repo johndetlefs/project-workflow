@@ -2946,7 +2946,7 @@ class EpicOrchestrator:
 
     def capability_boundary(self) -> dict[str, object]:
         reasons: list[str] = []
-        if not self.plan.persistent_task_authority:
+        if not _delegation_explicit_authority(self.plan.persistent_task_authority):
             reasons.append("explicit owner authority is absent")
         if not self.capabilities.current_session_verified:
             reasons.append("current-session capability observation is absent")
@@ -2960,7 +2960,9 @@ class EpicOrchestrator:
             reasons.append("available persistent-task capacity is zero")
         supported = not reasons
         return {
-            "creation_authorized": bool(self.plan.persistent_task_authority),
+            "creation_authorized": _delegation_explicit_authority(
+                self.plan.persistent_task_authority
+            ),
             "creation_supported": supported,
             "resume_supported": supported and self.capabilities.reconciliation,
             "fallback": None if supported else "safe-sequential-coordinator",
@@ -3066,7 +3068,7 @@ class EpicOrchestrator:
                 raise EpicOrchestrationError(
                     "PW_EPIC_WORKTREE_REUSE", "Persistent child worktrees must be distinct."
                 )
-            if other.branch == branch:
+            if named_branch and other.branch == branch:
                 raise EpicOrchestrationError(
                     "PW_EPIC_BRANCH_REUSE", "Persistent child branches must be distinct."
                 )
@@ -3181,9 +3183,6 @@ class EpicOrchestrator:
             shared_failure = True
         if not observed:
             issues.append("Coordinator-observed child diff is empty.")
-        if observed and observed_head_commit == observed_base_commit:
-            issues.append("Child diff is not bound to a distinct observed head commit.")
-            shared_failure = True
         outside = tuple(
             path for path in observed
             if not any(path == scope or path.startswith(scope + "/") for scope in duty.write_scope)
@@ -9819,6 +9818,20 @@ def _delegation_parallel_safe(value: str, *, unit_id: str) -> bool:
     )
 
 
+def _delegation_explicit_authority(value: str | None) -> bool:
+    if value is None:
+        return False
+    normalized = value.strip().lower()
+    return bool(normalized) and normalized not in {
+        "unknown",
+        "not observed",
+        "not authorized",
+        "unsupported",
+        "none",
+        "false",
+    }
+
+
 def _delegation_canonical_state(value: str) -> str:
     normalized = value.strip().lower()
     if normalized in {"done", "complete"}:
@@ -10122,7 +10135,7 @@ def build_delegation_plan(
         "persistent-task", "isolated-worktree", "task-monitoring"
     }
     if target.kind == "epic" and persistent_creation_capabilities.issubset(capabilities):
-        if persistent_task_authority and persistent_task_authority.strip():
+        if _delegation_explicit_authority(persistent_task_authority):
             worker_capability = "persistent-task"
     if worker_capability is None and "subagent" in capabilities:
         worker_capability = "subagent"

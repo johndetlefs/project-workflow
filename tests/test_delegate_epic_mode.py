@@ -207,6 +207,7 @@ def test_packet_parent_ac_drift_is_rejected_before_any_intent(tmp_path: Path) ->
     ("authority", "verified", "persistent", "worktrees", "monitoring", "capacity"),
     [
         (None, True, True, True, True, 1),
+        ("unknown", True, True, True, True, 1),
         ("approved", False, False, False, False, 1),
         ("approved", True, False, True, True, 1),
         ("approved", True, True, False, True, 1),
@@ -299,22 +300,30 @@ def test_register_prevents_duplicate_intent_handle_branch_and_worktree(tmp_path:
 
 
 def test_register_accepts_exact_host_observed_detached_checkout_identity(tmp_path: Path) -> None:
-    built = plan(unit("A"))
+    built = plan(unit("A", order=0), unit("B", order=1))
     run = coordinator(built, tmp_path)
-    intent = run.creation_intents()[0]
+    first, second = run.creation_intents()
 
     packet = run.register_creation(
-        intent,
+        first,
         handle="native-a",
         branch=f"detached@{BASE}",
         worktree=tmp_path.parent / "worktree-a",
         coordinator_token=TOKEN,
     )
+    run.register_creation(
+        second,
+        handle="native-b",
+        branch=f"detached@{BASE}",
+        worktree=tmp_path.parent / "worktree-b",
+        coordinator_token=TOKEN,
+    )
 
     assert packet.base_commit == BASE
     assert run.state.units["A"].branch == f"detached@{BASE}"
-    accepted = verify(run, result(run, "A"))
+    accepted = verify(run, result(run, "A", head=BASE))
     assert accepted.accepted
+    assert run.state.units["B"].state == "active"
 
 
 def test_dependent_intent_waits_for_coordinator_branch_diff_validation_and_evidence(
