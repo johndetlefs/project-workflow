@@ -2373,7 +2373,7 @@ def test_configured_task_prefixes_work_for_packaged_and_local_workflow(tmp_path:
     assert "| MCP-001 | Tool Contract | To Do | `tasks/MCP-001-Tool-Contract/IMPLEMENTATION.md` |" in tracker_text
 
 
-def test_task_status_rejects_illegal_transition_without_force(tmp_path: Path) -> None:
+def test_task_status_force_cannot_bypass_incomplete_rows(tmp_path: Path) -> None:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
 
@@ -2388,7 +2388,7 @@ def test_task_status_rejects_illegal_transition_without_force(tmp_path: Path) ->
         cwd=tmp_path,
     )
     assert illegal.returncode != 0
-    assert "Illegal status transition for TASK-001: To Do -> Testing" in illegal.stderr
+    assert "every required implementation row is Done" in illegal.stderr
 
     missing_reason = run_project(
         ["task", "status", "--id", "TASK-001", "--to", "Testing", "--force"],
@@ -2397,6 +2397,29 @@ def test_task_status_rejects_illegal_transition_without_force(tmp_path: Path) ->
     assert missing_reason.returncode != 0
     assert "--force requires --reason" in missing_reason.stderr
 
+    forced_incomplete = run_project(
+        [
+            "task",
+            "status",
+            "--id",
+            "TASK-001",
+            "--to",
+            "Testing",
+            "--force",
+            "--reason",
+            "Recovering imported tracker state",
+        ],
+        cwd=tmp_path,
+    )
+    assert forced_incomplete.returncode != 0
+    assert "Ordinary --force cannot bypass this integrity gate" in forced_incomplete.stderr
+
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    implementation_path = task_dir / "IMPLEMENTATION.md"
+    implementation_path.write_text(
+        implementation_path.read_text(encoding="utf-8").replace("| To Do |", "| Done |"),
+        encoding="utf-8",
+    )
     forced = run_project(
         [
             "task",

@@ -13,11 +13,11 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from importlib.resources import files
 from pathlib import Path
-from typing import Optional
+from typing import Mapping, Optional, Sequence
 
 
 AGENT_CHOICES = {
@@ -1195,6 +1195,1253 @@ class DelegationPlan:
     capability_source: str
     persistent_task_authority: str | None
     provenance: tuple[str, ...]
+
+
+class TaskOrchestrationError(ValueError):
+    """Stable fail-closed error for Task work-item execution."""
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+@dataclass(frozen=True)
+class TaskHostCapabilities:
+    source: str
+    current_session_verified: bool
+    bounded_subagents: bool
+    available_child_capacity: int
+
+    def __post_init__(self) -> None:
+        if self.available_child_capacity < 0:
+            raise TaskOrchestrationError(
+                "PW_TASK_CAPACITY_INVALID", "Available child capacity cannot be negative."
+            )
+        if self.bounded_subagents and (
+            not self.current_session_verified or not self.source.strip()
+        ):
+            raise TaskOrchestrationError(
+                "PW_TASK_CAPABILITY_UNVERIFIED",
+                "Bounded subagent execution requires verified current-session capabilities.",
+            )
+
+
+@dataclass(frozen=True)
+class TaskExecutionObligations:
+    acceptance_criteria: tuple[str, ...]
+    validations: tuple[str, ...]
+    evidence: tuple[str, ...]
+    repositories: tuple[str, ...] = (".",)
+
+    def __post_init__(self) -> None:
+        fields = {
+            "acceptance criteria": self.acceptance_criteria,
+            "validations": self.validations,
+            "evidence": self.evidence,
+            "repositories": self.repositories,
+        }
+        for label, values in fields.items():
+            normalized = tuple(value.strip() for value in values)
+            if not normalized or any(not value for value in normalized):
+                raise TaskOrchestrationError(
+                    "PW_TASK_PACKET_OBLIGATIONS_INVALID",
+                    f"Task work packet {label} must be non-empty.",
+                )
+            if len(set(normalized)) != len(normalized):
+                raise TaskOrchestrationError(
+                    "PW_TASK_PACKET_OBLIGATIONS_INVALID",
+                    f"Task work packet {label} must not contain duplicates.",
+                )
+            object.__setattr__(self, label.replace(" ", "_"), normalized)
+        if any(
+            repository != "."
+            and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", repository)
+            for repository in self.repositories
+        ):
+            raise TaskOrchestrationError(
+                "PW_TASK_PACKET_OBLIGATIONS_INVALID",
+                "Task work packet repositories must be '.' or registered repository IDs.",
+            )
+
+
+@dataclass(frozen=True)
+class TaskExecutorDecision:
+    unit_id: str
+    executor: str
+    launchable: bool
+    reason: str
+
+
+@dataclass(frozen=True)
+class TaskWorkPacket:
+    target_id: str
+    unit_id: str
+    unit_title: str
+    acceptance_criteria: tuple[str, ...]
+    verified_dependencies: tuple[str, ...]
+    write_scope: tuple[str, ...]
+    repositories: tuple[str, ...]
+    validations: tuple[str, ...]
+    evidence: tuple[str, ...]
+    forbidden_actions: tuple[str, ...]
+    stop_conditions: tuple[str, ...]
+    baseline_hash: str
+    plan_fingerprint: str
+    executor: str
+    attempt: int
+
+    def payload(self) -> dict[str, object]:
+        return {
+            "schema_version": 1,
+            "target": {"id": self.target_id, "kind": "task"},
+            "unit": {"id": self.unit_id, "title": self.unit_title},
+            "acceptance_criteria": list(self.acceptance_criteria),
+            "verified_dependencies": list(self.verified_dependencies),
+            "scope": {
+                "write_prefixes": list(self.write_scope),
+                "repositories": list(self.repositories),
+            },
+            "obligations": {
+                "validation": list(self.validations),
+                "evidence": list(self.evidence),
+            },
+            "forbidden_actions": list(self.forbidden_actions),
+            "stop_conditions": list(self.stop_conditions),
+            "baseline_hash": self.baseline_hash,
+            "plan_fingerprint": self.plan_fingerprint,
+            "executor": self.executor,
+            "attempt": self.attempt,
+            "persistent_task_intent": None,
+        }
+
+
+@dataclass(frozen=True)
+class TaskWorkerResult:
+    unit_id: str
+    handle: str
+    success: bool
+    claimed_paths: tuple[str, ...]
+    validations: Mapping[str, bool]
+    evidence: Mapping[str, bool]
+    baseline_hash: str
+    shared_state_hash: str
+    plan_fingerprint: str
+    attempt: int
+    shared_premise_valid: bool = True
+    failure_reason: str = ""
+
+
+@dataclass(frozen=True)
+class TaskVerificationResult:
+    unit_id: str
+    accepted: bool
+    state: str
+    issues: tuple[str, ...]
+    newly_eligible: tuple[str, ...]
+
+
+@dataclass
+class TaskUnitRun:
+    state: str = "pending"
+    attempt: int = 0
+    handle: str | None = None
+    executor: str | None = None
+    baseline_hash: str | None = None
+    baseline_revision: int = 0
+    checkpointed: bool = False
+    issues: tuple[str, ...] = ()
+    canonical_blocked: bool = False
+    blocked_by: tuple[str, ...] = ()
+    completion_provenance: str | None = None
+
+
+@dataclass
+class TaskOrchestrationState:
+    schema_version: int
+    target_id: str
+    plan_fingerprint: str
+    coordinator_hash: str
+    shared_state_hash: str
+    lifecycle: str
+    units: dict[str, TaskUnitRun]
+    shared_premise_valid: bool = True
+    integration_revision: int = 0
+    integrated_paths: list[tuple[int, str, tuple[str, ...]]] = field(default_factory=list)
+    failure_seen: bool = False
+    used_handles: set[str] = field(default_factory=set)
+    shared_state_revisions: list[tuple[str, str]] = field(default_factory=list)
+
+
+def _task_orchestration_state_payload(state: TaskOrchestrationState) -> dict[str, object]:
+    return {
+        "schema_version": state.schema_version,
+        "target_id": state.target_id,
+        "plan_fingerprint": state.plan_fingerprint,
+        "coordinator_hash": state.coordinator_hash,
+        "shared_state_hash": state.shared_state_hash,
+        "lifecycle": state.lifecycle,
+        "shared_premise_valid": state.shared_premise_valid,
+        "integration_revision": state.integration_revision,
+        "failure_seen": state.failure_seen,
+        "used_handles": sorted(state.used_handles),
+        "shared_state_revisions": [list(item) for item in state.shared_state_revisions],
+        "integrated_paths": [
+            [revision, unit_id, list(paths)]
+            for revision, unit_id, paths in state.integrated_paths
+        ],
+        "units": {
+            unit_id: {
+                "state": run.state,
+                "attempt": run.attempt,
+                "handle": run.handle,
+                "executor": run.executor,
+                "baseline_hash": run.baseline_hash,
+                "baseline_revision": run.baseline_revision,
+                "checkpointed": run.checkpointed,
+                "issues": list(run.issues),
+                "canonical_blocked": run.canonical_blocked,
+                "blocked_by": list(run.blocked_by),
+                "completion_provenance": run.completion_provenance,
+            }
+            for unit_id, run in state.units.items()
+        },
+    }
+
+
+def _task_orchestration_state_from_payload(payload: object) -> TaskOrchestrationState:
+    if not isinstance(payload, dict):
+        raise TaskOrchestrationError(
+            "PW_TASK_RUNTIME_INVALID", "Task orchestration runtime must be an object."
+        )
+    allowed = {
+        "schema_version",
+        "target_id",
+        "plan_fingerprint",
+        "coordinator_hash",
+        "shared_state_hash",
+        "lifecycle",
+        "shared_premise_valid",
+        "integration_revision",
+        "failure_seen",
+        "used_handles",
+        "shared_state_revisions",
+        "integrated_paths",
+        "units",
+    }
+    unknown = set(payload) - allowed
+    if unknown:
+        raise TaskOrchestrationError(
+            "PW_TASK_RUNTIME_PRIVATE_FIELD",
+            "Task runtime contains forbidden fields: " + ", ".join(sorted(unknown)) + ".",
+        )
+    if (
+        payload.get("schema_version") != 1
+        or not isinstance(payload.get("target_id"), str)
+        or not isinstance(payload.get("plan_fingerprint"), str)
+        or not isinstance(payload.get("coordinator_hash"), str)
+        or not isinstance(payload.get("shared_state_hash"), str)
+        or payload.get("lifecycle") != "In Progress"
+        or not isinstance(payload.get("shared_premise_valid"), bool)
+        or not isinstance(payload.get("integration_revision"), int)
+        or not isinstance(payload.get("failure_seen"), bool)
+        or not isinstance(payload.get("used_handles"), list)
+        or not isinstance(payload.get("shared_state_revisions"), list)
+        or not isinstance(payload.get("integrated_paths"), list)
+        or not isinstance(payload.get("units"), dict)
+    ):
+        raise TaskOrchestrationError(
+            "PW_TASK_RUNTIME_INVALID", "Task orchestration runtime schema is invalid."
+        )
+    raw_units = payload["units"]
+    assert isinstance(raw_units, dict)
+    units: dict[str, TaskUnitRun] = {}
+    unit_allowed = {
+        "state",
+        "attempt",
+        "handle",
+        "executor",
+        "baseline_hash",
+        "baseline_revision",
+        "checkpointed",
+        "issues",
+        "canonical_blocked",
+        "blocked_by",
+        "completion_provenance",
+    }
+    valid_states = {"pending", "active", "returned", "done", "failed", "blocked", "halted", "orphaned"}
+    for unit_id, raw in raw_units.items():
+        if not isinstance(unit_id, str) or not isinstance(raw, dict) or set(raw) - unit_allowed:
+            raise TaskOrchestrationError(
+                "PW_TASK_RUNTIME_PRIVATE_FIELD",
+                f"{unit_id} runtime entry has forbidden or malformed fields.",
+            )
+        if (
+            raw.get("state") not in valid_states
+            or not isinstance(raw.get("attempt"), int)
+            or raw.get("attempt", -1) < 0
+            or raw.get("handle") is not None
+            and not isinstance(raw.get("handle"), str)
+            or raw.get("executor") is not None
+            and not isinstance(raw.get("executor"), str)
+            or raw.get("baseline_hash") is not None
+            and not isinstance(raw.get("baseline_hash"), str)
+            or not isinstance(raw.get("baseline_revision"), int)
+            or not isinstance(raw.get("checkpointed"), bool)
+            or not isinstance(raw.get("issues"), list)
+            or not all(isinstance(item, str) for item in raw.get("issues", []))
+            or not isinstance(raw.get("canonical_blocked"), bool)
+            or not isinstance(raw.get("blocked_by"), list)
+            or not all(isinstance(item, str) for item in raw.get("blocked_by", []))
+            or raw.get("completion_provenance") is not None
+            and not isinstance(raw.get("completion_provenance"), str)
+        ):
+            raise TaskOrchestrationError(
+                "PW_TASK_RUNTIME_INVALID", f"{unit_id} runtime entry is invalid."
+            )
+        units[unit_id] = TaskUnitRun(
+            state=str(raw["state"]),
+            attempt=int(raw["attempt"]),
+            handle=raw.get("handle"),
+            executor=raw.get("executor"),
+            baseline_hash=raw.get("baseline_hash"),
+            baseline_revision=int(raw["baseline_revision"]),
+            checkpointed=bool(raw["checkpointed"]),
+            issues=tuple(raw["issues"]),
+            canonical_blocked=bool(raw["canonical_blocked"]),
+            blocked_by=tuple(raw["blocked_by"]),
+            completion_provenance=raw.get("completion_provenance"),
+        )
+    used_handles = payload["used_handles"]
+    assert isinstance(used_handles, list)
+    if not all(isinstance(item, str) and item for item in used_handles):
+        raise TaskOrchestrationError(
+            "PW_TASK_RUNTIME_INVALID", "Task runtime handles are invalid."
+        )
+    raw_integrated = payload["integrated_paths"]
+    assert isinstance(raw_integrated, list)
+    integrated_paths: list[tuple[int, str, tuple[str, ...]]] = []
+    for item in raw_integrated:
+        if (
+            not isinstance(item, list)
+            or len(item) != 3
+            or not isinstance(item[0], int)
+            or not isinstance(item[1], str)
+            or not isinstance(item[2], list)
+            or not all(isinstance(path, str) for path in item[2])
+        ):
+            raise TaskOrchestrationError(
+                "PW_TASK_RUNTIME_INVALID", "Integrated path history is invalid."
+            )
+        integrated_paths.append((item[0], item[1], tuple(item[2])))
+    raw_revisions = payload["shared_state_revisions"]
+    assert isinstance(raw_revisions, list)
+    revisions: list[tuple[str, str]] = []
+    for item in raw_revisions:
+        if (
+            not isinstance(item, list)
+            or len(item) != 2
+            or not all(isinstance(value, str) and value for value in item)
+        ):
+            raise TaskOrchestrationError(
+                "PW_TASK_RUNTIME_INVALID", "Shared-state revision history is invalid."
+            )
+        revisions.append((item[0], item[1]))
+    return TaskOrchestrationState(
+        schema_version=1,
+        target_id=str(payload["target_id"]),
+        plan_fingerprint=str(payload["plan_fingerprint"]),
+        coordinator_hash=str(payload["coordinator_hash"]),
+        shared_state_hash=str(payload["shared_state_hash"]),
+        lifecycle="In Progress",
+        units=units,
+        shared_premise_valid=bool(payload["shared_premise_valid"]),
+        integration_revision=int(payload["integration_revision"]),
+        integrated_paths=integrated_paths,
+        failure_seen=bool(payload["failure_seen"]),
+        used_handles=set(used_handles),
+        shared_state_revisions=revisions,
+    )
+
+
+TASK_WORKER_FORBIDDEN_ACTIONS = (
+    "mutate shared workflow artifacts, runtime state, or Task lifecycle",
+    "push, merge, release, deploy, or contact third parties",
+    "create persistent Codex tasks or worktrees",
+    "write outside the allowed repository-relative prefixes",
+)
+TASK_WORKER_STOP_CONDITIONS = (
+    "scope, validation, or evidence obligations cannot be satisfied",
+    "the observed diff leaves the allowed scope",
+    "the shared baseline changes or another worker collides",
+    "a shared-premise failure invalidates the run",
+)
+
+
+def _task_worker_path_forbidden(path: str) -> bool:
+    if path == ".git" or path.startswith(".git/"):
+        return True
+    if path == ".project-workflow/cli/workflow.py":
+        return False
+    return path == ".project-workflow" or path.startswith(".project-workflow/")
+
+
+def _task_worker_scope_forbidden(scope: str) -> bool:
+    if scope == ".git" or scope.startswith(".git/"):
+        return True
+    if scope == ".project-workflow/cli/workflow.py":
+        return False
+    return scope == "." or scope == ".project-workflow" or scope.startswith(
+        ".project-workflow/"
+    )
+
+
+def _task_execution_fingerprint(
+    plan: DelegationPlan,
+    obligations: Mapping[str, TaskExecutionObligations],
+) -> str:
+    payload = {
+        "target": {
+            "id": plan.target.target_id,
+            "kind": plan.target.kind,
+            "source": plan.target.source_path,
+        },
+        "units": [
+            {
+                "id": unit.unit_id,
+                "title": unit.title,
+                "dependencies": unit.dependencies,
+                "write_scope": unit.write_scope,
+                "parallel_safe": unit.parallel_safe,
+                "obligations": {
+                    "acceptance_criteria": obligations[unit.unit_id].acceptance_criteria,
+                    "validations": obligations[unit.unit_id].validations,
+                    "evidence": obligations[unit.unit_id].evidence,
+                    "repositories": obligations[unit.unit_id].repositories,
+                },
+            }
+            for unit in plan.units
+        ],
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+class TaskOrchestrator:
+    """Coordinator-only state machine for one approved Task delegation plan."""
+
+    def __init__(
+        self,
+        *,
+        plan: DelegationPlan,
+        obligations: Mapping[str, TaskExecutionObligations],
+        capabilities: TaskHostCapabilities,
+        coordinator_token: str,
+        shared_state_hash: str,
+    ) -> None:
+        if plan.target.kind != "task":
+            raise TaskOrchestrationError(
+                "PW_TASK_TARGET_REQUIRED", "Task orchestration requires exactly one Task target."
+            )
+        if plan.target.lifecycle != "In Progress":
+            raise TaskOrchestrationError(
+                "PW_TASK_LIFECYCLE_INVALID",
+                "The coordinator must move the Task to In Progress once before execution.",
+            )
+        if not coordinator_token:
+            raise TaskOrchestrationError(
+                "PW_TASK_COORDINATOR_REQUIRED", "A coordinator token is required."
+            )
+        self.plan = plan
+        self.units = {unit.unit_id: unit for unit in plan.units}
+        if set(self.units) != set(obligations):
+            missing = sorted(set(self.units) - set(obligations))
+            extra = sorted(set(obligations) - set(self.units))
+            raise TaskOrchestrationError(
+                "PW_TASK_PACKET_OBLIGATIONS_MISMATCH",
+                f"Work packet obligations mismatch; missing={missing}, extra={extra}.",
+            )
+        self.obligations = dict(obligations)
+        self.capabilities = capabilities
+        self._dependants = {
+            unit_id: tuple(
+                candidate.unit_id
+                for candidate in plan.units
+                if unit_id in candidate.dependencies
+            )
+            for unit_id in self.units
+        }
+        plan_fingerprint = _task_execution_fingerprint(plan, obligations)
+        self.state = TaskOrchestrationState(
+            schema_version=1,
+            target_id=plan.target.target_id,
+            plan_fingerprint=plan_fingerprint,
+            coordinator_hash=self._token_hash(coordinator_token),
+            shared_state_hash=shared_state_hash,
+            lifecycle="In Progress",
+            units={
+                unit.unit_id: TaskUnitRun(
+                    state=(
+                        "done"
+                        if unit.canonical_state == "complete"
+                        else "blocked"
+                        if unit.canonical_state == "blocked"
+                        else "pending"
+                    ),
+                    canonical_blocked=unit.canonical_state == "blocked",
+                )
+                for unit in plan.units
+            },
+        )
+
+    @classmethod
+    def resume(
+        cls,
+        *,
+        root: Path,
+        plan: DelegationPlan,
+        obligations: Mapping[str, TaskExecutionObligations],
+        capabilities: TaskHostCapabilities,
+        coordinator_token: str,
+    ) -> TaskOrchestrator:
+        stored = _load_delegation_runtime_state(root, plan.target.target_id)
+        if stored is None or "task_orchestration" not in stored:
+            raise TaskOrchestrationError(
+                "PW_TASK_RUNTIME_MISSING", "No persisted Task orchestration state exists."
+            )
+        restored = _task_orchestration_state_from_payload(stored["task_orchestration"])
+        expected_fingerprint = _task_execution_fingerprint(plan, obligations)
+        if (
+            restored.target_id != plan.target.target_id
+            or restored.plan_fingerprint != expected_fingerprint
+        ):
+            raise TaskOrchestrationError(
+                "PW_TASK_RUNTIME_PLAN_MISMATCH",
+                "Persisted Task runtime belongs to a different plan or capability bound.",
+            )
+        instance = cls(
+            plan=plan,
+            obligations=obligations,
+            capabilities=capabilities,
+            coordinator_token=coordinator_token,
+            shared_state_hash=restored.shared_state_hash,
+        )
+        if set(restored.units) != set(instance.units):
+            raise TaskOrchestrationError(
+                "PW_TASK_RUNTIME_PLAN_MISMATCH",
+                "Persisted Task runtime units do not match the canonical plan.",
+            )
+        if restored.coordinator_hash != instance.state.coordinator_hash:
+            raise TaskOrchestrationError(
+                "PW_TASK_COORDINATOR_ONLY",
+                "The coordinator token does not own the persisted Task runtime.",
+            )
+        instance.state = restored
+        for unit in plan.units:
+            run = instance.state.units[unit.unit_id]
+            if unit.canonical_state == "complete":
+                run.state = "done"
+                run.handle = None
+                run.canonical_blocked = False
+                run.blocked_by = ()
+                run.completion_provenance = (
+                    f"canonical:{plan.target.source_path}#{plan.target.source_hash}"
+                )
+            elif unit.canonical_state == "blocked":
+                # Refreshed canonical authority wins over stale persisted runtime.
+                # In particular, an active handle may not return and integrate after
+                # the coordinator has blocked its implementation row.
+                run.state = "blocked"
+                run.handle = None
+                run.canonical_blocked = True
+                run.blocked_by = ()
+                run.issues = ("Canonical implementation row is Blocked.",)
+        return instance
+
+    def persist(self, root: Path, *, coordinator_token: str) -> Path:
+        self._require_coordinator(coordinator_token)
+        state = _load_delegation_runtime_state(root, self.plan.target.target_id)
+        if state is None:
+            state = initialize_delegation_runtime_state(root, self.plan)
+        else:
+            if (
+                state.get("target_id") != self.plan.target.target_id
+                or state.get("target_kind") != "task"
+                or Path(str(state.get("worktree", ""))).resolve() != root.resolve()
+            ):
+                raise TaskOrchestrationError(
+                    "PW_TASK_RUNTIME_TARGET_MISMATCH",
+                    "Persisted Task runtime target or worktree does not match this run.",
+                )
+            if "task_orchestration" in state:
+                stored_task = _task_orchestration_state_from_payload(
+                    state["task_orchestration"]
+                )
+                if stored_task.plan_fingerprint != self.state.plan_fingerprint:
+                    raise TaskOrchestrationError(
+                        "PW_TASK_RUNTIME_PLAN_MISMATCH",
+                        "Persisted Task runtime belongs to different approved metadata.",
+                    )
+            state["plan_fingerprint"] = _delegation_plan_fingerprint(self.plan)
+        state["task_orchestration"] = _task_orchestration_state_payload(self.state)
+        stored_units = state.get("units")
+        assert isinstance(stored_units, dict)
+        for unit_id, run in self.state.units.items():
+            projected = (
+                "complete"
+                if run.state == "done"
+                else "active"
+                if run.state in {"active", "returned"}
+                else "orphaned"
+                if run.state == "orphaned"
+                else "blocked"
+                if run.state in {"failed", "blocked", "halted"}
+                else "pending"
+            )
+            stored_units[unit_id] = {"state": projected, "handle": None}
+        _write_delegation_runtime_state(root, self.plan, state)
+        return _delegation_runtime_path(root, self.state.target_id)
+
+    @staticmethod
+    def _token_hash(value: str) -> str:
+        return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+    def _require_coordinator(self, token: str) -> None:
+        if self._token_hash(token) != self.state.coordinator_hash:
+            raise TaskOrchestrationError(
+                "PW_TASK_COORDINATOR_ONLY",
+                "Only the coordinator may mutate shared runtime state or Task lifecycle.",
+            )
+
+    def _active_ids(self) -> tuple[str, ...]:
+        return tuple(
+            unit_id
+            for unit_id, run in self.state.units.items()
+            if run.state in {"active", "returned"}
+        )
+
+    def _dependencies_done(self, unit: DelegationPlannedUnit) -> bool:
+        return all(
+            item not in self.state.units or self.state.units[item].state == "done"
+            for item in unit.dependencies
+        )
+
+    def _scope_collision(self, left_id: str, right_id: str) -> bool:
+        return any(
+            _delegation_scope_overlap(left, right)
+            for left in self.units[left_id].write_scope
+            for right in self.units[right_id].write_scope
+        )
+
+    def decisions(self) -> tuple[TaskExecutorDecision, ...]:
+        actual_active = self._active_ids()
+        active = list(actual_active)
+        reserved = len(active)
+        execution_limit = min(
+            self.plan.requested_concurrency,
+            self.capabilities.available_child_capacity,
+        )
+        exclusive_reserved = any(
+            self.state.units[unit_id].executor in {"sequential-worker", "coordinator"}
+            for unit_id in actual_active
+        )
+        decisions: list[TaskExecutorDecision] = []
+        for unit in self.plan.units:
+            run = self.state.units[unit.unit_id]
+            if run.state in {"active", "returned", "done", "failed", "blocked", "halted"}:
+                decisions.append(
+                    TaskExecutorDecision(
+                        unit.unit_id, "none", False, f"Unit state is {run.state}."
+                    )
+                )
+                continue
+            if run.state == "orphaned":
+                decisions.append(
+                    TaskExecutorDecision(
+                        unit.unit_id,
+                        "none",
+                        False,
+                        "Orphaned work requires an explicit coordinator retry.",
+                    )
+                )
+                continue
+            if not self.state.shared_premise_valid:
+                decisions.append(
+                    TaskExecutorDecision(
+                        unit.unit_id, "none", False, "Shared premise is invalid."
+                    )
+                )
+                continue
+            if not self._dependencies_done(unit):
+                decisions.append(
+                    TaskExecutorDecision(
+                        unit.unit_id, "none", False, "Dependencies are not verified Done."
+                    )
+                )
+                continue
+            coordinator_owned = any(
+                _task_worker_scope_forbidden(scope) for scope in unit.write_scope
+            )
+            if coordinator_owned:
+                launchable = not active and not exclusive_reserved
+                decisions.append(
+                    TaskExecutorDecision(
+                        unit.unit_id,
+                        "coordinator",
+                        launchable,
+                        "Write scope includes coordinator-owned workflow authority.",
+                    )
+                )
+                if launchable:
+                    active.append(unit.unit_id)
+                    exclusive_reserved = True
+                continue
+            if not (
+                self.capabilities.current_session_verified
+                and self.capabilities.bounded_subagents
+                and self.capabilities.available_child_capacity > 0
+            ):
+                decisions.append(
+                    TaskExecutorDecision(
+                        unit.unit_id,
+                        "coordinator",
+                        not active and not exclusive_reserved,
+                        "No verified current-session bounded child capacity is available.",
+                    )
+                )
+                if not active and not exclusive_reserved:
+                    active.append(unit.unit_id)
+                    exclusive_reserved = True
+                continue
+            collision = any(self._scope_collision(unit.unit_id, item) for item in active)
+            capacity = reserved < execution_limit
+            if unit.parallel_safe and not collision and capacity and not exclusive_reserved:
+                decisions.append(
+                    TaskExecutorDecision(
+                        unit.unit_id,
+                        "bounded-subagent",
+                        True,
+                        f"Verified current-session capacity from {self.capabilities.source}.",
+                    )
+                )
+                active.append(unit.unit_id)
+                reserved += 1
+            else:
+                reasons = []
+                if not unit.parallel_safe:
+                    reasons.append("Parallel Safe is No")
+                if collision:
+                    reasons.append("write scope overlaps in-flight work")
+                if not capacity:
+                    reasons.append("requested or available child capacity is exhausted")
+                if exclusive_reserved:
+                    reasons.append("exclusive sequential/coordinator execution is reserved")
+                launchable = (
+                    not unit.parallel_safe
+                    and not actual_active
+                    and not active
+                    and capacity
+                    and not exclusive_reserved
+                )
+                decisions.append(
+                    TaskExecutorDecision(
+                        unit.unit_id,
+                        "sequential-worker",
+                        launchable,
+                        "; ".join(reasons) + ".",
+                    )
+                )
+                if launchable:
+                    active.append(unit.unit_id)
+                    exclusive_reserved = True
+        return tuple(decisions)
+
+    def launch(
+        self, unit_id: str, *, handle: str, coordinator_token: str
+    ) -> TaskWorkPacket:
+        self._require_coordinator(coordinator_token)
+        if unit_id not in self.units:
+            raise TaskOrchestrationError("PW_TASK_UNIT_UNKNOWN", f"Unknown unit {unit_id}.")
+        run = self.state.units[unit_id]
+        if run.state in {"active", "returned", "done"}:
+            raise TaskOrchestrationError(
+                "PW_TASK_DUPLICATE_LAUNCH",
+                f"{unit_id} is already {run.state}; duplicate launch is forbidden.",
+            )
+        if run.state in {"failed", "blocked", "halted", "orphaned"}:
+            raise TaskOrchestrationError(
+                "PW_TASK_RETRY_REQUIRED",
+                f"{unit_id} is {run.state}; explicit coordinator recovery is required.",
+            )
+        if not handle.strip() or handle in self.state.used_handles:
+            raise TaskOrchestrationError(
+                "PW_TASK_HANDLE_REUSE",
+                "Every bounded launch requires a non-empty handle unused by any prior attempt.",
+            )
+        decision = next(item for item in self.decisions() if item.unit_id == unit_id)
+        if decision.executor == "coordinator":
+            raise TaskOrchestrationError(
+                "PW_TASK_COORDINATOR_EXECUTION_REQUIRED",
+                f"{unit_id} is coordinator-owned and cannot receive a worker launch packet.",
+            )
+        if decision.executor == "sequential-worker" and any(
+            self._scope_collision(unit_id, active) for active in self._active_ids()
+        ):
+            raise TaskOrchestrationError(
+                "PW_TASK_WRITE_SCOPE_COLLISION",
+                f"{unit_id} overlaps in-flight work and was rejected before launch.",
+            )
+        if not decision.launchable:
+            raise TaskOrchestrationError(
+                "PW_TASK_NOT_LAUNCHABLE", f"{unit_id}: {decision.reason}"
+            )
+        unit = self.units[unit_id]
+        duty = self.obligations[unit_id]
+        run.state = "active"
+        run.attempt += 1
+        run.handle = handle
+        run.executor = decision.executor
+        run.baseline_hash = self.state.shared_state_hash
+        run.baseline_revision = self.state.integration_revision
+        run.checkpointed = False
+        run.issues = ()
+        self.state.used_handles.add(handle)
+        return TaskWorkPacket(
+            target_id=self.state.target_id,
+            unit_id=unit_id,
+            unit_title=unit.title,
+            acceptance_criteria=duty.acceptance_criteria,
+            verified_dependencies=tuple(
+                item
+                for item in unit.dependencies
+                if item not in self.state.units or self.state.units[item].state == "done"
+            ),
+            write_scope=unit.write_scope,
+            repositories=duty.repositories,
+            validations=duty.validations,
+            evidence=duty.evidence,
+            forbidden_actions=TASK_WORKER_FORBIDDEN_ACTIONS,
+            stop_conditions=TASK_WORKER_STOP_CONDITIONS,
+            baseline_hash=self.state.shared_state_hash,
+            plan_fingerprint=self.state.plan_fingerprint,
+            executor=decision.executor,
+            attempt=run.attempt,
+        )
+
+    def _descendants(self, unit_id: str) -> tuple[str, ...]:
+        pending = list(self._dependants[unit_id])
+        seen: set[str] = set()
+        while pending:
+            current = pending.pop(0)
+            if current in seen:
+                continue
+            seen.add(current)
+            pending.extend(self._dependants[current])
+        return tuple(unit.unit_id for unit in self.plan.units if unit.unit_id in seen)
+
+    def _fail(self, unit_id: str, issues: Sequence[str], *, shared: bool) -> None:
+        run = self.state.units[unit_id]
+        run.state = "failed"
+        run.handle = None
+        run.issues = tuple(issues)
+        self.state.failure_seen = True
+        if shared:
+            self.state.shared_premise_valid = False
+            for other_id, other in self.state.units.items():
+                if other_id != unit_id and other.state in {"pending", "blocked", "orphaned"}:
+                    other.state = "halted"
+        else:
+            for descendant in self._descendants(unit_id):
+                descendant_run = self.state.units[descendant]
+                if descendant_run.canonical_blocked:
+                    continue
+                blockers = set(descendant_run.blocked_by)
+                blockers.add(unit_id)
+                descendant_run.blocked_by = tuple(sorted(blockers))
+                if descendant_run.state == "pending":
+                    descendant_run.state = "blocked"
+
+    @staticmethod
+    def _normalize_paths(paths: Sequence[str]) -> tuple[str, ...]:
+        normalized: set[str] = set()
+        for path in paths:
+            value = path.strip().replace("\\", "/")
+            parts = tuple(item for item in value.split("/") if item not in {"", "."})
+            if (
+                not parts
+                or value.startswith("/")
+                or ".." in parts
+                or any(character in value for character in "*?[]{}")
+            ):
+                raise TaskOrchestrationError(
+                    "PW_TASK_DIFF_INVALID", f"Invalid repository-relative diff path: {path}."
+                )
+            normalized.add("/".join(parts))
+        return tuple(sorted(normalized))
+
+    def complete_coordinator_unit(
+        self,
+        unit_id: str,
+        *,
+        observed_paths: Sequence[str],
+        observed_validations: Mapping[str, bool],
+        observed_evidence: Mapping[str, bool],
+        current_shared_state_hash: str,
+        provenance: str,
+        coordinator_token: str,
+    ) -> TaskVerificationResult:
+        self._require_coordinator(coordinator_token)
+        if unit_id not in self.units:
+            raise TaskOrchestrationError("PW_TASK_UNIT_UNKNOWN", f"Unknown unit {unit_id}.")
+        decision = next(item for item in self.decisions() if item.unit_id == unit_id)
+        if decision.executor != "coordinator" or not decision.launchable:
+            raise TaskOrchestrationError(
+                "PW_TASK_COORDINATOR_EXECUTION_INVALID",
+                f"{unit_id} is not currently eligible for exclusive coordinator execution.",
+            )
+        if not provenance.strip() or current_shared_state_hash != self.state.shared_state_hash:
+            raise TaskOrchestrationError(
+                "PW_TASK_COORDINATOR_VERIFICATION_REQUIRED",
+                "Coordinator execution requires matching shared state and durable provenance.",
+            )
+        unit = self.units[unit_id]
+        observed = self._normalize_paths(observed_paths)
+        outside = tuple(
+            path
+            for path in observed
+            if not any(
+                scope == "." or path == scope or path.startswith(scope + "/")
+                for scope in unit.write_scope
+            )
+        )
+        duty = self.obligations[unit_id]
+        issues: list[str] = []
+        if outside:
+            issues.append("Out-of-scope paths: " + ", ".join(outside) + ".")
+        missing_validation = tuple(
+            item for item in duty.validations if observed_validations.get(item) is not True
+        )
+        missing_evidence = tuple(
+            item for item in duty.evidence if observed_evidence.get(item) is not True
+        )
+        if missing_validation:
+            issues.append("Required validation did not pass: " + ", ".join(missing_validation) + ".")
+        if missing_evidence:
+            issues.append("Required evidence is absent: " + ", ".join(missing_evidence) + ".")
+        if issues:
+            self._fail(unit_id, issues, shared=bool(outside))
+            return TaskVerificationResult(unit_id, False, "failed", tuple(issues), ())
+        run = self.state.units[unit_id]
+        run.state = "done"
+        run.completion_provenance = provenance.strip()
+        self.state.integration_revision += 1
+        self.state.integrated_paths.append((self.state.integration_revision, unit_id, observed))
+        newly_eligible = tuple(
+            item.unit_id
+            for item in self.decisions()
+            if item.launchable and item.executor != "none"
+        )
+        return TaskVerificationResult(unit_id, True, "done", (), newly_eligible)
+
+    def verify_result(
+        self,
+        result: TaskWorkerResult,
+        *,
+        observed_paths: Sequence[str],
+        observed_validations: Mapping[str, bool],
+        observed_evidence: Mapping[str, bool],
+        current_shared_state_hash: str,
+        coordinator_token: str,
+    ) -> TaskVerificationResult:
+        self._require_coordinator(coordinator_token)
+        if result.unit_id not in self.units:
+            raise TaskOrchestrationError(
+                "PW_TASK_UNIT_UNKNOWN", f"Unknown unit {result.unit_id}."
+            )
+        unit = self.units[result.unit_id]
+        run = self.state.units[result.unit_id]
+        if run.state not in {"active", "returned"} or run.handle != result.handle:
+            raise TaskOrchestrationError(
+                "PW_TASK_RESULT_UNMATCHED",
+                "Returned work does not match the coordinator's active bounded handle.",
+            )
+        if (
+            result.plan_fingerprint != self.state.plan_fingerprint
+            or result.attempt != run.attempt
+        ):
+            raise TaskOrchestrationError(
+                "PW_TASK_RESULT_STALE",
+                "Returned work belongs to a different plan fingerprint or launch attempt.",
+            )
+        if not self.state.shared_premise_valid:
+            run.state = "halted"
+            run.handle = None
+            run.checkpointed = True
+            run.issues = ("Shared premise is invalid; returned work was halted, not integrated.",)
+            return TaskVerificationResult(
+                result.unit_id,
+                False,
+                "halted",
+                run.issues,
+                (),
+            )
+        issues: list[str] = []
+        coordinator_integrity_failure = False
+        try:
+            claimed = self._normalize_paths(result.claimed_paths)
+            observed = self._normalize_paths(observed_paths)
+        except TaskOrchestrationError as error:
+            claimed, observed = (), ()
+            issues.append(error.message)
+            coordinator_integrity_failure = True
+        if claimed != observed:
+            issues.append("Worker-claimed paths do not match the coordinator-observed diff.")
+            coordinator_integrity_failure = True
+        outside = tuple(
+            path
+            for path in observed
+            if not any(
+                scope == "." or path == scope or path.startswith(scope + "/")
+                for scope in unit.write_scope
+            )
+        )
+        if outside:
+            issues.append("Out-of-scope paths: " + ", ".join(outside) + ".")
+            coordinator_integrity_failure = True
+        shared_paths = tuple(path for path in observed if _task_worker_path_forbidden(path))
+        if shared_paths:
+            issues.append(
+                "Coordinator-only shared workflow paths: " + ", ".join(shared_paths) + "."
+            )
+            coordinator_integrity_failure = True
+        if (
+            result.baseline_hash != run.baseline_hash
+            or result.shared_state_hash != run.baseline_hash
+            or current_shared_state_hash != self.state.shared_state_hash
+        ):
+            issues.append("Coordinator-only shared state changed from the launch baseline.")
+            coordinator_integrity_failure = True
+        intervening = [
+            paths
+            for revision, _other_id, paths in self.state.integrated_paths
+            if revision > run.baseline_revision
+        ]
+        collisions = tuple(
+            path
+            for path in observed
+            if any(
+                _delegation_scope_overlap(path, prior)
+                for paths in intervening
+                for prior in paths
+            )
+        )
+        if collisions:
+            issues.append("Intervening diff collision: " + ", ".join(collisions) + ".")
+            coordinator_integrity_failure = True
+        duty = self.obligations[result.unit_id]
+        missing_validation = tuple(
+            item for item in duty.validations if observed_validations.get(item) is not True
+        )
+        if missing_validation:
+            issues.append("Required validation did not pass: " + ", ".join(missing_validation) + ".")
+        missing_evidence = tuple(
+            item for item in duty.evidence if observed_evidence.get(item) is not True
+        )
+        if missing_evidence:
+            issues.append("Required evidence is absent: " + ", ".join(missing_evidence) + ".")
+        if not result.success:
+            issues.append(result.failure_reason.strip() or "Worker reported failure.")
+        if not result.shared_premise_valid:
+            issues.append("Worker reported a shared-premise failure.")
+        worker_claim_mismatch = tuple(
+            item
+            for item in duty.validations
+            if result.validations.get(item) is not observed_validations.get(item)
+        ) + tuple(
+            item
+            for item in duty.evidence
+            if result.evidence.get(item) is not observed_evidence.get(item)
+        )
+        if worker_claim_mismatch:
+            issues.append(
+                "Worker claims disagree with coordinator observations: "
+                + ", ".join(worker_claim_mismatch)
+                + "."
+            )
+        if issues:
+            self._fail(
+                result.unit_id,
+                issues,
+                shared=coordinator_integrity_failure or not result.shared_premise_valid,
+            )
+            return TaskVerificationResult(result.unit_id, False, "failed", tuple(issues), ())
+        run.state = "done"
+        run.handle = None
+        run.issues = ()
+        self.state.integration_revision += 1
+        self.state.integrated_paths.append(
+            (self.state.integration_revision, result.unit_id, observed)
+        )
+        newly_eligible = tuple(
+            item.unit_id
+            for item in self.decisions()
+            if item.launchable and item.executor != "none"
+        )
+        return TaskVerificationResult(result.unit_id, True, "done", (), newly_eligible)
+
+    def rebaseline_shared_state(
+        self,
+        new_hash: str,
+        *,
+        reason: str,
+        coordinator_token: str,
+    ) -> None:
+        """Record a coordinator-owned canonical write without rewriting worker baselines."""
+        self._require_coordinator(coordinator_token)
+        if not new_hash.strip() or not reason.strip():
+            raise TaskOrchestrationError(
+                "PW_TASK_REBASE_PROVENANCE_REQUIRED",
+                "Shared-state rebaseline requires a new hash and durable reason.",
+            )
+        if new_hash == self.state.shared_state_hash:
+            return
+        self.state.shared_state_hash = new_hash
+        self.state.shared_state_revisions.append((new_hash, reason.strip()))
+
+    def checkpoint(self, unit_id: str, *, coordinator_token: str) -> None:
+        self._require_coordinator(coordinator_token)
+        run = self.state.units.get(unit_id)
+        if run is None or run.state not in {"active", "returned"}:
+            raise TaskOrchestrationError(
+                "PW_TASK_CHECKPOINT_INVALID", f"{unit_id} is not in flight."
+            )
+        run.checkpointed = True
+        if not self.state.shared_premise_valid:
+            run.state = "halted"
+            run.handle = None
+
+    def reconcile(
+        self,
+        observations: Mapping[str, Mapping[str, str]],
+        *,
+        canonical_completed: Mapping[str, str] | None = None,
+        coordinator_token: str,
+    ) -> None:
+        self._require_coordinator(coordinator_token)
+        canonical = dict(canonical_completed or {})
+        if any(not source.strip() for source in canonical.values()):
+            raise TaskOrchestrationError(
+                "PW_TASK_COMPLETION_PROVENANCE_REQUIRED",
+                "Canonical completion requires a non-empty durable evidence reference.",
+            )
+        invalid_canonical = tuple(
+            unit_id
+            for unit_id in canonical
+            if unit_id not in self.units
+            or self.units[unit_id].canonical_state != "complete"
+        )
+        if invalid_canonical:
+            raise TaskOrchestrationError(
+                "PW_TASK_COMPLETION_PROVENANCE_INVALID",
+                "Canonical completion is not present in the current plan for: "
+                + ", ".join(invalid_canonical)
+                + ".",
+            )
+        for unit_id, run in self.state.units.items():
+            if unit_id in canonical:
+                run.state = "done"
+                run.handle = None
+                run.completion_provenance = canonical[unit_id]
+                continue
+            if run.state not in {"active", "returned"}:
+                continue
+            observed = observations.get(unit_id)
+            identity_matches = (
+                observed is not None
+                and observed.get("id") == run.handle
+                and observed.get("kind") == "subagent"
+            )
+            observed_state = observed.get("state") if observed is not None else None
+            if identity_matches and observed_state == "active":
+                run.state = "active"
+            elif identity_matches and observed_state in {"complete", "completed"}:
+                run.state = "returned"
+            elif identity_matches and observed_state == "failed":
+                self._fail(unit_id, ("Observed worker failure.",), shared=False)
+            else:
+                run.state = "orphaned"
+                run.handle = None
+                run.issues = (
+                    "Exact active handle identity was not observed in the current session.",
+                )
+
+    def retry(self, unit_id: str, *, coordinator_token: str) -> None:
+        self._require_coordinator(coordinator_token)
+        run = self.state.units.get(unit_id)
+        if run is None:
+            raise TaskOrchestrationError("PW_TASK_UNIT_UNKNOWN", f"Unknown unit {unit_id}.")
+        if run.state not in {"failed", "orphaned"}:
+            raise TaskOrchestrationError(
+                "PW_TASK_RETRY_INVALID", f"{unit_id} is not failed or orphaned."
+            )
+        if not self.state.shared_premise_valid:
+            raise TaskOrchestrationError(
+                "PW_TASK_SHARED_PREMISE_INVALID", "A halted run cannot be retried in place."
+            )
+        run.state = "pending"
+        run.issues = ()
+        for descendant in self._descendants(unit_id):
+            descendant_run = self.state.units[descendant]
+            descendant_run.blocked_by = tuple(
+                blocker for blocker in descendant_run.blocked_by if blocker != unit_id
+            )
+            if (
+                descendant_run.state == "blocked"
+                and not descendant_run.canonical_blocked
+                and not descendant_run.blocked_by
+            ):
+                descendant_run.state = "pending"
+
+    def assert_testing_allowed(self, *, force: bool = False) -> None:
+        incomplete = tuple(
+            unit_id for unit_id, run in self.state.units.items() if run.state != "done"
+        )
+        if incomplete:
+            suffix = " Ordinary --force cannot bypass this integrity gate." if force else ""
+            raise TaskOrchestrationError(
+                "PW_TASK_TESTING_INCOMPLETE",
+                "Task cannot move to Testing until every required implementation row is Done; "
+                f"incomplete: {', '.join(incomplete)}.{suffix}",
+            )
+
+    def summary(self) -> dict[str, object]:
+        groups: dict[str, list[str]] = {
+            "completed": [],
+            "failed": [],
+            "blocked": [],
+            "halted": [],
+            "in_flight": [],
+            "orphaned": [],
+            "unaffected": [],
+        }
+        for unit in self.plan.units:
+            state = self.state.units[unit.unit_id].state
+            if state == "done":
+                groups["completed"].append(unit.unit_id)
+            elif state in {"active", "returned"}:
+                groups["in_flight"].append(unit.unit_id)
+            elif state in groups:
+                groups[state].append(unit.unit_id)
+            elif self.state.failure_seen and self.state.shared_premise_valid:
+                groups["unaffected"].append(unit.unit_id)
+        return {
+            "schema_version": 1,
+            "target_id": self.state.target_id,
+            "shared_premise_valid": self.state.shared_premise_valid,
+            "testing_allowed": all(run.state == "done" for run in self.state.units.values()),
+            **groups,
+        }
 
 
 def _operational_status_choices(
@@ -8303,6 +9550,7 @@ def _load_delegation_runtime_state(root: Path, target_id: str) -> dict[str, obje
         "plan_fingerprint",
         "worktree",
         "units",
+        "task_orchestration",
     }
     unknown = set(raw) - allowed
     if unknown:
@@ -8343,6 +9591,8 @@ def _load_delegation_runtime_state(root: Path, target_id: str) -> dict[str, obje
         handle = value.get("handle")
         if handle is not None:
             _validate_runtime_handle(handle, unit_id=unit_id)
+    if "task_orchestration" in raw:
+        _task_orchestration_state_from_payload(raw["task_orchestration"])
     return raw
 
 
@@ -8397,6 +9647,59 @@ def reconcile_delegation_runtime_state(
         "worktree": str(root.resolve()),
         "units": reconciled_units,
     }
+    if "task_orchestration" in state:
+        task_runtime = _task_orchestration_state_from_payload(state["task_orchestration"])
+        for unit in plan.units:
+            run = task_runtime.units[unit.unit_id]
+            observed = normalized_observed.get(unit.unit_id)
+            if unit.canonical_state == "complete":
+                run.state = "done"
+                run.handle = None
+                run.completion_provenance = (
+                    f"canonical:{plan.target.source_path}#{plan.target.source_hash}"
+                )
+            elif run.state in {"active", "returned"}:
+                expected_kind = "subagent" if run.executor in {
+                    "bounded-subagent",
+                    "sequential-worker",
+                } else run.executor
+                identity_matches = (
+                    observed is not None
+                    and observed["id"] == run.handle
+                    and observed["kind"] == expected_kind
+                )
+                if (
+                    not identity_matches
+                    or observed is None
+                    or Path(observed["worktree"]).resolve() != root.resolve()
+                ):
+                    run.state = "orphaned"
+                    run.handle = None
+                elif observed["state"] == "active":
+                    run.state = "active"
+                elif observed["state"] == "complete":
+                    run.state = "returned"
+                else:
+                    run.state = "failed"
+                    run.handle = None
+                    run.issues = ("Observed worker failure during CLI reconciliation.",)
+                    task_runtime.failure_seen = True
+        result["task_orchestration"] = _task_orchestration_state_payload(task_runtime)
+        projected_units: dict[str, object] = {}
+        for unit_id, run in task_runtime.units.items():
+            projected = (
+                "complete"
+                if run.state == "done"
+                else "active"
+                if run.state in {"active", "returned"}
+                else "orphaned"
+                if run.state == "orphaned"
+                else "blocked"
+                if run.state in {"failed", "blocked", "halted"}
+                else "pending"
+            )
+            projected_units[unit_id] = {"state": projected, "handle": None}
+        result["units"] = projected_units
     return result
 
 
@@ -8427,10 +9730,19 @@ def _delegation_status_payload(
     else:
         units = state.get("units", {})
         assert isinstance(units, dict)
+        task_runtime = None
+        if "task_orchestration" in state:
+            task_runtime = _task_orchestration_state_from_payload(
+                state["task_orchestration"]
+            )
+            units = {
+                unit_id: {"state": run.state, "handle": run.handle}
+                for unit_id, run in task_runtime.units.items()
+            }
         unavailable = {
             unit_id
             for unit_id, value in units.items()
-            if isinstance(value, dict) and value.get("state") in {"active", "orphaned"}
+            if isinstance(value, dict) and value.get("state") != "pending"
         }
         payload["eligible_units"] = [
             unit_id for unit_id in plan.eligible_units if unit_id not in unavailable
@@ -8446,12 +9758,12 @@ def _delegation_status_payload(
             if not isinstance(runtime_unit, dict):
                 continue
             runtime_state = runtime_unit.get("state")
-            if runtime_state in {"active", "orphaned"}:
+            if runtime_state != "pending":
                 plan_unit["readiness"] = runtime_state
                 plan_unit["blocking_reasons"] = [
                     "Runtime handle is active; resume without relaunch."
                     if runtime_state == "active"
-                    else "Runtime handle is missing or belongs to another worktree; inspect orphan."
+                    else "Runtime Task state is not launch-eligible; reconcile or resume it."
                 ]
         payload["runtime_summary"] = {
             "initialized": True,
@@ -8466,6 +9778,26 @@ def _delegation_status_payload(
                 if isinstance(value, dict) and value.get("state") == "orphaned"
             ),
         }
+        if task_runtime is not None:
+            payload["runtime_summary"].update(
+                {
+                    "returned": sorted(
+                        unit_id
+                        for unit_id, run in task_runtime.units.items()
+                        if run.state == "returned"
+                    ),
+                    "completed": sorted(
+                        unit_id
+                        for unit_id, run in task_runtime.units.items()
+                        if run.state == "done"
+                    ),
+                    "attempts": {
+                        unit_id: run.attempt
+                        for unit_id, run in sorted(task_runtime.units.items())
+                    },
+                    "no_relaunch": sorted(unavailable),
+                }
+            )
     return payload
 
 
@@ -9853,6 +11185,73 @@ def _implementation_task_table_rows(
     return True, rows, malformed_rows
 
 
+def _task_testing_integrity_issues(docs_text: str) -> tuple[str, ...]:
+    """Return integrity issues that ordinary force is never allowed to bypass."""
+    lines = docs_text.splitlines()
+    task_list_headings = [
+        idx for idx, line in enumerate(lines) if line.strip() == "## Task List"
+    ]
+    if len(task_list_headings) != 1:
+        return ("Task IMPLEMENTATION.md must contain exactly one canonical ## Task List section.",)
+
+    section_start = task_list_headings[0] + 1
+    section_end = len(lines)
+    for idx in range(section_start, len(lines)):
+        if lines[idx].startswith("## "):
+            section_end = idx
+            break
+    section_lines = lines[section_start:section_end]
+    supported_headers = [
+        idx
+        for idx, line in enumerate(section_lines)
+        if _parse_markdown_table_cells(line)
+        in (
+            list(DELEGATION_IMPLEMENTATION_TASK_COLUMNS),
+            list(IMPLEMENTATION_TASK_COLUMNS),
+        )
+    ]
+    if len(supported_headers) != 1:
+        return ("Canonical Task List must contain exactly one supported implementation table.",)
+
+    table_text = "\n".join(section_lines[supported_headers[0] :])
+    table_found, rows, malformed_rows = _implementation_task_table_rows(table_text)
+    if not table_found:
+        return ("Task IMPLEMENTATION.md has no supported Task List table.",)
+    if malformed_rows:
+        return (
+            "Task List has malformed rows at lines: "
+            + ", ".join(str(line) for line in malformed_rows)
+            + ".",
+        )
+    if not rows:
+        return ("Task List must contain at least one required implementation row.",)
+
+    first_non_table = supported_headers[0] + 2 + len(rows) + len(malformed_rows)
+    trailing_table_lines = [
+        section_start + idx + 1
+        for idx, line in enumerate(section_lines[first_non_table:], start=first_non_table)
+        if _parse_markdown_table_cells(line) is not None
+    ]
+    if trailing_table_lines:
+        return (
+            "Canonical Task List contains unexpected trailing or duplicate table rows at lines: "
+            + ", ".join(str(line) for line in trailing_table_lines)
+            + ".",
+        )
+    incomplete = tuple(
+        row.get("ID", "row").strip() or "row"
+        for row in rows
+        if row.get("Status", "").strip() != "Done"
+    )
+    if incomplete:
+        return (
+            "Task cannot move to Testing until every required implementation row is Done; "
+            "incomplete: " + ", ".join(incomplete) + ". Ordinary --force cannot bypass "
+            "this integrity gate.",
+        )
+    return ()
+
+
 def _has_qa_review_evidence(text: str) -> bool:
     section = _markdown_section(text, "QA & Code Review")
     if not section or "____" in section:
@@ -10870,6 +12269,10 @@ def _update_global_tracker_row_status(
         requirements_text = (
             requirements_path.read_text(encoding="utf-8") if requirements_path.exists() else ""
         )
+        if new_status == "Testing":
+            testing_issues = _task_testing_integrity_issues(docs_text)
+            if testing_issues:
+                raise SystemExit(_format_readiness_block(row_id, list(testing_issues)))
         if new_status == "Analysing" and not force and not _is_discovery_work(requirements_text):
             approval_issues = _approval_envelope_issues(
                 requirements_text,
@@ -11077,6 +12480,18 @@ def _update_epic_child_status(
                 f"Invalid target status '{new_status}'. "
                 f"Allowed: {', '.join(EPIC_TRACKER_STATUSES)}."
             )
+        if new_status == "Testing":
+            docs_rel = _clean_markdown_cell_path(row.get("Docs", ""))
+            if not docs_rel:
+                raise SystemExit(f"{row_id} cannot move to Testing without a docs path.")
+            docs_path = root / ".project-workflow" / docs_rel
+            if not docs_path.exists():
+                raise SystemExit(f"{row_id} docs path does not exist: {docs_path}")
+            testing_issues = _task_testing_integrity_issues(
+                docs_path.read_text(encoding="utf-8")
+            )
+            if testing_issues:
+                raise SystemExit(_format_readiness_block(row_id, list(testing_issues)))
         if not force and not _epic_status_transition_allowed(current_status, new_status):
             raise SystemExit(
                 f"Illegal epic status transition for {row_id}: "
