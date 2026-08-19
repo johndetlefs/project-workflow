@@ -27,3 +27,4 @@
 | EPIC-009 | Workspace Mode And Multi-Repo Coordination | Complete | `tasks/EPIC-009-Workspace-Mode-And-Multi-Repo-Coordination/REQUIREMENTS.md` |
 | FIX-005 | Harden Workspace Journey Proof | Complete | `tasks/FIX-005-Harden-Workspace-Journey-Proof/FIX.md` |
 | EPIC-010 | Delegate Execution Orchestrator | Complete | `tasks/EPIC-010-Delegate-Execution-Orchestrator/REQUIREMENTS.md` |
+| EPIC-011 | Release And Roll Out Project Workflow 0.4.0 | In Progress | `tasks/EPIC-011-Release-And-Roll-Out-Project-Workflow-0-4-0/REQUIREMENTS.md` |
