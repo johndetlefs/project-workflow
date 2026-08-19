@@ -61,23 +61,23 @@
 
 | Parent AC | Proof Owner | Required Evidence |
 | --- | --- | --- |
-| AC1 | Delegation Graph child | Resolver tests for exact target identity, approved-plan membership, mixed/unknown/unrelated rejection, and non-launch on failure. |
-| AC2 | Delegation Graph child | Plan-schema, dependency, cycle, malformed-reference, write-scope, and collision validation tests plus migration evidence. |
-| AC3 | Delegation Graph and Epic Orchestration children | Decomposition dependency persistence, authority matching, unapproved-child rejection, and parent AC preservation evidence. |
-| AC4 | Delegation Graph child | Human/JSON snapshots and schema tests proving deterministic graph, readiness, eligibility, blocking, executor, concurrency, provenance, and read-only behavior. |
-| AC5 | Task Orchestration child | Executor-selection tests and Task-mode runtime evidence distinguishing subagent, sequential, and coordinator-owned work without per-row Codex tasks. |
-| AC6 | Epic Orchestration child | Current-host external-contract evidence and live task/worktree creation proving capability and explicit-authority gates. |
-| AC7 | Task and Epic Orchestration children | Captured work packets and enforcement tests for identity, ACs, dependencies, scope, validation, evidence, forbidden actions, and stop conditions. |
-| AC8 | Task Orchestration child | Single-writer tests, shared-artifact diff evidence, lifecycle transition proof, and live rejection of premature `Testing`. |
-| AC9 | Delegation Graph, Task Orchestration, and Epic Orchestration children | Capacity-resolution tests and observed host run showing effective concurrency never exceeds available capacity. |
-| AC10 | Task and Epic Orchestration children | Failure-injection tests and live run evidence for descendant blocking, independent continuation, shared-premise halt, safe in-flight completion, and terminal classifications. |
-| AC11 | Task and Epic Orchestration children | Integration/reconciliation tests and retained examples where verified results release dependencies while collision/out-of-scope results do not. |
-| AC12 | Delegation Graph, Task Orchestration, and Epic Orchestration children | Interruption/resume and orphan tests plus live proof of no duplicate worker or Codex task launch. |
-| AC13 | Delegation Graph and Host Alignment children | Git/package privacy inspection proving host handles and private runtime data are ignored while canonical evidence remains reviewable. |
-| AC14 | Task and Epic Orchestration children | Lifecycle/QA/closeout regression tests and live evidence that Delegate cannot self-complete Task or Epic delivery. |
-| AC15 | Host Alignment child | Capability-matrix tests and unvalidated-host scenarios proving fail-closed or explicit sequential fallback with truthful claims. |
-| AC16 | Host Alignment child | Generated/source mirror checks, init/upgrade plan/apply/rollback tests, fresh install inspection, and package asset parity. |
-| AC17 | End-To-End Proof child | Complete locked regression, strict Doctor, compilation/build/package results, and non-delegated journey checks. |
-| AC18 | Task Orchestration and End-To-End Proof children | Retained disposable current-Codex Task-mode journey matching every AC18 condition and tied to exact runtime/source identity. |
-| AC19 | Epic Orchestration and End-To-End Proof children | Retained disposable current-Codex Epic-mode journey matching every AC19 condition and tied to exact runtime/source identity. |
-| AC20 | Host Alignment and End-To-End Proof children | README/AGENTS/skill/prompt/install inspection plus positive and negative invocation examples verified against implemented behavior. |
+| AC1 | TASK-060 | Resolver tests for exact target identity, approved-plan membership, mixed/unknown/unrelated rejection, and non-launch on failure. |
+| AC2 | TASK-060 | Plan-schema, dependency, cycle, malformed-reference, write-scope, and collision validation tests plus migration evidence. |
+| AC3 | TASK-060, TASK-062 | Decomposition dependency persistence, authority matching, unapproved-child rejection, and parent AC preservation evidence. |
+| AC4 | TASK-060, TASK-064 | Human/JSON snapshots and schema tests proving deterministic graph, readiness, eligibility, blocking, executor, concurrency, provenance, and read-only behavior. |
+| AC5 | TASK-061 | Executor-selection tests and Task-mode runtime evidence distinguishing subagent, sequential, and coordinator-owned work without per-row Codex tasks. |
+| AC6 | TASK-062, TASK-063 | Current-host external-contract evidence and live task/worktree creation proving capability and explicit-authority gates. |
+| AC7 | TASK-061, TASK-062, TASK-063 | Captured work packets and enforcement tests for identity, ACs, dependencies, scope, validation, evidence, forbidden actions, and stop conditions. |
+| AC8 | TASK-061 | Single-writer tests, shared-artifact diff evidence, lifecycle transition proof, and live rejection of premature `Testing`. |
+| AC9 | TASK-060, TASK-061, TASK-062, TASK-063 | Capacity-resolution tests and observed host run showing effective concurrency never exceeds available capacity. |
+| AC10 | TASK-061, TASK-062, TASK-064 | Failure-injection tests and live run evidence for descendant blocking, independent continuation, shared-premise halt, safe in-flight completion, and terminal classifications. |
+| AC11 | TASK-061, TASK-062, TASK-064 | Integration/reconciliation tests and retained examples where verified results release dependencies while collision/out-of-scope results do not. |
+| AC12 | TASK-060, TASK-061, TASK-062, TASK-064 | Interruption/resume and orphan tests plus live proof of no duplicate worker or Codex task launch. |
+| AC13 | TASK-060, TASK-063 | Git/package privacy inspection proving host handles and private runtime data are ignored while canonical evidence remains reviewable. |
+| AC14 | TASK-061, TASK-062, TASK-064 | Lifecycle/QA/closeout regression tests and live evidence that Delegate cannot self-complete Task or Epic delivery. |
+| AC15 | TASK-063, TASK-064 | Capability-matrix tests and unvalidated-host scenarios proving fail-closed or explicit sequential fallback with truthful claims. |
+| AC16 | TASK-063, TASK-064 | Generated/source mirror checks, init/upgrade plan/apply/rollback tests, fresh install inspection, and package asset parity. |
+| AC17 | TASK-064 | Complete locked regression, strict Doctor, compilation/build/package results, and non-delegated journey checks. |
+| AC18 | TASK-061, TASK-064 | Retained disposable current-Codex Task-mode journey matching every AC18 condition and tied to exact runtime/source identity. |
+| AC19 | TASK-062, TASK-064 | Retained disposable current-Codex Epic-mode journey matching every AC19 condition and tied to exact runtime/source identity. |
+| AC20 | TASK-063, TASK-064 | README/AGENTS/skill/prompt/install inspection plus positive and negative invocation examples verified against implemented behavior. |
