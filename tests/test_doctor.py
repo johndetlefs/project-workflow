@@ -416,7 +416,7 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
     assert manifest == workflow_cli.WorkflowManifest(
         manifest_version=1,
         package_version=__version__,
-        asset_version=1,
+        asset_version=2,
         schema_version=1,
         applied_migrations=(),
     )
@@ -424,7 +424,7 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
         "{\n"
         '  "manifest_version": 1,\n'
         '  "package_version": "0.3.0",\n'
-        '  "asset_version": 1,\n'
+        '  "asset_version": 2,\n'
         '  "schema_version": 1,\n'
         '  "applied_migrations": []\n'
         "}\n"
@@ -467,7 +467,7 @@ def test_repository_compatibility_classifies_supported_states(tmp_path: Path) ->
     workflow_cli._write_workflow_manifest(manifest_path, older_manifest)
     assert workflow_cli._repository_compatibility(tmp_path) == workflow_cli.RepositoryCompatibility(
         "upgradeable",
-        "schema-behind",
+        "assets-and-schema-behind",
         older_manifest,
     )
 
@@ -496,7 +496,7 @@ def test_repository_compatibility_classifies_supported_states(tmp_path: Path) ->
     ("update", "reason"),
     [
         ({"manifest_version": 2, "extension": "future"}, "future-manifest-version"),
-        ({"asset_version": 2}, "future-asset-version"),
+        ({"asset_version": 3}, "future-asset-version"),
         ({"schema_version": 2}, "future-schema-version"),
     ],
 )
@@ -732,7 +732,7 @@ def test_project_init_never_refreshes_an_existing_versioned_repository(tmp_path:
         json.loads(manifest_path.read_text(encoding="utf-8"))
     )
     assert preserved == behind
-    assert "already initialized (current); init made no changes" in result.stdout
+    assert "already initialized (upgradeable); init made no changes" in result.stdout
     assert "project upgrade --agent github-copilot" in result.stdout
 
 
@@ -3317,6 +3317,31 @@ def test_doctor_detects_source_prompt_mirror_drift(tmp_path: Path) -> None:
     assert "Prompt differs from packaged mirror" in doctor.stdout
 
 
+def test_doctor_detects_installed_codex_delegate_skill_drift(tmp_path: Path) -> None:
+    init = run_project(["init", "--agent", "codex"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    packaged_skill = (
+        tmp_path
+        / "src/project_workflow/codex/skills/project-delegate/SKILL.md"
+    )
+    packaged_skill.parent.mkdir(parents=True)
+    shutil.copy2(
+        REPO_ROOT / "src/project_workflow/codex/skills/project-delegate/SKILL.md",
+        packaged_skill,
+    )
+    installed_skill = tmp_path / ".agents/skills/project-delegate/SKILL.md"
+    installed_skill.write_text(
+        installed_skill.read_text(encoding="utf-8") + "\nSemantic drift.\n",
+        encoding="utf-8",
+    )
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+
+    assert doctor.returncode != 0
+    assert "Installed Codex Delegate skill differs from packaged source" in doctor.stdout
+
+
 def test_doctor_strict_fails_complete_task_without_qa_evidence(tmp_path: Path) -> None:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
@@ -5608,6 +5633,34 @@ def test_smoke_bomb_failed_reviewed_validation_refuses_zip(tmp_path: Path) -> No
     assert result["archive"] is None
     assert not output.exists()
     assert not (root / ".project-workflow").exists()
+
+
+def test_smoke_bomb_plan_inventory_omits_ignored_private_delegate_runtime(
+    tmp_path: Path,
+) -> None:
+    root = create_smoke_bomb_fixture(tmp_path, "codex")
+    private_runtime = root / ".project-workflow/runtime/delegations/private-handle.json"
+    private_runtime.parent.mkdir(parents=True)
+    private_runtime.write_text(
+        '{"handle":"private-task-id","credential":"must-not-ship"}\n',
+        encoding="utf-8",
+    )
+    assert _run_git_for_test(
+        root,
+        ["check-ignore", ".project-workflow/runtime/delegations/private-handle.json"],
+    )
+    planned = run_project(
+        [*smoke_bomb_args(root, tmp_path / "client.zip", "codex"), "--plan"],
+        cwd=root,
+    )
+    assert planned.returncode != 0
+    plan = json.loads(planned.stdout)
+    assert "private-handle" not in planned.stdout
+    assert "must-not-ship" not in planned.stdout
+    assert "PW_SMOKE_BOMB_PRIVATE_RUNTIME_PRESENT" in {
+        blocker["code"] for blocker in plan["blockers"]
+    }
+    assert not any("private-handle" in path for path in plan["archive"]["included_paths"])
 
 
 @pytest.mark.parametrize(

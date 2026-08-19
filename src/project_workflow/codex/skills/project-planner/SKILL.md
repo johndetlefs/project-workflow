@@ -71,3 +71,9 @@ Turn confirmed requirements into a safe, incremental implementation plan.
 14. Include QA/code review as the required gate after implementation validation
     and before completion.
 15. Do not implement code during planning.
+
+For Delegate-capable plans, extend the task table with `Dependencies`, `Write Scope`, and
+`Parallel Safe`. Keep Task rows distinct from Epic child Tasks. Plan no fixed worker count: runtime
+capacity is observed at execution. Include coordinator-only workflow writes, bounded worker packets,
+coordinator verification, descendant blocking, and independent-branch continuation while shared
+premises remain valid.

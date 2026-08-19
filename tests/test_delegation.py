@@ -156,7 +156,7 @@ def test_build_plan_orders_graph_and_reports_readiness_executor_capacity_and_pro
         requested_concurrency=4,
         available_child_capacity=1,
         observed_capabilities=("subagent",),
-        capability_source="codex adapter observation 42",
+        capability_source="2026-08-19 codex adapter observation 42",
     )
 
     assert built.selected_units == ("1", "2")
@@ -165,7 +165,7 @@ def test_build_plan_orders_graph_and_reports_readiness_executor_capacity_and_pro
     assert built.units[0].executor == "subagent"
     assert built.effective_concurrency == built.effective_child_concurrency == 1
     assert "Reduced from requested 4" in built.concurrency_reason
-    assert built.provenance[-1] == "capability:codex adapter observation 42"
+    assert built.provenance[-1] == "capability:2026-08-19 codex adapter observation 42"
     assert workflow_cli.delegation_plan_payload(built)["schema_version"] == 1
 
 
@@ -250,6 +250,14 @@ def test_capability_requires_observed_adapter_provenance() -> None:
         plan(observed_capabilities=("subagent",), available_child_capacity=1)
     assert caught.value.code == "PW_DELEGATION_CAPABILITY_UNOBSERVED"
 
+    with pytest.raises(workflow_cli.DelegationPlanError) as undated:
+        plan(
+            observed_capabilities=("subagent",),
+            available_child_capacity=1,
+            capability_source="current codex adapter observation",
+        )
+    assert undated.value.code == "PW_DELEGATION_CAPABILITY_PROVENANCE_UNDATED"
+
 
 def test_persistent_task_executor_requires_separate_owner_authority() -> None:
     epic_units = (unit("TASK-001", scope=()),)
@@ -257,7 +265,7 @@ def test_persistent_task_executor_requires_separate_owner_authority() -> None:
         target=target("epic"),
         units=epic_units,
         observed_capabilities=("persistent-task",),
-        capability_source="codex adapter",
+        capability_source="2026-08-19 codex adapter",
         available_child_capacity=1,
     )
     assert without_authority.units[0].executor == "coordinator"
@@ -266,7 +274,7 @@ def test_persistent_task_executor_requires_separate_owner_authority() -> None:
         target=target("epic"),
         units=epic_units,
         observed_capabilities=("persistent-task",),
-        capability_source="codex adapter",
+        capability_source="2026-08-19 codex adapter",
         persistent_task_authority="owner approval EPIC-001",
         available_child_capacity=1,
     )
@@ -276,12 +284,30 @@ def test_persistent_task_executor_requires_separate_owner_authority() -> None:
     fully_supported = workflow_cli.build_delegation_plan(
         target=target("epic"),
         units=epic_units,
-        observed_capabilities=("persistent-task", "isolated-worktree", "task-monitoring"),
-        capability_source="current codex adapter observation",
+        observed_capabilities=(
+            "persistent-task",
+            "isolated-worktree",
+            "task-monitoring",
+            "task-reconciliation",
+        ),
+        capability_source="2026-08-19 current codex adapter observation",
         persistent_task_authority="owner approval EPIC-001",
         available_child_capacity=1,
     )
     assert fully_supported.units[0].executor == "persistent-task"
+
+
+def test_epic_never_falls_through_to_task_row_subagents() -> None:
+    built = workflow_cli.build_delegation_plan(
+        target=target("epic"),
+        units=(unit("TASK-001", scope=()),),
+        observed_capabilities=("subagent",),
+        capability_source="2026-08-19 current session subagent observation",
+        available_child_capacity=1,
+    )
+
+    assert built.units[0].executor == "coordinator"
+    assert built.effective_child_concurrency == 0
 
 
 def test_exact_target_resolution_rejects_mixed_unknown_and_unapproved(tmp_path: Path) -> None:
@@ -315,7 +341,7 @@ def test_delegate_plan_and_status_human_json_are_deterministic_and_read_only(tmp
         "--observed-capability",
         "subagent",
         "--capability-source",
-        "fixture adapter",
+        "2026-08-19 fixture adapter",
         "--format",
         "json",
     )

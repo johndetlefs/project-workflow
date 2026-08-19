@@ -44,6 +44,18 @@ def source_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(docs)
+    delegate_contract = (
+        "Coordinate one Task or Epic with verified, unsupported, or unknown capability and "
+        "available child capacity. The coordinator verifies descendants and unrelated branches "
+        "before independent QA.\n"
+    )
+    for path in (
+        tmp_path / "src/project_workflow/prompts/Delegate.prompt.md",
+        tmp_path / ".github/prompts/Delegate.prompt.md",
+        tmp_path / "src/project_workflow/codex/skills/project-delegate/SKILL.md",
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(delegate_contract)
     (tmp_path / "uv.lock").write_text("version = 1\n")
     monkeypatch.setattr(release_contract, "ROOT", tmp_path)
     monkeypatch.setattr(release_contract, "VERSION_PATH", version_path)
@@ -72,14 +84,32 @@ def artifact_fixture(tmp_path: Path, version: str = "0.2.0") -> Path:
             "project_workflow/templates/workflow.py",
             "project_workflow/codex/AGENTS.md",
             "project_workflow/codex/skills/project-task/SKILL.md",
+            "project_workflow/codex/skills/project-delegate/SKILL.md",
+            "project_workflow/prompts/Delegate.prompt.md",
+            "project_workflow/cursor/rules/project-workflow.mdc",
         ):
-            archive.writestr(name, "fixture\n")
+            content = (
+                "Task or Epic verified unsupported unknown available child coordinator "
+                "descendants unrelated independent QA\n"
+                if name.endswith(("Delegate.prompt.md", "project-delegate/SKILL.md"))
+                else "fixture\n"
+            )
+            archive.writestr(name, content)
     sdist = dist / f"project_workflow-{version}.tar.gz"
     with tarfile.open(sdist, "w:gz") as archive:
         content = metadata.encode()
         info = tarfile.TarInfo(f"project_workflow-{version}/PKG-INFO")
         info.size = len(content)
         archive.addfile(info, io.BytesIO(content))
+        for relative in (
+            "src/project_workflow/prompts/Delegate.prompt.md",
+            "src/project_workflow/codex/skills/project-delegate/SKILL.md",
+            "src/project_workflow/cursor/rules/project-workflow.mdc",
+        ):
+            asset = b"fixture\n"
+            asset_info = tarfile.TarInfo(f"project_workflow-{version}/{relative}")
+            asset_info.size = len(asset)
+            archive.addfile(asset_info, io.BytesIO(asset))
     return dist
 
 

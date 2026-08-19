@@ -101,3 +101,11 @@ Validation alignment guardrail:
 E2E exception:
 
 - If you are working under `front-end/apps/e2e/**`, maintain the suite-local `implementation.md` per the E2E instructions.
+
+Delegated-worker boundary:
+
+- When invoked from Delegate, implement only the supplied execution-unit packet and return identity,
+  exact source, allowed diff, validation, evidence, and stop-condition results to the coordinator.
+- Do not mutate shared workflow state or lifecycle, create persistent tasks/worktrees, push, merge,
+  release, deploy, contact others, or write outside the packet. The coordinator verifies the return
+  before dependencies or canonical status can advance.

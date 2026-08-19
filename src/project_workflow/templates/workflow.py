@@ -68,9 +68,9 @@ WORKFLOW_CONFIG_FILENAME = "config.json"
 WORKFLOW_MANIFEST_FILENAME = "manifest.json"
 CURRENT_PACKAGE_VERSION = "0.3.0"
 CURRENT_MANIFEST_VERSION = 1
-CURRENT_ASSET_VERSION = 1
+CURRENT_ASSET_VERSION = 2
 CURRENT_SCHEMA_VERSION = 1
-SUPPORTED_ASSET_VERSIONS = (1,)
+SUPPORTED_ASSET_VERSIONS = (1, 2)
 SUPPORTED_SCHEMA_VERSIONS = (0, 1)
 REPOSITORY_COMPATIBILITY_STATES = (
     "current",
@@ -146,6 +146,7 @@ SMOKE_BOMB_BLOCKER_CODES = (
     "PW_SMOKE_BOMB_CLIENT_GUIDANCE_REQUIRED",
     "PW_SMOKE_BOMB_DIRTY_WORKTREE",
     "PW_SMOKE_BOMB_OUTPUT_UNSAFE",
+    "PW_SMOKE_BOMB_PRIVATE_RUNTIME_PRESENT",
     "PW_SMOKE_BOMB_RESIDUAL_REFERENCE",
     "PW_SMOKE_BOMB_UNSAFE_TARGET",
     "PW_SMOKE_BOMB_VALIDATION_REQUIRED",
@@ -358,6 +359,7 @@ DELEGATION_CAPABILITIES = (
     "subagent",
     "worktree",
 )
+DELEGATION_CAPABILITY_STATES = ("verified", "unsupported", "unknown")
 DELEGATION_UNIT_STATES = ("pending", "active", "complete", "blocked", "orphaned")
 TRACKER_STATUSES = (
     "To Do",
@@ -812,8 +814,9 @@ def _ensure_user_config_file(path: Path) -> str:
 
 
 def _ensure_delegation_runtime_ignore(root: Path) -> str:
-    ignore_path = root / ".gitignore"
-    entry = f"{DELEGATION_RUNTIME_RELATIVE_DIR.as_posix()}/"
+    ignore_path = root / ".project-workflow" / ".gitignore"
+    ignore_path.parent.mkdir(parents=True, exist_ok=True)
+    entry = "runtime/delegations/"
     content = ignore_path.read_text(encoding="utf-8") if ignore_path.exists() else ""
     if entry in {line.strip() for line in content.splitlines()}:
         return f"Exists: {ignore_path} delegation runtime entry"
@@ -827,6 +830,22 @@ def _ensure_delegation_runtime_ignore(root: Path) -> str:
         encoding="utf-8",
     )
     return f"Updated: {ignore_path} delegation runtime entry"
+
+
+def _planned_delegation_runtime_ignore(root: Path) -> bytes:
+    ignore_path = root / ".project-workflow" / ".gitignore"
+    entry = "runtime/delegations/"
+    content = ignore_path.read_text(encoding="utf-8") if ignore_path.exists() else ""
+    if entry in {line.strip() for line in content.splitlines()}:
+        return content.encode("utf-8")
+    separator = "" if not content or content.endswith("\n") else "\n"
+    return (
+        content
+        + separator
+        + "\n# Machine-local delegation handles and leases\n"
+        + entry
+        + "\n"
+    ).encode("utf-8")
 
 
 def _managed_project_workflow_block() -> str:
@@ -892,6 +911,16 @@ def _managed_project_workflow_block() -> str:
         "- For a sanitized client handoff, use canonical `project smoke-bomb` from a clean "
         "dedicated worktree to review exact removal, run explicit validations, preserve useful "
         "client agent guidance, and export a ZIP without Git or workflow internals.\n"
+        "- Delegate coordinates existing approved rows for exactly one Task or Epic. Resolve "
+        "subagent, persistent-task, isolated-worktree, monitoring, reconciliation, and capacity "
+        "capabilities as runtime-observed `verified`, `unsupported`, or `unknown`; only verified "
+        "capability authorizes native launch, otherwise use safe coordinator/sequential fallback "
+        "or block. Never hard-code worker capacity.\n"
+        "- The coordinator alone writes shared workflow state and verifies worker identity, source, "
+        "scope, validation, and evidence before satisfying dependencies. A failure blocks its "
+        "descendants; unrelated branches continue only while shared premises remain valid. "
+        "Delegate never replaces Implement, independent QA, Epic closeout, owner acceptance, or "
+        "delivery proof.\n"
         "- Run `./.project-workflow/cli/workflow doctor` after tracker or task-doc changes.\n"
         f"{MANAGED_BLOCK_END}"
     )
@@ -1201,9 +1230,17 @@ class DelegationPlan:
     effective_child_concurrency: int
     concurrency_reason: str
     observed_capabilities: tuple[str, ...]
+    capability_matrix: tuple["DelegationCapabilityObservation", ...]
     capability_source: str
     persistent_task_authority: str | None
     provenance: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class DelegationCapabilityObservation:
+    capability: str
+    state: str
+    provenance: str
 
 
 class TaskOrchestrationError(ValueError):
@@ -2507,6 +2544,7 @@ class EpicHostCapabilities:
             and self.persistent_tasks
             and self.isolated_worktrees
             and self.monitoring
+            and self.reconciliation
             and self.available_child_capacity > 0
         )
 
@@ -2997,7 +3035,12 @@ class EpicOrchestrator:
 
     def capability_boundary(self) -> dict[str, object]:
         reasons: list[str] = []
-        required = {"persistent-task", "isolated-worktree", "task-monitoring"}
+        required = {
+            "persistent-task",
+            "isolated-worktree",
+            "task-monitoring",
+            "task-reconciliation",
+        }
         if not _delegation_explicit_authority(self.plan.persistent_task_authority):
             reasons.append("explicit owner authority is absent")
         if not required.issubset(self.plan.observed_capabilities):
@@ -3014,6 +3057,8 @@ class EpicOrchestrator:
             reasons.append("isolated worktree creation is unsupported or unknown")
         if not self.capabilities.monitoring:
             reasons.append("task monitoring is unsupported or unknown")
+        if not self.capabilities.reconciliation:
+            reasons.append("task reconciliation is unsupported or unknown")
         if self.capabilities.available_child_capacity == 0:
             reasons.append("available persistent-task capacity is zero")
         supported = not reasons
@@ -6872,6 +6917,11 @@ def _managed_asset_upgrade_outputs(
     config_path = workflow_dir / WORKFLOW_CONFIG_FILENAME
     manifest_path = workflow_dir / WORKFLOW_MANIFEST_FILENAME
 
+    record(
+        workflow_dir / ".gitignore",
+        _planned_delegation_runtime_ignore(root),
+    )
+
     if not tracker_path.exists():
         record(tracker_path, _tracker_template().encode("utf-8"))
     if not backlog_path.exists():
@@ -7789,6 +7839,18 @@ def _smoke_bomb_plan_outputs(
             outputs[action["path"]] = content
 
     workflow_dir = root / ".project-workflow"
+    private_runtime_dir = root / DELEGATION_RUNTIME_RELATIVE_DIR
+    private_runtime_present = private_runtime_dir.is_dir() and any(
+        path.is_file() or path.is_symlink() for path in private_runtime_dir.rglob("*")
+    )
+    if private_runtime_present:
+        blockers.append(
+            SmokeBombBlocker(
+                "PW_SMOKE_BOMB_PRIVATE_RUNTIME_PRESENT",
+                "Machine-local delegation runtime exists. Clear it outside the retained Smoke "
+                "Bomb evidence flow before planning or export; private handle paths are redacted.",
+            )
+        )
     if (
         not _smoke_bomb_target_is_safe(root, workflow_dir / "sentinel")
         or workflow_dir.is_symlink()
@@ -7802,6 +7864,8 @@ def _smoke_bomb_plan_outputs(
         )
     elif workflow_dir.is_dir():
         for path in sorted(workflow_dir.rglob("*")):
+            if path == private_runtime_dir or private_runtime_dir in path.parents:
+                continue
             if path.is_symlink() or (path.exists() and not path.is_file() and not path.is_dir()):
                 blockers.append(
                     SmokeBombBlocker(
@@ -10123,6 +10187,72 @@ def _delegation_has_path(
     return False
 
 
+def _delegation_capability_matrix(
+    *,
+    observed_capabilities: tuple[str, ...],
+    unsupported_capabilities: tuple[str, ...],
+    capability_source: str,
+) -> tuple[DelegationCapabilityObservation, ...]:
+    """Resolve verified/unsupported/unknown host capability truth without inference."""
+    verified = set(observed_capabilities)
+    unsupported = set(unsupported_capabilities)
+    unknown_names = sorted((verified | unsupported) - set(DELEGATION_CAPABILITIES))
+    if unknown_names:
+        raise _delegation_error(
+            "PW_DELEGATION_CAPABILITY_UNKNOWN",
+            "Unknown capability: " + ", ".join(unknown_names) + ".",
+        )
+    conflicts = sorted(verified & unsupported)
+    if conflicts:
+        raise _delegation_error(
+            "PW_DELEGATION_CAPABILITY_CONFLICT",
+            "Capabilities cannot be both verified and unsupported: "
+            + ", ".join(conflicts)
+            + ".",
+        )
+    source = capability_source.strip()
+    if (verified or unsupported) and source.lower() in {"", "not observed", "unknown"}:
+        raise _delegation_error(
+            "PW_DELEGATION_CAPABILITY_UNOBSERVED",
+            "Verified or unsupported capabilities require current host observation provenance.",
+        )
+    if verified or unsupported:
+        observed_date_match = re.search(r"(?<!\d)(\d{4}-\d{2}-\d{2})(?!\d)", source)
+        try:
+            observed_date = (
+                date.fromisoformat(observed_date_match.group(1))
+                if observed_date_match is not None
+                else None
+            )
+        except ValueError:
+            observed_date = None
+        if observed_date is None:
+            raise _delegation_error(
+                "PW_DELEGATION_CAPABILITY_PROVENANCE_UNDATED",
+                "Verified or unsupported capabilities require provenance containing a valid "
+                "ISO observation date (YYYY-MM-DD).",
+            )
+    observations: list[DelegationCapabilityObservation] = []
+    for capability in DELEGATION_CAPABILITIES:
+        if capability in verified:
+            state = "verified"
+            provenance = f"runtime-observed:{source}"
+        elif capability in unsupported:
+            state = "unsupported"
+            provenance = f"runtime-observed:{source}"
+        else:
+            state = "unknown"
+            provenance = "not observed"
+        observations.append(
+            DelegationCapabilityObservation(
+                capability=capability,
+                state=state,
+                provenance=provenance,
+            )
+        )
+    return tuple(observations)
+
+
 def build_delegation_plan(
     *,
     target: DelegationTarget,
@@ -10131,6 +10261,7 @@ def build_delegation_plan(
     requested_concurrency: int = 1,
     available_child_capacity: int = 0,
     observed_capabilities: tuple[str, ...] = (),
+    unsupported_capabilities: tuple[str, ...] = (),
     capability_source: str = "not observed",
     persistent_task_authority: str | None = None,
 ) -> DelegationPlan:
@@ -10143,18 +10274,14 @@ def build_delegation_plan(
         raise _delegation_error(
             "PW_DELEGATION_CAPACITY_INVALID", "Available child capacity cannot be negative."
         )
-    capabilities = tuple(sorted(set(observed_capabilities)))
-    unknown_capabilities = sorted(set(capabilities) - set(DELEGATION_CAPABILITIES))
-    if unknown_capabilities:
-        raise _delegation_error(
-            "PW_DELEGATION_CAPABILITY_UNKNOWN",
-            "Unknown observed capability: " + ", ".join(unknown_capabilities) + ".",
-        )
-    if capabilities and capability_source.strip().lower() in {"", "not observed", "unknown"}:
-        raise _delegation_error(
-            "PW_DELEGATION_CAPABILITY_UNOBSERVED",
-            "Executor capabilities are advisory until a host adapter records their source.",
-        )
+    capability_matrix = _delegation_capability_matrix(
+        observed_capabilities=observed_capabilities,
+        unsupported_capabilities=unsupported_capabilities,
+        capability_source=capability_source,
+    )
+    capabilities = tuple(
+        item.capability for item in capability_matrix if item.state == "verified"
+    )
 
     by_id: dict[str, DelegationUnit] = {}
     for unit in units:
@@ -10260,12 +10387,18 @@ def build_delegation_plan(
     blocked: list[str] = []
     worker_capability: str | None = None
     persistent_creation_capabilities = {
-        "persistent-task", "isolated-worktree", "task-monitoring"
+        "persistent-task",
+        "isolated-worktree",
+        "task-monitoring",
+        "task-reconciliation",
     }
-    if target.kind == "epic" and persistent_creation_capabilities.issubset(capabilities):
-        if _delegation_explicit_authority(persistent_task_authority):
+    if target.kind == "epic":
+        if (
+            persistent_creation_capabilities.issubset(capabilities)
+            and _delegation_explicit_authority(persistent_task_authority)
+        ):
             worker_capability = "persistent-task"
-    if worker_capability is None and "subagent" in capabilities:
+    elif "subagent" in capabilities:
         worker_capability = "subagent"
     worker_observed = worker_capability is not None and available_child_capacity > 0
     for unit_id in selected_order:
@@ -10384,6 +10517,7 @@ def build_delegation_plan(
         effective_child_concurrency=effective_child_concurrency,
         concurrency_reason=concurrency_reason,
         observed_capabilities=capabilities,
+        capability_matrix=capability_matrix,
         capability_source=capability_source,
         persistent_task_authority=persistent_task_authority,
         provenance=tuple(dict.fromkeys(provenance)),
@@ -10503,6 +10637,7 @@ def _delegation_plan_from_args(root: Path, args: argparse.Namespace) -> Delegati
         requested_concurrency=args.requested_concurrency,
         available_child_capacity=args.available_child_capacity,
         observed_capabilities=tuple(args.observed_capability or ()),
+        unsupported_capabilities=tuple(args.unsupported_capability or ()),
         capability_source=args.capability_source,
         persistent_task_authority=args.persistent_task_authority,
     )
@@ -10548,6 +10683,14 @@ def delegation_plan_payload(plan: DelegationPlan) -> dict[str, object]:
         },
         "capabilities": {
             "observed": list(plan.observed_capabilities),
+            "matrix": [
+                {
+                    "capability": item.capability,
+                    "state": item.state,
+                    "provenance": item.provenance,
+                }
+                for item in plan.capability_matrix
+            ],
             "source": plan.capability_source,
             "persistent_task_authority": plan.persistent_task_authority,
         },
@@ -10589,6 +10732,10 @@ def _format_delegation_plan_human(plan: DelegationPlan, *, heading: str = "Deleg
             ),
             f"Concurrency reason: {plan.concurrency_reason}",
             "Capability source: " + plan.capability_source,
+            "Capability matrix: "
+            + ", ".join(
+                f"{item.capability}={item.state}" for item in plan.capability_matrix
+            ),
             "Persistent task authority: "
             + (plan.persistent_task_authority or "not authorized"),
         ]
@@ -14087,6 +14234,21 @@ def _prompt_filename_to_cursor_agent_name(prompt_file: str) -> str:
     return _prompt_filename_to_agent_name(prompt_file)
 
 
+def _host_native_prompt_body(body: str, *, host: str) -> str:
+    """Replace Copilot input interpolation with explicit host-native request values."""
+    rendered = re.sub(
+        r"\$\{input:([A-Za-z][A-Za-z0-9_-]*)(?::[^}]*)?\}",
+        lambda match: f"<{match.group(1)}>",
+        body,
+    )
+    return (
+        f"Invocation contract ({host}): supply values such as `<taskId>` or `<scope>` "
+        "in the user request or current conversation. Treat angle-bracket values as required "
+        "request fields, not literal text.\n\n"
+        + rendered.lstrip()
+    )
+
+
 def _to_claude_agent_markdown(prompt_content: str, agent_name: str) -> str:
     """Convert packaged prompt markdown into Claude subagent markdown format."""
     frontmatter, body = _split_frontmatter(prompt_content)
@@ -14097,7 +14259,7 @@ def _to_claude_agent_markdown(prompt_content: str, agent_name: str) -> str:
         f"name: {agent_name}\n"
         f"description: \"{escaped_description}\"\n"
         "---\n\n"
-        f"{body.lstrip()}"
+        f"{_host_native_prompt_body(body, host='Claude Code')}"
     )
 
 
@@ -14111,7 +14273,7 @@ def _to_cursor_agent_markdown(prompt_content: str, agent_name: str) -> str:
         f"name: {agent_name}\n"
         f"description: \"{escaped_description}\"\n"
         "---\n\n"
-        f"{body.lstrip()}"
+        f"{_host_native_prompt_body(body, host='Cursor')}"
     )
 
 
@@ -14251,10 +14413,23 @@ def _doctor_check_source_mirrors(root: Path, issues: list[DoctorIssue]) -> None:
     local_cli_dir = root / ".project-workflow" / "cli"
     packaged_template_dir = root / "src" / "project_workflow" / "templates"
     mirror_pairs = (
-        (local_cli_dir / "workflow.py", packaged_template_dir / "workflow.py"),
-        (local_cli_dir / "workflow", packaged_template_dir / "workflow"),
+        (
+            local_cli_dir / "workflow.py",
+            packaged_template_dir / "workflow.py",
+            "Local workflow CLI differs from packaged template",
+        ),
+        (
+            local_cli_dir / "workflow",
+            packaged_template_dir / "workflow",
+            "Local workflow CLI differs from packaged template",
+        ),
+        (
+            root / ".agents/skills/project-delegate/SKILL.md",
+            root / "src/project_workflow/codex/skills/project-delegate/SKILL.md",
+            "Installed Codex Delegate skill differs from packaged source",
+        ),
     )
-    for local_path, packaged_path in mirror_pairs:
+    for local_path, packaged_path, mismatch_label in mirror_pairs:
         if not local_path.exists() or not packaged_path.exists():
             continue
         if not matches_packaged(local_path, packaged_path):
@@ -14262,7 +14437,85 @@ def _doctor_check_source_mirrors(root: Path, issues: list[DoctorIssue]) -> None:
                 issues,
                 "error",
                 local_path,
-                f"Local workflow CLI differs from packaged template: {packaged_path}",
+                f"{mismatch_label}: {packaged_path}",
+            )
+
+
+def _doctor_check_delegate_semantics(root: Path, issues: list[DoctorIssue]) -> None:
+    required = (
+        "task or epic",
+        "verified",
+        "unsupported",
+        "unknown",
+        "available child",
+        "coordinator",
+        "descendants",
+        "unrelated",
+        "independent qa",
+    )
+    candidates = (
+        root / "src/project_workflow/prompts/Delegate.prompt.md",
+        root / "src/project_workflow/codex/skills/project-delegate/SKILL.md",
+        root / ".github/prompts/Delegate.prompt.md",
+        root / ".agents/skills/project-delegate/SKILL.md",
+        root / ".claude/agents/project-delegate.md",
+        root / ".cursor/agents/project-delegate.md",
+    )
+    for path in candidates:
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        relative = path.relative_to(root).as_posix()
+        if relative.startswith((".agents/skills/", ".github/prompts/")) and not _is_generated_content(
+            text
+        ):
+            # A user-owned active collision is reported by the pending-update check.
+            continue
+        lowered = text.lower()
+        missing = [term for term in required if term not in lowered]
+        stale = any(
+            term in lowered
+            for term in (
+                "workers:4",
+                "worker limit",
+                "on first work-item failure",
+                "enter fail-fast mode",
+            )
+        )
+        placeholder_leak = relative.startswith((".claude/agents/", ".cursor/agents/")) and (
+            "${input:" in text
+        )
+        if missing or stale or placeholder_leak:
+            details = []
+            if missing:
+                details.append("missing " + ", ".join(missing))
+            if stale:
+                details.append("contains stale fixed-capacity or blanket-failure guidance")
+            if placeholder_leak:
+                details.append("contains GitHub Copilot input placeholders")
+            _add_issue(
+                issues,
+                "error",
+                path,
+                "Delegate semantic asset is invalid: " + "; ".join(details) + ".",
+                code="PW_GENERATED_ASSET_DRIFT",
+                remediation_owner="project-workflow",
+                mechanically_upgradeable=True,
+            )
+
+    compatibility = _repository_compatibility(root)
+    if compatibility.manifest is not None and compatibility.manifest.asset_version >= 2:
+        ignore_path = root / ".project-workflow/.gitignore"
+        ignore_text = ignore_path.read_text(encoding="utf-8") if ignore_path.is_file() else ""
+        if "runtime/delegations/" not in {line.strip() for line in ignore_text.splitlines()}:
+            _add_issue(
+                issues,
+                "error",
+                ignore_path,
+                "Delegate runtime handles are not protected by the managed workflow ignore.",
+                code="PW_GENERATED_ASSET_DRIFT",
+                remediation_owner="project-workflow",
+                mechanically_upgradeable=True,
             )
 
 
@@ -14899,6 +15152,7 @@ def run_doctor(root: Path) -> list[DoctorIssue]:
     config = _doctor_check_namespace_config(root, issues)
     _doctor_check_workspace_authority(root, config, issues)
     _doctor_check_source_mirrors(root, issues)
+    _doctor_check_delegate_semantics(root, issues)
     _doctor_check_pending_generated_updates(root, issues)
     _doctor_check_backlog(root, issues, config=config)
     _doctor_check_duplicate_tracker_ids(root, issues)
@@ -16716,12 +16970,24 @@ def _add_delegate_plan_arguments(command_parser: argparse.ArgumentParser) -> Non
         "--observed-capability",
         action="append",
         choices=DELEGATION_CAPABILITIES,
-        help="Host-adapter-observed executor capability; repeat as needed",
+        help=(
+            "Runtime-observed verified host capability; repeat as needed. This legacy-compatible "
+            "flag is the verified state in the tri-state capability matrix."
+        ),
+    )
+    command_parser.add_argument(
+        "--unsupported-capability",
+        action="append",
+        choices=DELEGATION_CAPABILITIES,
+        help="Runtime-observed unsupported host capability; repeat as needed",
     )
     command_parser.add_argument(
         "--capability-source",
         default="not observed",
-        help="Adapter observation provenance; required when capabilities are supplied",
+        help=(
+            "Dated adapter observation provenance containing YYYY-MM-DD; required when "
+            "capabilities are supplied"
+        ),
     )
     command_parser.add_argument(
         "--persistent-task-authority",

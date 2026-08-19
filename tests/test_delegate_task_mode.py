@@ -616,7 +616,7 @@ def test_persisted_resume_preserves_attempts_active_handles_and_orphans(tmp_path
             "--observed-capability",
             "subagent",
             "--capability-source",
-            "refreshed current Codex session",
+            "2026-08-19 refreshed current Codex session",
             "--format",
             "json",
         ],

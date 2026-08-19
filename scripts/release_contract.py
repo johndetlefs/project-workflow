@@ -39,6 +39,29 @@ class ContractError(RuntimeError):
     """A release identity or artifact violates the release contract."""
 
 
+def validate_delegate_semantics(assets: dict[str, str]) -> None:
+    required = (
+        "Task or Epic",
+        "verified",
+        "unsupported",
+        "unknown",
+        "available child",
+        "coordinator",
+        "descendants",
+        "unrelated",
+        "independent QA",
+    )
+    for label, text in assets.items():
+        missing = [value for value in required if value.lower() not in text.lower()]
+        if missing:
+            raise ContractError(f"Delegate semantic asset is incomplete ({label}): {missing}")
+        lowered = text.lower()
+        if "workers:4" in lowered or "worker limit" in lowered:
+            raise ContractError(f"Delegate semantic asset has fixed-capacity guidance: {label}")
+        if "on first work-item failure" in lowered or "enter fail-fast mode" in lowered:
+            raise ContractError(f"Delegate semantic asset has blanket fail-fast guidance: {label}")
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -102,6 +125,18 @@ def validate_source(*, expected_version: str | None, tag: str | None, clean: boo
         if expected not in combined_docs:
             raise ContractError(f"current documentation is missing canonical command: {expected}")
 
+    source_delegate = ROOT / "src/project_workflow/prompts/Delegate.prompt.md"
+    github_delegate = ROOT / ".github/prompts/Delegate.prompt.md"
+    codex_delegate = ROOT / "src/project_workflow/codex/skills/project-delegate/SKILL.md"
+    if source_delegate.read_bytes() != github_delegate.read_bytes():
+        raise ContractError("development Delegate prompt differs from packaged source")
+    validate_delegate_semantics(
+        {
+            str(source_delegate): source_delegate.read_text(),
+            str(codex_delegate): codex_delegate.read_text(),
+        }
+    )
+
     lock_path = ROOT / "uv.lock"
     if not lock_path.is_file():
         raise ContractError("uv.lock is required")
@@ -124,6 +159,9 @@ def _metadata_from_wheel(path: Path) -> dict[str, str]:
             "project_workflow/templates/workflow.py",
             "project_workflow/codex/AGENTS.md",
             "project_workflow/codex/skills/project-task/SKILL.md",
+            "project_workflow/codex/skills/project-delegate/SKILL.md",
+            "project_workflow/prompts/Delegate.prompt.md",
+            "project_workflow/cursor/rules/project-workflow.mdc",
         }
         missing = required_package_files - archive_names
         if missing:
@@ -135,11 +173,34 @@ def _metadata_from_wheel(path: Path) -> dict[str, str]:
             entry_points[0]
         ).decode():
             raise ContractError(f"wheel has invalid project CLI entry point: {path.name}")
+        validate_delegate_semantics(
+            {
+                "wheel prompt": archive.read(
+                    "project_workflow/prompts/Delegate.prompt.md"
+                ).decode(),
+                "wheel Codex skill": archive.read(
+                    "project_workflow/codex/skills/project-delegate/SKILL.md"
+                ).decode(),
+            }
+        )
         return dict(Parser().parsestr(archive.read(names[0]).decode()).items())
 
 
 def _metadata_from_sdist(path: Path) -> dict[str, str]:
     with tarfile.open(path, "r:gz") as archive:
+        archive_names = {member.name for member in archive.getmembers()}
+        required_suffixes = {
+            "/src/project_workflow/prompts/Delegate.prompt.md",
+            "/src/project_workflow/codex/skills/project-delegate/SKILL.md",
+            "/src/project_workflow/cursor/rules/project-workflow.mdc",
+        }
+        missing = [
+            suffix
+            for suffix in sorted(required_suffixes)
+            if not any(name.endswith(suffix) for name in archive_names)
+        ]
+        if missing:
+            raise ContractError(f"sdist is missing Delegate package data: {missing}")
         members = [
             member
             for member in archive.getmembers()

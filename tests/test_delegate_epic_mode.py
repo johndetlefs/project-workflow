@@ -48,7 +48,7 @@ def plan(
         "task-monitoring",
         "task-reconciliation",
     ),
-    capability_source: str = "current Codex app task tools",
+    capability_source: str = "2026-08-19 current Codex app task tools",
     selected: tuple[str, ...] = (),
 ) -> workflow_cli.DelegationPlan:
     return workflow_cli.build_delegation_plan(
@@ -93,7 +93,7 @@ def capabilities(
     capacity: int = 3,
 ) -> workflow_cli.EpicHostCapabilities:
     return workflow_cli.EpicHostCapabilities(
-        source="current Codex app task tools" if verified else "",
+        source="2026-08-19 current Codex app task tools" if verified else "",
         current_session_verified=verified,
         persistent_tasks=persistent,
         isolated_worktrees=worktrees,
@@ -247,15 +247,24 @@ def test_packet_parent_ac_drift_is_rejected_before_any_intent(tmp_path: Path) ->
 
 
 @pytest.mark.parametrize(
-    ("authority", "verified", "persistent", "worktrees", "monitoring", "capacity"),
+    (
+        "authority",
+        "verified",
+        "persistent",
+        "worktrees",
+        "monitoring",
+        "reconciliation",
+        "capacity",
+    ),
     [
-        (None, True, True, True, True, 1),
-        ("unknown", True, True, True, True, 1),
-        ("approved", False, False, False, False, 1),
-        ("approved", True, False, True, True, 1),
-        ("approved", True, True, False, True, 1),
-        ("approved", True, True, True, False, 1),
-        ("approved", True, True, True, True, 0),
+        (None, True, True, True, True, True, 1),
+        ("unknown", True, True, True, True, True, 1),
+        ("approved", False, False, False, False, False, 1),
+        ("approved", True, False, True, True, True, 1),
+        ("approved", True, True, False, True, True, 1),
+        ("approved", True, True, True, False, True, 1),
+        ("approved", True, True, True, True, False, 1),
+        ("approved", True, True, True, True, True, 0),
     ],
 )
 def test_creation_fails_closed_without_every_authority_capability_and_capacity(
@@ -265,6 +274,7 @@ def test_creation_fails_closed_without_every_authority_capability_and_capacity(
     persistent: bool,
     worktrees: bool,
     monitoring: bool,
+    reconciliation: bool,
     capacity: int,
 ) -> None:
     built = plan(unit("A"), authority=authority)
@@ -276,6 +286,7 @@ def test_creation_fails_closed_without_every_authority_capability_and_capacity(
             persistent=persistent,
             worktrees=worktrees,
             monitoring=monitoring,
+            reconciliation=reconciliation,
             capacity=capacity,
         ),
     )
@@ -769,32 +780,19 @@ def test_resume_requires_observed_reconciliation_and_missing_handle_orphans(tmp_
     assert orphaned.state.create_count == 1
 
 
-def test_resume_rejects_runtime_reconciliation_not_authorized_by_plan(tmp_path: Path) -> None:
-    (tmp_path / ".gitignore").write_text(
-        ".project-workflow/runtime/delegations/\n", encoding="utf-8"
-    )
-    import subprocess
-
-    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+def test_creation_rejects_runtime_reconciliation_not_authorized_by_plan(
+    tmp_path: Path,
+) -> None:
     creation_only = plan(
         unit("A"),
         observed=("persistent-task", "isolated-worktree", "task-monitoring"),
     )
     run = coordinator(creation_only, tmp_path)
-    register(run, "A", tmp_path)
-    run.persist(tmp_path, coordinator_token=TOKEN)
 
-    with pytest.raises(workflow_cli.EpicOrchestrationError) as error:
-        workflow_cli.EpicOrchestrator.resume(
-            root=tmp_path,
-            plan=creation_only,
-            obligations=duties("A"),
-            capabilities=capabilities(reconciliation=True),
-            coordinator_token=TOKEN,
-            observations={},
-        )
-
-    assert error.value.code == "PW_EPIC_RECONCILIATION_UNVERIFIED"
+    assert run.creation_intents() == ()
+    boundary = run.capability_boundary()
+    assert boundary["creation_supported"] is False
+    assert "immutable plan lacks" in " ".join(boundary["reasons"])
 
 
 def test_generic_reconcile_fails_closed_for_epic_exact_identity_state(tmp_path: Path) -> None:

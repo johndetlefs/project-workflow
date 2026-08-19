@@ -22,7 +22,16 @@ This repository uses project-workflow for spec-driven development. Keep workflow
    the code before completion.
 10. Retro: use `project-retro` after completion when there is a reusable lesson or follow-up.
 
-For multi-item orchestration, use `project-delegate` after planning. For large bodies of work, use `project-epic` to create proposal-first epic trackers and approved child tasks.
+For multi-item orchestration, use `project-delegate` after planning. Delegate targets exactly one
+approved Task or Epic and executes only its canonical rows/children. Resolve current-session
+subagent, persistent-task, isolated-worktree, monitoring, reconciliation, and available-capacity
+capabilities as runtime-observed `verified`, `unsupported`, or `unknown`; only verified capability
+authorises native launch. Do not hard-code worker capacity or infer host parity from generated
+assets. The coordinator alone writes shared workflow state and verifies worker returns before
+satisfying dependencies. A failure blocks descendants; unrelated branches continue only while the
+shared baseline remains valid. Delegate does not replace Implement, independent QA, Epic closeout,
+owner acceptance, or delivery proof. For large bodies of work, use `project-epic` to create
+proposal-first epic trackers and approved child tasks.
 
 Backlog is optional and sits between constitution and tracker state. Keep `.project-workflow/BACKLOG.md` for future intent, rough priority, options, and promotion history. Promoted rows remain in the backlog with `Promoted To` pointing at the created task or epic ID; active execution status belongs only in `.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
 

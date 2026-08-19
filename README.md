@@ -607,6 +607,58 @@ Project-workflow should preserve history:
 
 This history is useful to humans and agents for the same reason: it distinguishes what was originally agreed from what was discovered later.
 
+## Delegate: Graph Execution, Not Scope Creation
+
+Delegate coordinates existing approved execution units for exactly one target:
+
+- for a Task, the units are implementation-plan rows and Implement performs each bounded unit;
+- for an Epic, the units are approved child Tasks from the decomposition/amendment authority;
+- a Codex persistent task, a current-session subagent, a Claude/Cursor agent, and a workflow Task
+  are executor or host concepts, not interchangeable workflow units;
+- independent QA reviews coordinator-verified results after implementation; Delegate's aggregate
+  report cannot complete QA, Epic closeout, owner acceptance, release, or deployment.
+
+Inspect a canonical graph without launching work:
+
+```bash
+./.project-workflow/cli/workflow delegate plan --id TASK-063 --format json
+```
+
+When the current host actually observes bounded subagents and two free child slots, report that
+specific runtime observation rather than assuming host support or a fixed worker count:
+
+```bash
+./.project-workflow/cli/workflow delegate plan \
+  --id TASK-063 \
+  --requested-concurrency 3 \
+  --available-child-capacity 2 \
+  --observed-capability subagent \
+  --unsupported-capability persistent-task \
+  --capability-source "2026-08-19 current session tool and capacity inspection" \
+  --format json
+```
+
+Capability provenance must contain the runtime observation date in `YYYY-MM-DD` form. The resulting
+capability matrix is tri-state: runtime-observed `verified`, runtime-observed
+`unsupported`, or `unknown`. Only verified capability authorises native launch. Unknown Task worker
+capability uses safe sequential/coordinator execution when the packet and authority remain
+satisfiable. Unknown Epic persistent-task, isolated-worktree, monitoring, or reconciliation support
+creates no persistent task; the coordinator falls back safely or blocks. Persistent Epic execution
+also requires explicit owner authority.
+
+The coordinator is the only writer of shared trackers, row status, acceptance maps, evidence
+indexes, delegation runtime state, and lifecycle. Every worker receives a bounded packet and returns
+identity, exact source/worktree, allowed diff, validation, and evidence for coordinator inspection.
+A failure blocks its descendants, while unrelated graph branches continue only if the shared
+baseline and premises remain valid.
+
+Invalid uses include delegating an arbitrary batch of standalone Tasks, treating a generated host
+asset as proof of native support, asking a worker to mutate shared workflow state, treating a worker
+completion assertion as dependency proof, or treating Delegate output as independent QA or
+closeout. Use an Epic to coordinate standalone Tasks, Planner to add approved graph metadata,
+Implement for bounded changes, QA Review for independent verification, and Epic closeout for final
+parent acceptance gates.
+
 ## Day-To-Day Guidance
 
 - Start with the outcome, not a preselected workflow type.
@@ -615,7 +667,8 @@ This history is useful to humans and agents for the same reason: it distinguishe
 - Let the agent gather repository evidence before asking the owner questions it can answer locally.
 - Keep acceptance-criteria IDs stable from requirements through planning, validation, and QA.
 - Treat `Ready` as a passed gate, not a label applied by optimism.
-- Use Delegate when one Task has several planned work items with explicit dependencies; delegated work still passes through implementation, QA, and retro.
+- Use Delegate when one approved Task or Epic has canonical execution units with explicit graph and
+  scope metadata; delegated work still passes through implementation, independent QA, and retro.
 - Commit workflow artifacts with the code they govern so branches and reviews carry their own context.
 - Put durable local conventions in `.project-workflow/guidance.md`.
 - Run `doctor` whenever workflow state feels uncertain.

@@ -2,6 +2,7 @@
 name: project-qa-review
 description: Use after implementation validation to run the QA and code review gate before a project-workflow task is completed.
 ---
+<!-- project-workflow:generated -->
 
 # Project QA & Code Review
 
@@ -46,3 +47,8 @@ Run the post-implementation quality gate for a project-workflow task.
 - `Pass`: no blocking findings and validation evidence covers the acceptance criteria by AC ID.
 - `Pass with follow-ups`: safe to complete, but separate follow-up work is recommended.
 - `Changes requested`: completion is blocked until findings are addressed.
+
+For delegated work, independently inspect coordinator-verified worker identity, exact source/worktree,
+allowed diff, validations, evidence, capability/capacity provenance, descendant blocking, runtime
+privacy, and single-writer behavior. Neither worker assertions nor Delegate's aggregate report replace
+this QA gate.

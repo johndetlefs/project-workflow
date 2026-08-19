@@ -71,6 +71,20 @@ When requirements or material claims trigger a proof recipe, QA prose is not eno
 
 Invalid substitutes are rejected. Visual/reference fidelity needs evidence against the delivered user-facing artifact, not code review, tests, build output, or surrogate surfaces. Runtime target/source claims need the exact execution target, source/artifact under test, observation method, and positive proof that the target used that source.
 
+Inspect one approved Task or Epic delegation graph without launching workers:
+
+```bash
+./.project-workflow/cli/workflow delegate plan --id TASK-001 --format json
+```
+
+Delegate capability is tri-state. Use `--observed-capability` only for a capability verified by
+current runtime inspection, `--unsupported-capability` for a currently observed unsupported
+capability, and leave unobserved capability unknown. Supply `--capability-source` provenance and
+`--available-child-capacity` from the same current inspection. Only verified capability authorises
+native launch; unsupported or unknown capability uses safe coordinator/sequential fallback or
+blocks. The coordinator alone writes shared workflow state and verifies returned identity, exact
+source/worktree, scope, validation, and evidence before satisfying dependencies.
+
 Validate workflow state:
 
 ```bash
@@ -103,7 +117,7 @@ project doctor
 Use init only to create project-workflow in a new repository. Upgrade an existing repository with the canonical UVX command from the target repository root:
 
 ```bash
-uvx --from project-workflow==0.2.0 project upgrade --agent codex
+uvx --from project-workflow==0.3.0 project upgrade --agent codex
 ```
 
 Canonical upgrade obtains the current package and plans managed assets plus repository schema as one transaction. It shows the plan and asks for confirmation; authorized agents can add `--yes`. Use `--plan --format json` and fingerprinted `--apply` only when automation requires a separated review. Unmarked existing files are preserved and receive generated `*.new` content for review.

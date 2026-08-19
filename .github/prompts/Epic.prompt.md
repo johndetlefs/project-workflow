@@ -203,6 +203,11 @@ Constraints to enforce in responses:
 - Child task IDs remain globally unique within their configured prefix namespaces and are managed by workflow behavior.
 - If branch creation is requested for `scaffold-child`, the epic branch must already exist; no fallback branch is allowed.
 - In setup mode, do not skip required gates even if the user asks for later steps first; explain what is missing, satisfy the gate, then continue.
+- Delegate may execute existing approved Epic child rows, but it may not decompose, amend, approve,
+  scaffold unplanned children, or write the Epic tracker from workers. Persistent child tasks require
+  explicit owner authority plus runtime-observed verified creation, isolated-worktree, monitoring,
+  capacity, and required reconciliation capabilities; otherwise coordinate safely and sequentially or
+  block.
 
 Output to user:
 

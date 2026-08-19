@@ -2,6 +2,7 @@
 name: project-epic
 description: Use when creating, decomposing, approving, or scaffolding proposal-first project-workflow epics.
 ---
+<!-- project-workflow:generated -->
 
 # Project Epic
 
@@ -123,3 +124,8 @@ Validate epic closeout, optionally completing the global epic row when gates pas
 - Child IDs remain globally unique within their configured task prefix namespaces across standalone and epic-managed work.
 - When `--create-branch` is used, the epic branch must already exist; do not fall back to a base branch.
 - After any epic tracker or child scaffold change, run `./.project-workflow/cli/workflow doctor` and report workflow-state warnings or errors.
+- Delegate executes only existing approved Epic children. It never decomposes, amends, approves, or
+  scaffolds unplanned children, and workers never write the Epic tracker. Persistent child creation
+  requires explicit owner authority and runtime-observed verified task creation, isolated worktrees,
+  monitoring, available capacity, and required reconciliation; unsupported or unknown capability
+  falls back safely to coordinator/sequential execution or blocks.

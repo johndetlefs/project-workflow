@@ -86,3 +86,7 @@ Guardrails:
 - Do not use this prompt to implement new scope. Small review fixes are allowed only when they directly address review findings and remain within the accepted requirements.
 - If review reveals a requirements conflict, route back to `project.clarify` and record the decision before continuing.
 - Do not accept unsupported prose claims as closeout evidence. If prose claims contradict structured evidence, report the contradiction as a blocking finding.
+- For delegated work, independently inspect coordinator-verified worker identity, exact source/worktree,
+  allowed diff, validations, evidence, capability/capacity provenance, descendant blocking, privacy,
+  and single-writer behavior. Delegate's aggregate report and worker assertions are not QA evidence by
+  themselves.
