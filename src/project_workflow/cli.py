@@ -2462,6 +2462,13 @@ class EpicOrchestrationError(ValueError):
         self.message = message
 
 
+def _epic_opaque_handle_valid(value: object) -> bool:
+    return bool(
+        isinstance(value, str)
+        and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}", value)
+    )
+
+
 @dataclass(frozen=True)
 class EpicHostCapabilities:
     source: str
@@ -2766,9 +2773,21 @@ def _epic_orchestration_state_from_payload(payload: object) -> EpicOrchestration
         )
     used_intents = payload["used_intents"]
     used_handles = payload["used_handles"]
-    if not all(isinstance(item, str) and item for item in [*used_intents, *used_handles]):
+    if not all(
+        isinstance(item, str) and re.fullmatch(r"[0-9a-f]{64}", item)
+        for item in used_intents
+    ) or not all(_epic_opaque_handle_valid(item) for item in used_handles):
         raise EpicOrchestrationError(
             "PW_EPIC_RUNTIME_INVALID", "Epic runtime intent or handle identities are invalid."
+        )
+    if (
+        int(payload["create_count"]) != len(used_intents)
+        or len(used_intents) != len(used_handles)
+        or len(set(used_intents)) != len(used_intents)
+        or len(set(used_handles)) != len(used_handles)
+    ):
+        raise EpicOrchestrationError(
+            "PW_EPIC_RUNTIME_INVALID", "Epic runtime creation identity counts are inconsistent."
         )
     raw_integrated = payload["integrated_paths"]
     integrated: list[tuple[str, tuple[str, ...]]] = []
@@ -2797,15 +2816,28 @@ def _epic_orchestration_state_from_payload(payload: object) -> EpicOrchestration
                 "PW_EPIC_RUNTIME_PRIVATE_FIELD", f"{unit_id} runtime entry is malformed."
             )
         optional_strings = ("intent_id", "handle", "branch", "worktree", "base_commit", "completion_provenance")
+        intent_id = raw.get("intent_id")
+        handle = raw.get("handle")
         if (
             raw.get("state") not in valid_states
             or not isinstance(raw.get("attempt"), int) or raw.get("attempt", -1) < 0
             or any(raw.get(key) is not None and not isinstance(raw.get(key), str) for key in optional_strings)
             or not isinstance(raw.get("checkpointed"), bool)
             or not isinstance(raw.get("issues"), list)
-            or not all(isinstance(item, str) for item in raw.get("issues", []))
+            or not all(
+                isinstance(item, str)
+                and re.fullmatch(r"PW_EPIC_[A-Z0-9_]{1,64}", item)
+                for item in raw.get("issues", [])
+            )
             or not isinstance(raw.get("blocked_by"), list)
             or not all(isinstance(item, str) for item in raw.get("blocked_by", []))
+            or intent_id is not None
+            and (
+                not re.fullmatch(r"[0-9a-f]{64}", intent_id)
+                or intent_id not in used_intents
+            )
+            or handle is not None
+            and (not _epic_opaque_handle_valid(handle) or handle not in used_handles)
         ):
             raise EpicOrchestrationError(
                 "PW_EPIC_RUNTIME_INVALID", f"{unit_id} runtime entry is invalid."
@@ -2838,6 +2870,13 @@ def _epic_execution_fingerprint(
         "target": {"id": plan.target.target_id, "source": plan.target.source_path,
                    "source_hash": plan.target.source_hash},
         "base_commit": base_commit,
+        "execution_authority": {
+            "requested_concurrency": plan.requested_concurrency,
+            "available_child_capacity": plan.available_child_capacity,
+            "observed_capabilities": plan.observed_capabilities,
+            "capability_source": plan.capability_source,
+            "persistent_task_authority": plan.persistent_task_authority,
+        },
         "units": [
             {
                 "id": unit.unit_id, "dependencies": unit.dependencies,
@@ -2878,9 +2917,10 @@ class EpicOrchestrator:
             raise EpicOrchestrationError(
                 "PW_EPIC_COORDINATOR_REQUIRED", "A coordinator token is required."
             )
-        if not re.fullmatch(r"[0-9a-f]{7,64}", base_commit):
+        if not re.fullmatch(r"(?:[0-9a-f]{40}|[0-9a-f]{64})", base_commit):
             raise EpicOrchestrationError(
-                "PW_EPIC_BASE_INVALID", "Epic execution requires an exact hexadecimal base commit."
+                "PW_EPIC_BASE_INVALID",
+                "Epic execution requires an exact full-length hexadecimal Git object ID.",
             )
         self.plan = plan
         self.units = {unit.unit_id: unit for unit in plan.units}
@@ -2935,9 +2975,20 @@ class EpicOrchestrator:
             )
 
     def _dependencies_verified(self, unit: DelegationPlannedUnit) -> bool:
-        return all(self.state.units[item].state == "verified" for item in unit.dependencies)
+        # build_delegation_plan permits an omitted dependency only when its canonical
+        # lifecycle is already Complete. Missing selected-state entries therefore
+        # represent verified canonical predecessors rather than unknown work.
+        return all(
+            dependency not in self.state.units
+            or self.state.units[dependency].state == "verified"
+            for dependency in unit.dependencies
+        )
 
     def _scope_collision(self, left_id: str, right_id: str) -> bool:
+        if not set(self.obligations[left_id].repositories).intersection(
+            self.obligations[right_id].repositories
+        ):
+            return False
         return any(
             _delegation_scope_overlap(left, right)
             for left in self.obligations[left_id].write_scope
@@ -2946,8 +2997,15 @@ class EpicOrchestrator:
 
     def capability_boundary(self) -> dict[str, object]:
         reasons: list[str] = []
+        required = {"persistent-task", "isolated-worktree", "task-monitoring"}
         if not _delegation_explicit_authority(self.plan.persistent_task_authority):
             reasons.append("explicit owner authority is absent")
+        if not required.issubset(self.plan.observed_capabilities):
+            reasons.append("immutable plan lacks the verified persistent-task capability set")
+        if self.plan.capability_source.strip() != self.capabilities.source.strip():
+            reasons.append("runtime capability source does not match the immutable plan")
+        if self.plan.available_child_capacity == 0:
+            reasons.append("immutable plan authorizes no persistent child capacity")
         if not self.capabilities.current_session_verified:
             reasons.append("current-session capability observation is absent")
         if not self.capabilities.persistent_tasks:
@@ -2959,12 +3017,18 @@ class EpicOrchestrator:
         if self.capabilities.available_child_capacity == 0:
             reasons.append("available persistent-task capacity is zero")
         supported = not reasons
+        resume_reasons: list[str] = []
+        if "task-reconciliation" not in self.plan.observed_capabilities:
+            resume_reasons.append("immutable plan lacks verified task reconciliation")
+        if not self.capabilities.reconciliation:
+            resume_reasons.append("current-session task reconciliation is unsupported or unknown")
         return {
             "creation_authorized": _delegation_explicit_authority(
                 self.plan.persistent_task_authority
             ),
             "creation_supported": supported,
-            "resume_supported": supported and self.capabilities.reconciliation,
+            "resume_supported": supported and not resume_reasons,
+            "resume_reasons": resume_reasons,
             "fallback": None if supported else "safe-sequential-coordinator",
             "reasons": reasons,
             "source": self.capabilities.source or "not observed",
@@ -2979,7 +3043,8 @@ class EpicOrchestrator:
             unit_id=unit_id, unit_title=unit.title, parent_acs=duty.parent_acs,
             verified_dependencies=tuple(
                 dependency for dependency in unit.dependencies
-                if self.state.units[dependency].state == "verified"
+                if dependency not in self.state.units
+                or self.state.units[dependency].state == "verified"
             ),
             repositories=duty.repositories, write_scope=duty.write_scope,
             validations=duty.validations, evidence=duty.evidence,
@@ -2989,29 +3054,62 @@ class EpicOrchestrator:
             attempt=attempt,
         )
 
-    def creation_intents(self) -> tuple[PersistentTaskCreationIntent, ...]:
+    def _creation_evaluation(
+        self,
+    ) -> tuple[
+        tuple[PersistentTaskCreationIntent, ...], dict[str, tuple[str, ...]]
+    ]:
         boundary = self.capability_boundary()
-        if not boundary["creation_supported"] or not self.state.shared_premise_valid:
-            return ()
+        reasons: dict[str, tuple[str, ...]] = {}
+        if not boundary["creation_supported"]:
+            blocked = tuple(str(item) for item in boundary["reasons"])
+            return (), {
+                unit.unit_id: blocked
+                for unit in self.plan.units
+                if self.state.units[unit.unit_id].state == "pending"
+            }
+        if not self.state.shared_premise_valid:
+            return (), {
+                unit.unit_id: ("shared Epic premise is invalid",)
+                for unit in self.plan.units
+                if self.state.units[unit.unit_id].state == "pending"
+            }
         active = [
             unit_id for unit_id, run in self.state.units.items()
             if run.state in {"active", "returned"}
         ]
         available = min(
             self.plan.requested_concurrency,
+            self.plan.available_child_capacity,
             self.capabilities.available_child_capacity,
         ) - len(active)
-        if available <= 0:
-            return ()
         reserved = list(active)
         intents: list[PersistentTaskCreationIntent] = []
         for unit in self.plan.units:
             run = self.state.units[unit.unit_id]
-            if available <= 0:
-                break
-            if run.state != "pending" or not self._dependencies_verified(unit):
+            if run.state != "pending":
                 continue
-            if any(self._scope_collision(unit.unit_id, other_id) for other_id in reserved):
+            unit_reasons: list[str] = []
+            if not self._dependencies_verified(unit):
+                unit_reasons.append("waiting for coordinator-verified dependencies")
+            if unit.executor != "persistent-task":
+                unit_reasons.append(
+                    f"immutable plan executor is {unit.executor}, not persistent-task"
+                )
+            collisions = [
+                other_id
+                for other_id in reserved
+                if self._scope_collision(unit.unit_id, other_id)
+            ]
+            if collisions:
+                unit_reasons.append(
+                    "repository/write-scope collision with active or reserved child: "
+                    + ", ".join(collisions)
+                )
+            if available <= 0:
+                unit_reasons.append("effective persistent-task capacity is exhausted")
+            if unit_reasons:
+                reasons[unit.unit_id] = tuple(unit_reasons)
                 continue
             attempt = run.attempt + 1
             packet = self._packet(unit.unit_id, attempt)
@@ -3026,7 +3124,11 @@ class EpicOrchestrator:
             )
             reserved.append(unit.unit_id)
             available -= 1
-        return tuple(intents)
+        return tuple(intents), reasons
+
+    def creation_intents(self) -> tuple[PersistentTaskCreationIntent, ...]:
+        intents, _reasons = self._creation_evaluation()
+        return intents
 
     def register_creation(
         self, intent: PersistentTaskCreationIntent, *, handle: str, branch: str,
@@ -3044,9 +3146,10 @@ class EpicOrchestrator:
             raise EpicOrchestrationError(
                 "PW_EPIC_DUPLICATE_CREATION", "A child intent may create at most one task."
             )
-        if not handle.strip() or handle in self.state.used_handles:
+        if not _epic_opaque_handle_valid(handle) or handle in self.state.used_handles:
             raise EpicOrchestrationError(
-                "PW_EPIC_HANDLE_REUSE", "Every persistent child requires a unique native handle."
+                "PW_EPIC_HANDLE_REUSE",
+                "Every persistent child requires a unique bounded opaque native handle.",
             )
         named_branch = bool(
             branch.strip() and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", branch)
@@ -3100,7 +3203,9 @@ class EpicOrchestrator:
     def _fail(self, unit_id: str, issues: Sequence[str], *, shared: bool) -> None:
         run = self.state.units[unit_id]
         run.state = "failed"
-        run.issues = tuple(issues)
+        run.issues = (
+            "PW_EPIC_SHARED_PREMISE_FAILED" if shared else "PW_EPIC_CHILD_FAILED",
+        )
         run.handle = None
         self.state.failure_seen = True
         if shared:
@@ -3147,7 +3252,7 @@ class EpicOrchestrator:
             run.state = "halted"
             run.handle = None
             run.checkpointed = True
-            run.issues = ("Shared premise is invalid; returned work was not integrated.",)
+            run.issues = ("PW_EPIC_SHARED_PREMISE_INVALID",)
             return TaskVerificationResult(result.unit_id, False, "halted", run.issues, ())
         issues: list[str] = []
         shared_failure = False
@@ -3170,7 +3275,10 @@ class EpicOrchestrator:
             if claimed_value != observed_value or observed_value != expected_value:
                 issues.append(f"Child {label} identity does not match coordinator observation.")
                 shared_failure = True
-        if result.head_commit != observed_head_commit or not re.fullmatch(r"[0-9a-f]{7,64}", observed_head_commit):
+        if (
+            result.head_commit != observed_head_commit
+            or not re.fullmatch(r"(?:[0-9a-f]{40}|[0-9a-f]{64})", observed_head_commit)
+        ):
             issues.append("Child head commit identity is missing or does not match observation.")
             shared_failure = True
         duty = self.obligations[result.unit_id]
@@ -3193,8 +3301,11 @@ class EpicOrchestrator:
         collisions = tuple(
             path for path in observed
             if any(
-                _delegation_scope_overlap(path, prior)
-                for _other_id, prior_paths in self.state.integrated_paths
+                set(duty.repositories).intersection(
+                    self.obligations[other_id].repositories
+                )
+                and _delegation_scope_overlap(path, prior)
+                for other_id, prior_paths in self.state.integrated_paths
                 for prior in prior_paths
             )
         )
@@ -3222,7 +3333,7 @@ class EpicOrchestrator:
             issues.append("Child claims disagree with coordinator observations: "
                           + ", ".join(mismatched_claims) + ".")
         if not result.success:
-            issues.append(result.failure_reason.strip() or "Child reported failure.")
+            issues.append("Child reported failure.")
         if not result.shared_premise_valid:
             issues.append("Child reported a shared-premise failure.")
             shared_failure = True
@@ -3252,11 +3363,7 @@ class EpicOrchestrator:
     ) -> None:
         self._require_coordinator(coordinator_token)
         active = [run for run in self.state.units.values() if run.state in {"active", "returned"}]
-        if active and not (
-            self.capabilities.current_session_verified
-            and self.capabilities.monitoring
-            and self.capabilities.reconciliation
-        ):
+        if active and not self.capability_boundary()["resume_supported"]:
             raise EpicOrchestrationError(
                 "PW_EPIC_RECONCILIATION_UNVERIFIED",
                 "Resume requires current-session monitoring and reconciliation support.",
@@ -3290,7 +3397,7 @@ class EpicOrchestrator:
             else:
                 run.state = "orphaned"
                 run.handle = None
-                run.issues = ("Exact persistent task/worktree handle was not observed.",)
+                run.issues = ("PW_EPIC_HANDLE_ORPHANED",)
 
     def retry(self, unit_id: str, *, coordinator_token: str) -> None:
         self._require_coordinator(coordinator_token)
@@ -3370,10 +3477,21 @@ class EpicOrchestrator:
                 "PW_EPIC_RUNTIME_MISSING", "No persisted Epic orchestration state exists."
             )
         restored = _epic_orchestration_state_from_payload(stored["epic_orchestration"])
+        supplied_root = root.resolve()
+        if (
+            stored.get("target_id") != plan.target.target_id
+            or stored.get("target_kind") != "epic"
+            or Path(str(stored.get("worktree", ""))).resolve() != supplied_root
+            or Path(restored.coordinator_worktree).resolve() != supplied_root
+        ):
+            raise EpicOrchestrationError(
+                "PW_EPIC_RUNTIME_TARGET_MISMATCH",
+                "Persisted Epic runtime target, plan, or coordinator worktree does not match.",
+            )
         instance = cls(
             plan=plan, obligations=obligations, capabilities=capabilities,
             coordinator_token=coordinator_token,
-            coordinator_worktree=Path(restored.coordinator_worktree),
+            coordinator_worktree=supplied_root,
             base_commit=restored.base_commit,
         )
         if (
@@ -3435,12 +3553,22 @@ class EpicOrchestrator:
                 groups[state].append(unit.unit_id)
             elif self.state.failure_seen and self.state.shared_premise_valid:
                 groups["unaffected"].append(unit.unit_id)
+        intents, eligibility_reasons = self._creation_evaluation()
+        eligible_ids = {intent.unit_id for intent in intents}
         return {
             "schema_version": 1, "target_id": self.state.target_id,
             "shared_premise_valid": self.state.shared_premise_valid,
             "create_count": self.state.create_count,
             "capability_boundary": self.capability_boundary(),
-            "eligible_creation_intents": [intent.unit_id for intent in self.creation_intents()],
+            "eligible_creation_intents": [intent.unit_id for intent in intents],
+            "creation_eligibility": {
+                unit.unit_id: {
+                    "eligible": unit.unit_id in eligible_ids,
+                    "reasons": list(eligibility_reasons.get(unit.unit_id, ())),
+                }
+                for unit in self.plan.units
+                if self.state.units[unit.unit_id].state == "pending"
+            },
             **groups,
         }
 
@@ -10638,6 +10766,12 @@ def reconcile_delegation_runtime_state(
     observed_handles: dict[str, object],
 ) -> dict[str, object]:
     """Reconcile canonical state with host observations without inventing missing handles."""
+    if "epic_orchestration" in state:
+        raise _delegation_error(
+            "PW_EPIC_RECONCILIATION_REQUIRES_HOST",
+            "Epic persistent-task state requires exact attempt, handle, checkout, and "
+            "worktree observations through EpicOrchestrator.resume/reconcile.",
+        )
     if state.get("target_id") != plan.target.target_id:
         raise _delegation_error(
             "PW_DELEGATION_RUNTIME_TARGET_MISMATCH", "Runtime state target does not match plan."
@@ -10735,12 +10869,6 @@ def reconcile_delegation_runtime_state(
             )
             projected_units[unit_id] = {"state": projected, "handle": None}
         result["units"] = projected_units
-    if "epic_orchestration" in state:
-        # Native persistent-task reconciliation requires host-observed exact attempt,
-        # handle, branch, and worktree identity. The host adapter uses
-        # EpicOrchestrator.resume/reconcile; this legacy generic projection must not
-        # discard or fabricate that richer state.
-        result["epic_orchestration"] = state["epic_orchestration"]
     return result
 
 
@@ -10889,8 +11017,15 @@ def cmd_delegate_status(args: argparse.Namespace) -> None:
     try:
         plan = _delegation_plan_from_args(root, args)
         state = _load_delegation_runtime_state(root, plan.target.target_id)
-    except (DelegationPlanError, json.JSONDecodeError) as error:
-        if isinstance(error, DelegationPlanError):
+    except (
+        DelegationPlanError,
+        TaskOrchestrationError,
+        EpicOrchestrationError,
+        json.JSONDecodeError,
+    ) as error:
+        if isinstance(
+            error, (DelegationPlanError, TaskOrchestrationError, EpicOrchestrationError)
+        ):
             message = f"{error.code}: {error.message}"
         else:
             message = f"PW_DELEGATION_RUNTIME_INVALID: {error}"
@@ -10913,8 +11048,20 @@ def cmd_delegate_state_init(args: argparse.Namespace) -> None:
     try:
         plan = _delegation_plan_from_args(root, args)
         state = initialize_delegation_runtime_state(root, plan)
-    except DelegationPlanError as error:
-        raise SystemExit(f"{error.code}: {error.message}") from error
+    except (
+        DelegationPlanError,
+        TaskOrchestrationError,
+        EpicOrchestrationError,
+        json.JSONDecodeError,
+        OSError,
+    ) as error:
+        if isinstance(
+            error, (DelegationPlanError, TaskOrchestrationError, EpicOrchestrationError)
+        ):
+            message = f"{error.code}: {error.message}"
+        else:
+            message = f"PW_DELEGATION_RUNTIME_INVALID: {error}"
+        raise SystemExit(message) from error
     path = _delegation_runtime_path(root, plan.target.target_id)
     if args.format == "json":
         print(json.dumps(state, indent=2, sort_keys=True))
@@ -10938,8 +11085,16 @@ def cmd_delegate_state_reconcile(args: argparse.Namespace) -> None:
             )
         reconciled = reconcile_delegation_runtime_state(root, plan, state, raw_observed)
         _write_delegation_runtime_state(root, plan, reconciled)
-    except (DelegationPlanError, json.JSONDecodeError, OSError) as error:
-        if isinstance(error, DelegationPlanError):
+    except (
+        DelegationPlanError,
+        TaskOrchestrationError,
+        EpicOrchestrationError,
+        json.JSONDecodeError,
+        OSError,
+    ) as error:
+        if isinstance(
+            error, (DelegationPlanError, TaskOrchestrationError, EpicOrchestrationError)
+        ):
             message = f"{error.code}: {error.message}"
         else:
             message = f"PW_DELEGATION_RUNTIME_INVALID: {error}"
