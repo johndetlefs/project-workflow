@@ -143,7 +143,11 @@ Task list guardrails:
 - Ensure every acceptance criterion in `REQUIREMENTS.md` is mapped to at least one concrete task row and validation step in the task list (`Acceptance Criteria`, `User Verification`, or explicit validation notes).
 - Keep AC IDs stable. Do not renumber existing ACs unless the user explicitly approves the requirements change.
 - If any requirement/acceptance criterion is not covered by the plan, stop and route to `project.clarify` to resolve and record the decision in `REQUIREMENTS.md` before planning continues.
-- For delegate-execution stories (`project.delegate`), explicitly cover mode defaults, dependency-map validation, worker-limit behavior, and fail-fast/halted reporting in planned outcomes and validation steps.
+- For Delegate execution, use the canonical graph columns `Dependencies`, `Write Scope`, and
+  `Parallel Safe`. Plan runtime-observed tri-state capability/capacity reporting, coordinator-only
+  shared-state writes, bounded worker packets, coordinator verification, descendant blocking, and
+  unrelated-branch continuation while shared premises remain valid. Never plan a fixed worker count
+  or blanket fail-fast behavior.
 
 Tracker rules:
 

@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-062",
+  "observed_at": "2026-08-19T17:16:52+10:00",
+  "host": "current Codex desktop app on the local host",
+  "sanitization": {
+    "native_task_ids_retained": false,
+    "native_host_ids_retained": false,
+    "native_worktree_names_or_paths_retained": false,
+    "monitor_cursors_retained": false,
+    "client_setup_ids_retained": false,
+    "transcripts_retained": false,
+    "credentials_retained": false
+  },
+  "implementation_identity": {
+    "repository_commit": "62e56d68732b354c269bec9be928a81c63379e69",
+    "source_artifact": "src/project_workflow/cli.py",
+    "source_sha256": "b468a24ec872c7b25e4c8af5d2a937d0582481b50fb9ed721cf3ec95ed91f945",
+    "generated_helper": "src/project_workflow/templates/workflow.py",
+    "local_helper": ".project-workflow/cli/workflow.py",
+    "helper_sha256": "b468a24ec872c7b25e4c8af5d2a937d0582481b50fb9ed721cf3ec95ed91f945",
+    "installed_package": "project-workflow==0.3.0",
+    "wheel_sha256": "fc33165f924983a219d5ed85a6b2fc55bc134e6a5736290087ad03ffe0436fe2",
+    "sdist_sha256": "040603012cf44fcbe9dcf8423c7c745c487944e38a852d0d5697fb1ed92401eb",
+    "installed_cli_sha256": "b468a24ec872c7b25e4c8af5d2a937d0582481b50fb9ed721cf3ec95ed91f945"
+  },
+  "target_identity": {
+    "repository": "project-workflow local saved project",
+    "target_id": "EPIC-010",
+    "target_kind": "epic",
+    "target_source": ".project-workflow/tasks/EPIC-010-Delegate-Execution-Orchestrator/DECOMPOSITION.md",
+    "base_commit": "62e56d68732b354c269bec9be928a81c63379e69",
+    "checkout_identity": "detached@62e56d68732b354c269bec9be928a81c63379e69"
+  },
+  "observed_native_contract": {
+    "persistent_task_creation": "create a Codex project task with repository worktree isolation and an explicit existing starting branch",
+    "creation_result": "asynchronous setup first returned a client-side pending identity; task listing then exposed a stable persistent task identity, local host, status, and isolated worktree",
+    "monitoring": "multi-task wait accepted stable task/host identities and resumable opaque cursors",
+    "checkout_behavior": "each isolated worktree resolved the requested branch to the exact commit and exposed detached HEAD",
+    "numeric_capacity_contract": "not exposed by the host tools",
+    "capability_observation_scope": "this dated current Codex desktop session only"
+  },
+  "authority_and_negative_gate": {
+    "owner_authority": "the approved EPIC-010 envelope explicitly authorized the minimum disposable persistent tasks and isolated worktrees required for AC19",
+    "without_authority_persistent_intents": 0,
+    "with_partial_or_mismatched_capability_persistent_intents": 0,
+    "native_create_calls_from_negative_paths": 0,
+    "fallback": "safe sequential coordinator",
+    "required_positive_capabilities": [
+      "persistent-task",
+      "isolated-worktree",
+      "task-monitoring"
+    ],
+    "resume_additional_capability": "task-reconciliation"
+  },
+  "capacity": {
+    "requested_concurrency": 3,
+    "coordinator_selected_persistent_task_cap": 2,
+    "host_observed_capacity_lower_bound": 2,
+    "host_verified_maximum_capacity": null,
+    "effective_initial_concurrency": 2,
+    "maximum_observed_concurrent_persistent_tasks": 2,
+    "coordinator_excluded_from_child_capacity": true
+  },
+  "authoritative_run_counts": {
+    "create_count_before_authorized_launch": 0,
+    "create_count_after_independent_launch": 2,
+    "create_count_after_monitor_pause_resume": 2,
+    "create_count_before_dependency_release": 2,
+    "create_count_after_dependent_launch": 3,
+    "unjustified_duplicate_creations": 0,
+    "native_task_attempts": {
+      "TASK-061": 1,
+      "TASK-062": 1,
+      "TASK-063": 1
+    }
+  },
+  "events": [
+    {
+      "event": "negative_creation_gate",
+      "result": "no persistent creation intent and no native create call",
+      "detail": "Absent/unknown authority, incomplete plan capabilities, mismatched observation source, unsupported runtime capabilities, and zero capacity all failed closed."
+    },
+    {
+      "event": "independent_children_created",
+      "units": [
+        "TASK-061",
+        "TASK-062"
+      ],
+      "result": "two persistent Codex tasks were simultaneously active in distinct isolated worktrees",
+      "write_scopes": [
+        "tests/ac19-proof-authoritative/task-061.txt",
+        "tests/ac19-proof-authoritative/task-062.txt"
+      ]
+    },
+    {
+      "event": "dependent_waited",
+      "unit": "TASK-063",
+      "result": "no dependent task existed while either predecessor was active or before coordinator inspection",
+      "create_count": 2
+    },
+    {
+      "event": "monitoring_paused_and_resumed",
+      "result": "the same two task aliases and cursor aliases advanced after a bounded monitoring pause without a create call",
+      "create_count_before": 2,
+      "create_count_after": 2
+    },
+    {
+      "event": "coordinator_verified_predecessors",
+      "units": [
+        {
+          "unit": "TASK-061",
+          "path": "tests/ac19-proof-authoritative/task-061.txt",
+          "bytes": 76,
+          "sha256": "d1f59c65e6483ce672ec2f4f96c1c6619e57b46f81e01086f4be2a8c3cdb3524",
+          "focused_tests": 19
+        },
+        {
+          "unit": "TASK-062",
+          "path": "tests/ac19-proof-authoritative/task-062.txt",
+          "bytes": 76,
+          "sha256": "e8ea1b116ac801931e97e44840462f56b6360e89844b965210347206fd216300",
+          "focused_tests": 38
+        }
+      ],
+      "result": "both exact bases, detached checkout identities, distinct worktrees, sole changed paths, bytes/newlines, hashes, validations, repository/write scopes, and forbidden-action boundaries passed"
+    },
+    {
+      "event": "dependency_released_after_coordinator_verification",
+      "unit": "TASK-063",
+      "verified_predecessors": [
+        "TASK-061",
+        "TASK-062"
+      ],
+      "result": "the dependent native task was created only after both coordinator verifications passed"
+    },
+    {
+      "event": "coordinator_verified_dependent",
+      "unit": "TASK-063",
+      "path": "tests/ac19-proof-authoritative/task-063.txt",
+      "bytes": 104,
+      "sha256": "dddf50fe9e5946c397b1865f169b34742351745b4c7db0a225d1dbf173855c35",
+      "focused_tests": 46,
+      "result": "exact base, detached checkout identity, third isolated worktree, sole changed path, content/newline/hash, validation, scope, and forbidden-action boundaries passed"
+    },
+    {
+      "event": "parent_closeout_checked_read_only",
+      "result": "blocked",
+      "parent_ac_count": 20,
+      "audit_gap_count": 70,
+      "retro_gap_count": 4,
+      "parent_artifacts_mutated": false
+    }
+  ],
+  "fresh_worktree_setup_observation": {
+    "initial_condition": "the fresh ignored virtual environments contained the project but not the dev extra, so pytest was initially absent",
+    "correction": "each proof child used the repository-declared locked dev setup and reran the exact requested test command on the same native task",
+    "result": "19, 38, and 46 focused tests passed respectively; native create counts and task attempts did not increase"
+  },
+  "diagnostic_runs_before_authoritative_run": [
+    {
+      "persistent_tasks_created": 2,
+      "base_commit": "4bd18b5433bb6b0dc47ba5e4017ab038d32104b8",
+      "dependent_created": false,
+      "finding": "native Codex worktrees expose detached HEAD rather than a named branch",
+      "correction_commit": "b115d75ceb6a686977619c37d51d9037e49ce2f0"
+    },
+    {
+      "persistent_tasks_created": 3,
+      "base_commit": "b115d75ceb6a686977619c37d51d9037e49ce2f0",
+      "dependent_created": true,
+      "finding": "distinct native detached worktrees share the same detached checkout identity and return uncommitted proof diffs at the base commit",
+      "correction_commit": "0ab4415472cbb337953969c1275143d15711a3c4"
+    },
+    {
+      "persistent_tasks_created": 2,
+      "base_commit": "0ab4415472cbb337953969c1275143d15711a3c4",
+      "dependent_created": false,
+      "finding": "independent review found that richer runtime capabilities could contradict the immutable delegation plan",
+      "correction_commit": "62e56d68732b354c269bec9be928a81c63379e69"
+    }
+  ],
+  "session_task_accounting": {
+    "diagnostic_native_tasks": 7,
+    "authoritative_native_tasks": 3,
+    "total_native_tasks": 10,
+    "reason_for_diagnostics": "each bounded diagnostic exposed a real native-contract or fail-closed integration gap and was stopped or excluded from passing proof until corrected",
+    "proof_count_used_for_ac19": 3
+  },
+  "deterministic_coverage": {
+    "focused_tests": 103,
+    "full_locked_tests": 365,
+    "covered_beyond_live_journey": [
+      "decomposition identity, parent AC authority, and omitted Complete dependencies",
+      "plan/runtime authority, capability source, capability set, capacity, and reconciliation binding",
+      "complete bounded packet fields and capacity-aware eligibility reasons",
+      "coordinator token, attempt, handle, full Git object, checkout, worktree, repository, diff, validation, evidence, and collision verification",
+      "repository-scoped collision behavior",
+      "descendant failure, unaffected continuation, shared-premise halt, and safe in-flight checkpoint",
+      "persistent state, exact-handle reconciliation, missing-handle orphaning, retry, duplicate prevention, and canonical completion precedence",
+      "stable private-runtime validation and CLI error boundaries",
+      "child QA and parent closeout independence"
+    ]
+  },
+  "proof_boundaries": [
+    "The authoritative receipt proves the dated current-Codex persistent-task, isolated-worktree, at-least-two concurrency, dependency-delay, no-duplicate resume, coordinator-verification, and blocked-closeout journey at the exact implementation commit.",
+    "The host did not expose a numeric maximum capacity; two concurrent tasks prove a lower bound of two, while the cap of two was coordinator-selected.",
+    "The three earlier bounded diagnostics and all ten session-created native tasks are disclosed; only the final three-task run supports the passing AC19 claim.",
+    "Deterministic tests, not the live receipt, prove injected failure, shared-premise halt, collision, orphan/retry, canonical precedence, privacy, and hostile-token combinations.",
+    "No proof task was staged, committed, integrated, pushed, merged, released, deployed, or used to contact another person or service.",
+    "This does not prove another host adapter, parent Epic acceptance, owner acceptance, release, deployment, adoption, or effectiveness."
+  ]
+}

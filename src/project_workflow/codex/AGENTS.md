@@ -22,7 +22,16 @@ This repository uses project-workflow for spec-driven development. Keep workflow
    the code before completion.
 10. Retro: use `project-retro` after completion when there is a reusable lesson or follow-up.
 
-For multi-item orchestration, use `project-delegate` after planning. For large bodies of work, use `project-epic` to create proposal-first epic trackers and approved child tasks.
+For multi-item orchestration, use `project-delegate` after planning. Delegate targets exactly one
+approved Task or Epic and executes only its canonical rows/children. Resolve current-session
+subagent, persistent-task, isolated-worktree, monitoring, reconciliation, and available-capacity
+capabilities as runtime-observed `verified`, `unsupported`, or `unknown`; only verified capability
+authorises native launch. Do not hard-code worker capacity or infer host parity from generated
+assets. The coordinator alone writes shared workflow state and verifies worker returns before
+satisfying dependencies. A failure blocks descendants; unrelated branches continue only while the
+shared baseline remains valid. Delegate does not replace Implement, independent QA, Epic closeout,
+owner acceptance, or delivery proof. For large bodies of work, use `project-epic` to create
+proposal-first epic trackers and approved child tasks.
 
 Backlog is optional and sits between constitution and tracker state. Keep `.project-workflow/BACKLOG.md` for future intent, rough priority, options, and promotion history. Promoted rows remain in the backlog with `Promoted To` pointing at the created task or epic ID; active execution status belongs only in `.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
 
@@ -39,13 +48,13 @@ For epic-managed work, preserve parent epic acceptance criteria coverage from th
 When a user asks to initialize project-workflow in a new repository, run the canonical UVX init command from that repository root:
 
 ```bash
-uvx --from project-workflow==0.3.0 project init
+uvx --from project-workflow==0.4.0 project init
 ```
 
 When a user asks to update, refresh, reinstall, align, or upgrade an existing repository, use canonical UVX upgrade instead; do not run init first:
 
 ```bash
-uvx --from project-workflow==0.3.0 project upgrade
+uvx --from project-workflow==0.4.0 project upgrade
 ```
 
 Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github-copilot` for the target mode. Canonical UVX upgrade obtains current software and plans managed assets and repository schema together. Use `--yes` for an authorized non-interactive one-command apply, or `--plan --format json` followed by `--apply --plan-fingerprint <SHA256>` when automation requires separate review.

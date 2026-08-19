@@ -25,3 +25,6 @@ dist/
 
 # macOS
 .DS_Store
+
+# Machine-local delegation handles and leases
+.project-workflow/runtime/delegations/

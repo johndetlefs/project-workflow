@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-064",
+  "observed_at": "2026-08-19T18:20:10+10:00",
+  "observation_scope": "Independent child validation of committed source, retained sanitized receipts, and a newly built exact-HEAD package; no new native worker task was launched.",
+  "source_identity": {
+    "requested_branch": "codex/EPIC-010-delegate-execution-orchestrator",
+    "checkout": "detached",
+    "commit": "f864c0f7ab3fce89fe7817481ea020c422ec6b28",
+    "requested_commit_matched": true,
+    "source_helper_sha256": "4ec02dd5feab8db158cc0946a2295a0b61729edb6b663dcd0fb6c508a8894414",
+    "generated_helper_sha256": "4ec02dd5feab8db158cc0946a2295a0b61729edb6b663dcd0fb6c508a8894414",
+    "local_helper_sha256": "4ec02dd5feab8db158cc0946a2295a0b61729edb6b663dcd0fb6c508a8894414",
+    "helpers_byte_identical": true,
+    "delegate_prompt_sha256": "6ba2b5188c07eff3de0f77926cb5df75f73c22eedf58dc705d9e1b7cd43dabf8",
+    "github_prompt_sha256": "6ba2b5188c07eff3de0f77926cb5df75f73c22eedf58dc705d9e1b7cd43dabf8",
+    "packaged_codex_delegate_skill_sha256": "9f4fa0621c4be835030585880adcaa9369cc26cdcd7421cbdc8fa28e7ea76d9c",
+    "installed_codex_delegate_skill_sha256": "aaff9fa1864fa055bd123369c56744eb1a54a121ae20bd2075efc7e1239f3352",
+    "installed_skill_difference": "Only the managed generated marker is added.",
+    "package_version": "0.3.0",
+    "manifest_version": 1,
+    "asset_version": 2,
+    "repository_schema_version": 1
+  },
+  "built_artifacts": {
+    "wheel": {
+      "filename": "project_workflow-0.3.0-py3-none-any.whl",
+      "sha256": "99c55448c0d795cffe588008b0bf35c830d1688f8c44c464c530cc1247971d57",
+      "size_bytes": 348434,
+      "inventory_entries": 39,
+      "fresh_install": "Pass",
+      "installed_version": "project 0.3.0",
+      "installed_cli_sha256": "4ec02dd5feab8db158cc0946a2295a0b61729edb6b663dcd0fb6c508a8894414"
+    },
+    "sdist": {
+      "filename": "project_workflow-0.3.0.tar.gz",
+      "sha256": "7522d2110f8936a64c5a6fe488bafddf6173dc6beb20a9297a0fa312e1f9c298",
+      "size_bytes": 418799,
+      "inventory_entries": 80
+    },
+    "release_contract": {
+      "source_check": "Pass for version 0.3.0 and tag v0.3.0",
+      "receipt_build": "Pass",
+      "receipt_verification": "Pass",
+      "published": false
+    }
+  },
+  "validation": {
+    "declared_environment": "uv sync --locked --extra dev --python 3.10",
+    "python": "3.10.20",
+    "focused_delegate_lifecycle_workspace_upgrade_release": "287 passed in 52.06s",
+    "complete_locked_suite": "377 passed in 55.45s",
+    "negative_lifecycle_and_legacy_subset": "16 passed in 3.90s",
+    "strict_doctor": "Pass; no visible issues; 69 accepted warnings hidden",
+    "compileall": "Pass",
+    "release_contract_source": "Pass",
+    "git_diff_check": "Pass",
+    "four_host_exact_wheel_journey": {
+      "codex": "fresh init, Doctor, and no-op upgrade passed",
+      "github-copilot": "fresh init, Doctor, and no-op upgrade passed",
+      "claude-code": "fresh init, Doctor, and no-op upgrade passed without Copilot placeholder leakage",
+      "cursor": "fresh init, Doctor, and no-op upgrade passed without Copilot placeholder leakage"
+    },
+    "legacy_upgrade": {
+      "result": "Pass with the two expected owner-owned Doctor findings",
+      "owner_collision_preserved": true,
+      "owner_sha256": "b024db4eca938e12187cc539c6795e85cd466a08687ba3354654715e97f7b161",
+      "pending_managed_new_sha256": "aaff9fa1864fa055bd123369c56744eb1a54a121ae20bd2075efc7e1239f3352"
+    },
+    "environment_diagnostic": "One direct uv pip invocation first selected the sandbox-inaccessible home cache; rerunning with the repository-declared temporary UV_CACHE_DIR passed. No source or package correction was required."
+  },
+  "read_only_surfaces": {
+    "delegate_target": "EPIC-010",
+    "selected_unit": "TASK-064",
+    "target_source_sha256": "511b71e19e831f1c655146c869872e3aba6d933bac6281a06ddbf98efaf79914",
+    "plan_schema_version": 1,
+    "plan_human_json_consistent": true,
+    "selected_unit_eligible": true,
+    "executor": "persistent-task",
+    "requested_concurrency": 1,
+    "available_child_capacity": 1,
+    "effective_child_concurrency": 1,
+    "capability_source": "Codex desktop tool schemas observed 2026-08-19 current session",
+    "capability_matrix": {
+      "persistent-task": "verified",
+      "isolated-worktree": "verified",
+      "task-monitoring": "verified",
+      "task-reconciliation": "verified",
+      "subagent": "unknown",
+      "worktree": "unknown"
+    },
+    "persistent_task_authority": "Owner-approved EPIC-010 envelope applies unchanged",
+    "status_schema_version": 1,
+    "status_human_json_consistent": true,
+    "repository_clean_after_plan_and_status": true,
+    "runtime_state_created": false
+  },
+  "live_receipt_audit": {
+    "task_mode": {
+      "receipt": "../../TASK-061-Build-Task-Work-Item-Subagent-Orchestration/evidence/task-mode-live-run.json",
+      "receipt_sha256": "cdfb979cfb3675afdfba1ca4ddc8348ca67e81263a934f672a2fc904fb65fee2",
+      "implementation_commit": "9c3d9bd177fa9c5d881221010bc9a4b34217f79e",
+      "implementation_is_ancestor_of_final_commit": true,
+      "committed_source_sha256_reproduced": "48ff24a747ebeb5ccf9b70b5744b9959d41aff61df822e8262ae40b580866331",
+      "committed_helper_sha256_reproduced": "48ff24a747ebeb5ccf9b70b5744b9959d41aff61df822e8262ae40b580866331",
+      "recorded_wheel_sha256": "83ab8c6db140a47918840d0eebd3c6b991201ff44ed37dab1ab0e6829427bece",
+      "historic_wheel_binary_retained_for_reinspection": false,
+      "target": "disposable TASK-901 at base b938c0043ec200652fcdbc67b776704a530d8fb6",
+      "observed_capacity": "requested 3, verified available 2, effective 2, maximum observed 2",
+      "required_events": {
+        "overlap_rejected_before_launch": true,
+        "two_disjoint_bounded_subagents_observed": true,
+        "dependency_waited": true,
+        "coordinator_rejected_false_worker_validation": true,
+        "explicit_retry_released_dependency": true,
+        "worker_shared_state_hashes_unchanged": true,
+        "testing_rejected_until_all_rows_done": true,
+        "unjustified_duplicate_launches": 0
+      },
+      "sanitization_all_retained_flags_false": true
+    },
+    "epic_mode": {
+      "receipt": "../../TASK-062-Build-Epic-Child-Task-Orchestration/evidence/epic-mode-live-run.json",
+      "receipt_sha256": "33042b3d2d64ba1104a89d5374864b6f8c2d78f868c5fe98963c891f927c30aa",
+      "implementation_commit": "62e56d68732b354c269bec9be928a81c63379e69",
+      "implementation_is_ancestor_of_final_commit": true,
+      "committed_source_sha256_reproduced": "b468a24ec872c7b25e4c8af5d2a937d0582481b50fb9ed721cf3ec95ed91f945",
+      "committed_helper_sha256_reproduced": "b468a24ec872c7b25e4c8af5d2a937d0582481b50fb9ed721cf3ec95ed91f945",
+      "recorded_wheel_sha256": "fc33165f924983a219d5ed85a6b2fc55bc134e6a5736290087ad03ffe0436fe2",
+      "historic_wheel_binary_retained_for_reinspection": false,
+      "host_capacity_boundary": "The host exposed an observed lower bound of two concurrent persistent tasks, not a numeric maximum; the coordinator selected a cap of two.",
+      "session_accounting": "Seven diagnostic native tasks and three authoritative native tasks were disclosed; only the three authoritative tasks support the passing journey.",
+      "required_events": {
+        "negative_creation_gate_created_nothing": true,
+        "two_independent_authorized_tasks_observed_in_isolated_worktrees": true,
+        "dependent_creation_waited_for_coordinator_verification": true,
+        "monitor_pause_resume_created_no_duplicate": true,
+        "coordinator_verified_exact_scope_hashes_and_validation": true,
+        "parent_closeout_read_only_and_blocked": true,
+        "unjustified_duplicate_creations": 0
+      },
+      "sanitization_all_retained_flags_false": true
+    },
+    "final_head_native_replay_performed": false,
+    "final_head_native_replay_boundary": "The retained native receipts prove their exact committed ancestors and dated host observations. Later integrated source changed before f864c0f. Final HEAD is covered by deterministic, package, and installed-consumer validation, but no final-wheel native subagent or persistent-task replay is claimed. The delegated packet did not authorize another proof task or subagent."
+  },
+  "privacy": {
+    "ignored_runtime_path_verified": true,
+    "tracked_runtime_files": 0,
+    "wheel_contains_runtime_payload_or_task_evidence": false,
+    "sdist_contains_runtime_payload_or_task_evidence": false,
+    "package_contains_owner_home_path_or_current_task_ids": false,
+    "task_receipt_native_ids_handles_cursors_transcripts_paths_retained": false,
+    "epic_receipt_native_ids_handles_cursors_transcripts_paths_retained": false,
+    "host_claims_limited_to_dated_observations": true
+  },
+  "legacy_compatibility": {
+    "six_column_task_plan_readable_for_non_delegate_operations": true,
+    "six_column_task_plan_delegate_result": "PW_DELEGATION_METADATA_MISSING",
+    "four_column_epic_decomposition_readable_for_non_delegate_operations": true,
+    "four_column_epic_decomposition_delegate_result": "PW_DELEGATION_METADATA_MISSING",
+    "ordinary_force_cannot_bypass_incomplete_task_testing": true,
+    "installed_console_cannot_bypass_incomplete_task_testing": true,
+    "epic_child_route_cannot_bypass_incomplete_task_testing": true,
+    "delegate_cannot_supply_task_qa_or_complete": true,
+    "parent_closeout_before_audit_deferral_retro_gates": "blocked"
+  },
+  "parent_ac_matrix": [
+    {
+      "parent_ac": "AC4",
+      "status": "Pass",
+      "proof": "Final-HEAD human and schema-versioned JSON plan/status agree on graph, readiness, executor, concurrency, provenance, and leave Git clean.",
+      "invalid_substitutes": []
+    },
+    {
+      "parent_ac": "AC10",
+      "status": "Pass",
+      "proof": "Failure, descendant blocking, unrelated continuation, shared-premise halt, safe checkpoint, and terminal-state tests passed; the Task receipt additionally records coordinator rejection and corrected retry.",
+      "invalid_substitutes": []
+    },
+    {
+      "parent_ac": "AC11",
+      "status": "Pass",
+      "proof": "Final tests and both retained receipts require coordinator scope, hash, validation, evidence, and collision inspection before dependency release.",
+      "invalid_substitutes": []
+    },
+    {
+      "parent_ac": "AC12",
+      "status": "Pass",
+      "proof": "Persist/resume/orphan/no-duplicate deterministic coverage passed and the Epic monitor pause/resume retained create count two; no distinct native coordinator-process restart is claimed.",
+      "invalid_substitutes": []
+    },
+    {
+      "parent_ac": "AC14",
+      "status": "Pass",
+      "proof": "Targeted lifecycle tests prove Delegate cannot bypass Testing, QA, Review, Complete, or parent audit/deferral/retro closeout gates.",
+      "invalid_substitutes": []
+    },
+    {
+      "parent_ac": "AC15",
+      "status": "Pass",
+      "proof": "Tri-state dated capability matrices fail closed for unknown or unsupported native paths and retain explicit coordinator fallback semantics.",
+      "invalid_substitutes": []
+    },
+    {
+      "parent_ac": "AC16",
+      "status": "Pass",
+      "proof": "Asset version 2, helper/prompt/skill parity, exact-wheel four-host init/Doctor/no-op upgrade, fingerprint behavior, and owner-owned .new preservation passed.",
+      "invalid_substitutes": []
+    },
+    {
+      "parent_ac": "AC17",
+      "status": "Pass",
+      "proof": "The 377-test locked suite, strict Doctor, compilation, build, release receipt, exact-wheel install, workspace, Smoke Bomb, and package journeys passed at f864c0f.",
+      "invalid_substitutes": []
+    },
+    {
+      "parent_ac": "AC18",
+      "status": "Pass",
+      "proof": "The sanitized current-Codex Task receipt proves every required live event at exact commit 9c3d9bd and source/helper hash 48ff24a; final-HEAD native replay is outside the claim.",
+      "invalid_substitutes": []
+    },
+    {
+      "parent_ac": "AC19",
+      "status": "Pass",
+      "proof": "The sanitized authorized current-Codex Epic receipt proves authority, isolated worktrees, concurrent independent tasks, dependency delay, no duplicate monitoring resume, coordinator verification, and blocked closeout at exact commit 62e56d6; final-HEAD native replay is outside the claim.",
+      "invalid_substitutes": []
+    },
+    {
+      "parent_ac": "AC20",
+      "status": "Pass",
+      "proof": "Source and exact-wheel installed guidance give positive and negative invocation boundaries and distinguish Task rows, Epic children, host executors, Implement, Delegate, QA, and closeout.",
+      "invalid_substitutes": []
+    }
+  ],
+  "closeout_boundaries": {
+    "source_changed": false,
+    "child_evidence_changed": true,
+    "parent_tracker_mutated": false,
+    "epic_acceptance_map_mutated": false,
+    "parent_acceptance_audit_mutated": false,
+    "parent_deferrals_mutated": false,
+    "parent_retro_mutated": false,
+    "parent_delegation_runtime_mutated": false,
+    "push_merge_release_deploy_external_contact": false,
+    "independent_parent_acceptance_and_owner_acceptance_pending": true
+  },
+  "invalid_substitutes": []
+}

@@ -48,3 +48,9 @@ Implement one scoped work item from a project-workflow task and move it to testi
 15. Report changed files, validation results, remaining risks, and that `project-qa-review` is the next required lifecycle step.
 
 If requirements conflict with repo constraints or validation is not testable, stop and use `project-clarify`.
+
+When Delegate supplies a bounded worker packet, implement only that unit and return target/unit
+identity, exact source, allowed diff, validation, evidence, and stop-condition results. Do not mutate
+shared workflow state or lifecycle, create persistent tasks/worktrees, push, merge, release, deploy,
+contact others, or write outside the packet. The coordinator must inspect the return before satisfying
+dependencies or changing canonical state.

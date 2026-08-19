@@ -1,0 +1,33 @@
+{
+  "artifacts": [
+    {
+      "filename": "project_workflow-0.4.0-py3-none-any.whl",
+      "kind": "wheel",
+      "sha256": "f6094f1025542d9edd3bc2f2cc9bf1ee3486b49c80f5351d43af96afdf25e1df",
+      "size": 348431
+    },
+    {
+      "filename": "project_workflow-0.4.0.tar.gz",
+      "kind": "sdist",
+      "sha256": "671a8ab6ccc2b2b96a0d752ff78431c4c1a45a991d41d61837294ec7f7db3b54",
+      "size": 418640
+    }
+  ],
+  "asset_version": 2,
+  "changelog_heading": "## 0.4.0 - 2026-08-20",
+  "commands": {
+    "init": "uvx --from project-workflow==0.4.0 project init",
+    "upgrade": "uvx --from project-workflow==0.4.0 project upgrade"
+  },
+  "commit": "977c3eb1aa0a74b27c9d1d59bb34fd46ae14e20c",
+  "project": "project-workflow",
+  "repository": "johndetlefs/project-workflow",
+  "repository_schema_version": 1,
+  "schema_version": 1,
+  "tag": "v0.4.0",
+  "version": "0.4.0",
+  "workflow": {
+    "run_id": "local-candidate-20260820",
+    "run_url": "local://codex/EPIC-011"
+  }
+}

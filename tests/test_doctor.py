@@ -416,15 +416,15 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
     assert manifest == workflow_cli.WorkflowManifest(
         manifest_version=1,
         package_version=__version__,
-        asset_version=1,
+        asset_version=2,
         schema_version=1,
         applied_migrations=(),
     )
     assert workflow_cli._serialize_workflow_manifest(manifest) == (
         "{\n"
         '  "manifest_version": 1,\n'
-        '  "package_version": "0.3.0",\n'
-        '  "asset_version": 1,\n'
+        '  "package_version": "0.4.0",\n'
+        '  "asset_version": 2,\n'
         '  "schema_version": 1,\n'
         '  "applied_migrations": []\n'
         "}\n"
@@ -467,7 +467,7 @@ def test_repository_compatibility_classifies_supported_states(tmp_path: Path) ->
     workflow_cli._write_workflow_manifest(manifest_path, older_manifest)
     assert workflow_cli._repository_compatibility(tmp_path) == workflow_cli.RepositoryCompatibility(
         "upgradeable",
-        "schema-behind",
+        "assets-and-schema-behind",
         older_manifest,
     )
 
@@ -496,7 +496,7 @@ def test_repository_compatibility_classifies_supported_states(tmp_path: Path) ->
     ("update", "reason"),
     [
         ({"manifest_version": 2, "extension": "future"}, "future-manifest-version"),
-        ({"asset_version": 2}, "future-asset-version"),
+        ({"asset_version": 3}, "future-asset-version"),
         ({"schema_version": 2}, "future-schema-version"),
     ],
 )
@@ -732,7 +732,7 @@ def test_project_init_never_refreshes_an_existing_versioned_repository(tmp_path:
         json.loads(manifest_path.read_text(encoding="utf-8"))
     )
     assert preserved == behind
-    assert "already initialized (current); init made no changes" in result.stdout
+    assert "already initialized (upgradeable); init made no changes" in result.stdout
     assert "project upgrade --agent github-copilot" in result.stdout
 
 
@@ -2373,7 +2373,7 @@ def test_configured_task_prefixes_work_for_packaged_and_local_workflow(tmp_path:
     assert "| MCP-001 | Tool Contract | To Do | `tasks/MCP-001-Tool-Contract/IMPLEMENTATION.md` |" in tracker_text
 
 
-def test_task_status_rejects_illegal_transition_without_force(tmp_path: Path) -> None:
+def test_task_status_force_cannot_bypass_incomplete_rows(tmp_path: Path) -> None:
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
 
@@ -2388,7 +2388,7 @@ def test_task_status_rejects_illegal_transition_without_force(tmp_path: Path) ->
         cwd=tmp_path,
     )
     assert illegal.returncode != 0
-    assert "Illegal status transition for TASK-001: To Do -> Testing" in illegal.stderr
+    assert "every required implementation row is Done" in illegal.stderr
 
     missing_reason = run_project(
         ["task", "status", "--id", "TASK-001", "--to", "Testing", "--force"],
@@ -2397,6 +2397,29 @@ def test_task_status_rejects_illegal_transition_without_force(tmp_path: Path) ->
     assert missing_reason.returncode != 0
     assert "--force requires --reason" in missing_reason.stderr
 
+    forced_incomplete = run_project(
+        [
+            "task",
+            "status",
+            "--id",
+            "TASK-001",
+            "--to",
+            "Testing",
+            "--force",
+            "--reason",
+            "Recovering imported tracker state",
+        ],
+        cwd=tmp_path,
+    )
+    assert forced_incomplete.returncode != 0
+    assert "Ordinary --force cannot bypass this integrity gate" in forced_incomplete.stderr
+
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    implementation_path = task_dir / "IMPLEMENTATION.md"
+    implementation_path.write_text(
+        implementation_path.read_text(encoding="utf-8").replace("| To Do |", "| Done |"),
+        encoding="utf-8",
+    )
     forced = run_project(
         [
             "task",
@@ -2472,7 +2495,7 @@ def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
     )
     assert missing_tracker.returncode != 0
     assert (
-        "uvx --from project-workflow==0.3.0 project init"
+        "uvx --from project-workflow==0.4.0 project init"
         in missing_tracker.stderr
     )
 
@@ -2934,7 +2957,7 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "# Existing Agent Notes" in codex_agents
     assert "<!-- project-workflow:start -->" in codex_agents
     assert (
-        "uvx --from project-workflow==0.3.0 project init"
+        "uvx --from project-workflow==0.4.0 project init"
         in codex_agents
     )
     assert "To initialize a new repository" in codex_agents
@@ -3292,6 +3315,31 @@ def test_doctor_detects_source_prompt_mirror_drift(tmp_path: Path) -> None:
 
     assert doctor.returncode != 0
     assert "Prompt differs from packaged mirror" in doctor.stdout
+
+
+def test_doctor_detects_installed_codex_delegate_skill_drift(tmp_path: Path) -> None:
+    init = run_project(["init", "--agent", "codex"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    packaged_skill = (
+        tmp_path
+        / "src/project_workflow/codex/skills/project-delegate/SKILL.md"
+    )
+    packaged_skill.parent.mkdir(parents=True)
+    shutil.copy2(
+        REPO_ROOT / "src/project_workflow/codex/skills/project-delegate/SKILL.md",
+        packaged_skill,
+    )
+    installed_skill = tmp_path / ".agents/skills/project-delegate/SKILL.md"
+    installed_skill.write_text(
+        installed_skill.read_text(encoding="utf-8") + "\nSemantic drift.\n",
+        encoding="utf-8",
+    )
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+
+    assert doctor.returncode != 0
+    assert "Installed Codex Delegate skill differs from packaged source" in doctor.stdout
 
 
 def test_doctor_strict_fails_complete_task_without_qa_evidence(tmp_path: Path) -> None:
@@ -5585,6 +5633,34 @@ def test_smoke_bomb_failed_reviewed_validation_refuses_zip(tmp_path: Path) -> No
     assert result["archive"] is None
     assert not output.exists()
     assert not (root / ".project-workflow").exists()
+
+
+def test_smoke_bomb_plan_inventory_omits_ignored_private_delegate_runtime(
+    tmp_path: Path,
+) -> None:
+    root = create_smoke_bomb_fixture(tmp_path, "codex")
+    private_runtime = root / ".project-workflow/runtime/delegations/private-handle.json"
+    private_runtime.parent.mkdir(parents=True)
+    private_runtime.write_text(
+        '{"handle":"private-task-id","credential":"must-not-ship"}\n',
+        encoding="utf-8",
+    )
+    assert _run_git_for_test(
+        root,
+        ["check-ignore", ".project-workflow/runtime/delegations/private-handle.json"],
+    )
+    planned = run_project(
+        [*smoke_bomb_args(root, tmp_path / "client.zip", "codex"), "--plan"],
+        cwd=root,
+    )
+    assert planned.returncode != 0
+    plan = json.loads(planned.stdout)
+    assert "private-handle" not in planned.stdout
+    assert "must-not-ship" not in planned.stdout
+    assert "PW_SMOKE_BOMB_PRIVATE_RUNTIME_PRESENT" in {
+        blocker["code"] for blocker in plan["blockers"]
+    }
+    assert not any("private-handle" in path for path in plan["archive"]["included_paths"])
 
 
 @pytest.mark.parametrize(

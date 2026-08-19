@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-061",
+  "observed_at": "2026-08-19T16:15:40+10:00",
+  "host": "current Codex desktop session",
+  "sanitization": {
+    "agent_ids_retained": false,
+    "handles_retained": false,
+    "transcripts_retained": false,
+    "credentials_retained": false
+  },
+  "implementation_identity": {
+    "repository_commit": "9c3d9bd177fa9c5d881221010bc9a4b34217f79e",
+    "source_artifact": "src/project_workflow/cli.py",
+    "source_sha256": "48ff24a747ebeb5ccf9b70b5744b9959d41aff61df822e8262ae40b580866331",
+    "generated_helper": "src/project_workflow/templates/workflow.py",
+    "local_helper": ".project-workflow/cli/workflow.py",
+    "helper_sha256": "48ff24a747ebeb5ccf9b70b5744b9959d41aff61df822e8262ae40b580866331",
+    "installed_package": "project-workflow==0.3.0",
+    "wheel_sha256": "83ab8c6db140a47918840d0eebd3c6b991201ff44ed37dab1ab0e6829427bece",
+    "installed_cli_sha256": "48ff24a747ebeb5ccf9b70b5744b9959d41aff61df822e8262ae40b580866331"
+  },
+  "target_identity": {
+    "repository": "disposable local Git repository",
+    "base_commit": "b938c0043ec200652fcdbc67b776704a530d8fb6",
+    "target_id": "TASK-901",
+    "target_kind": "task",
+    "target_source": ".project-workflow/tasks/TASK-901-Live/IMPLEMENTATION.md",
+    "target_source_sha256_before_integration": "1d6c9fa2511d64b6cac9bff59743ee35e4e780ae3e008ccc945b0e5d2e1496e1",
+    "plan_fingerprint": "b5158b4a2ff17d32a42ec34f1564006a61de9891e0a2215d5672f56c354dbeb7"
+  },
+  "observation_method": [
+    "coordinator-created TaskOrchestrator packets and inspected serialized packet fields",
+    "two real bounded workers were observed running concurrently in the current Codex session",
+    "coordinator inspected Git status, exact file bytes, hashes, validation outcomes, runtime summaries, and lifecycle command results",
+    "installed wheel console entrypoint was exercised against the disposable target"
+  ],
+  "capacity": {
+    "requested_concurrency": 3,
+    "verified_available_child_capacity": 2,
+    "effective_concurrency": 2,
+    "maximum_observed_concurrent_workers": 2
+  },
+  "shared_state_hash_proof": {
+    "tracker_before_workers": "72cd53273aa76997b61e03ee9e8e1bdb4838f73c72e0a49a631e1b0bc845f525",
+    "tracker_after_workers": "72cd53273aa76997b61e03ee9e8e1bdb4838f73c72e0a49a631e1b0bc845f525",
+    "implementation_before_workers": "1d6c9fa2511d64b6cac9bff59743ee35e4e780ae3e008ccc945b0e5d2e1496e1",
+    "implementation_after_workers": "1d6c9fa2511d64b6cac9bff59743ee35e4e780ae3e008ccc945b0e5d2e1496e1",
+    "combined_packet_baseline": "d735ac0875a0b2a72aa59bb867d2ad705595a4e0443620436710a167225418c0",
+    "coordinator_integrated_implementation": "b0bfed0fab653a12242428799899b7fb734db4c0a66f7a856d44b890d640a8ca",
+    "coordinator_integrated_tracker": "c7cc8f5610ffa6a41c6494ecc28ac2c5a8519ec8c5b08f075d91fb4f6c3d5e40"
+  },
+  "events": [
+    {
+      "event": "overlap_rejected_before_launch",
+      "result": "PW_DELEGATION_WRITE_SCOPE_COLLISION",
+      "detail": "A parallel-safe app prefix overlapped unit A's app/alpha.txt prefix and was rejected while building the launch plan."
+    },
+    {
+      "event": "premature_testing_rejected",
+      "result": "rejected with tracker hash unchanged",
+      "detail": "The installed console entrypoint rejected ordinary --force while A, B, and D were To Do."
+    },
+    {
+      "event": "two_disjoint_workers_launched",
+      "units": ["A", "B"],
+      "write_scopes": ["app/alpha.txt", "app/beta.txt"],
+      "executor": "bounded-subagent",
+      "persistent_task_intent": null
+    },
+    {
+      "event": "dependent_waited",
+      "unit": "D",
+      "result": "not launchable until A and B were coordinator-verified Done"
+    },
+    {
+      "event": "worker_outputs_observed",
+      "paths": ["app/alpha.txt", "app/beta.txt"],
+      "sha256": [
+        "3cb7aa5eed13270fca6168d86ed6845107573d83e15b823e6efd76b40beb9b92",
+        "233b017c259f35fa46e4efb44adea3584c8725575fdc31880da12ea988b4f238"
+      ],
+      "scope_result": "only the two authorized paths changed"
+    },
+    {
+      "event": "failed_validation",
+      "unit": "B",
+      "attempt": 1,
+      "result": "failed",
+      "detail": "Coordinator-observed validate-B=false overrode the worker's true claim; D remained blocked."
+    },
+    {
+      "event": "corrected_verification",
+      "unit": "B",
+      "attempt": 2,
+      "result": "accepted",
+      "detail": "Coordinator-observed validation and evidence passed; D became eligible."
+    },
+    {
+      "event": "dependent_worker_completed",
+      "unit": "D",
+      "verified_dependencies": ["A", "B"],
+      "path": "app/dependent.txt",
+      "sha256": "7b7cb87920b839c56be29750471a4400647019ca30da24a30c5ad9f2f12f6d0b"
+    },
+    {
+      "event": "all_rows_verified",
+      "completed": ["A", "B", "D"],
+      "testing_allowed": true,
+      "in_flight": []
+    },
+    {
+      "event": "testing_after_coordinator_integration",
+      "result": "TASK-901 moved from In Progress to Testing only after the coordinator marked every row Done",
+      "detail": "The disposable imported fixture used audited --force for its missing approval envelope; the all-rows-Done integrity gate still ran and passed."
+    }
+  ],
+  "no_duplicate_proof": {
+    "persistent_codex_tasks_created": 0,
+    "unit_attempts": {"A": 1, "B": 2, "D": 1},
+    "retry_reason": "B attempt 1 failed coordinator-observed validation",
+    "unjustified_duplicate_launches": 0
+  },
+  "proof_boundaries": [
+    "This dated receipt proves only the observed current Codex Task-mode journey and exact implementation/package identities above.",
+    "Deterministic tests, not this live receipt, cover shared-premise halt, orphan recovery, restart variants, coordinator-owned rows, and other host-neutral state combinations.",
+    "This receipt does not prove Epic-mode orchestration, another host's runtime capability, persistent Codex task creation, deployment, release, adoption, effectiveness, parent Epic acceptance, or owner acceptance."
+  ]
+}
