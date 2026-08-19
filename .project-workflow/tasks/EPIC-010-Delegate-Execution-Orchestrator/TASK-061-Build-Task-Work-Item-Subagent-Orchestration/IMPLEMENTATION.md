@@ -62,12 +62,12 @@ As a coordinating Codex task, I want to delegate only safe implementation rows t
 
 ## Acceptance Criteria
 
-- [ ] AC1: Executor selection uses parallel safety, write scope, dependencies, and observed capacity and never creates per-row persistent tasks. Parent AC5, AC9.
-- [ ] AC2: Launch packets are complete, bounded, and prohibit shared-state and delivery mutations. Parent AC7.
-- [ ] AC3: Coordinator-only lifecycle and shared-state enforcement blocks premature Testing. Parent AC8, AC14.
-- [ ] AC4: Returned work is verified before completion or dependency release. Parent AC11.
-- [ ] AC5: Failure and interruption reconciliation preserve descendant and unaffected-work semantics without duplicates. Parent AC10, AC12.
-- [ ] AC6: A retained current-Codex Task-mode journey proves the required real worker behavior and proof boundaries. Parent AC18.
+- [x] AC1: Executor selection uses parallel safety, write scope, dependencies, and observed capacity and never creates per-row persistent tasks. Parent AC5, AC9.
+- [x] AC2: Launch packets are complete, bounded, and prohibit shared-state and delivery mutations. Parent AC7.
+- [x] AC3: Coordinator-only lifecycle and shared-state enforcement blocks premature Testing. Parent AC8, AC14.
+- [x] AC4: Returned work is verified before completion or dependency release. Parent AC11.
+- [x] AC5: Failure and interruption reconciliation preserve descendant and unaffected-work semantics without duplicates. Parent AC10, AC12.
+- [x] AC6: A retained current-Codex Task-mode journey proves the required real worker behavior and proof boundaries. Parent AC18.
 
 ## Validation
 
@@ -82,37 +82,48 @@ As a coordinating Codex task, I want to delegate only safe implementation rows t
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | not recorded | not recorded | not recorded | not recorded |
+| . | `codex/TASK-061-task-orchestration`; code commit `9c3d9bd177fa9c5d881221010bc9a4b34217f79e`; no PR | Focused 65 passed; full locked 327 passed; strict Doctor, compile, build, installed-wheel, privacy, mirror, and diff checks passed | Authorized local commit only; no push, merge, release, or deploy | `evidence/task-mode-live-run.json`; `evidence/2026-08-19-validation.md`; `EVIDENCE.json` |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- |
-| 1 | Task Executor And Packet | Implement Task-mode executor selection and bounded packet construction in the standalone/mirrored CLI architecture; TASK-060 graph/state APIs are read-only dependencies. | AC1, AC2 | Run selector/packet matrix and inspect exact payload fields. | To Do | | src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegate_task_mode.py | No |
-| 2 | Coordinator Integration Gate | Implement result verification, collision/scope checks, dependency release, and coordinator-only shared-state transitions in the Task-mode module. | AC3, AC4 | Exercise accepted and rejected worker results and compare shared-artifact hashes. | To Do | 1 | src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegate_task_mode.py | No |
-| 3 | Failure And Resume Semantics | Implement descendant blocking, shared-premise halt, in-flight checkpoints, retry, resume, and orphan classification. | AC5 | Run failure/interruption state-transition matrix. | To Do | 2 | src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegate_task_mode.py | No |
-| 4 | Testing Lifecycle Gate | Harden Task status so Testing requires every required implementation row Done and cannot be bypassed by ordinary force. | AC3 | Demonstrate rejected incomplete transition with unchanged state, then successful all-Done transition. | To Do | 3 | src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegate_task_mode.py | No |
-| 5 | Live Task-Mode Journey | Execute the exact AC18 current-Codex journey and retain sanitised runtime-target-source evidence. | AC6 | Inspect source/runtime identity, worker events, scopes, hashes, dependency timing, failure correction, and lifecycle results. | To Do | 1, 2, 3, 4 | .project-workflow/tasks/EPIC-010-Delegate-Execution-Orchestrator/TASK-061-Build-Task-Work-Item-Subagent-Orchestration | No |
-| 6 | Child QA Handoff | Run focused/full tests, Doctor/build/privacy checks, record evidence, and submit to independent QA. | AC1, AC2, AC3, AC4, AC5, AC6 | Review commands, results, evidence recipe, and proof limitations. | To Do | 5 | .project-workflow/tasks/EPIC-010-Delegate-Execution-Orchestrator/TASK-061-Build-Task-Work-Item-Subagent-Orchestration, tests/test_delegate_task_mode.py | No |
+| 1 | Task Executor And Packet | Implement Task-mode executor selection and bounded packet construction in the standalone/mirrored CLI architecture; TASK-060 graph/state APIs are read-only dependencies. | AC1, AC2 | Run selector/packet matrix and inspect exact payload fields. | Done | | src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegate_task_mode.py | No |
+| 2 | Coordinator Integration Gate | Implement result verification, collision/scope checks, dependency release, and coordinator-only shared-state transitions in the Task-mode module. | AC3, AC4 | Exercise accepted and rejected worker results and compare shared-artifact hashes. | Done | 1 | src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegate_task_mode.py | No |
+| 3 | Failure And Resume Semantics | Implement descendant blocking, shared-premise halt, in-flight checkpoints, retry, resume, and orphan classification. | AC5 | Run failure/interruption state-transition matrix. | Done | 2 | src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegate_task_mode.py | No |
+| 4 | Testing Lifecycle Gate | Harden Task status so Testing requires every required implementation row Done and cannot be bypassed by ordinary force. | AC3 | Demonstrate rejected incomplete transition with unchanged state, then successful all-Done transition. | Done | 3 | src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegate_task_mode.py | No |
+| 5 | Live Task-Mode Journey | Execute the exact AC18 current-Codex journey and retain sanitised runtime-target-source evidence. | AC6 | Inspect source/runtime identity, worker events, scopes, hashes, dependency timing, failure correction, and lifecycle results. | Done | 1, 2, 3, 4 | .project-workflow/tasks/EPIC-010-Delegate-Execution-Orchestrator/TASK-061-Build-Task-Work-Item-Subagent-Orchestration | No |
+| 6 | Child QA Handoff | Run focused/full tests, Doctor/build/privacy checks, record evidence, and submit to independent QA. | AC1, AC2, AC3, AC4, AC5, AC6 | Review commands, results, evidence recipe, and proof limitations. | Done | 5 | .project-workflow/tasks/EPIC-010-Delegate-Execution-Orchestrator/TASK-061-Build-Task-Work-Item-Subagent-Orchestration, tests/test_delegate_task_mode.py | No |
 
 ## Parent AC Evidence
 
-- AC5, AC7, AC8, AC9, AC10, AC11, AC12, AC14, AC18: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC5: Executor matrix covers bounded, sequential, and coordinator execution, exclusive unsafe work, protected scopes, dependency state, and verified capacity; the live receipt observes two bounded workers and zero persistent Task creation.
+- AC7: Packet tests and the live receipt verify identity, acceptance duties, dependencies, repository/write scope, validation/evidence obligations, forbidden actions, stop conditions, baseline, attempt, and null persistent-task intent.
+- AC8: Coordinator tokens guard runtime/lifecycle writes; global and Epic-child Testing routes reject incomplete rows through module, local helper, editable console, and built-wheel console. Live worker-phase tracker and implementation hashes remained unchanged.
+- AC9: Selection uses the minimum requested/observed capacity. Requested three, verified capacity two, and observed concurrency two are retained in the live receipt.
+- AC10: Deterministic coverage exercises descendant failure, unaffected continuation, shared-premise halt, return-before-checkpoint, in-flight checkpointing, retry, and terminal states. The live run observes failed validation blocking D until corrected verification.
+- AC11: Coordinator-observed paths, collisions, hashes, validation, and evidence—not worker assertions—control completion and dependency release. The live run retains rejection and correction results.
+- AC12: Persist/resume coverage includes active, returned, orphaned, refreshed capacity, exact handle identity, stale attempts, canonical Done/Blocked reconciliation, rebaseline, and no-relaunch. The live run resumes between phases with only the justified B retry.
+- AC14: Testing requires exactly one canonical non-empty Task List whose every status is exactly `Done`; ordinary force cannot bypass either global or Epic-child Task routes. Delegate never self-completes delivery.
+- AC18: `evidence/task-mode-live-run.json` retains the dated current-Codex journey, sanitized of agent IDs, handles, transcripts, and credentials, and binds source commit, three helper hashes, built/installed package, target commit/source, plan, outputs, hashes, concurrency, lifecycle outcomes, and proof boundaries.
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass. Independent QA reported no remaining findings within the delegated TASK-061 authority boundary.
+- Evidence: Independent reviewer reran the 327-test locked suite with UVX enabled, strict Doctor, 65 focused tests, mirror identity, source/package/receipt hashes, structured claims, sanitization, and diff checks. Build/package, privacy, and live evidence are recorded in `evidence/2026-08-19-validation.md`.
+- Findings: The reviewer identified and the implementation fixed coordinator-observation bypass, persistence/resume gaps, canonical block recovery, unsafe exclusivity, shared-premise handling, capacity bounding, stale-result identity, coordinator scope, subset dependencies, package console bypass, canonical Task List parsing, and the Epic-child lifecycle route. No implementation findings remained after the final code refresh.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: Stable plan identity must exclude mutable row status and ephemeral capacity while persisted attempts/handles remain exact; worker claims are inputs, never verification; shared-premise invalidation must halt integration as well as new launches; lifecycle integrity belongs in every shared Python Task route before force handling.
+- Conventions or agent assets updated: The monolithic CLI and both managed Python mirrors now carry the Task orchestration/runtime contract, and focused regressions encode the coordinator-only scope boundary, canonical Task List structure, and package entrypoint parity.
+- Follow-up tasks: No new task was created. Existing EPIC-010 children TASK-062, TASK-063, and TASK-064 retain Epic-mode orchestration, host documentation, and end-to-end proof/closeout responsibilities.
 
 ## Notes
 
 - Task: TASK-061
 - Title: Build Task Work-Item Subagent Orchestration
 - Created: 2026-08-19
+- Code revision observed by the live journey: `9c3d9bd177fa9c5d881221010bc9a4b34217f79e`.
+- Proof boundary: This child establishes the dated current-Codex Task-mode behavior and deterministic host-neutral rules. It does not establish Epic-mode orchestration, another host's live capability, release/deployment/adoption/effectiveness, parent acceptance audit, owner acceptance, or parent lifecycle completion.
+- Authority boundary: The parent coordinator remains the sole writer of the Epic tracker, parent acceptance map/lifecycle, and coordinator runtime state; this child did not advance TASK-061 in the Epic tracker.
