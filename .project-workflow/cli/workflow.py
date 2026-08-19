@@ -341,6 +341,17 @@ IMPLEMENTATION_TASK_COLUMNS = (
     "User Verification",
     "Status",
 )
+DELEGATION_IMPLEMENTATION_TASK_COLUMNS = (
+    *IMPLEMENTATION_TASK_COLUMNS,
+    "Dependencies",
+    "Write Scope",
+    "Parallel Safe",
+)
+DELEGATION_SCHEMA_VERSION = 1
+DELEGATION_RUNTIME_SCHEMA_VERSION = 1
+DELEGATION_RUNTIME_RELATIVE_DIR = Path(".project-workflow/runtime/delegations")
+DELEGATION_CAPABILITIES = ("persistent-task", "subagent", "worktree")
+DELEGATION_UNIT_STATES = ("pending", "active", "complete", "blocked", "orphaned")
 TRACKER_STATUSES = (
     "To Do",
     "Analysing",
@@ -407,6 +418,7 @@ DECOMPOSITION_PLAN_COLUMNS = (
     "Parent ACs",
     "Source",
 )
+DELEGATION_DECOMPOSITION_PLAN_COLUMNS = (*DECOMPOSITION_PLAN_COLUMNS, "Dependencies")
 EPIC_AMENDMENT_COLUMNS = (
     "ID",
     "Title",
@@ -792,6 +804,24 @@ def _ensure_user_config_file(path: Path) -> str:
     return f"Created: {path}"
 
 
+def _ensure_delegation_runtime_ignore(root: Path) -> str:
+    ignore_path = root / ".gitignore"
+    entry = f"{DELEGATION_RUNTIME_RELATIVE_DIR.as_posix()}/"
+    content = ignore_path.read_text(encoding="utf-8") if ignore_path.exists() else ""
+    if entry in {line.strip() for line in content.splitlines()}:
+        return f"Exists: {ignore_path} delegation runtime entry"
+    separator = "" if not content or content.endswith("\n") else "\n"
+    ignore_path.write_text(
+        content
+        + separator
+        + "\n# Machine-local delegation handles and leases\n"
+        + entry
+        + "\n",
+        encoding="utf-8",
+    )
+    return f"Updated: {ignore_path} delegation runtime entry"
+
+
 def _managed_project_workflow_block() -> str:
     return (
         f"{MANAGED_BLOCK_START}\n"
@@ -1101,6 +1131,70 @@ class SmokeBombFailure(RuntimeError):
         super().__init__(message)
         self.code = code
         self.message = message
+
+
+class DelegationPlanError(ValueError):
+    """Stable fail-closed error raised before a delegation launch is possible."""
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+@dataclass(frozen=True)
+class DelegationTarget:
+    target_id: str
+    kind: str
+    title: str
+    lifecycle: str
+    source_path: str
+    source_hash: str
+
+
+@dataclass(frozen=True)
+class DelegationUnit:
+    unit_id: str
+    title: str
+    dependencies: tuple[str, ...]
+    write_scope: tuple[str, ...]
+    parallel_safe: bool
+    canonical_state: str
+    source_order: int
+    source_path: str
+
+
+@dataclass(frozen=True)
+class DelegationPlannedUnit:
+    unit_id: str
+    title: str
+    dependencies: tuple[str, ...]
+    write_scope: tuple[str, ...]
+    parallel_safe: bool
+    canonical_state: str
+    readiness: str
+    blocking_reasons: tuple[str, ...]
+    executor: str
+    executor_reason: str
+    source_path: str
+
+
+@dataclass(frozen=True)
+class DelegationPlan:
+    target: DelegationTarget
+    units: tuple[DelegationPlannedUnit, ...]
+    selected_units: tuple[str, ...]
+    eligible_units: tuple[str, ...]
+    blocked_units: tuple[str, ...]
+    requested_concurrency: int
+    available_child_capacity: int
+    effective_concurrency: int
+    effective_child_concurrency: int
+    concurrency_reason: str
+    observed_capabilities: tuple[str, ...]
+    capability_source: str
+    persistent_task_authority: str | None
+    provenance: tuple[str, ...]
 
 
 def _operational_status_choices(
@@ -5348,6 +5442,28 @@ def _smoke_bomb_plan_outputs(
                     source=".project-workflow",
                 )
 
+    ignore_path = root / ".gitignore"
+    if ignore_path.is_file() and not ignore_path.is_symlink():
+        try:
+            ignore_lines = ignore_path.read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeDecodeError):
+            ignore_lines = []
+        runtime_comment = "# Machine-local delegation handles and leases"
+        runtime_entry = f"{DELEGATION_RUNTIME_RELATIVE_DIR.as_posix()}/"
+        sanitized_lines = [
+            line for line in ignore_lines if line.strip() not in {runtime_comment, runtime_entry}
+        ]
+        while sanitized_lines and not sanitized_lines[-1].strip():
+            sanitized_lines.pop()
+        sanitized_ignore = ("\n".join(sanitized_lines) + "\n").encode("utf-8")
+        record(
+            ignore_path,
+            sanitized_ignore,
+            reason="Remove the ignored project-workflow runtime-state boundary from client output.",
+            ownership="project-workflow-ignore-entry",
+            source=runtime_entry,
+        )
+
     for path in sorted(_smoke_bomb_generated_asset_paths(root)):
         if not path.exists():
             continue
@@ -6629,9 +6745,9 @@ def _implementation_template(
         f"| ---------- | ----------- | ---------- | -------- | -------- |\n"
         f"| {repository_id} | not recorded | not recorded | not recorded | not recorded |\n\n"
         f"## Task List\n\n"
-        f"| ID | Title | Description | Acceptance Criteria | User Verification | Status |\n"
-        f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ |\n"
-        f"| 1 | ____ | ____ | AC1: ____ | ____ | To Do |\n\n"
+        f"| ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe |\n"
+        f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- |\n"
+        f"| 1 | ____ | ____ | AC1: ____ | ____ | To Do | | ____ | No |\n\n"
         f"## QA & Code Review\n\n"
         f"- Verdict: ____\n"
         f"- Evidence: ____\n"
@@ -7015,6 +7131,13 @@ def _markdown_table_rows_from_section(
 
 
 def _proposed_child_work_rows(requirements_text: str) -> list[dict[str, str]]:
+    rows = _markdown_table_rows_from_section(
+        requirements_text,
+        "Proposed Child Work",
+        expected_columns=("Proposed Child", "Parent ACs", "Purpose", "Dependencies"),
+    )
+    if rows:
+        return rows
     return _markdown_table_rows_from_section(
         requirements_text,
         "Proposed Child Work",
@@ -7194,16 +7317,17 @@ def _format_decomposition_plan(
         "",
         "## Authorized Child Rows",
         "",
-        "| ID | Title | Parent ACs | Source |",
-        "|---|---|---|---|",
+        "| ID | Title | Parent ACs | Source | Dependencies |",
+        "|---|---|---|---|---|",
     ]
     for row in rows:
         lines.append(
-            "| {id} | {title} | {parent_acs} | {source} |".format(
+            "| {id} | {title} | {parent_acs} | {source} | {dependencies} |".format(
                 id=row["ID"],
                 title=row["Title"],
                 parent_acs=_normalize_ac_list(row.get("Parent ACs", "")),
                 source=row.get("Source", "Decomposition plan"),
+                dependencies=row.get("Dependencies", ""),
             )
         )
     lines.extend(
@@ -7223,8 +7347,16 @@ def _format_decomposition_plan(
 def _read_decomposition_plan_rows(plan_path: Path) -> list[dict[str, str]]:
     if not plan_path.exists():
         return []
+    text = plan_path.read_text(encoding="utf-8")
+    rows = _markdown_table_rows_from_section(
+        text,
+        "Authorized Child Rows",
+        expected_columns=DELEGATION_DECOMPOSITION_PLAN_COLUMNS,
+    )
+    if rows:
+        return rows
     return _markdown_table_rows_from_section(
-        plan_path.read_text(encoding="utf-8"),
+        text,
         "Authorized Child Rows",
         expected_columns=DECOMPOSITION_PLAN_COLUMNS,
     )
@@ -7361,6 +7493,1057 @@ def _require_decomposition_plan_authority(epic_dir: Path, row: dict[str, str]) -
             f"{row_id} is outside the approved decomposition authority:\n"
             + "\n".join(f"- {issue}" for issue in issues)
         )
+
+
+def _delegation_error(code: str, message: str) -> DelegationPlanError:
+    return DelegationPlanError(code, message)
+
+
+def _delegation_source_hash(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _delegation_relative_path(root: Path, path: Path) -> str:
+    try:
+        return path.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return str(path.resolve())
+
+
+def _delegation_dependency_ids(value: str, *, unit_id: str) -> tuple[str, ...]:
+    normalized = value.strip()
+    if not normalized or normalized.lower() in {"none", "n/a", "-"}:
+        return ()
+    dependencies: list[str] = []
+    for item in normalized.split(","):
+        dependency = item.strip()
+        if not dependency or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", dependency):
+            raise _delegation_error(
+                "PW_DELEGATION_DEPENDENCY_MALFORMED",
+                f"{unit_id} has malformed dependency metadata: '{value}'.",
+            )
+        if dependency not in dependencies:
+            dependencies.append(dependency)
+    return tuple(dependencies)
+
+
+def _delegation_write_scope(value: str, *, unit_id: str) -> tuple[str, ...]:
+    if not value.strip():
+        raise _delegation_error(
+            "PW_DELEGATION_METADATA_MISSING",
+            f"{unit_id} must declare at least one repository-relative Write Scope prefix.",
+        )
+    scopes: list[str] = []
+    for item in value.split(","):
+        raw_scope = item.strip().replace("\\", "/")
+        if not raw_scope or any(character in raw_scope for character in "*?[]{}"):
+            raise _delegation_error(
+                "PW_DELEGATION_WRITE_SCOPE_INVALID",
+                f"{unit_id} has invalid Write Scope '{item.strip()}'; prefixes are not globs.",
+            )
+        if raw_scope.startswith("/"):
+            raise _delegation_error(
+                "PW_DELEGATION_WRITE_SCOPE_INVALID",
+                f"{unit_id} Write Scope must be repository-relative: '{raw_scope}'.",
+            )
+        parts = [part for part in raw_scope.split("/") if part not in {"", "."}]
+        if ".." in parts:
+            raise _delegation_error(
+                "PW_DELEGATION_WRITE_SCOPE_INVALID",
+                f"{unit_id} Write Scope cannot escape the repository: '{raw_scope}'.",
+            )
+        scope = "." if not parts else "/".join(parts)
+        if scope not in scopes:
+            scopes.append(scope)
+    return tuple(scopes)
+
+
+def _delegation_parallel_safe(value: str, *, unit_id: str) -> bool:
+    normalized = value.strip().lower()
+    if normalized in {"yes", "true"}:
+        return True
+    if normalized in {"no", "false"}:
+        return False
+    raise _delegation_error(
+        "PW_DELEGATION_METADATA_MISSING",
+        f"{unit_id} Parallel Safe must be explicitly Yes or No.",
+    )
+
+
+def _delegation_canonical_state(value: str) -> str:
+    normalized = value.strip().lower()
+    if normalized in {"done", "complete"}:
+        return "complete"
+    if normalized in {"blocked", "failed"}:
+        return "blocked"
+    return "pending"
+
+
+def _delegation_task_units(root: Path, implementation_path: Path) -> tuple[DelegationUnit, ...]:
+    text = implementation_path.read_text(encoding="utf-8")
+    table_found, rows, malformed_rows = _implementation_task_table_rows(text)
+    if not table_found:
+        raise _delegation_error(
+            "PW_DELEGATION_PLAN_MISSING",
+            "Task IMPLEMENTATION.md has no supported Task List table.",
+        )
+    if malformed_rows:
+        raise _delegation_error(
+            "PW_DELEGATION_PLAN_MALFORMED",
+            "Task List has malformed rows at lines: "
+            + ", ".join(str(line) for line in malformed_rows)
+            + ".",
+        )
+    if not rows:
+        raise _delegation_error("PW_DELEGATION_PLAN_EMPTY", "Task List has no execution units.")
+    if any(row.get("_delegation_metadata") != "present" for row in rows):
+        raise _delegation_error(
+            "PW_DELEGATION_METADATA_MISSING",
+            "Delegate requires Task List columns Dependencies, Write Scope, and Parallel Safe; "
+            "the legacy six-column plan remains valid for non-Delegate commands.",
+        )
+    source_path = _delegation_relative_path(root, implementation_path)
+    units: list[DelegationUnit] = []
+    for order, row in enumerate(rows):
+        unit_id = row.get("ID", "").strip()
+        if not unit_id:
+            raise _delegation_error(
+                "PW_DELEGATION_UNIT_ID_MISSING", "Every Task List row requires a stable ID."
+            )
+        units.append(
+            DelegationUnit(
+                unit_id=unit_id,
+                title=row.get("Title", "").strip(),
+                dependencies=_delegation_dependency_ids(
+                    row.get("Dependencies", ""), unit_id=unit_id
+                ),
+                write_scope=_delegation_write_scope(
+                    row.get("Write Scope", ""), unit_id=unit_id
+                ),
+                parallel_safe=_delegation_parallel_safe(
+                    row.get("Parallel Safe", ""), unit_id=unit_id
+                ),
+                canonical_state=_delegation_canonical_state(row.get("Status", "")),
+                source_order=order,
+                source_path=source_path,
+            )
+        )
+    return tuple(units)
+
+
+def _delegation_epic_units(
+    root: Path, epic_dir: Path, plan_path: Path
+) -> tuple[DelegationUnit, ...]:
+    text = plan_path.read_text(encoding="utf-8")
+    rows = _markdown_table_rows_from_section(
+        text,
+        "Authorized Child Rows",
+        expected_columns=DELEGATION_DECOMPOSITION_PLAN_COLUMNS,
+    )
+    if not rows:
+        legacy_rows = _markdown_table_rows_from_section(
+            text,
+            "Authorized Child Rows",
+            expected_columns=DECOMPOSITION_PLAN_COLUMNS,
+        )
+        if legacy_rows:
+            raise _delegation_error(
+                "PW_DELEGATION_METADATA_MISSING",
+                "Delegate requires the Epic decomposition Dependencies column; the legacy "
+                "four-column plan remains valid for non-Delegate commands.",
+            )
+        raise _delegation_error(
+            "PW_DELEGATION_PLAN_MALFORMED",
+            "Epic DECOMPOSITION.md has no supported Authorized Child Rows table.",
+        )
+    tracker_path = epic_dir / "TRACKER.md"
+    if not tracker_path.exists():
+        raise _delegation_error("PW_DELEGATION_AUTHORITY_MISSING", "Epic TRACKER.md is missing.")
+    _lines, _header_idx, tracker_rows = _epic_tracker_rows(tracker_path)
+    tracker_by_id = {row.get("ID", "").strip(): row for row in tracker_rows}
+    source_path = _delegation_relative_path(root, plan_path)
+    units: list[DelegationUnit] = []
+    for order, row in enumerate(rows):
+        unit_id = row.get("ID", "").strip()
+        tracker_row = tracker_by_id.get(unit_id)
+        if tracker_row is None:
+            raise _delegation_error(
+                "PW_DELEGATION_UNPLANNED_UNIT",
+                f"Authorized child {unit_id} is missing from the Epic tracker.",
+            )
+        authority_issues = _decomposition_plan_authority_issues(
+            epic_dir=epic_dir, row=tracker_row
+        )
+        if authority_issues:
+            raise _delegation_error(
+                "PW_DELEGATION_AUTHORITY_MISMATCH",
+                f"{unit_id} does not match decomposition authority: "
+                + "; ".join(authority_issues),
+            )
+        units.append(
+            DelegationUnit(
+                unit_id=unit_id,
+                title=row.get("Title", "").strip(),
+                dependencies=_delegation_dependency_ids(
+                    row.get("Dependencies", ""), unit_id=unit_id
+                ),
+                write_scope=(),
+                parallel_safe=True,
+                canonical_state=_delegation_canonical_state(
+                    tracker_row.get("Status", "")
+                ),
+                source_order=order,
+                source_path=source_path,
+            )
+        )
+    return tuple(units)
+
+
+def _delegation_scope_overlap(left: str, right: str) -> bool:
+    if left == "." or right == ".":
+        return True
+    return left == right or left.startswith(right + "/") or right.startswith(left + "/")
+
+
+def _delegation_has_path(
+    dependencies: dict[str, tuple[str, ...]], start: str, target: str
+) -> bool:
+    pending = list(dependencies.get(start, ()))
+    seen: set[str] = set()
+    while pending:
+        current = pending.pop()
+        if current == target:
+            return True
+        if current in seen:
+            continue
+        seen.add(current)
+        pending.extend(dependencies.get(current, ()))
+    return False
+
+
+def build_delegation_plan(
+    *,
+    target: DelegationTarget,
+    units: tuple[DelegationUnit, ...],
+    selected_unit_ids: tuple[str, ...] = (),
+    requested_concurrency: int = 1,
+    available_child_capacity: int = 0,
+    observed_capabilities: tuple[str, ...] = (),
+    capability_source: str = "not observed",
+    persistent_task_authority: str | None = None,
+) -> DelegationPlan:
+    """Build and validate a deterministic host-neutral delegation plan without I/O."""
+    if requested_concurrency < 1:
+        raise _delegation_error(
+            "PW_DELEGATION_CONCURRENCY_INVALID", "Requested concurrency must be at least 1."
+        )
+    if available_child_capacity < 0:
+        raise _delegation_error(
+            "PW_DELEGATION_CAPACITY_INVALID", "Available child capacity cannot be negative."
+        )
+    capabilities = tuple(sorted(set(observed_capabilities)))
+    unknown_capabilities = sorted(set(capabilities) - set(DELEGATION_CAPABILITIES))
+    if unknown_capabilities:
+        raise _delegation_error(
+            "PW_DELEGATION_CAPABILITY_UNKNOWN",
+            "Unknown observed capability: " + ", ".join(unknown_capabilities) + ".",
+        )
+    if capabilities and capability_source.strip().lower() in {"", "not observed", "unknown"}:
+        raise _delegation_error(
+            "PW_DELEGATION_CAPABILITY_UNOBSERVED",
+            "Executor capabilities are advisory until a host adapter records their source.",
+        )
+
+    by_id: dict[str, DelegationUnit] = {}
+    for unit in units:
+        if unit.unit_id in by_id:
+            raise _delegation_error(
+                "PW_DELEGATION_UNIT_DUPLICATE", f"Duplicate execution unit ID: {unit.unit_id}."
+            )
+        by_id[unit.unit_id] = unit
+    if not by_id:
+        raise _delegation_error("PW_DELEGATION_PLAN_EMPTY", "Delegation plan has no units.")
+
+    dependencies = {unit.unit_id: unit.dependencies for unit in units}
+    for unit in units:
+        for dependency in unit.dependencies:
+            if dependency == unit.unit_id:
+                raise _delegation_error(
+                    "PW_DELEGATION_DEPENDENCY_SELF",
+                    f"{unit.unit_id} cannot depend on itself.",
+                )
+            if dependency not in by_id:
+                raise _delegation_error(
+                    "PW_DELEGATION_DEPENDENCY_MISSING",
+                    f"{unit.unit_id} depends on missing unit {dependency}.",
+                )
+
+    ordered_source_ids = [unit.unit_id for unit in sorted(units, key=lambda item: item.source_order)]
+    indegree = {unit_id: len(dependencies[unit_id]) for unit_id in ordered_source_ids}
+    dependents: dict[str, list[str]] = {unit_id: [] for unit_id in ordered_source_ids}
+    for unit_id, dependency_ids in dependencies.items():
+        for dependency_id in dependency_ids:
+            dependents[dependency_id].append(unit_id)
+    ready = [unit_id for unit_id in ordered_source_ids if indegree[unit_id] == 0]
+    topological: list[str] = []
+    while ready:
+        unit_id = ready.pop(0)
+        topological.append(unit_id)
+        for dependent in sorted(
+            dependents[unit_id], key=lambda item: by_id[item].source_order
+        ):
+            indegree[dependent] -= 1
+            if indegree[dependent] == 0:
+                ready.append(dependent)
+                ready.sort(key=lambda item: by_id[item].source_order)
+    if len(topological) != len(units):
+        cycle_units = [unit_id for unit_id in ordered_source_ids if unit_id not in topological]
+        raise _delegation_error(
+            "PW_DELEGATION_DEPENDENCY_CYCLE",
+            "Dependency cycle detected: " + ", ".join(cycle_units) + ".",
+        )
+
+    if selected_unit_ids:
+        selected_set = set(selected_unit_ids)
+        unknown_selected = sorted(selected_set - set(by_id))
+        if unknown_selected:
+            raise _delegation_error(
+                "PW_DELEGATION_UNIT_UNKNOWN",
+                "Selected unit is not in the approved plan: " + ", ".join(unknown_selected) + ".",
+            )
+    else:
+        selected_set = set(by_id)
+    for unit_id in topological:
+        if unit_id not in selected_set:
+            continue
+        for dependency in dependencies[unit_id]:
+            if dependency not in selected_set and by_id[dependency].canonical_state != "complete":
+                raise _delegation_error(
+                    "PW_DELEGATION_SUBSET_DEPENDENCY_OMITTED",
+                    f"Selected unit {unit_id} omits unfinished dependency {dependency}.",
+                )
+
+    selected_order = tuple(unit_id for unit_id in topological if unit_id in selected_set)
+    selected_parallel = [
+        by_id[unit_id]
+        for unit_id in selected_order
+        if by_id[unit_id].parallel_safe and by_id[unit_id].canonical_state != "complete"
+    ]
+    for index, left in enumerate(selected_parallel):
+        for right in selected_parallel[index + 1 :]:
+            if _delegation_has_path(dependencies, left.unit_id, right.unit_id) or _delegation_has_path(
+                dependencies, right.unit_id, left.unit_id
+            ):
+                continue
+            overlaps = sorted(
+                {
+                    f"{left_scope} <> {right_scope}"
+                    for left_scope in left.write_scope
+                    for right_scope in right.write_scope
+                    if _delegation_scope_overlap(left_scope, right_scope)
+                }
+            )
+            if overlaps:
+                raise _delegation_error(
+                    "PW_DELEGATION_WRITE_SCOPE_COLLISION",
+                    f"Parallel-safe units {left.unit_id} and {right.unit_id} have overlapping "
+                    "Write Scope prefixes: " + ", ".join(overlaps) + ".",
+                )
+
+    completed = {
+        unit_id for unit_id, unit in by_id.items() if unit.canonical_state == "complete"
+    }
+    planned_units: list[DelegationPlannedUnit] = []
+    eligible: list[str] = []
+    blocked: list[str] = []
+    worker_capability: str | None = None
+    if target.kind == "epic" and "persistent-task" in capabilities:
+        if persistent_task_authority and persistent_task_authority.strip():
+            worker_capability = "persistent-task"
+    if worker_capability is None and "subagent" in capabilities:
+        worker_capability = "subagent"
+    worker_observed = worker_capability is not None and available_child_capacity > 0
+    for unit_id in selected_order:
+        unit = by_id[unit_id]
+        reasons: list[str] = []
+        if unit.canonical_state == "complete":
+            readiness = "complete"
+            executor = "none"
+            executor_reason = "Canonical workflow state is complete."
+        elif unit.canonical_state == "blocked":
+            readiness = "blocked"
+            reasons.append("Canonical workflow state is blocked.")
+            executor = "none"
+            executor_reason = "Blocked units are not executable."
+            blocked.append(unit_id)
+        else:
+            incomplete_dependencies = [
+                dependency for dependency in unit.dependencies if dependency not in completed
+            ]
+            if incomplete_dependencies:
+                readiness = "blocked"
+                reasons.append(
+                    "Waiting for dependencies: " + ", ".join(incomplete_dependencies) + "."
+                )
+                blocked.append(unit_id)
+            else:
+                readiness = "eligible"
+                eligible.append(unit_id)
+            if worker_observed:
+                if unit.parallel_safe:
+                    executor = worker_capability
+                    executor_reason = (
+                        f"Observed {worker_capability} capability from {capability_source}."
+                    )
+                else:
+                    executor = "sequential-worker"
+                    executor_reason = (
+                        f"Observed {worker_capability} capability, but Parallel Safe is No."
+                    )
+            else:
+                executor = "coordinator"
+                executor_reason = (
+                    "No observed child executor with available capacity; coordinator fallback."
+                )
+        planned_units.append(
+            DelegationPlannedUnit(
+                unit_id=unit.unit_id,
+                title=unit.title,
+                dependencies=unit.dependencies,
+                write_scope=unit.write_scope,
+                parallel_safe=unit.parallel_safe,
+                canonical_state=unit.canonical_state,
+                readiness=readiness,
+                blocking_reasons=tuple(reasons),
+                executor=executor,
+                executor_reason=executor_reason,
+                source_path=unit.source_path,
+            )
+        )
+
+    eligible_workers = [
+        unit
+        for unit in planned_units
+        if unit.readiness == "eligible" and unit.executor in DELEGATION_CAPABILITIES
+    ]
+    effective_child_concurrency = min(
+        requested_concurrency, available_child_capacity, len(eligible_workers)
+    )
+    if not eligible:
+        effective_concurrency = 0
+        concurrency_reason = "No units are currently eligible."
+    elif effective_child_concurrency:
+        effective_concurrency = effective_child_concurrency
+        if effective_concurrency < requested_concurrency:
+            concurrency_reason = (
+                f"Reduced from requested {requested_concurrency} to {effective_concurrency}: "
+                f"available child capacity is {available_child_capacity} and "
+                f"{len(eligible_workers)} child-executable unit(s) are eligible."
+            )
+        else:
+            concurrency_reason = "Requested concurrency is supported by observed child capacity."
+    else:
+        effective_concurrency = 1
+        if available_child_capacity == 0:
+            concurrency_reason = (
+                "Available child capacity is 0 (coordinator excluded); using coordinator "
+                "sequential fallback."
+            )
+        elif not capabilities:
+            concurrency_reason = (
+                "No host executor capability was observed; using coordinator sequential fallback."
+            )
+        else:
+            concurrency_reason = "Plan safety requires sequential execution."
+
+    provenance = (
+        f"target:{target.source_path}#{target.source_hash}",
+        *(f"unit:{unit.source_path}" for unit in planned_units),
+        f"capability:{capability_source}",
+        *(
+            (f"persistent-task-authority:{persistent_task_authority}",)
+            if persistent_task_authority
+            else ()
+        ),
+    )
+    return DelegationPlan(
+        target=target,
+        units=tuple(planned_units),
+        selected_units=selected_order,
+        eligible_units=tuple(eligible),
+        blocked_units=tuple(blocked),
+        requested_concurrency=requested_concurrency,
+        available_child_capacity=available_child_capacity,
+        effective_concurrency=effective_concurrency,
+        effective_child_concurrency=effective_child_concurrency,
+        concurrency_reason=concurrency_reason,
+        observed_capabilities=capabilities,
+        capability_source=capability_source,
+        persistent_task_authority=persistent_task_authority,
+        provenance=tuple(dict.fromkeys(provenance)),
+    )
+
+
+def _delegation_approved_lifecycle(kind: str, lifecycle: str) -> bool:
+    rejected = {"", "To Do", "Analysing", "Proposed", "N/A"}
+    return lifecycle not in rejected and (
+        kind in {"task", "epic-child", "epic"}
+    )
+
+
+def _resolve_delegation_target(
+    root: Path, target_ids: tuple[str, ...]
+) -> tuple[DelegationTarget, tuple[DelegationUnit, ...]]:
+    requested = tuple(target_id.strip() for target_id in target_ids if target_id.strip())
+    if len(requested) != 1:
+        raise _delegation_error(
+            "PW_DELEGATION_TARGET_COUNT",
+            "Delegate requires exactly one existing Epic or Task target; mixed or batched "
+            "targets are not allowed.",
+        )
+    target_id = requested[0]
+    workflow_dir = root / ".project-workflow"
+    tracker_path = workflow_dir / "TRACKER.md"
+    tasks_dir = workflow_dir / "tasks"
+    if not tracker_path.exists():
+        raise _delegation_error(
+            "PW_DELEGATION_AUTHORITY_MISSING", f"Missing global tracker: {tracker_path}."
+        )
+
+    _lines, _header_idx, global_rows = _global_tracker_rows(tracker_path)
+    matches: list[tuple[str, dict[str, str], Path | None]] = []
+    for row in global_rows:
+        if row.get("ID", "").strip() == target_id:
+            kind = "epic" if target_id.startswith(f"{EPIC_ID_PREFIX}-") else "task"
+            matches.append((kind, row, None))
+    if tasks_dir.exists():
+        for epic_tracker_path in sorted(tasks_dir.glob("EPIC-*/TRACKER.md")):
+            try:
+                _epic_lines, _epic_header, epic_rows = _epic_tracker_rows(epic_tracker_path)
+            except SystemExit:
+                continue
+            for row in epic_rows:
+                if row.get("ID", "").strip() == target_id:
+                    matches.append(("epic-child", row, epic_tracker_path.parent))
+    if not matches:
+        raise _delegation_error(
+            "PW_DELEGATION_TARGET_UNKNOWN",
+            f"No existing Epic or Task target found for '{target_id}'.",
+        )
+    if len(matches) != 1:
+        locations = ", ".join(
+            _delegation_relative_path(root, epic_dir or tracker_path)
+            for _kind, _row, epic_dir in matches
+        )
+        raise _delegation_error(
+            "PW_DELEGATION_TARGET_AMBIGUOUS",
+            f"Target '{target_id}' resolves to multiple workflow units: {locations}.",
+        )
+
+    kind, row, owner_epic_dir = matches[0]
+    lifecycle = row.get("Status", "").strip()
+    if not _delegation_approved_lifecycle(kind, lifecycle):
+        raise _delegation_error(
+            "PW_DELEGATION_TARGET_UNAPPROVED",
+            f"{target_id} lifecycle '{lifecycle}' is outside approved delegation authority.",
+        )
+    if kind == "epic":
+        epic_dir = _resolve_epic_dir(tasks_dir, target_id)
+        source_path = epic_dir / DECOMPOSITION_PLAN_FILENAME
+        if not source_path.exists():
+            raise _delegation_error(
+                "PW_DELEGATION_PLAN_MISSING", f"Missing delegation plan: {source_path}."
+            )
+        units = _delegation_epic_units(root, epic_dir, source_path)
+    else:
+        docs_rel = _clean_markdown_cell_path(row.get("Docs", ""))
+        if not docs_rel:
+            raise _delegation_error(
+                "PW_DELEGATION_PLAN_MISSING", f"{target_id} has no implementation docs path."
+            )
+        source_path = workflow_dir / docs_rel
+        if not source_path.exists():
+            raise _delegation_error(
+                "PW_DELEGATION_PLAN_MISSING", f"Missing implementation plan: {source_path}."
+            )
+        if kind == "epic-child" and owner_epic_dir is not None:
+            authority_issues = _decomposition_plan_authority_issues(
+                epic_dir=owner_epic_dir, row=row
+            )
+            if authority_issues:
+                raise _delegation_error(
+                    "PW_DELEGATION_AUTHORITY_MISMATCH",
+                    f"{target_id} is outside its parent decomposition authority: "
+                    + "; ".join(authority_issues),
+                )
+        units = _delegation_task_units(root, source_path)
+    target = DelegationTarget(
+        target_id=target_id,
+        kind="task" if kind == "epic-child" else kind,
+        title=row.get("Title", "").strip(),
+        lifecycle=lifecycle,
+        source_path=_delegation_relative_path(root, source_path),
+        source_hash=_delegation_source_hash(source_path),
+    )
+    return target, units
+
+
+def _delegation_plan_from_args(root: Path, args: argparse.Namespace) -> DelegationPlan:
+    target, units = _resolve_delegation_target(root, tuple(args.id))
+    return build_delegation_plan(
+        target=target,
+        units=units,
+        selected_unit_ids=tuple(args.unit or ()),
+        requested_concurrency=args.requested_concurrency,
+        available_child_capacity=args.available_child_capacity,
+        observed_capabilities=tuple(args.observed_capability or ()),
+        capability_source=args.capability_source,
+        persistent_task_authority=args.persistent_task_authority,
+    )
+
+
+def delegation_plan_payload(plan: DelegationPlan) -> dict[str, object]:
+    return {
+        "schema_version": DELEGATION_SCHEMA_VERSION,
+        "target": {
+            "id": plan.target.target_id,
+            "kind": plan.target.kind,
+            "title": plan.target.title,
+            "lifecycle": plan.target.lifecycle,
+            "source": plan.target.source_path,
+            "source_hash": plan.target.source_hash,
+        },
+        "units": [
+            {
+                "id": unit.unit_id,
+                "title": unit.title,
+                "dependencies": list(unit.dependencies),
+                "write_scope": list(unit.write_scope),
+                "parallel_safe": unit.parallel_safe,
+                "canonical_state": unit.canonical_state,
+                "readiness": unit.readiness,
+                "blocking_reasons": list(unit.blocking_reasons),
+                "executor": unit.executor,
+                "executor_reason": unit.executor_reason,
+                "source": unit.source_path,
+            }
+            for unit in plan.units
+        ],
+        "selected_units": list(plan.selected_units),
+        "eligible_units": list(plan.eligible_units),
+        "blocked_units": list(plan.blocked_units),
+        "concurrency": {
+            "requested": plan.requested_concurrency,
+            "available_child_capacity": plan.available_child_capacity,
+            "effective": plan.effective_concurrency,
+            "effective_child": plan.effective_child_concurrency,
+            "reason": plan.concurrency_reason,
+        },
+        "capabilities": {
+            "observed": list(plan.observed_capabilities),
+            "source": plan.capability_source,
+            "persistent_task_authority": plan.persistent_task_authority,
+        },
+        "provenance": list(plan.provenance),
+    }
+
+
+def _delegation_plan_fingerprint(plan: DelegationPlan) -> str:
+    canonical = json.dumps(
+        delegation_plan_payload(plan), sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _format_delegation_plan_human(plan: DelegationPlan, *, heading: str = "Delegation Plan") -> str:
+    lines = [
+        heading,
+        f"Target: {plan.target.target_id} ({plan.target.kind}, {plan.target.lifecycle})",
+        f"Source: {plan.target.source_path}#{plan.target.source_hash}",
+        "Units:",
+    ]
+    for unit in plan.units:
+        dependencies = ", ".join(unit.dependencies) or "none"
+        reasons = " ".join(unit.blocking_reasons)
+        suffix = f" — {reasons}" if reasons else ""
+        lines.append(
+            f"- {unit.unit_id}: {unit.readiness}; dependencies={dependencies}; "
+            f"executor={unit.executor}{suffix}"
+        )
+    lines.extend(
+        [
+            "Eligible: " + (", ".join(plan.eligible_units) or "none"),
+            "Blocked: " + (", ".join(plan.blocked_units) or "none"),
+            (
+                f"Concurrency: requested={plan.requested_concurrency}, "
+                f"available-child={plan.available_child_capacity}, "
+                f"effective={plan.effective_concurrency}, "
+                f"effective-child={plan.effective_child_concurrency}"
+            ),
+            f"Concurrency reason: {plan.concurrency_reason}",
+            "Capability source: " + plan.capability_source,
+            "Persistent task authority: "
+            + (plan.persistent_task_authority or "not authorized"),
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _delegation_runtime_path(root: Path, target_id: str) -> Path:
+    current = root
+    for part in DELEGATION_RUNTIME_RELATIVE_DIR.parts:
+        current /= part
+        if current.is_symlink() or (current.exists() and not current.is_dir()):
+            raise _delegation_error(
+                "PW_DELEGATION_RUNTIME_UNSAFE_PATH",
+                f"Delegation runtime boundary must use real directories: {current}.",
+            )
+    try:
+        current.resolve(strict=False).relative_to(root.resolve())
+    except ValueError as error:
+        raise _delegation_error(
+            "PW_DELEGATION_RUNTIME_UNSAFE_PATH",
+            "Delegation runtime boundary escapes the repository root.",
+        ) from error
+    return current / f"{target_id}.json"
+
+
+def _delegation_runtime_is_ignored(root: Path) -> bool:
+    completed = subprocess.run(
+        ["git", "check-ignore", "-q", str(DELEGATION_RUNTIME_RELATIVE_DIR / "probe.json")],
+        cwd=str(root),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return completed.returncode == 0
+
+
+def _validate_runtime_handle(handle: object, *, unit_id: str) -> dict[str, str]:
+    if not isinstance(handle, dict):
+        raise _delegation_error(
+            "PW_DELEGATION_RUNTIME_INVALID", f"{unit_id} handle must be an object."
+        )
+    allowed = {"kind", "id", "worktree", "state"}
+    unknown = set(handle) - allowed
+    if unknown:
+        raise _delegation_error(
+            "PW_DELEGATION_RUNTIME_PRIVATE_FIELD",
+            f"{unit_id} handle contains forbidden fields: {', '.join(sorted(unknown))}.",
+        )
+    normalized = {key: str(value).strip() for key, value in handle.items()}
+    for key in ("kind", "id", "worktree", "state"):
+        if not normalized.get(key):
+            raise _delegation_error(
+                "PW_DELEGATION_RUNTIME_INVALID", f"{unit_id} handle requires {key}."
+            )
+    if normalized["state"] not in {"active", "complete", "missing"}:
+        raise _delegation_error(
+            "PW_DELEGATION_RUNTIME_INVALID",
+            f"{unit_id} handle state must be active, complete, or missing.",
+        )
+    return normalized
+
+
+def initialize_delegation_runtime_state(root: Path, plan: DelegationPlan) -> dict[str, object]:
+    if not _delegation_runtime_is_ignored(root):
+        raise _delegation_error(
+            "PW_DELEGATION_RUNTIME_NOT_IGNORED",
+            f"{DELEGATION_RUNTIME_RELATIVE_DIR.as_posix()}/ must be ignored before state is written.",
+        )
+    existing = _load_delegation_runtime_state(root, plan.target.target_id)
+    plan_fingerprint = _delegation_plan_fingerprint(plan)
+    if existing is not None:
+        if existing.get("plan_fingerprint") != plan_fingerprint:
+            raise _delegation_error(
+                "PW_DELEGATION_RUNTIME_PLAN_MISMATCH",
+                "Existing runtime state belongs to a different canonical delegation plan; "
+                "reconcile it instead of reinitializing and losing handles.",
+            )
+        return existing
+    state = {
+        "schema_version": DELEGATION_RUNTIME_SCHEMA_VERSION,
+        "target_id": plan.target.target_id,
+        "target_kind": plan.target.kind,
+        "plan_fingerprint": plan_fingerprint,
+        "worktree": str(root.resolve()),
+        "units": {
+            unit.unit_id: {
+                "state": "complete" if unit.canonical_state == "complete" else "pending",
+                "handle": None,
+            }
+            for unit in plan.units
+        },
+    }
+    path = _delegation_runtime_path(root, plan.target.target_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", dir=path.parent, delete=False
+    ) as temporary:
+        json.dump(state, temporary, indent=2, sort_keys=True)
+        temporary.write("\n")
+        temporary_path = Path(temporary.name)
+    os.replace(temporary_path, path)
+    return state
+
+
+def _load_delegation_runtime_state(root: Path, target_id: str) -> dict[str, object] | None:
+    path = _delegation_runtime_path(root, target_id)
+    if not path.exists():
+        return None
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict) or raw.get("schema_version") != DELEGATION_RUNTIME_SCHEMA_VERSION:
+        raise _delegation_error(
+            "PW_DELEGATION_RUNTIME_INVALID", f"Unsupported runtime state in {path}."
+        )
+    allowed = {
+        "schema_version",
+        "target_id",
+        "target_kind",
+        "plan_fingerprint",
+        "worktree",
+        "units",
+    }
+    unknown = set(raw) - allowed
+    if unknown:
+        raise _delegation_error(
+            "PW_DELEGATION_RUNTIME_PRIVATE_FIELD",
+            "Runtime state contains forbidden fields: " + ", ".join(sorted(unknown)) + ".",
+        )
+    if (
+        raw.get("target_id") != target_id
+        or not isinstance(raw.get("target_kind"), str)
+        or not isinstance(raw.get("plan_fingerprint"), str)
+        or not isinstance(raw.get("worktree"), str)
+        or not isinstance(raw.get("units"), dict)
+    ):
+        raise _delegation_error(
+            "PW_DELEGATION_RUNTIME_INVALID", "Runtime state target or units are invalid."
+        )
+    raw_units = raw["units"]
+    assert isinstance(raw_units, dict)
+    for unit_id, value in raw_units.items():
+        if not isinstance(unit_id, str) or not isinstance(value, dict):
+            raise _delegation_error(
+                "PW_DELEGATION_RUNTIME_INVALID", "Runtime unit entries must be objects."
+            )
+        unit_unknown = set(value) - {"state", "handle"}
+        if unit_unknown:
+            raise _delegation_error(
+                "PW_DELEGATION_RUNTIME_PRIVATE_FIELD",
+                f"{unit_id} runtime entry contains forbidden fields: "
+                + ", ".join(sorted(unit_unknown))
+                + ".",
+            )
+        if value.get("state") not in DELEGATION_UNIT_STATES:
+            raise _delegation_error(
+                "PW_DELEGATION_RUNTIME_INVALID",
+                f"{unit_id} has invalid runtime state '{value.get('state')}'.",
+            )
+        handle = value.get("handle")
+        if handle is not None:
+            _validate_runtime_handle(handle, unit_id=unit_id)
+    return raw
+
+
+def reconcile_delegation_runtime_state(
+    root: Path,
+    plan: DelegationPlan,
+    state: dict[str, object],
+    observed_handles: dict[str, object],
+) -> dict[str, object]:
+    """Reconcile canonical state with host observations without inventing missing handles."""
+    if state.get("target_id") != plan.target.target_id:
+        raise _delegation_error(
+            "PW_DELEGATION_RUNTIME_TARGET_MISMATCH", "Runtime state target does not match plan."
+        )
+    stored_units = state.get("units")
+    if not isinstance(stored_units, dict):
+        raise _delegation_error("PW_DELEGATION_RUNTIME_INVALID", "Runtime units are invalid.")
+    normalized_observed = {
+        unit_id: _validate_runtime_handle(handle, unit_id=unit_id)
+        for unit_id, handle in observed_handles.items()
+    }
+    plan_by_id = {unit.unit_id: unit for unit in plan.units}
+    reconciled_units: dict[str, object] = {}
+    for unit_id in plan.selected_units:
+        unit = plan_by_id[unit_id]
+        stored = stored_units.get(unit_id, {})
+        if not isinstance(stored, dict):
+            stored = {}
+        stored_handle = stored.get("handle")
+        observed = normalized_observed.get(unit_id)
+        if unit.canonical_state == "complete":
+            reconciled_units[unit_id] = {"state": "complete", "handle": stored_handle}
+            continue
+        if observed is not None and observed["state"] == "active":
+            state_name = (
+                "active" if Path(observed["worktree"]).resolve() == root.resolve() else "orphaned"
+            )
+            reconciled_units[unit_id] = {"state": state_name, "handle": observed}
+            continue
+        if stored.get("state") == "active" or stored_handle is not None:
+            reconciled_units[unit_id] = {
+                "state": "orphaned",
+                "handle": observed if observed is not None else stored_handle,
+            }
+            continue
+        reconciled_units[unit_id] = {"state": "pending", "handle": None}
+    result = {
+        "schema_version": DELEGATION_RUNTIME_SCHEMA_VERSION,
+        "target_id": plan.target.target_id,
+        "target_kind": plan.target.kind,
+        "plan_fingerprint": _delegation_plan_fingerprint(plan),
+        "worktree": str(root.resolve()),
+        "units": reconciled_units,
+    }
+    return result
+
+
+def _write_delegation_runtime_state(root: Path, plan: DelegationPlan, state: dict[str, object]) -> None:
+    if not _delegation_runtime_is_ignored(root):
+        raise _delegation_error(
+            "PW_DELEGATION_RUNTIME_NOT_IGNORED",
+            f"{DELEGATION_RUNTIME_RELATIVE_DIR.as_posix()}/ must remain ignored.",
+        )
+    path = _delegation_runtime_path(root, plan.target.target_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", dir=path.parent, delete=False
+    ) as temporary:
+        json.dump(state, temporary, indent=2, sort_keys=True)
+        temporary.write("\n")
+        temporary_path = Path(temporary.name)
+    os.replace(temporary_path, path)
+
+
+def _delegation_status_payload(
+    plan: DelegationPlan, state: dict[str, object] | None
+) -> dict[str, object]:
+    payload = delegation_plan_payload(plan)
+    payload["runtime"] = state
+    if state is None:
+        payload["runtime_summary"] = {"initialized": False, "active": [], "orphaned": []}
+    else:
+        units = state.get("units", {})
+        assert isinstance(units, dict)
+        unavailable = {
+            unit_id
+            for unit_id, value in units.items()
+            if isinstance(value, dict) and value.get("state") in {"active", "orphaned"}
+        }
+        payload["eligible_units"] = [
+            unit_id for unit_id in plan.eligible_units if unit_id not in unavailable
+        ]
+        payload["blocked_units"] = list(
+            dict.fromkeys([*plan.blocked_units, *sorted(unavailable)])
+        )
+        plan_units = payload["units"]
+        assert isinstance(plan_units, list)
+        for plan_unit in plan_units:
+            assert isinstance(plan_unit, dict)
+            runtime_unit = units.get(plan_unit["id"])
+            if not isinstance(runtime_unit, dict):
+                continue
+            runtime_state = runtime_unit.get("state")
+            if runtime_state in {"active", "orphaned"}:
+                plan_unit["readiness"] = runtime_state
+                plan_unit["blocking_reasons"] = [
+                    "Runtime handle is active; resume without relaunch."
+                    if runtime_state == "active"
+                    else "Runtime handle is missing or belongs to another worktree; inspect orphan."
+                ]
+        payload["runtime_summary"] = {
+            "initialized": True,
+            "active": sorted(
+                unit_id
+                for unit_id, value in units.items()
+                if isinstance(value, dict) and value.get("state") == "active"
+            ),
+            "orphaned": sorted(
+                unit_id
+                for unit_id, value in units.items()
+                if isinstance(value, dict) and value.get("state") == "orphaned"
+            ),
+        }
+    return payload
+
+
+def cmd_delegate_plan(args: argparse.Namespace) -> None:
+    try:
+        plan = _delegation_plan_from_args(Path.cwd(), args)
+    except DelegationPlanError as error:
+        raise SystemExit(f"{error.code}: {error.message}") from error
+    if args.format == "json":
+        print(json.dumps(delegation_plan_payload(plan), indent=2, sort_keys=True))
+    else:
+        print(_format_delegation_plan_human(plan))
+
+
+def cmd_delegate_status(args: argparse.Namespace) -> None:
+    root = Path.cwd()
+    try:
+        plan = _delegation_plan_from_args(root, args)
+        state = _load_delegation_runtime_state(root, plan.target.target_id)
+    except (DelegationPlanError, json.JSONDecodeError) as error:
+        if isinstance(error, DelegationPlanError):
+            message = f"{error.code}: {error.message}"
+        else:
+            message = f"PW_DELEGATION_RUNTIME_INVALID: {error}"
+        raise SystemExit(message) from error
+    if args.format == "json":
+        print(json.dumps(_delegation_status_payload(plan, state), indent=2, sort_keys=True))
+    else:
+        print(_format_delegation_plan_human(plan, heading="Delegation Status"))
+        if state is None:
+            print("Runtime: not initialized")
+        else:
+            summary = _delegation_status_payload(plan, state)["runtime_summary"]
+            assert isinstance(summary, dict)
+            print("Runtime active: " + (", ".join(summary["active"]) or "none"))
+            print("Runtime orphaned: " + (", ".join(summary["orphaned"]) or "none"))
+
+
+def cmd_delegate_state_init(args: argparse.Namespace) -> None:
+    root = Path.cwd()
+    try:
+        plan = _delegation_plan_from_args(root, args)
+        state = initialize_delegation_runtime_state(root, plan)
+    except DelegationPlanError as error:
+        raise SystemExit(f"{error.code}: {error.message}") from error
+    path = _delegation_runtime_path(root, plan.target.target_id)
+    if args.format == "json":
+        print(json.dumps(state, indent=2, sort_keys=True))
+    else:
+        print(f"Initialized ignored delegation runtime state: {path}")
+
+
+def cmd_delegate_state_reconcile(args: argparse.Namespace) -> None:
+    root = Path.cwd()
+    try:
+        plan = _delegation_plan_from_args(root, args)
+        state = _load_delegation_runtime_state(root, plan.target.target_id)
+        if state is None:
+            raise _delegation_error(
+                "PW_DELEGATION_RUNTIME_MISSING", "Initialize runtime state before reconciliation."
+            )
+        raw_observed = json.loads(Path(args.observed_handles).read_text(encoding="utf-8"))
+        if not isinstance(raw_observed, dict):
+            raise _delegation_error(
+                "PW_DELEGATION_RUNTIME_INVALID", "Observed handles JSON must be an object."
+            )
+        reconciled = reconcile_delegation_runtime_state(root, plan, state, raw_observed)
+        _write_delegation_runtime_state(root, plan, reconciled)
+    except (DelegationPlanError, json.JSONDecodeError, OSError) as error:
+        if isinstance(error, DelegationPlanError):
+            message = f"{error.code}: {error.message}"
+        else:
+            message = f"PW_DELEGATION_RUNTIME_INVALID: {error}"
+        raise SystemExit(message) from error
+    if args.format == "json":
+        print(json.dumps(reconciled, indent=2, sort_keys=True))
+    else:
+        print(f"Reconciled delegation runtime state for {plan.target.target_id}.")
 
 
 def _duplicate_backlog_ids(rows: list[dict[str, str]]) -> list[str]:
@@ -8632,10 +9815,16 @@ def _implementation_task_table_rows(
 ) -> tuple[bool, list[dict[str, str]], list[int]]:
     lines = docs_text.splitlines()
     header_idx: int | None = None
+    table_columns: tuple[str, ...] | None = None
     for idx, line in enumerate(lines):
         cells = _parse_markdown_table_cells(line)
+        if cells == list(DELEGATION_IMPLEMENTATION_TASK_COLUMNS):
+            header_idx = idx
+            table_columns = DELEGATION_IMPLEMENTATION_TASK_COLUMNS
+            break
         if cells == list(IMPLEMENTATION_TASK_COLUMNS):
             header_idx = idx
+            table_columns = IMPLEMENTATION_TASK_COLUMNS
             break
 
     if header_idx is None:
@@ -8648,11 +9837,15 @@ def _implementation_task_table_rows(
         cells = _parse_markdown_table_cells(lines[row_idx])
         if cells is None:
             break
-        if len(cells) != len(IMPLEMENTATION_TASK_COLUMNS):
+        assert table_columns is not None
+        if len(cells) != len(table_columns):
             malformed_rows.append(row_idx + 1)
             row_idx += 1
             continue
-        row = dict(zip(IMPLEMENTATION_TASK_COLUMNS, cells))
+        row = dict(zip(table_columns, cells))
+        row["_delegation_metadata"] = (
+            "present" if table_columns == DELEGATION_IMPLEMENTATION_TASK_COLUMNS else "legacy"
+        )
         row["_line_idx"] = str(row_idx + 1)
         rows.append(row)
         row_idx += 1
@@ -11635,6 +12828,7 @@ def cmd_project_init(args: argparse.Namespace) -> None:
     # Create directories
     tasks_dir.mkdir(parents=True, exist_ok=True)
     cli_dir.mkdir(parents=True, exist_ok=True)
+    print(f"✓ {_ensure_delegation_runtime_ignore(cwd)}")
 
     # Create initial TRACKER.md if missing
     if not tracker_path.exists():
@@ -12577,12 +13771,13 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
                 row["Proposed Child"].rstrip("."),
                 _normalize_ac_list(row["Parent ACs"]),
                 "Proposed Child Work",
+                row.get("Dependencies", ""),
             )
             for row in proposed_child_rows[: args.limit]
         ]
     else:
         candidates = [
-            (title, ac_id, "Generated from REQUIREMENTS.md")
+            (title, ac_id, "Generated from REQUIREMENTS.md", "")
             for title, ac_id in _decompose_epic_requirements_to_titles(
                 requirements_text, limit=args.limit
             )
@@ -12604,7 +13799,7 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
 
     rows_to_add: list[dict[str, str]] = []
     plan_rows: list[dict[str, str]] = []
-    for title, ac_id, source in candidates:
+    for title, ac_id, source, dependencies in candidates:
         if forced_prefix:
             child_prefix = forced_prefix
             classification_note = f"Prefix {child_prefix}: forced by --prefix"
@@ -12630,6 +13825,7 @@ def cmd_epic_decompose(args: argparse.Namespace) -> None:
                 "Title": title,
                 "Parent ACs": ac_id or "",
                 "Source": source,
+                "Dependencies": dependencies,
             }
         )
         rows_to_add.append(
@@ -12850,6 +14046,56 @@ def cmd_epic_closeout(args: argparse.Namespace) -> None:
         print("Global epic status was not changed. Re-run with --complete to mark Complete.")
 
 
+def _add_delegate_plan_arguments(command_parser: argparse.ArgumentParser) -> None:
+    command_parser.add_argument(
+        "--id",
+        action="append",
+        required=True,
+        help="Exactly one existing approved Epic or Task ID; repeated IDs are rejected",
+    )
+    command_parser.add_argument(
+        "--unit",
+        action="append",
+        help="Select one approved execution unit; repeat for a dependency-closed subset",
+    )
+    command_parser.add_argument(
+        "--requested-concurrency",
+        type=int,
+        default=1,
+        help="Requested execution concurrency (default: 1)",
+    )
+    command_parser.add_argument(
+        "--available-child-capacity",
+        type=int,
+        default=0,
+        help="Observed available child slots, excluding the coordinator (default: 0)",
+    )
+    command_parser.add_argument(
+        "--observed-capability",
+        action="append",
+        choices=DELEGATION_CAPABILITIES,
+        help="Host-adapter-observed executor capability; repeat as needed",
+    )
+    command_parser.add_argument(
+        "--capability-source",
+        default="not observed",
+        help="Adapter observation provenance; required when capabilities are supplied",
+    )
+    command_parser.add_argument(
+        "--persistent-task-authority",
+        help=(
+            "Explicit owner-authority provenance required before an Epic plan may advise "
+            "persistent task execution"
+        ),
+    )
+    command_parser.add_argument(
+        "--format",
+        choices=("human", "json"),
+        default="human",
+        help="Output format (default: human)",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="project",
@@ -12943,6 +14189,38 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output format (default: human)",
     )
     status_parser.set_defaults(func=cmd_status)
+
+    delegate_parser = subparsers.add_parser(
+        "delegate",
+        help="Inspect a validated delegation graph and its ignored runtime state",
+    )
+    delegate_sub = delegate_parser.add_subparsers(dest="delegate_command", required=True)
+    delegate_plan_parser = delegate_sub.add_parser(
+        "plan", help="Build a deterministic read-only delegation plan"
+    )
+    _add_delegate_plan_arguments(delegate_plan_parser)
+    delegate_plan_parser.set_defaults(func=cmd_delegate_plan)
+    delegate_status_parser = delegate_sub.add_parser(
+        "status", help="Report canonical plan and machine-local runtime state read-only"
+    )
+    _add_delegate_plan_arguments(delegate_status_parser)
+    delegate_status_parser.set_defaults(func=cmd_delegate_status)
+    delegate_state_init_parser = delegate_sub.add_parser(
+        "state-init", help="Initialize ignored machine-local delegation runtime state"
+    )
+    _add_delegate_plan_arguments(delegate_state_init_parser)
+    delegate_state_init_parser.set_defaults(func=cmd_delegate_state_init)
+    delegate_state_reconcile_parser = delegate_sub.add_parser(
+        "state-reconcile",
+        help="Reconcile ignored runtime state with host-observed handles",
+    )
+    _add_delegate_plan_arguments(delegate_state_reconcile_parser)
+    delegate_state_reconcile_parser.add_argument(
+        "--observed-handles",
+        required=True,
+        help="JSON object mapping unit IDs to observed kind/id/worktree/state handles",
+    )
+    delegate_state_reconcile_parser.set_defaults(func=cmd_delegate_state_reconcile)
 
     upgrade_parser = subparsers.add_parser(
         "upgrade",

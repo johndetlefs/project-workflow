@@ -80,27 +80,35 @@ As a Project Workflow owner, I want an approved plan resolved into a determinist
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | not recorded | not recorded | not recorded | not recorded |
+| . | `codex/TASK-060-delegation-graph`; no PR or push authorized | Focused 19/19; full locked suite 281/281; strict Doctor pass; compile/build/wheel/privacy/mirror checks pass | Implemented and QA-passed on the local task branch; local commit recorded in coordinator handoff; not pushed, merged, released, or deployed | `evidence/2026-08-19-validation.md` |
 
 ## Task List
 
-| ID | Title | Description | Acceptance Criteria | User Verification | Status |
-| --: | ----- | ----------- | ------------------- | ----------------- | ------ |
-| 1 | Plan Metadata Contract | Extend Task implementation and Epic decomposition parsing/templates with dependencies, write scope, and parallel-safety data plus compatibility behavior. | AC2 | Review valid/invalid/legacy fixture matrix and generated artifacts. | To Do |
-| 2 | Delegation Graph Resolver | Implement exact-target, authority, dependency, collision, executor, and capacity resolution in host-neutral code. Depends on row 1. | AC1, AC2, AC4 | Run focused graph and capacity tests including all rejection paths. | To Do |
-| 3 | Read-Only CLI Projection | Add delegate plan/status human and JSON v1 output with stable ordering and provenance. Depends on row 2. | AC3 | Compare snapshots and confirm no tracked-file changes. | To Do |
-| 4 | Runtime State Reconciliation | Add ignored local run-state initialization and reconciliation for active, completed, and orphaned units. Depends on row 2. | AC5, AC6 | Interrupt/reconcile a disposable run and inspect Git/package contents. | To Do |
-| 5 | Child Validation Gate | Run focused/regression tests, strict Doctor, build/package, privacy inspection, and child QA handoff. Depends on rows 3 and 4. | AC1, AC2, AC3, AC4, AC5, AC6 | Review retained commands/results and proof boundaries. | To Do |
+| ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe |
+| --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- |
+| 1 | Plan Metadata Contract | Extend Task implementation and Epic decomposition parsing/templates with dependencies, write scope, and parallel-safety data plus compatibility behavior. | AC2 | Review valid/invalid/legacy fixture matrix and generated artifacts. | Done | | src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegation.py | No |
+| 2 | Delegation Graph Resolver | Implement exact-target, authority, dependency, collision, executor, and capacity resolution in host-neutral code. Depends on row 1. | AC1, AC2, AC4 | Run focused graph and capacity tests including all rejection paths. | Done | 1 | src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegation.py | No |
+| 3 | Read-Only CLI Projection | Add delegate plan/status human and JSON v1 output with stable ordering and provenance. Depends on row 2. | AC3 | Compare snapshots and confirm no tracked-file changes. | Done | 2 | src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegation.py | No |
+| 4 | Runtime State Reconciliation | Add ignored local run-state initialization and reconciliation for active, completed, and orphaned units. Depends on row 2. | AC5, AC6 | Interrupt/reconcile a disposable run and inspect Git/package contents. | Done | 2 | .gitignore, src/project_workflow/cli.py, src/project_workflow/templates/workflow.py, .project-workflow/cli/workflow.py, tests/test_delegation.py | No |
+| 5 | Child Validation Gate | Run focused/regression tests, strict Doctor, build/package, privacy inspection, and child QA handoff. Depends on rows 3 and 4. | AC1, AC2, AC3, AC4, AC5, AC6 | Review retained commands/results and proof boundaries. | Done | 3, 4 | .project-workflow/tasks/EPIC-010-Delegate-Execution-Orchestrator/TASK-060-Define-Delegation-Graph-Plan-Metadata-And-Runtime-State, tests/test_delegation.py | No |
 
 ## Parent AC Evidence
 
-- AC1, AC2, AC3, AC4, AC9, AC12, AC13: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC1 / child AC1: exact-target, mixed/repeated-target, unknown-target, lifecycle-authority, unit-membership, and dependency-closure rejection are covered by `tests/test_delegation.py`; all failures occur during plan construction before any runtime mutation.
+- AC2 and AC3 / child AC2: six- and nine-column Task tables plus four- and five-column decomposition tables are parsed compatibly; Delegate rejects legacy plans without explicit metadata; focused tests cover malformed/self/missing/cyclic dependencies, write-prefix validation, collisions, authority identity, and legacy behavior.
+- AC4 / child AC3: `project delegate plan` and `status` share schema-v1 projections with stable topological ordering, deterministic JSON, concise human output, source hashes, capability provenance, and tracked-tree non-mutation checks.
+- AC9 / child AC4: focused capacity tests prove child capacity excludes the coordinator, effective child concurrency is bounded by observed capacity, and zero-capacity/unobserved-host cases explain coordinator sequential fallback.
+- AC12 / child AC5: ignored runtime-state tests cover idempotent initialization, canonical completion precedence, same-worktree active resume, missing-handle orphaning, cross-worktree orphaning, and removal of active/orphaned units from launch eligibility. This is host-neutral/disposable-repository proof, not a live Codex interruption or worker-launch claim.
+- AC13 / child AC6: the runtime boundary is Git-ignored, atomic state uses an allowlisted schema, hostile transcript/credential fields are rejected, Smoke Bomb removes the ignore reference, and package/Git privacy inspection is part of row 5. This does not claim host-adapter parity.
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Date: 2026-08-19
+- Reviewed areas: requirements/AC mapping; exact-target and authority failure modes; legacy/new metadata compatibility; graph determinism; dependency and write-prefix validation; executor/capacity conservatism; CLI read-only behavior; runtime atomicity, reconciliation, privacy, and path containment; source/helper/package parity; Smoke Bomb compatibility; scope and prohibited shared-artifact boundaries.
+- Validation evidence: focused delegation suite 19/19; complete locked suite 281/281; strict Doctor reported no issues with 69 accepted warnings hidden; Python compileall passed; sdist and wheel built; the installed wheel exposed all four delegate subcommands; source, template, local helper, and both packaged Python files shared SHA-256 `37f860398aeea7344fdcfb0ce8da830f905930e7c9749882c6f3418cfd05f926`; Git/package privacy checks found no runtime-state artifacts and confirmed the runtime path is ignored.
+- Findings: No unresolved findings. QA found and resolved (1) a sanitized-ZIP regression where the managed runtime ignore entry remained as a Project Workflow reference, and (2) a runtime-directory symlink escape that could redirect state writes outside the repository. Regression coverage was added for both behaviors.
+- Verdict: Pass. Every child AC has direct automated or artifact evidence. The coordinator-owned child lifecycle and shared trackers were intentionally not changed in this branch.
+- Proof boundaries: Tests and disposable repositories prove the host-neutral contract, deterministic CLI projection, privacy schema, and reconciliation rules. They do not prove a live Codex worker launch, real interruption/resume, host adapter parity, parent Epic acceptance, integration, release, deployment, adoption, or owner acceptance.
 
 ## Retro
 
