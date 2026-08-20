@@ -38,7 +38,7 @@ As the release owner, I want the exact 0.5.0 candidate proven end to end so that
 
 ## Acceptance Criteria
 
-- [ ] AC1: Covers parent AC2 when every declared candidate validation passes and the recorded wheel/source hashes bind to the exact source commit.
+- [x] AC1: Covers parent AC2 when every declared candidate validation passes and the recorded wheel/source hashes bind to the exact source commit.
 
 ## Validation
 
@@ -48,29 +48,29 @@ As the release owner, I want the exact 0.5.0 candidate proven end to end so that
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | codex/EPIC-012-delegate-executor-lifecycle | Planned validation recorded in this task | Pending release/adoption stage | Coordinator command output and retained evidence |
+| . | `codex/EPIC-012-delegate-executor-lifecycle`; candidate `94934cfd2995885216c15447852de4c72c3e36d9` | 395/395 tests, strict Doctor, lock/source contract, wheel/sdist receipt, and exact-wheel journeys for Codex, Claude Code, Cursor, and GitHub Copilot passed | Validated local release candidate; not yet merged or published | `evidence/candidate/` plus coordinator command output on 2026-08-20 |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |
-| 1 | Validate exact candidate | Exercise the complete locked suite, strict Doctor, release contract, built distributions, and exact-wheel journeys. | AC1: every declared candidate validation passes and the recorded wheel/source hashes bind to the exact source commit. | Inspect the final receipt, hashes, and passing command results. | To Do | | tests; scripts; dist; release; .project-workflow/tasks/EPIC-013-Release-And-Roll-Out-Project-Workflow-0-5-0/evidence | No | bounded-return |
+| 1 | Validate exact candidate | Exercise the complete locked suite, strict Doctor, release contract, built distributions, and exact-wheel journeys. | AC1: every declared candidate validation passes and the recorded wheel/source hashes bind to the exact source commit. | Inspect the final receipt, hashes, and passing command results. | Done | | tests; scripts; dist; release; .project-workflow/tasks/EPIC-013-Release-And-Roll-Out-Project-Workflow-0-5-0/evidence | No | bounded-return |
 
 ## Parent AC Evidence
 
-- AC2: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC2: Candidate `94934cfd2995885216c15447852de4c72c3e36d9` passed 395 tests in 70.64s, strict Doctor with 69 accepted historical warnings hidden and no issue, `uv lock --check`, clean source contract, receipt verification, and exact-wheel journeys for all four packaged host modes. Wheel SHA-256 is `2cce584f7d6a498d3824d15bf5085d0e1bb9e874f23cec35be81a71c724c8a8d`; sdist SHA-256 is `52160e32af065dcb0a3b7b4244bbc4c7ea0c97a8c7f9f1e4a0b63408f74e38a2`.
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass
+- Evidence: `evidence/candidate/release-receipt.json`, `SHA256SUMS`, `package-journeys.json`, full-suite output, strict Doctor output, and clean source-contract output.
+- Findings: None. GitHub CI will independently rebuild and bind the final integrated lineage before tagging.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: Keep a writable task-specific UV cache in Codex release commands; the default user cache may be sandbox-inaccessible.
+- Conventions or agent assets updated: None.
+- Follow-up tasks: None.
 
 ## Notes
 

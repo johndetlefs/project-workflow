@@ -1,0 +1,33 @@
+{
+  "artifacts": [
+    {
+      "filename": "project_workflow-0.5.0-py3-none-any.whl",
+      "kind": "wheel",
+      "sha256": "2cce584f7d6a498d3824d15bf5085d0e1bb9e874f23cec35be81a71c724c8a8d",
+      "size": 371694
+    },
+    {
+      "filename": "project_workflow-0.5.0.tar.gz",
+      "kind": "sdist",
+      "sha256": "52160e32af065dcb0a3b7b4244bbc4c7ea0c97a8c7f9f1e4a0b63408f74e38a2",
+      "size": 449151
+    }
+  ],
+  "asset_version": 3,
+  "changelog_heading": "## 0.5.0 - 2026-08-20",
+  "commands": {
+    "init": "uvx --from project-workflow==0.5.0 project init",
+    "upgrade": "uvx --from project-workflow==0.5.0 project upgrade"
+  },
+  "commit": "94934cfd2995885216c15447852de4c72c3e36d9",
+  "project": "project-workflow",
+  "repository": "johndetlefs/project-workflow",
+  "repository_schema_version": 1,
+  "schema_version": 1,
+  "tag": "v0.5.0",
+  "version": "0.5.0",
+  "workflow": {
+    "run_id": "local-candidate",
+    "run_url": "local://candidate"
+  }
+}
