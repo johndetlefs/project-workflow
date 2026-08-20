@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-08-20",
+  "scope": {
+    "source": "Current local Codex saved-project inventory",
+    "local_projects": 18,
+    "canonical_installations": 9,
+    "installed_versions_observed": [
+      "0.3.0",
+      "0.5.0"
+    ],
+    "epics_scanned": 38,
+    "child_charters_scanned": 190,
+    "matching_rule": "A child-charter bullet exactly equals the first physical line of a wrapped parent-contract bullet while the complete logical parent bullet is absent."
+  },
+  "summary": {
+    "projects_with_legacy_truncation": 5,
+    "affected_children": 60,
+    "active_affected_children": 20,
+    "completed_affected_children": 40,
+    "automatic_rewrites": 0
+  },
+  "projects": [
+    {
+      "project": "Mechanics Playground",
+      "child_charters_scanned": 44,
+      "affected_children": 28,
+      "active_affected_children": 16,
+      "completed_affected_children": 12,
+      "active_ids": [
+        "GAME-037",
+        "GAME-038",
+        "GAME-039",
+        "GAME-040",
+        "GAME-041",
+        "GAME-059",
+        "GAME-060",
+        "GAME-061",
+        "GAME-062",
+        "GAME-063",
+        "GAME-064",
+        "GAME-065",
+        "GAME-066",
+        "GAME-067",
+        "GAME-068",
+        "GAME-069"
+      ]
+    },
+    {
+      "project": "The Moon Is Hollow",
+      "child_charters_scanned": 5,
+      "affected_children": 5,
+      "active_affected_children": 0,
+      "completed_affected_children": 5,
+      "active_ids": []
+    },
+    {
+      "project": "Strategic Advisor",
+      "child_charters_scanned": 22,
+      "affected_children": 9,
+      "active_affected_children": 0,
+      "completed_affected_children": 9,
+      "active_ids": []
+    },
+    {
+      "project": "Daily Checklist",
+      "child_charters_scanned": 38,
+      "affected_children": 5,
+      "active_affected_children": 1,
+      "completed_affected_children": 4,
+      "active_ids": [
+        "TASK-055"
+      ]
+    },
+    {
+      "project": "johndetlefs",
+      "child_charters_scanned": 22,
+      "affected_children": 13,
+      "active_affected_children": 3,
+      "completed_affected_children": 10,
+      "active_ids": [
+        "ADS-UQ6EW",
+        "OPS-MN8R6",
+        "OPS-S9HI6"
+      ]
+    },
+    {
+      "project": "Game Foundation",
+      "child_charters_scanned": 5,
+      "affected_children": 0,
+      "active_affected_children": 0,
+      "completed_affected_children": 0,
+      "active_ids": []
+    },
+    {
+      "project": "Toby's Games",
+      "child_charters_scanned": 0,
+      "affected_children": 0,
+      "active_affected_children": 0,
+      "completed_affected_children": 0,
+      "active_ids": []
+    },
+    {
+      "project": "Project Workflow",
+      "child_charters_scanned": 45,
+      "affected_children": 0,
+      "active_affected_children": 0,
+      "completed_affected_children": 0,
+      "active_ids": []
+    },
+    {
+      "project": "Client Management App",
+      "child_charters_scanned": 9,
+      "affected_children": 0,
+      "active_affected_children": 0,
+      "completed_affected_children": 0,
+      "active_ids": []
+    }
+  ],
+  "disposition": {
+    "active_children": "Project Workflow 0.5.1 readiness and Doctor checks diagnose the exact legacy signature and require restoration before further governed advancement.",
+    "completed_children": "Preserved as historical records; no automatic rewrite and no new completion blocker.",
+    "active_water_epic": "Read-only during this Fix; its existing planning task owns child-local repairs."
+  }
+}

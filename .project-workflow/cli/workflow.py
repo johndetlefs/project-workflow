@@ -66,11 +66,11 @@ BACKLOG_ID_PREFIX = "BL"
 ID_PADDING = 3
 WORKFLOW_CONFIG_FILENAME = "config.json"
 WORKFLOW_MANIFEST_FILENAME = "manifest.json"
-CURRENT_PACKAGE_VERSION = "0.5.0"
+CURRENT_PACKAGE_VERSION = "0.5.1"
 CURRENT_MANIFEST_VERSION = 1
-CURRENT_ASSET_VERSION = 3
+CURRENT_ASSET_VERSION = 4
 CURRENT_SCHEMA_VERSION = 1
-SUPPORTED_ASSET_VERSIONS = (1, 2, 3)
+SUPPORTED_ASSET_VERSIONS = (1, 2, 3, 4)
 SUPPORTED_SCHEMA_VERSIONS = (0, 1)
 REPOSITORY_COMPATIBILITY_STATES = (
     "current",
@@ -10435,14 +10435,134 @@ def _epic_contract_proof_owner_map(contract_text: str) -> dict[str, set[str]]:
     return owner_map
 
 
+def _flat_markdown_bullet_records(section: str) -> list[tuple[str, str]]:
+    """Return (logical item, first physical line) for a flat Markdown list."""
+    records: list[tuple[str, str]] = []
+    current_parts: list[str] = []
+    first_physical_line = ""
+    continuation_open = False
+
+    def flush() -> None:
+        nonlocal current_parts, first_physical_line, continuation_open
+        if current_parts:
+            records.append((" ".join(current_parts), first_physical_line))
+        current_parts = []
+        first_physical_line = ""
+        continuation_open = False
+
+    for line in section.splitlines():
+        top_level = re.match(r"^[-*+]\s+(.+?)\s*$", line)
+        if top_level:
+            flush()
+            first_physical_line = top_level.group(1).strip()
+            current_parts = [first_physical_line]
+            continuation_open = True
+            continue
+        if not line.strip():
+            flush()
+            continue
+        if continuation_open:
+            stripped = line.strip()
+            if stripped.startswith(("#", "|")) or re.match(r"^[-*+]\s+", stripped):
+                flush()
+                continue
+            current_parts.append(stripped)
+    flush()
+    return records
+
+
+def _contract_section_bullet_records(
+    contract_text: str,
+    heading: str,
+) -> list[tuple[str, str]]:
+    return [
+        (logical_item, first_physical_line)
+        for logical_item, first_physical_line in _flat_markdown_bullet_records(
+            _markdown_section(contract_text, heading)
+        )
+        if not _section_has_placeholder(logical_item)
+    ]
+
+
 def _contract_section_bullets(contract_text: str, heading: str) -> list[str]:
-    section = _markdown_section(contract_text, heading)
-    bullets: list[str] = []
+    return [
+        logical_item
+        for logical_item, _first_physical_line in _contract_section_bullet_records(
+            contract_text,
+            heading,
+        )
+    ]
+
+
+def _markdown_subsection(text: str, parent_heading: str, heading: str) -> str:
+    section = _markdown_section(text, parent_heading)
+    target = f"### {heading}".lower()
+    collecting = False
+    lines: list[str] = []
     for line in section.splitlines():
         stripped = line.strip()
-        if stripped.startswith(("-", "*")) and not _section_has_placeholder(stripped):
-            bullets.append(stripped.lstrip("-*").strip())
-    return bullets
+        if stripped.startswith("### "):
+            if collecting:
+                break
+            collecting = stripped.lower() == target
+            continue
+        if collecting:
+            lines.append(line)
+    return "\n".join(lines).strip()
+
+
+def _legacy_truncated_child_charter_issues(
+    *,
+    epic_dir: Path,
+    requirements_text: str,
+    implementation_text: str,
+) -> list[str]:
+    contract_path = _epic_contract_path(epic_dir)
+    if not contract_path.exists():
+        return []
+    contract_text = contract_path.read_text(encoding="utf-8")
+    section_pairs = (
+        ("Invariants", "Inherited Invariants"),
+        ("Invalid Substitutes", "Invalid Substitutes"),
+        ("Artifact Targets", "Artifact Targets"),
+    )
+    issues: list[str] = []
+    for contract_heading, child_heading in section_pairs:
+        wrapped_records = [
+            (logical_item, first_physical_line)
+            for logical_item, first_physical_line in _contract_section_bullet_records(
+                contract_text,
+                contract_heading,
+            )
+            if logical_item != first_physical_line
+        ]
+        if not wrapped_records:
+            continue
+        for document_name, document_text in (
+            ("REQUIREMENTS.md", requirements_text),
+            ("IMPLEMENTATION.md", implementation_text),
+        ):
+            child_items = {
+                logical_item
+                for logical_item, _first_line in _flat_markdown_bullet_records(
+                    _markdown_subsection(document_text, "Child Charter", child_heading)
+                )
+            }
+            truncated = [
+                (logical_item, legacy_fragment)
+                for logical_item, legacy_fragment in wrapped_records
+                if legacy_fragment in child_items and logical_item not in child_items
+            ]
+            if truncated:
+                logical_item, legacy_fragment = truncated[0]
+                issues.append(
+                    "agent action required: "
+                    f"`{document_name}` contains {len(truncated)} legacy truncated "
+                    f"`{child_heading}` bullet(s), including `{legacy_fragment}`; restore "
+                    "the complete logical parent-contract bullet(s), for example "
+                    f"`{logical_item}`."
+                )
+    return issues
 
 
 def _format_child_charter_from_contract(
@@ -14380,6 +14500,15 @@ def _task_ready_issues_for_paths(
     )
     if root is not None:
         issues.extend(_repository_scope_issues(root, requirements_text))
+    epic_dir = requirements_path.parent.parent
+    if _epic_contract_path(epic_dir).exists():
+        issues.extend(
+            _legacy_truncated_child_charter_issues(
+                epic_dir=epic_dir,
+                requirements_text=requirements_text,
+                implementation_text=implementation_text,
+            )
+        )
     return issues
 
 
@@ -15979,6 +16108,18 @@ def _doctor_check_task_doc(
                 parent_requirements_path,
                 f"{row_id} parent approval envelope: {approval_issue}",
             )
+        if status != "Complete" and requirements_text is not None:
+            for charter_issue in _legacy_truncated_child_charter_issues(
+                epic_dir=parent_requirements_path.parent,
+                requirements_text=requirements_text,
+                implementation_text=docs_text,
+            ):
+                _add_issue(
+                    issues,
+                    "error",
+                    docs_path,
+                    f"{row_id} child charter integrity: {charter_issue}",
+                )
     elif requirements_text is not None and not _is_discovery_work(requirements_text, docs_text):
         approval_required = False
         require_decomposition = False

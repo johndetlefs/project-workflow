@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## 0.5.1 - 2026-08-20
+
+### Fixed
+
+- Preserved complete logical bullets, including indented and lazy continuation lines, when Epic contract invariants, invalid substitutes, and artifact targets are copied into child charters.
+- Added fail-closed readiness and Doctor diagnostics for the exact legacy first-line truncation signature in active Epic child requirements and implementation documents.
+
 ## 0.5.0 - 2026-08-20
 
 ### Added
