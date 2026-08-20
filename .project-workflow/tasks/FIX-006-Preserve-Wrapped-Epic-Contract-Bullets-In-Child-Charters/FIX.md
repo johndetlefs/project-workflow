@@ -51,20 +51,20 @@
 - Affected target: `epic scaffold-child`, `epic ready-child`, active Epic child lifecycle/Doctor checks, packaged/generated CLI assets, and public 0.5.1 adoption.
 - Primary repo: .
 - Repos touched: .
-- Branch, PR, and evidence links: `codex/FIX-006-wrapped-child-charters`; PR and public release evidence to be recorded before Review.
+- Branch, PR, and evidence links: `codex/FIX-006-wrapped-child-charters`; GitHub PR #17; public release evidence to be recorded before closeout.
 - Verification plan: Exact parser reproduction; focused scaffold/readiness/Doctor tests; legacy single-line and unrelated Markdown compatibility; full locked pytest; strict Doctor; compilation/mirror/privacy/source contract; build and exact-wheel four-host package journeys; public hashes/provenance/fresh install; fingerprint-bound consumer upgrades and post-plan/Doctor validation.
 
 ### Repository Links
 
 | Repo | Branch | PR | Evidence |
 |---|---|---|---|
-| . | `codex/FIX-006-wrapped-child-charters` | Pending | FIX-006 evidence and public 0.5.1 receipt |
+| . | `codex/FIX-006-wrapped-child-charters` | GitHub PR #17 | FIX-006 evidence and public 0.5.1 receipt |
 
 ## Repository Evidence
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | `codex/FIX-006-wrapped-child-charters`; PR pending | Exact parser, focused/full suite, strict Doctor, package/release/public checks pending | Source, public package, and safe local adoption are separate gates | FIX-006 command output and retained release/rollout receipt |
+| . | `codex/FIX-006-wrapped-child-charters`; GitHub PR #17 | Exact parser, focused/full suite, strict Doctor, and exact-wheel package checks pass; public checks pending reviewed merge | Source, public package, and safe local adoption are separate gates | FIX-006 command output and retained release/rollout receipt |
 
 ## Verification
 
