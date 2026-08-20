@@ -30,4 +30,4 @@
 | EPIC-011 | Release And Roll Out Project Workflow 0.4.0 | Complete | `tasks/EPIC-011-Release-And-Roll-Out-Project-Workflow-0-4-0/REQUIREMENTS.md` |
 | EPIC-012 | Capability-Aware Delegate Execution And Child Lifecycle | Complete | `tasks/EPIC-012-Capability-Aware-Delegate-Execution-And-Child-Lifecycle/REQUIREMENTS.md` |
 | EPIC-013 | Release And Roll Out Project Workflow 0.5.0 | Complete | `tasks/EPIC-013-Release-And-Roll-Out-Project-Workflow-0-5-0/REQUIREMENTS.md` |
-| FIX-006 | Preserve Wrapped Epic Contract Bullets In Child Charters | Review | `tasks/FIX-006-Preserve-Wrapped-Epic-Contract-Bullets-In-Child-Charters/FIX.md` |
+| FIX-006 | Preserve Wrapped Epic Contract Bullets In Child Charters | Complete | `tasks/FIX-006-Preserve-Wrapped-Epic-Contract-Bullets-In-Child-Charters/FIX.md` |

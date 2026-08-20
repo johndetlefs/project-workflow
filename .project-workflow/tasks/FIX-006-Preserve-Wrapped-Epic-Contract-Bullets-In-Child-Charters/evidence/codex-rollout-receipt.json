@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "rollout_date": "2026-08-20",
+  "inventory_source": "Current Codex saved-project inventory",
+  "inventory": {
+    "projects": 20,
+    "local_projects": 18,
+    "chatgpt_projects_without_local_roots": 2,
+    "canonical_installations": 9
+  },
+  "target": {
+    "package_version": "0.5.1",
+    "asset_version": 4,
+    "schema_version": 1,
+    "helper_sha256": "2580660934af4dff7c8eb5c46f7a5c7f6b21ece8a1c2a0fe7c0929c049554d1f"
+  },
+  "dispositions": [
+    {
+      "project": "Mechanics Playground",
+      "root": "/Users/johndetlefs/repos/mechanics-playground",
+      "result": "upgraded-local-commit",
+      "commit": "26120cc",
+      "changed_paths": [
+        ".project-workflow/cli/workflow.py",
+        ".project-workflow/manifest.json",
+        "AGENTS.md"
+      ],
+      "post_plan": "current/versions-current",
+      "upgrade_blockers": 0,
+      "doctor_boundary": "159 findings remain visible, including 72 owner-owned decisions; the upgrade did not rewrite them."
+    },
+    {
+      "project": "Game Foundation",
+      "root": "/Users/johndetlefs/repos/game-foundation",
+      "result": "upgraded-local-commit",
+      "commit": "6184e21",
+      "changed_paths": [
+        ".project-workflow/cli/workflow.py",
+        ".project-workflow/manifest.json",
+        "AGENTS.md"
+      ],
+      "post_plan": "current/versions-current",
+      "upgrade_blockers": 0,
+      "doctor_boundary": "0 findings"
+    },
+    {
+      "project": "Toby's Games",
+      "root": "/Users/johndetlefs/repos/tobys-games",
+      "result": "upgraded-local-commit",
+      "commit": "626029c",
+      "changed_paths": [
+        ".project-workflow/cli/workflow.py",
+        ".project-workflow/manifest.json",
+        "AGENTS.md"
+      ],
+      "post_plan": "current/versions-current",
+      "upgrade_blockers": 0,
+      "doctor_boundary": "0 findings"
+    },
+    {
+      "project": "Strategic Advisor",
+      "root": "/Users/johndetlefs/repos/strategic-advisor",
+      "result": "upgraded-local-commit",
+      "commit": "dda854c",
+      "changed_paths": [
+        ".project-workflow/cli/workflow.py",
+        ".project-workflow/manifest.json",
+        "AGENTS.md"
+      ],
+      "post_plan": "current/versions-current",
+      "upgrade_blockers": 0,
+      "doctor_boundary": "0 findings; pre-existing branch divergence remains unrelated."
+    },
+    {
+      "project": "Daily Checklist",
+      "root": "/Users/johndetlefs/repos/daily-checklist",
+      "result": "upgraded-local-commit",
+      "commit": "38d440a",
+      "changed_paths": [
+        ".project-workflow/cli/workflow.py",
+        ".project-workflow/manifest.json",
+        "AGENTS.md"
+      ],
+      "post_plan": "current/versions-current",
+      "upgrade_blockers": 0,
+      "doctor_boundary": "131 findings remain visible, including 120 owner-owned decisions; the upgrade did not rewrite them."
+    },
+    {
+      "project": "Client Management App",
+      "root": "/Users/johndetlefs/repos/client-management-app",
+      "result": "upgraded-local-commit",
+      "commit": "a4432b9",
+      "changed_paths": [
+        ".project-workflow/cli/workflow.py",
+        ".project-workflow/manifest.json",
+        "AGENTS.md"
+      ],
+      "post_plan": "current/versions-current",
+      "upgrade_blockers": 0,
+      "doctor_boundary": "25 findings remain visible, including 17 owner-owned decisions; the upgrade did not rewrite them."
+    },
+    {
+      "project": "Project Workflow",
+      "root": "/Users/johndetlefs/repos/project-workflow",
+      "result": "fast-forwarded-source-checkout",
+      "commit": "44ac9ac71ae6c0b73cee61c64a86241d39dd8298",
+      "post_plan": "source checkout matches released main",
+      "upgrade_blockers": 0
+    },
+    {
+      "project": "The Moon Is Hollow",
+      "root": "/Users/johndetlefs/repos/the-moon-is-hollow",
+      "result": "retained-unchanged",
+      "installed_version": "0.3.0",
+      "blocker": "Dirty .project-workflow/BACKLOG.md on codex/EPIC-001-product-foundation."
+    },
+    {
+      "project": "johndetlefs",
+      "root": "/Users/johndetlefs/repos/johndetlefs",
+      "result": "retained-unchanged",
+      "installed_version": "0.3.0",
+      "blocker": "Dirty BACKLOG.md, TRACKER.md, and two untracked active Epic directories."
+    }
+  ],
+  "projects_without_installation": 9,
+  "consumer_pushes": 0,
+  "owner_content_rewrites": 0
+}

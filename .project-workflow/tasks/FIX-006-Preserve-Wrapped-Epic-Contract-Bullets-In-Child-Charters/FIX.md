@@ -4,7 +4,7 @@
 
 - Fix: FIX-006
 - Title: Preserve Wrapped Epic Contract Bullets In Child Charters
-- Status: Review
+- Status: Complete
 - Created: 2026-08-20
 
 ## Report
@@ -51,29 +51,29 @@
 - Affected target: `epic scaffold-child`, `epic ready-child`, active Epic child lifecycle/Doctor checks, packaged/generated CLI assets, and public 0.5.1 adoption.
 - Primary repo: .
 - Repos touched: .
-- Branch, PR, and evidence links: `codex/FIX-006-wrapped-child-charters`; GitHub PR #17; public release evidence to be recorded before closeout.
+- Branch, PR, and evidence links: GitHub PR #17 merged to `44ac9ac71ae6c0b73cee61c64a86241d39dd8298`; tag `v0.5.1`; release run `32342505251`; public and rollout receipts under `evidence/`.
 - Verification plan: Exact parser reproduction; focused scaffold/readiness/Doctor tests; legacy single-line and unrelated Markdown compatibility; full locked pytest; strict Doctor; compilation/mirror/privacy/source contract; build and exact-wheel four-host package journeys; public hashes/provenance/fresh install; fingerprint-bound consumer upgrades and post-plan/Doctor validation.
 
 ### Repository Links
 
 | Repo | Branch | PR | Evidence |
 |---|---|---|---|
-| . | `codex/FIX-006-wrapped-child-charters` | GitHub PR #17 | FIX-006 evidence and public 0.5.1 receipt |
+| . | `codex/FIX-006-wrapped-child-charters` | GitHub PR #17 (merged) | Public 0.5.1 receipt, verification, audit, package journeys, and Codex rollout receipt |
 
 ## Repository Evidence
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | `codex/FIX-006-wrapped-child-charters`; GitHub PR #17 | Exact parser, focused/full suite, strict Doctor, and exact-wheel package checks pass; public checks pending reviewed merge | Source, public package, and safe local adoption are separate gates | FIX-006 command output and retained release/rollout receipt |
+| . | GitHub PR #17; merge `44ac9ac`; tag `v0.5.1` | Exact parser, 397-test full suite, strict Doctor, source contract, exact-wheel and public package journeys, hashes, receipt, and Sigstore verification pass | Published to PyPI and GitHub Release by run `32342505251`; seven clean installed roots current; two dirty roots retained unchanged | FIX-006 `evidence/` receipts |
 
 ## Verification
 
 - Delivered scope: Complete logical-list extraction for Epic contract invariants, invalid substitutes, and artifact targets; exact legacy-fragment diagnostics for active child requirements and implementation docs; 0.5.1 / managed asset 4 release identity; regression, audit, package, and rollout safety evidence.
-- Verification result: Candidate pass. The complete locked suite passed 397 tests; strict Doctor reported no issues with 69 accepted historical warnings hidden; source contract identified 0.5.1; all three helper mirrors share SHA-256 `2580660934af4dff7c8eb5c46f7a5c7f6b21ece8a1c2a0fe7c0929c049554d1f`; the exact local wheel passed fresh and upgrade journeys for all four supported host modes. Public release and consumer adoption remain delivery steps after reviewed merge.
+- Verification result: Pass. The complete locked suite passed 397 tests; strict Doctor reported no issues with 69 accepted historical warnings hidden; all three helper mirrors share SHA-256 `2580660934af4dff7c8eb5c46f7a5c7f6b21ece8a1c2a0fe7c0929c049554d1f`; public wheel and source distribution hashes match the release receipt; public four-host and legacy journeys pass; Sigstore provenance binds the artifacts to `v0.5.1`, commit `44ac9ac`, workflow `Release`, and run `32342505251`; seven clean canonical roots are current and two dirty roots remain unchanged.
 - Adjacent behavior checked: Single-line bullets, `-` / `*` / `+` markers, indented and lazy continuations, placeholder filtering, section boundaries, proof-owner filtering, standalone Task scaffolding, active readiness/Doctor rejection and recovery, completed-history non-blocking behavior, future-version compatibility, legacy owner-collision preservation, and complete non-Delegate regression coverage.
-- Original acceptance criteria result: Not applicable
-- Regression evidence: `tests/test_doctor.py`; `evidence/legacy-charter-audit.json`; `evidence/package-journeys.json`; exact local wheel SHA-256 `82cbbd111a0ce37fc8632534543b55447c8856cb21fdbf1bcd7826b2f96634e2`.
-- Residual risk: Existing malformed active charters are diagnosed but not automatically rewritten. The audit found 60 affected children across five projects, including 20 active children; their owning project tasks must restore complete parent bullets before governed advancement. Forty completed children remain preserved historical records. Public publication, provenance, and safe consumer rollout are not yet claimed at this candidate-review stage.
+- Original acceptance criteria result: Not applicable because FIX-006 corrects a released parser defect rather than reopening an earlier Task or Epic acceptance criterion; the bounded expected behavior is recorded in this Fix report and verification evidence.
+- Regression evidence: `tests/test_doctor.py`; `evidence/legacy-charter-audit.json`; `evidence/public-release-receipt.json`; `evidence/public-verification.json`; `evidence/public-package-journeys.json`; `evidence/codex-rollout-receipt.json`; public wheel SHA-256 `8f7a0266d4cf94e55754d95ba16443bb32561945cf405407bd188b058f4a4f72`.
+- Residual risk: Existing malformed active charters are diagnosed but not automatically rewritten. The audit found 60 affected children across five projects, including 20 active children; their owning project tasks must restore complete parent bullets before governed advancement. Forty completed children remain preserved historical records. The Moon Is Hollow and johndetlefs remain on 0.3.0 because their canonical roots contain active local workflow changes.
 
 ## QA & Code Review
 
@@ -82,12 +82,20 @@
 - Validation evidence: 397 locked tests passed; strict Doctor passed; focused parser/scaffold/integrity tests passed; 0.5.1 source contract and public-availability preflight passed; exact wheel and source distribution built; four-host fresh/init/upgrade plus legacy collision journey passed; `git diff --check` passed.
 - Findings: None blocking. The first diagnostic draft was corrected before review from per-bullet output to one actionable finding per document section, preventing large legacy installations from producing unusable Doctor floods.
 - Invalid substitutes excluded: Green tests do not claim public publication; local wheel journeys do not claim PyPI/GitHub provenance; the read-only audit does not claim existing child charters were repaired; completed historical documents were not rewritten.
-- Verdict: Pass for reviewed merge and release execution. Keep FIX-006 in Review until public 0.5.1 verification and safe consumer rollout are complete.
+- Verdict: Pass. Reviewed merge, public 0.5.1 release/provenance, and safe Codex rollout are complete within the recorded boundaries.
 
 ## Outcome
 
-- Disposition: Pending
-- Decision: ____
-- Closed by: ____
-- Closed date: ____
+- Disposition: Fixed
+- Decision: Published and rolled out Project Workflow 0.5.1 with complete wrapped Epic-contract bullet inheritance and fail-closed active-child diagnostics.
+- Closed by: John Detlefs / Codex
+- Closed date: 2026-08-20
 - Promoted to: None
+
+## Retro
+
+- Date: 2026-08-20
+- Lessons: Structural scaffold tests that assert only headings can miss semantic data loss. Markdown workflow authority must be tested as complete logical items across physical wrapping, section boundaries, generated destinations, and delivered legacy forms.
+- Updated assets: Added the parser/scaffold/readiness/Doctor regressions in `tests/test_doctor.py` and the narrow durable convention in `.project-workflow/guidance.md`.
+- Follow-up suggestions: No new Project Workflow work item. The 20 affected active consumer children are already visible to their owning workflows through the released Doctor/readiness diagnostic; repair remains child-local and coordinator-owned.
+- Missed in-scope work: None. Public provenance, rollout dispositions, dirty-root retention, and the active/completed history boundary are all recorded in FIX-006 evidence.

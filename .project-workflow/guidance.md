@@ -14,6 +14,7 @@ Add local conventions, validation commands, safety constraints, handoff rules, a
 
 - Distinguish automated fixture coverage from a manual end-to-end product journey. For destructive, export, packaging, or handoff workflows, do not call the user-visible journey proven until a disposable realistic repository or artifact has been created, exercised, independently inspected, and retested.
 - Record both proof levels explicitly: automated regression evidence protects breadth and edge cases; the manual journey proves the intended operator experience and resulting artifact.
+- For Markdown parsers and generated scaffolds, assert complete logical content rather than only headings or first physical lines. Include wrapped-item, section-boundary, and delivered-legacy integrity coverage when silent truncation could remove workflow authority.
 
 ## Release Adoption
 
