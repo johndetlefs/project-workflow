@@ -416,15 +416,15 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
     assert manifest == workflow_cli.WorkflowManifest(
         manifest_version=1,
         package_version=__version__,
-        asset_version=3,
+        asset_version=4,
         schema_version=1,
         applied_migrations=(),
     )
     assert workflow_cli._serialize_workflow_manifest(manifest) == (
         "{\n"
         '  "manifest_version": 1,\n'
-        '  "package_version": "0.5.0",\n'
-        '  "asset_version": 3,\n'
+        '  "package_version": "0.5.1",\n'
+        '  "asset_version": 4,\n'
         '  "schema_version": 1,\n'
         '  "applied_migrations": []\n'
         "}\n"
@@ -496,7 +496,7 @@ def test_repository_compatibility_classifies_supported_states(tmp_path: Path) ->
     ("update", "reason"),
     [
         ({"manifest_version": 2, "extension": "future"}, "future-manifest-version"),
-        ({"asset_version": 4}, "future-asset-version"),
+        ({"asset_version": 5}, "future-asset-version"),
         ({"schema_version": 2}, "future-schema-version"),
     ],
 )
@@ -2495,7 +2495,7 @@ def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
     )
     assert missing_tracker.returncode != 0
     assert (
-        "uvx --from project-workflow==0.5.0 project init"
+        "uvx --from project-workflow==0.5.1 project init"
         in missing_tracker.stderr
     )
 
@@ -2957,7 +2957,7 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "# Existing Agent Notes" in codex_agents
     assert "<!-- project-workflow:start -->" in codex_agents
     assert (
-        "uvx --from project-workflow==0.5.0 project init"
+        "uvx --from project-workflow==0.5.1 project init"
         in codex_agents
     )
     assert "To initialize a new repository" in codex_agents
@@ -4009,6 +4009,22 @@ def test_epic_child_scaffold_carries_parent_ac_sections(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     write_epic_contract(epic_dir, title="Parent Evidence", ac_ids=["AC1", "AC3"])
+    contract_path = epic_dir / workflow_cli.EPIC_CONTRACT_FILENAME
+    contract_text = contract_path.read_text(encoding="utf-8")
+    contract_text = contract_text.replace(
+        "- Tracker rows without matching contract and decomposition authority.\n",
+        "- Tracker rows without matching contract and decomposition authority or a passing build;\n"
+        "  public package provenance must identify the exact source commit.\n",
+    ).replace(
+        "- Parent AC IDs remain stable across child work.\n",
+        "- Parent AC IDs remain stable across child work in `REQUIREMENTS.md`\n"
+        "  and `IMPLEMENTATION.md` child charters.\n",
+    ).replace(
+        "- Workflow markdown artifacts in this epic folder.\n",
+        "- Workflow markdown artifacts in this epic folder, including exact-draft play\n"
+        "  and ordinary public-source play.\n",
+    )
+    contract_path.write_text(contract_text, encoding="utf-8")
     (epic_dir / "TRACKER.md").write_text(
         "# Stories\n\n"
         "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
@@ -4040,6 +4056,20 @@ def test_epic_child_scaffold_carries_parent_ac_sections(tmp_path: Path) -> None:
     assert "## Child Charter" in implementation_text
     assert "## Parent AC Evidence" in implementation_text
     assert "AC1 / parent AC(s) AC1, AC3" in implementation_text
+    for child_text in (requirements_text, implementation_text):
+        assert (
+            "- Parent AC IDs remain stable across child work in `REQUIREMENTS.md` "
+            "and `IMPLEMENTATION.md` child charters."
+        ) in child_text
+        assert (
+            "- Tracker rows without matching contract and decomposition authority or a passing build; "
+            "public package provenance must identify the exact source commit."
+        ) in child_text
+        assert (
+            "- Workflow markdown artifacts in this epic folder, including exact-draft play "
+            "and ordinary public-source play."
+        ) in child_text
+        assert "- Parent AC IDs remain stable across child work in `REQUIREMENTS.md`\n" not in child_text
     evidence = json.loads((child_dir / workflow_cli.STRUCTURED_EVIDENCE_FILENAME).read_text(encoding="utf-8"))
     assert evidence["claims"] == []
 
@@ -4056,6 +4086,146 @@ def test_epic_child_scaffold_carries_parent_ac_sections(tmp_path: Path) -> None:
     standalone_impl = (standalone_dir / "IMPLEMENTATION.md").read_text(encoding="utf-8")
     assert "## Parent AC Coverage" not in standalone_impl
     assert "## Parent AC Evidence" not in standalone_impl
+
+
+def test_contract_bullet_parser_joins_flat_list_continuations() -> None:
+    contract_text = (
+        "# Epic Contract\n\n"
+        "## Invariants\n\n"
+        "- Indented continuation stays with\n"
+        "  its logical bullet.\n"
+        "* Lazy continuation also stays with\n"
+        "its logical bullet.\n"
+        "+ Plus markers remain supported.\n\n"
+        "Introductory prose after a blank is not inherited.\n"
+        "- ____\n\n"
+        "## Artifact Targets\n\n"
+        "- A later section is outside the invariant boundary.\n"
+    )
+
+    assert workflow_cli._contract_section_bullets(contract_text, "Invariants") == [
+        "Indented continuation stays with its logical bullet.",
+        "Lazy continuation also stays with its logical bullet.",
+        "Plus markers remain supported.",
+    ]
+
+
+def test_active_epic_child_rejects_legacy_truncated_contract_charter(tmp_path: Path) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+
+    epic = run_project(["epic", "init", "--title", "Wrapped Contract"], cwd=tmp_path)
+    assert epic.returncode == 0, epic.stdout + epic.stderr
+    epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
+    (epic_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements(
+            "EPIC-001",
+            "Wrapped Contract",
+            ["- AC1: Wrapped contract inheritance remains complete."],
+        ),
+        encoding="utf-8",
+    )
+    write_epic_contract(epic_dir, title="Wrapped Contract", ac_ids=["AC1"])
+    contract_path = epic_dir / workflow_cli.EPIC_CONTRACT_FILENAME
+    contract_text = contract_path.read_text(encoding="utf-8").replace(
+        "- Parent AC IDs remain stable across child work.\n",
+        "- Parent AC IDs remain stable across the parent contract\n"
+        "  and every active child charter.\n",
+    )
+    contract_path.write_text(contract_text, encoding="utf-8")
+    (epic_dir / "TRACKER.md").write_text(
+        "# Stories\n\n"
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| TASK-001 | Wrapped Child | Approved | Task | AC1 | tasks/EPIC-001-Wrapped-Contract/TASK-001-Wrapped-Child/IMPLEMENTATION.md |  | Covers AC1 |\n",
+        encoding="utf-8",
+    )
+    write_decomposition_plan(
+        epic_dir,
+        rows=[{"ID": "TASK-001", "Title": "Wrapped Child", "Parent ACs": "AC1"}],
+    )
+    scaffold = run_project(
+        ["epic", "scaffold-child", "--epic-id", "EPIC-001", "--id", "TASK-001"],
+        cwd=tmp_path,
+    )
+    assert scaffold.returncode == 0, scaffold.stdout + scaffold.stderr
+    tracker_path = epic_dir / "TRACKER.md"
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace("| Approved |", "| In Progress |"),
+        encoding="utf-8",
+    )
+
+    child_dir = epic_dir / "TASK-001-Wrapped-Child"
+    full_bullet = (
+        "Parent AC IDs remain stable across the parent contract "
+        "and every active child charter."
+    )
+    legacy_fragment = "Parent AC IDs remain stable across the parent contract"
+    charter = workflow_cli._format_child_charter_from_contract(
+        epic_dir=epic_dir,
+        parent_ac_coverage="AC1",
+    ).replace(full_bullet, legacy_fragment)
+    child_requirements = ready_requirements(
+        "TASK-001",
+        "Wrapped Child",
+        ["- AC1: The complete inherited contract is implemented."],
+    )
+    child_requirements = workflow_cli._remove_markdown_section(
+        child_requirements,
+        workflow_cli.OWNER_APPROVAL_HEADING,
+    )
+    child_requirements = child_requirements.replace("## Goal\n\n", charter + "## Goal\n\n")
+    child_implementation = ready_implementation("AC1").replace(
+        "## User Story\n\n",
+        charter + "## User Story\n\n",
+    )
+    requirements_path = child_dir / "REQUIREMENTS.md"
+    implementation_path = child_dir / "IMPLEMENTATION.md"
+    requirements_path.write_text(child_requirements, encoding="utf-8")
+    implementation_path.write_text(child_implementation, encoding="utf-8")
+
+    ready_child = run_project(
+        ["epic", "ready-child", "--epic-id", "EPIC-001", "--id", "TASK-001"],
+        cwd=tmp_path,
+    )
+    assert ready_child.returncode != 0
+    assert "legacy truncated `Inherited Invariants` bullet" in ready_child.stderr
+    assert legacy_fragment in ready_child.stderr
+
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert doctor.returncode != 0
+    assert "legacy truncated `Inherited Invariants` bullet" in doctor.stdout
+
+    requirements_path.write_text(
+        requirements_path.read_text(encoding="utf-8").replace(legacy_fragment, full_bullet),
+        encoding="utf-8",
+    )
+    implementation_path.write_text(
+        implementation_path.read_text(encoding="utf-8").replace(legacy_fragment, full_bullet),
+        encoding="utf-8",
+    )
+    ready_child = run_project(
+        ["epic", "ready-child", "--epic-id", "EPIC-001", "--id", "TASK-001"],
+        cwd=tmp_path,
+    )
+    assert ready_child.returncode == 0, ready_child.stdout + ready_child.stderr
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert "legacy truncated `Inherited Invariants` bullet" not in doctor.stdout
+
+    requirements_path.write_text(
+        requirements_path.read_text(encoding="utf-8").replace(full_bullet, legacy_fragment),
+        encoding="utf-8",
+    )
+    implementation_path.write_text(
+        implementation_path.read_text(encoding="utf-8").replace(full_bullet, legacy_fragment),
+        encoding="utf-8",
+    )
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace("| In Progress |", "| Complete |"),
+        encoding="utf-8",
+    )
+    doctor = run_project(["doctor"], cwd=tmp_path)
+    assert "legacy truncated `Inherited Invariants` bullet" not in doctor.stdout
 
 
 def test_epic_child_scaffold_preserves_configured_task_prefix(tmp_path: Path) -> None:
