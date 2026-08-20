@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "version": "0.4.0",
+  "pull_request": {
+    "number": 13,
+    "url": "https://github.com/johndetlefs/project-workflow/pull/13",
+    "head_commit": "6a5a197181df3cefa567b2b5e344cfa544585aec",
+    "ci_run_id": "32315178030",
+    "ci_result": "success",
+    "merged_at": "2026-08-19T23:56:00Z",
+    "merge_commit": "e9fe9d17a0968ee3fc078d7bb1eb5548029839d2"
+  },
+  "main_validation": {
+    "run_id": "32315301955",
+    "head_commit": "e9fe9d17a0968ee3fc078d7bb1eb5548029839d2",
+    "result": "success"
+  },
+  "release": {
+    "tag": "v0.4.0",
+    "tagged_commit": "e9fe9d17a0968ee3fc078d7bb1eb5548029839d2",
+    "run_id": "32315431852",
+    "result": "success",
+    "trusted_publishing_environment": "pypi",
+    "protected_deployment_id": "5993179175",
+    "pypi_url": "https://pypi.org/project/project-workflow/0.4.0/",
+    "github_release_url": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.4.0",
+    "published_at": "2026-08-20T00:00:40Z"
+  },
+  "artifacts": [
+    {
+      "filename": "project_workflow-0.4.0-py3-none-any.whl",
+      "sha256": "47d7a4ec8f1732981b8c0499db9f47020c70e7bda1dd22aee06d96e75032ad55",
+      "size": 348431
+    },
+    {
+      "filename": "project_workflow-0.4.0.tar.gz",
+      "sha256": "036e5f69c9fd0f3e36e4bc45d90a809f8f38ad8edd7863e3f397e10e505b2a29",
+      "size": 418421
+    }
+  ]
+}

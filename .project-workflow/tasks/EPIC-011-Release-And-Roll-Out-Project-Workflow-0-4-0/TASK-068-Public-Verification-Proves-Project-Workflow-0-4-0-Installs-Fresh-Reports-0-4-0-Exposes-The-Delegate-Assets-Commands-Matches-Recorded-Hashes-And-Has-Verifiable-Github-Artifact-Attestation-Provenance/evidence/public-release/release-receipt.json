@@ -1,0 +1,33 @@
+{
+  "artifacts": [
+    {
+      "filename": "project_workflow-0.4.0-py3-none-any.whl",
+      "kind": "wheel",
+      "sha256": "47d7a4ec8f1732981b8c0499db9f47020c70e7bda1dd22aee06d96e75032ad55",
+      "size": 348431
+    },
+    {
+      "filename": "project_workflow-0.4.0.tar.gz",
+      "kind": "sdist",
+      "sha256": "036e5f69c9fd0f3e36e4bc45d90a809f8f38ad8edd7863e3f397e10e505b2a29",
+      "size": 418421
+    }
+  ],
+  "asset_version": 2,
+  "changelog_heading": "## 0.4.0 - 2026-08-20",
+  "commands": {
+    "init": "uvx --from project-workflow==0.4.0 project init",
+    "upgrade": "uvx --from project-workflow==0.4.0 project upgrade"
+  },
+  "commit": "e9fe9d17a0968ee3fc078d7bb1eb5548029839d2",
+  "project": "project-workflow",
+  "repository": "johndetlefs/project-workflow",
+  "repository_schema_version": 1,
+  "schema_version": 1,
+  "tag": "v0.4.0",
+  "version": "0.4.0",
+  "workflow": {
+    "run_id": "32315431852",
+    "run_url": "https://github.com/johndetlefs/project-workflow/actions/runs/32315431852"
+  }
+}

@@ -34,11 +34,11 @@ As a Codex user, I want the public 0.4.0 package independently verified so that 
 
 ### Parent AC Proof Ownership
 
-- AC4: owner `TASK-066`; required evidence: Fresh public install, public artifact hashes, attestation/provenance
+- AC4: owner `TASK-068`; required evidence: Fresh public install, public artifact hashes, attestation/provenance
 
 ## Acceptance Criteria
 
-- [ ] AC1: Fresh public installation, version/Delegate inspection, public hashes, and attestation verification all pass.
+- [x] AC1: Fresh public installation, version/Delegate inspection, public hashes, and attestation verification all pass.
 
 ## Validation
 
@@ -48,23 +48,23 @@ As a Codex user, I want the public 0.4.0 package independently verified so that 
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | not recorded | not recorded | not recorded | not recorded |
+| . | Public package and release for `e9fe9d17a0968ee3fc078d7bb1eb5548029839d2` | Fresh isolated UVX install, public four-host journeys, receipt/checksum comparison, PyPI metadata, and GitHub attestation verification passed | Public 0.4.0 independently verified | `evidence/public-release/` |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ |
-| 1 | Verify public 0.4.0 | Exercise public installation and independently verify artifact identity and provenance. | AC1: all public checks pass | Repeat fresh exact-version journey | To Do |
+| 1 | Verify public 0.4.0 | Exercise public installation and independently verify artifact identity and provenance. | AC1: all public checks pass | Repeat fresh exact-version journey | Done |
 
 ## Parent AC Evidence
 
-- AC4: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC4: Fresh public UVX reported `project 0.4.0` and exposed all four Delegate commands; public package journeys passed for every packaged host; PyPI and GitHub hashes match; receipt and checksums verify; SLSA provenance binds the artifacts to `e9fe9d17a0968ee3fc078d7bb1eb5548029839d2` and `refs/tags/v0.4.0`.
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass
+- Evidence: `evidence/public-release/release-receipt.json`, `SHA256SUMS`, `public-package-journeys.json`, and `public-verification.json`.
+- Findings: None. Other hosts are proven at packaged asset/journey level; only Codex has the separately retained native runtime proof from EPIC-010.
 
 ## Retro
 

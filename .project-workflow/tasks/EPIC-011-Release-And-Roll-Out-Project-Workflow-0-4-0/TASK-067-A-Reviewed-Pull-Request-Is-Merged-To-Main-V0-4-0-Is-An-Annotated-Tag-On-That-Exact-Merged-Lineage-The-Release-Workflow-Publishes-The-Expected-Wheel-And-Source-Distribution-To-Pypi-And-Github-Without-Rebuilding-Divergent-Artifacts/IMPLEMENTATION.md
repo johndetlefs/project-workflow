@@ -34,11 +34,11 @@ As the Project Workflow owner, I want the reviewed candidate merged and publishe
 
 ### Parent AC Proof Ownership
 
-- AC3: owner `TASK-066`; required evidence: PR checks/merge, tag ancestry, release workflow, PyPI and GitHub records
+- AC3: owner `TASK-067`; required evidence: PR checks/merge, tag ancestry, release workflow, PyPI and GitHub records
 
 ## Acceptance Criteria
 
-- [ ] AC1: Green PR checks, merge ancestry, annotated tag, Trusted Publishing, GitHub Release, and expected assets are all verified.
+- [x] AC1: Green PR checks, merge ancestry, annotated tag, Trusted Publishing, GitHub Release, and expected assets are all verified.
 
 ## Validation
 
@@ -48,23 +48,23 @@ As the Project Workflow owner, I want the reviewed candidate merged and publishe
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | not recorded | not recorded | not recorded | not recorded |
+| . | PR #13 merged to `main` as `e9fe9d17a0968ee3fc078d7bb1eb5548029839d2` | PR CI `32315178030`, main CI `32315301955`, and release run `32315431852` passed | `v0.4.0`, PyPI 0.4.0, and GitHub Release published | `evidence/release-publication.json` |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ |
-| 1 | Merge and publish 0.4.0 | Push the candidate, merge the green PR, tag the exact main lineage, and monitor publication. | AC1: one reviewed and published lineage | Inspect GitHub and PyPI records | To Do |
+| 1 | Merge and publish 0.4.0 | Push the candidate, merge the green PR, tag the exact main lineage, and monitor publication. | AC1: one reviewed and published lineage | Inspect GitHub and PyPI records | Done |
 
 ## Parent AC Evidence
 
-- AC3: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC3: PR #13 merged after green validation; the independent main run passed; annotated `v0.4.0` targets the exact merge commit; protected-environment Trusted Publishing and the same-bundle GitHub Release completed successfully with the recorded hashes.
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass
+- Evidence: `evidence/release-publication.json`, GitHub PR #13, main CI run `32315301955`, release run `32315431852`, PyPI 0.4.0, and GitHub Release v0.4.0.
+- Findings: None.
 
 ## Retro
 
