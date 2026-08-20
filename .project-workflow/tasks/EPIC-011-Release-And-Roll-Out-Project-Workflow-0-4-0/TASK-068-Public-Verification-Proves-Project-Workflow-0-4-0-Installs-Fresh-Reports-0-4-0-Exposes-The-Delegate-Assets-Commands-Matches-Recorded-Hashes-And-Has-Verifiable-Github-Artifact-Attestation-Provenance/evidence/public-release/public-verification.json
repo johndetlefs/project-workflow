@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-08-20T00:02:00Z",
+  "package": "project-workflow==0.4.0",
+  "fresh_install_version": "project 0.4.0",
+  "delegate_commands": [
+    "plan",
+    "status",
+    "state-init",
+    "state-reconcile"
+  ],
+  "pypi": {
+    "version": "0.4.0",
+    "wheel_sha256": "47d7a4ec8f1732981b8c0499db9f47020c70e7bda1dd22aee06d96e75032ad55",
+    "sdist_sha256": "036e5f69c9fd0f3e36e4bc45d90a809f8f38ad8edd7863e3f397e10e505b2a29"
+  },
+  "github_release": {
+    "url": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.4.0",
+    "receipt_verified": true,
+    "checksums_verified": true,
+    "wheel_sha256": "47d7a4ec8f1732981b8c0499db9f47020c70e7bda1dd22aee06d96e75032ad55",
+    "sdist_sha256": "036e5f69c9fd0f3e36e4bc45d90a809f8f38ad8edd7863e3f397e10e505b2a29"
+  },
+  "attestation": {
+    "verified": true,
+    "predicate_type": "https://slsa.dev/provenance/v1",
+    "source_commit": "e9fe9d17a0968ee3fc078d7bb1eb5548029839d2",
+    "source_ref": "refs/tags/v0.4.0",
+    "signer_workflow": ".github/workflows/release.yml",
+    "run_id": "32315431852",
+    "runner_environment": "github-hosted"
+  },
+  "public_package_journeys": {
+    "codex": "pass",
+    "claude-code": "pass",
+    "cursor": "pass",
+    "github-copilot": "pass",
+    "legacy_owner_collision_preserved": true
+  }
+}

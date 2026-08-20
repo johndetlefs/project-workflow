@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-20T00:10:00Z",
+  "inventory": {
+    "source": "Codex desktop list_projects schema version 2",
+    "local_projects": 18,
+    "chatgpt_projects": 2,
+    "installed_authority_roots": 9,
+    "upgraded_or_current": 7,
+    "safely_blocked": 2,
+    "without_installation": 9
+  },
+  "release": {
+    "package": "project-workflow==0.4.0",
+    "tag": "v0.4.0",
+    "source_commit": "e9fe9d17a0968ee3fc078d7bb1eb5548029839d2",
+    "github_release": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.4.0",
+    "pypi": "https://pypi.org/project/project-workflow/0.4.0/",
+    "wheel_sha256": "47d7a4ec8f1732981b8c0499db9f47020c70e7bda1dd22aee06d96e75032ad55",
+    "sdist_sha256": "036e5f69c9fd0f3e36e4bc45d90a809f8f38ad8edd7863e3f397e10e505b2a29",
+    "delegate_skill_sha256": "aaff9fa1864fa055bd123369c56744eb1a54a121ae20bd2075efc7e1239f3352",
+    "generated_helper_sha256": "4b2a0d8ae3867534b10a065335f2dc969874632025c8fe3d81aa01e4aa71c796"
+  },
+  "installed_projects": [
+    {
+      "label": "Mechanics Playground",
+      "path": "/Users/johndetlefs/repos/mechanics-playground",
+      "disposition": "upgraded",
+      "before_head": "36fe025f36db2498a82d1e5eec4aeba2ece22c46",
+      "fast_forward_head": "f827af75581dee907ca09663a0a5778feed0f2ba",
+      "after_head": "9669e96",
+      "source_version": "0.1.1",
+      "plan_fingerprint": "sha256:0192c5cd54318f3fe0829f98ea250195080ce5088870610359fc9bcdf4c47176",
+      "delivery": "local main commit; one commit ahead of origin/main; not pushed",
+      "validation": {"version": "project 0.4.0", "asset": 2, "schema": 1, "worktree_clean": true, "unexpected_new_files": 0, "doctor_total": 62, "doctor_blocking": 11, "upgrade_current": true}
+    },
+    {
+      "label": "Game Foundation",
+      "path": "/Users/johndetlefs/repos/game-foundation",
+      "disposition": "upgraded",
+      "before_head": "45ec6c397c184f791bf26502356987b0d83f96d6",
+      "after_head": "bf68b5e",
+      "source_version": "0.3.0",
+      "plan_fingerprint": "sha256:8a9f7357be0153f63c088634f2f26c7bd5b42d4a3756855ef292ff4f36a80a26",
+      "delivery": "local main commit; one commit ahead of origin/main; not pushed",
+      "validation": {"version": "project 0.4.0", "asset": 2, "schema": 1, "worktree_clean": true, "unexpected_new_files": 0, "doctor_total": 0, "doctor_blocking": 0, "upgrade_current": true}
+    },
+    {
+      "label": "Toby's Games",
+      "path": "/Users/johndetlefs/repos/tobys-games",
+      "disposition": "upgraded",
+      "before_head": "fafe2d75145ee7371b19cc19357fc3844d878fbf",
+      "after_head": "521dd1b",
+      "source_version": "0.3.0",
+      "plan_fingerprint": "sha256:d467669671acbb95f278f2fb360aa2ebb54c594c76049114309a47fabd6dcd1b",
+      "delivery": "local main commit; one commit ahead of origin/main; not pushed",
+      "validation": {"version": "project 0.4.0", "asset": 2, "schema": 1, "worktree_clean": true, "unexpected_new_files": 0, "doctor_total": 0, "doctor_blocking": 0, "upgrade_current": true}
+    },
+    {
+      "label": "strategic-advisor",
+      "path": "/Users/johndetlefs/repos/strategic-advisor",
+      "disposition": "upgraded",
+      "before_head": "c1d777b70032aaab2b5431393bc1ea0ebc240505",
+      "after_head": "485a070",
+      "source_version": "0.1.1",
+      "plan_fingerprint": "sha256:a4691f2636f9ae149c1ecec1e0d5d83f04add3c99e883a95f565a0580fc6726b",
+      "delivery": "local main commit; local main is three commits ahead and two behind origin/main; not pushed or reconciled",
+      "validation": {"version": "project 0.4.0", "asset": 2, "schema": 1, "worktree_clean": true, "unexpected_new_files": 0, "doctor_total": 0, "doctor_blocking": 0, "upgrade_current": true}
+    },
+    {
+      "label": "daily-checklist",
+      "path": "/Users/johndetlefs/repos/daily-checklist",
+      "disposition": "upgraded",
+      "before_head": "a6c1bc44318b4ed1384f6d5aa015577c68a67048",
+      "fast_forward_head": "0362a63a1d9ac1f14848a71a8a8b999401bc0578",
+      "after_head": "06eeb9e",
+      "source_version": "0.3.0",
+      "plan_fingerprint": "sha256:3090aa6b5e0230892b87dfc0dd418198c3e285b20a1e24dd00744986187490b7",
+      "delivery": "local main commit; one commit ahead of origin/main; not pushed",
+      "validation": {"version": "project 0.4.0", "asset": 2, "schema": 1, "worktree_clean": true, "unexpected_new_files": 0, "doctor_total": 125, "doctor_blocking": 18, "upgrade_current": true}
+    },
+    {
+      "label": "client-management-app",
+      "path": "/Users/johndetlefs/repos/client-management-app",
+      "disposition": "upgraded",
+      "before_head": "2be583801b7e0a2e0464b876b76bdafb2c5d360a",
+      "after_head": "ecb9c62",
+      "source_version": "0.2.0",
+      "plan_fingerprint": "sha256:213082f6a5952bf581caebc848392aa6025415343ed41bb7b3fa6fc24985e0a1",
+      "delivery": "local main commit; one commit ahead of origin/main; not pushed",
+      "validation": {"version": "project 0.4.0", "asset": 2, "schema": 1, "worktree_clean": true, "unexpected_new_files": 0, "doctor_total": 25, "doctor_blocking": 3, "upgrade_current": true}
+    },
+    {
+      "label": "project-workflow",
+      "path": "/Users/johndetlefs/repos/project-workflow",
+      "disposition": "current-from-released-main",
+      "before_head": "5a72520652127793bd89bcba2f8a052d2806c216",
+      "after_head": "e9fe9d17a0968ee3fc078d7bb1eb5548029839d2",
+      "delivery": "fast-forwarded to released origin/main",
+      "validation": {"version": "project 0.4.0", "asset": 2, "schema": 1, "worktree_clean": true, "unexpected_new_files": 0, "doctor_visible": 0, "doctor_accepted": 69, "upgrade_current": true}
+    },
+    {
+      "label": "The Moon Is Hollow",
+      "path": "/Users/johndetlefs/repos/the-moon-is-hollow",
+      "disposition": "blocked-unchanged",
+      "head": "5c698edcbeeb04763b776307ebad272aec3d2536",
+      "branch": "codex/EPIC-001-product-foundation",
+      "source_version": "0.3.0",
+      "plan_fingerprint": "sha256:83c42ca12a85a6206504c40a6e24a9e5b6c334ff035c85afe124eabacc837e24",
+      "blocker": "canonical clean-worktree precondition; active .project-workflow/BACKLOG.md modification",
+      "mutation_performed": false
+    },
+    {
+      "label": "johndetlefs",
+      "path": "/Users/johndetlefs/repos/johndetlefs",
+      "disposition": "blocked-unchanged",
+      "head": "d8c2f48d73f72fca8e64369477d3f6f073482390",
+      "branch": "main",
+      "source_version": "0.3.0",
+      "plan_fingerprint": "sha256:2b1d897d4e3fd4b16c43af6865f1ae3ae7db93db23c7202d0f966a93fad25827",
+      "blocker": "canonical clean-worktree precondition; 56 active workflow changes including modified trackers/backlog and untracked approved Epic/task evidence",
+      "mutation_performed": false
+    }
+  ],
+  "projects_without_installation": [
+    {"label": "performance-by-design", "path": "/Users/johndetlefs/repos/dept/pbd", "git": true},
+    {"label": "strategy-workspace", "path": "/Users/johndetlefs/repos/strategy-workspace", "git": true},
+    {"label": "shopify-monitor", "path": "/Users/johndetlefs/repos/shopify-monitor", "git": true},
+    {"label": "videos", "path": "/Users/johndetlefs/repos/videos", "git": true},
+    {"label": "shopify", "path": "/Users/johndetlefs/repos/shopify", "git": true},
+    {"label": "alessa-vino", "path": "/Users/johndetlefs/repos/shopify-clients/alessa-vino", "git": true},
+    {"label": "contraceptives-option-finder", "path": "/Users/johndetlefs/repos/dept/health-direct/contraceptives-option-finder", "git": true},
+    {"label": "gpt-app", "path": "/Users/johndetlefs/repos/dept/health-direct/gpt-app", "git": true},
+    {"label": "games", "path": "/Users/johndetlefs/repos/games", "git": false}
+  ],
+  "non_local_projects": [
+    {"label": "Breath of the wild", "kind": "chatgpt", "disposition": "no local repository root"},
+    {"label": "Writing a Book", "kind": "chatgpt", "disposition": "no local repository root"}
+  ],
+  "proof_boundaries": [
+    "Six consumer upgrades are committed on local main and available to local Codex tasks; they were not pushed to consumer remotes.",
+    "strategic-advisor retained its pre-existing local-main/origin-main divergence.",
+    "The Moon Is Hollow and johndetlefs remain on 0.3.0 because active workflow changes must not be stashed or overwritten implicitly.",
+    "Mechanics Playground, Daily Checklist, and client-management-app retain Doctor debt in untouched historical workflow documents; current-version validation passed but repository-wide Doctor health is not claimed."
+  ]
+}

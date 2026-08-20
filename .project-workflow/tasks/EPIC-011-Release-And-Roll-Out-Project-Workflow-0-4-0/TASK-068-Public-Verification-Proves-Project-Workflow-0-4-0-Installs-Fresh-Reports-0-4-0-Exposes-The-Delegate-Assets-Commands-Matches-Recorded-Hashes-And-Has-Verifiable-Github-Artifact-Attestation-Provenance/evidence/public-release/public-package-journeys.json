@@ -1,0 +1,33 @@
+{
+  "fresh": {
+    "claude-code": {
+      "doctor": "project doctor: no issues found in /private/var/folders/h2/bg9tb5m911509xyft70whbr80000gn/T/project-workflow-journey-tvanvo5m/fresh-claude-code",
+      "init": "  \u2022 Validate workflow state: ./.project-workflow/cli/workflow doctor",
+      "upgrade": "post-upgrade validation: current; 0 finding(s), 0 owner-owned"
+    },
+    "codex": {
+      "doctor": "project doctor: no issues found in /private/var/folders/h2/bg9tb5m911509xyft70whbr80000gn/T/project-workflow-journey-tvanvo5m/fresh-codex",
+      "init": "  \u2022 Validate workflow state: ./.project-workflow/cli/workflow doctor",
+      "upgrade": "post-upgrade validation: current; 0 finding(s), 0 owner-owned"
+    },
+    "cursor": {
+      "doctor": "project doctor: no issues found in /private/var/folders/h2/bg9tb5m911509xyft70whbr80000gn/T/project-workflow-journey-tvanvo5m/fresh-cursor",
+      "init": "  \u2022 Validate workflow state: ./.project-workflow/cli/workflow doctor",
+      "upgrade": "post-upgrade validation: current; 0 finding(s), 0 owner-owned"
+    },
+    "github-copilot": {
+      "doctor": "project doctor: no issues found in /private/var/folders/h2/bg9tb5m911509xyft70whbr80000gn/T/project-workflow-journey-tvanvo5m/fresh-github-copilot",
+      "init": "  \u2022 Validate workflow state: ./.project-workflow/cli/workflow doctor",
+      "upgrade": "post-upgrade validation: current; 0 finding(s), 0 owner-owned"
+    }
+  },
+  "legacy": {
+    "doctor": "project doctor: passed with warnings",
+    "owner_collision_preserved": true,
+    "owner_sha256": "b024db4eca938e12187cc539c6795e85cd466a08687ba3354654715e97f7b161",
+    "pending_delegate_sha256": "aaff9fa1864fa055bd123369c56744eb1a54a121ae20bd2075efc7e1239f3352",
+    "upgrade": "post-upgrade validation: current; 2 finding(s), 2 owner-owned"
+  },
+  "source": "project-workflow==0.4.0",
+  "version": "0.4.0"
+}
