@@ -14,3 +14,8 @@ Add local conventions, validation commands, safety constraints, handoff rules, a
 
 - Distinguish automated fixture coverage from a manual end-to-end product journey. For destructive, export, packaging, or handoff workflows, do not call the user-visible journey proven until a disposable realistic repository or artifact has been created, exercised, independently inspected, and retested.
 - Record both proof levels explicitly: automated regression evidence protects breadth and edge cases; the manual journey proves the intended operator experience and resulting artifact.
+
+## Release Adoption
+
+- For a multi-project Project Workflow rollout, inventory the current Codex project set first and retain a disposition for every entry. Apply the public exact-version package only to clean, unambiguous canonical authority roots using a reviewed plan fingerprint; keep dirty or active roots unchanged with their exact blocker.
+- Validate adoption separately from repository health: a no-op second upgrade plan proves the installation is current, while Doctor findings prove workflow-state health. Preserve and report pre-existing owner-owned Doctor debt instead of attributing it to the managed upgrade or silently widening release scope.

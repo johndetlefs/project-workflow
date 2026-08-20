@@ -1,4 +1,20 @@
 {
   "task_id": "TASK-079",
-  "claims": []
+  "claims": [
+    {
+      "id": "TASK-079-AC1",
+      "recipe": "external-contract-alignment",
+      "status": "pass",
+      "commit": "release fdd4e15c621cb6805e1455d0658c60ee24b92b0c; rollout receipt sha256:c9ed45ab47b081b388a8edf4ce39bbe4b38fddd045ef7b22faff4e2690c91dff",
+      "timestamp": "2026-08-20T18:15:00+10:00",
+      "parent_ac": "AC7",
+      "claim": "The retained machine-readable receipt maps all seven parent acceptance criteria to exact release identities, public proof, the complete current inventory, per-repository validation, local commits, and unresolved adoption boundaries.",
+      "contract_artifact": "EPIC-013 REQUIREMENTS.md AC7 and EPIC-CONTRACT.md",
+      "implementation_artifact": "evidence/release-rollout-receipt.json",
+      "comparison_method": "Validated JSON syntax and receipt hash, reconciled all 20 inventory rows and nine installation outcomes, and mapped every AC to exact receipt keys before parent audit.",
+      "evidence_artifact": "evidence/release-rollout-receipt.json",
+      "evidence_artifact_hash": "sha256:c9ed45ab47b081b388a8edf4ce39bbe4b38fddd045ef7b22faff4e2690c91dff",
+      "invalid_substitutes": []
+    }
+  ]
 }

@@ -38,7 +38,7 @@ As the Project Workflow maintainer, I want one reviewed main commit tagged and p
 
 ## Acceptance Criteria
 
-- [ ] AC1: Covers parent AC3 when branch/main ancestry, annotated tag identity, GitHub Actions, PyPI publication, and GitHub Release all agree on one commit and artifact set.
+- [x] AC1: Covers parent AC3 when branch/main ancestry, annotated tag identity, GitHub Actions, PyPI publication, and GitHub Release all agree on one commit and artifact set.
 
 ## Validation
 
@@ -48,29 +48,29 @@ As the Project Workflow maintainer, I want one reviewed main commit tagged and p
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | codex/EPIC-012-delegate-executor-lifecycle | Planned validation recorded in this task | Pending release/adoption stage | Coordinator command output and retained evidence |
+| . | PR #15 merged to `main` at `fdd4e15c621cb6805e1455d0658c60ee24b92b0c`; annotated `v0.5.0` | Main CI `32336376836` and release run `32336460480` passed; PyPI and GitHub Release hashes agree | Public release complete | `evidence/release-rollout-receipt.json`; GitHub Release `v0.5.0` |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |
-| 1 | Integrate and publish | Push and integrate the reviewed candidate, wait for main CI, create the annotated tag, and verify the release workflow. | AC1: branch/main ancestry, annotated tag identity, GitHub Actions, PyPI publication, and GitHub Release all agree on one commit and artifact set. | Compare main, tag, workflow, PyPI, and GitHub Release identities. | To Do | | Git refs; GitHub pull request and Actions; PyPI and GitHub Release | No | bounded-return |
+| 1 | Integrate and publish | Push and integrate the reviewed candidate, wait for main CI, create the annotated tag, and verify the release workflow. | AC1: branch/main ancestry, annotated tag identity, GitHub Actions, PyPI publication, and GitHub Release all agree on one commit and artifact set. | Compare main, tag, workflow, PyPI, and GitHub Release identities. | Done | | Git refs; GitHub pull request and Actions; PyPI and GitHub Release | No | bounded-return |
 
 ## Parent AC Evidence
 
-- AC3: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC3: PR #15 integrated the reviewed lineage at `fdd4e15c621cb6805e1455d0658c60ee24b92b0c`; annotated `v0.5.0`, successful Trusted Publishing run `32336460480`, PyPI 0.5.0, and the GitHub Release identify the same wheel (`b970773...`) and sdist (`7d0ef1...`). Structured deployed-artifact evidence passes in `EVIDENCE.json`.
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass (2026-08-20)
+- Evidence: Independently compared remote main/tag ancestry, CI and release jobs, public PyPI metadata, GitHub Release metadata, downloaded hashes, and release receipt `6caaafbc...`.
+- Findings: None. Publication is complete; consumer application deployment was outside scope and was not inferred.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: Approve protected Trusted Publishing only after the exact tag run has passed build, package-journey, receipt, and attestation jobs.
+- Conventions or agent assets updated: None; the release runbook already owns this sequence.
+- Follow-up tasks: None.
 
 ## Notes
 

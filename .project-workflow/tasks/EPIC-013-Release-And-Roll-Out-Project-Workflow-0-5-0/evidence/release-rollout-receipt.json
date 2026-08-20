@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-20T18:10:00+10:00",
+  "project": "project-workflow",
+  "epic_id": "EPIC-013",
+  "release": {
+    "version": "0.5.0",
+    "package": "project-workflow==0.5.0",
+    "source_commit": "fdd4e15c621cb6805e1455d0658c60ee24b92b0c",
+    "pull_request": "https://github.com/johndetlefs/project-workflow/pull/15",
+    "main_ci_run": "https://github.com/johndetlefs/project-workflow/actions/runs/32336376836",
+    "annotated_tag": "v0.5.0",
+    "release_run": "https://github.com/johndetlefs/project-workflow/actions/runs/32336460480",
+    "github_release": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.5.0",
+    "pypi_project": "https://pypi.org/project/project-workflow/0.5.0/",
+    "release_receipt_sha256": "6caaafbc438ae7cd510ea2729a40ced2f0962d8c416ace123a5031e300d6c595",
+    "artifacts": [
+      {
+        "filename": "project_workflow-0.5.0-py3-none-any.whl",
+        "sha256": "b970773f0681424cd8e6a02f2aa42a224241e3fbcca40ba55dc25f1294389489",
+        "size": 371694
+      },
+      {
+        "filename": "project_workflow-0.5.0.tar.gz",
+        "sha256": "7d0ef1a5bb1fc454d87b9d5a490f8891c7dbc6ef17f472b67cd65698ec3c2ef9",
+        "size": 448880
+      }
+    ],
+    "managed_helper_sha256": "ae1db5179b621f17d6ef3a6dbb349e3bdd965e697fc9f9461f1e388cb5b7df63",
+    "attestation": {
+      "status": "verified",
+      "predicate_type": "https://slsa.dev/provenance/v1",
+      "source_repository": "https://github.com/johndetlefs/project-workflow",
+      "source_ref": "refs/tags/v0.5.0",
+      "source_commit": "fdd4e15c621cb6805e1455d0658c60ee24b92b0c",
+      "builder_workflow": ".github/workflows/release.yml",
+      "runner": "GitHub-hosted"
+    }
+  },
+  "validation": {
+    "candidate_commit": "94934cfd2995885216c15447852de4c72c3e36d9",
+    "locked_tests": {
+      "passed": 395,
+      "failed": 0,
+      "duration_seconds": 70.64
+    },
+    "strict_doctor": {
+      "status": "pass",
+      "visible_issues": 0,
+      "accepted_warnings_hidden": 69
+    },
+    "source_contract": "pass",
+    "candidate_exact_wheel_journeys": [
+      "codex",
+      "claude-code",
+      "cursor",
+      "github-copilot"
+    ],
+    "public_exact_version": "project 0.5.0",
+    "public_exact_version_journeys": [
+      "codex",
+      "claude-code",
+      "cursor",
+      "github-copilot"
+    ],
+    "public_package_journeys_sha256": "872c21d4bd61f62ca41d64b43b21f86f03159c9d78200ca9cbe1344c5b22d974"
+  },
+  "codex_inventory": {
+    "schema_version": 2,
+    "observed_at": "2026-08-20T17:45:00+10:00",
+    "source": "Codex desktop saved-project inventory",
+    "counts": {
+      "all_projects": 20,
+      "local_projects": 18,
+      "chatgpt_projects": 2,
+      "canonical_installations": 9,
+      "upgraded": 6,
+      "already_current": 1,
+      "blocked_dirty": 2,
+      "without_canonical_installation": 9,
+      "without_local_root": 2
+    },
+    "projects": [
+      {"label": "performance-by-design", "kind": "local", "path": "/Users/johndetlefs/repos/dept/pbd", "disposition": "no-canonical-installation"},
+      {"label": "Mechanics Playground", "kind": "local", "path": "/Users/johndetlefs/repos/mechanics-playground", "disposition": "upgraded"},
+      {"label": "Game Foundation", "kind": "local", "path": "/Users/johndetlefs/repos/game-foundation", "disposition": "upgraded"},
+      {"label": "Toby's Games", "kind": "local", "path": "/Users/johndetlefs/repos/tobys-games", "disposition": "upgraded"},
+      {"label": "The Moon Is Hollow", "kind": "local", "path": "/Users/johndetlefs/repos/the-moon-is-hollow", "disposition": "blocked-dirty-installation"},
+      {"label": "strategy-workspace", "kind": "local", "path": "/Users/johndetlefs/repos/strategy-workspace", "disposition": "no-canonical-installation"},
+      {"label": "strategic-advisor", "kind": "local", "path": "/Users/johndetlefs/repos/strategic-advisor", "disposition": "upgraded"},
+      {"label": "daily-checklist", "kind": "local", "path": "/Users/johndetlefs/repos/daily-checklist", "disposition": "upgraded"},
+      {"label": "johndetlefs", "kind": "local", "path": "/Users/johndetlefs/repos/johndetlefs", "disposition": "blocked-dirty-installation"},
+      {"label": "project-workflow", "kind": "local", "path": "/Users/johndetlefs/repos/project-workflow", "disposition": "already-current-from-released-main"},
+      {"label": "client-management-app", "kind": "local", "path": "/Users/johndetlefs/repos/client-management-app", "disposition": "upgraded"},
+      {"label": "shopify-monitor", "kind": "local", "path": "/Users/johndetlefs/repos/shopify-monitor", "disposition": "no-canonical-installation"},
+      {"label": "videos", "kind": "local", "path": "/Users/johndetlefs/repos/videos", "disposition": "no-canonical-installation"},
+      {"label": "shopify", "kind": "local", "path": "/Users/johndetlefs/repos/shopify", "disposition": "no-canonical-installation"},
+      {"label": "alessa-vino", "kind": "local", "path": "/Users/johndetlefs/repos/shopify-clients/alessa-vino", "disposition": "no-canonical-installation"},
+      {"label": "contraceptives-option-finder", "kind": "local", "path": "/Users/johndetlefs/repos/dept/health-direct/contraceptives-option-finder", "disposition": "no-canonical-installation"},
+      {"label": "gpt-app", "kind": "local", "path": "/Users/johndetlefs/repos/dept/health-direct/gpt-app", "disposition": "no-canonical-installation"},
+      {"label": "games", "kind": "local-non-git", "path": "/Users/johndetlefs/repos/games", "disposition": "no-canonical-installation"},
+      {"label": "Breath of the wild", "kind": "chatgpt", "disposition": "no-local-root"},
+      {"label": "Writing a Book", "kind": "chatgpt", "disposition": "no-local-root"}
+    ]
+  },
+  "consumer_rollout": {
+    "authority": "public project-workflow==0.5.0 canonical Codex upgrade with exact plan fingerprint",
+    "expected_changed_paths": [
+      ".agents/skills/project-delegate/SKILL.md",
+      ".agents/skills/project-planner/SKILL.md",
+      ".project-workflow/cli/workflow.py",
+      ".project-workflow/manifest.json",
+      "AGENTS.md"
+    ],
+    "successful": [
+      {
+        "repository": "mechanics-playground",
+        "plan_fingerprint": "sha256:e94c2744c512ec551e8d44ca8863883ffd2f9ee4c41a1a835656d6c0fae9da08",
+        "before_commit": "15d8146407673e8ca7f565581616f9f57213d360",
+        "upgrade_commit": "e52bfe889bbab42195bac7b1800dbb66cb4efa43",
+        "doctor": {"visible": 63, "blocking": 12, "owner_owned_at_upgrade": 60},
+        "post_plan": "current",
+        "pushed": false
+      },
+      {
+        "repository": "game-foundation",
+        "plan_fingerprint": "sha256:f663c5a6fdf7bed07d3fae9b9d81a484836c3a4e8b5850babaf80c3dcc03cf2e",
+        "before_commit": "bf68b5edc35da6804a78550f4730b1bd95b18ddd",
+        "upgrade_commit": "8cf371f051cdc072799b73adc5b42326c8633203",
+        "doctor": {"visible": 0, "blocking": 0, "owner_owned_at_upgrade": 0},
+        "post_plan": "current",
+        "pushed": false
+      },
+      {
+        "repository": "tobys-games",
+        "plan_fingerprint": "sha256:2554647099f86326052a760dbf54d1243d4bce19c0e9f3b82d196ea88f852ffa",
+        "before_commit": "521dd1bef3233fa9a900304dc67be56ac95dd221",
+        "upgrade_commit": "71402deb2dc0c8f4ca6edf423b445bd881086cd3",
+        "doctor": {"visible": 0, "blocking": 0, "owner_owned_at_upgrade": 0},
+        "post_plan": "current",
+        "pushed": false
+      },
+      {
+        "repository": "strategic-advisor",
+        "plan_fingerprint": "sha256:da49ba9ad5f690203f85b123deb349126f37c0b38eb3cc333926657f02feae30",
+        "before_commit": "485a0704122b0623d6f776587eb5a6d487434550",
+        "upgrade_commit": "0f53668e1a1461bc3d6d948dbb61f57762b9d6b5",
+        "doctor": {"visible": 0, "blocking": 0, "owner_owned_at_upgrade": 0},
+        "post_plan": "current",
+        "pushed": false,
+        "boundary": "local main was already ahead 3 and behind 2 relative to origin; no synchronization or push was inferred"
+      },
+      {
+        "repository": "daily-checklist",
+        "plan_fingerprint": "sha256:d6e29208a459c0de9d5e2b106f208c9b1d97009de5cbb31230235ca528be4c39",
+        "before_commit": "06eeb9eec2290eb8f763ab143ede61705f85e419",
+        "upgrade_commit": "d69795c9d533f121e554c45d6676a8a611aa9893",
+        "doctor": {"visible": 125, "blocking": 18, "owner_owned_at_upgrade": 120},
+        "post_plan": "current",
+        "pushed": false
+      },
+      {
+        "repository": "client-management-app",
+        "plan_fingerprint": "sha256:a2dc5556c14c4af1506fc059eced4f3d0bd7e87768a0f8add0e1b6b03465098c",
+        "before_commit": "ecb9c62709b464beb09f01c8339d2f6fff411189",
+        "upgrade_commit": "f91fa5243148ba6f06698ac12fa94f8f836a7c85",
+        "doctor": {"visible": 25, "blocking": 3, "owner_owned_at_upgrade": 17},
+        "post_plan": "current",
+        "pushed": false
+      }
+    ],
+    "already_current": [
+      {
+        "repository": "project-workflow",
+        "commit": "fdd4e15c621cb6805e1455d0658c60ee24b92b0c",
+        "repository_state": "current",
+        "repository_reason": "versions-current",
+        "retained_owner_collision_outputs": [
+          ".agents/skills/project-requirements/SKILL.md.new",
+          ".project-workflow/cli/workflow.new"
+        ]
+      }
+    ],
+    "blocked_unchanged": [
+      {
+        "repository": "the-moon-is-hollow",
+        "commit": "5c698ed",
+        "installed_version": "0.3.0",
+        "blocker": "dirty tracked workflow state on active branch codex/EPIC-001-product-foundation",
+        "dirty_paths": [".project-workflow/BACKLOG.md"],
+        "upgrade_attempted": false
+      },
+      {
+        "repository": "johndetlefs",
+        "commit": "d8c2f48",
+        "installed_version": "0.3.0",
+        "blocker": "dirty tracked workflow state plus two untracked active Epic folders",
+        "dirty_paths": [
+          ".project-workflow/BACKLOG.md",
+          ".project-workflow/TRACKER.md",
+          ".project-workflow/tasks/EPIC-N7L4Z-Prove-Multi-Template-Ad-Creation/",
+          ".project-workflow/tasks/EPIC-ZD4RK-Prove-Lifestyle-Benefit-Scene-Template/"
+        ],
+        "upgrade_attempted": false
+      }
+    ],
+    "validation_invariants": {
+      "manifest_package_version": "0.5.0",
+      "manifest_asset_version": 3,
+      "manifest_repository_schema_version": 1,
+      "helper_sha256": "ae1db5179b621f17d6ef3a6dbb349e3bdd965e697fc9f9461f1e388cb5b7df63",
+      "helper_version_output": "project 0.5.0",
+      "post_upgrade_plan": "current / versions-current",
+      "changed_paths_exact": true,
+      "consumer_worktrees_clean_after_local_commit": true,
+      "consumer_pushes": 0
+    }
+  },
+  "acceptance_mapping": {
+    "AC1": ["release.version", "release.managed_helper_sha256"],
+    "AC2": ["validation.candidate_commit", "validation.locked_tests", "validation.candidate_exact_wheel_journeys"],
+    "AC3": ["release.source_commit", "release.annotated_tag", "release.release_run", "release.artifacts"],
+    "AC4": ["release.attestation", "validation.public_exact_version", "validation.public_exact_version_journeys"],
+    "AC5": ["codex_inventory", "consumer_rollout.successful", "consumer_rollout.already_current", "consumer_rollout.blocked_unchanged"],
+    "AC6": ["consumer_rollout.successful", "consumer_rollout.validation_invariants"],
+    "AC7": ["release", "validation", "codex_inventory", "consumer_rollout"]
+  },
+  "proof_boundaries": [
+    "The release is public and provenance-verified; consumer repositories were upgraded locally but were not pushed or deployed.",
+    "Existing owner-owned Doctor findings in Mechanics Playground, Daily Checklist, and Client Management remain visible and were not attributed to or repaired by the managed upgrade.",
+    "The Moon Is Hollow and johndetlefs remain on 0.3.0 because active dirty workflow state made an automated upgrade unsafe.",
+    "Saved projects without a canonical root installation and ChatGPT-only projects were inventoried but not initialized.",
+    "Claude Code, Cursor, and GitHub Copilot package behavior is exact-package journey proof, not a claim that those native host runtimes were exercised in this session."
+  ]
+}

@@ -1,4 +1,21 @@
 {
   "task_id": "TASK-077",
-  "claims": []
+  "claims": [
+    {
+      "id": "TASK-077-AC1",
+      "recipe": "runtime-target-source",
+      "status": "pass",
+      "commit": "release fdd4e15c621cb6805e1455d0658c60ee24b92b0c; six consumer upgrade commits recorded in evidence/release-rollout-receipt.json",
+      "timestamp": "2026-08-20T18:15:00+10:00",
+      "parent_ac": "AC5",
+      "claim": "Every one of the 20 projects in the current Codex saved-project inventory has a disposition; all seven safe canonical installations are at 0.5.0 and the two dirty canonical installations were retained unchanged with exact blockers.",
+      "execution_target": "Codex desktop saved-project inventory and nine canonical local Project Workflow roots",
+      "source_artifact": "Public project-workflow==0.5.0 canonical upgrade plans plus the saved-project inventory observed on 2026-08-20",
+      "observation_method": "Listed current Codex projects, inspected each local root and manifest, recorded Git state, applied exact fingerprint-bound plans only to clean roots, and re-read status after local commits.",
+      "target_used_source_proof": "Six upgraded roots report project 0.5.0 and current/versions-current from the public package; the source checkout is at released main fdd4e15; the two blocked roots retain their original commits and dirty paths with no apply attempt.",
+      "evidence_artifact": "evidence/release-rollout-receipt.json",
+      "evidence_artifact_hash": "sha256:c9ed45ab47b081b388a8edf4ce39bbe4b38fddd045ef7b22faff4e2690c91dff",
+      "invalid_substitutes": []
+    }
+  ]
 }

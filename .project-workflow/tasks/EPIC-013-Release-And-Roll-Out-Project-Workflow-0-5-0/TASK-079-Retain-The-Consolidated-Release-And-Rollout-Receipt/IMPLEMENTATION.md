@@ -34,11 +34,11 @@ As the release owner, I want one durable release-and-rollout receipt so that the
 
 ### Parent AC Proof Ownership
 
-- AC7: owner `TASK-077`; required evidence: Consolidated receipt and parent acceptance audit
+- AC7: owner `TASK-079`; required evidence: Consolidated receipt and parent acceptance audit
 
 ## Acceptance Criteria
 
-- [ ] AC1: Covers parent AC7 when the receipt is complete, identity-bound, sanitized, and accepted by the parent audit.
+- [x] AC1: Covers parent AC7 when the receipt is complete, identity-bound, sanitized, and accepted by the parent audit.
 
 ## Validation
 
@@ -48,29 +48,29 @@ As the release owner, I want one durable release-and-rollout receipt so that the
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | codex/EPIC-012-delegate-executor-lifecycle | Planned validation recorded in this task | Pending release/adoption stage | Coordinator command output and retained evidence |
+| . | Release `fdd4e15`; rollout evidence on closeout branch | JSON syntax, SHA-256, 20-row inventory reconciliation, 9-installation reconciliation, and AC1-AC7 key mapping pass | Durable receipt retained for closeout review | `evidence/release-rollout-receipt.json` SHA-256 `c9ed45ab...`; child `EVIDENCE.json` |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |
-| 1 | Retain rollout receipt | Consolidate exact release identities, public proof, project dispositions, validations, and blockers into one receipt. | AC1: The receipt is complete, identity-bound, sanitized, and accepted by the parent audit. | Inspect the JSON receipt and parent acceptance audit. | To Do | | .project-workflow/tasks/EPIC-013-Release-And-Roll-Out-Project-Workflow-0-5-0/evidence | No | bounded-return |
+| 1 | Retain rollout receipt | Consolidate exact release identities, public proof, project dispositions, validations, and blockers into one receipt. | AC1: The receipt is complete, identity-bound, sanitized, and accepted by the parent audit. | Inspect the JSON receipt and parent acceptance audit. | Done | | .project-workflow/tasks/EPIC-013-Release-And-Roll-Out-Project-Workflow-0-5-0/evidence | No | bounded-return |
 
 ## Parent AC Evidence
 
-- AC7: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC7: `evidence/release-rollout-receipt.json` binds public release identity and provenance, candidate/public validation, all 20 Codex project dispositions, all nine canonical installation outcomes, six local upgrade commits, exact blockers, and proof boundaries; its SHA-256 is `c9ed45ab47b081b388a8edf4ce39bbe4b38fddd045ef7b22faff4e2690c91dff`. Structured contract evidence passes in `EVIDENCE.json`.
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass (2026-08-20)
+- Evidence: JSON parser, exact receipt hash, manual reconciliation against live inventory and Git state, and explicit parent AC key mapping.
+- Findings: None. The receipt contains paths and commit identities but no task IDs, runtime handles, credentials, or transcripts.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: One consolidated receipt should record both successful adoption and protected non-adoption; omission is not a safe disposition.
+- Conventions or agent assets updated: None.
+- Follow-up tasks: None beyond the two explicitly blocked future upgrades and existing consumer Doctor debt.
 
 ## Notes
 
