@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-08-20T15:07:59+10:00",
+  "candidate": {
+    "branch": "codex/EPIC-012-delegate-executor-lifecycle",
+    "base_commit": "bf60dc5ba9cc01cc5bbefb9343d4292b01968b2e",
+    "cli_sha256": "164972ce90039feacce999c37792748d50a4d28bbbc883a721f0587fddff569d",
+    "source_template_local_helper_byte_identical": true
+  },
+  "validation": {
+    "focused_delegate_tests": {
+      "result": "pass",
+      "count": 131
+    },
+    "full_locked_tests": {
+      "result": "pass",
+      "count": 395,
+      "duration_seconds": 58.47
+    },
+    "strict_doctor": {
+      "result": "pass",
+      "visible_findings": 0,
+      "accepted_warnings_hidden": 69
+    },
+    "compileall": "pass",
+    "diff_check": "pass",
+    "release_contract_source_check": "pass",
+    "build": "pass"
+  },
+  "artifacts": {
+    "wheel": {
+      "name": "project_workflow-0.4.0-py3-none-any.whl",
+      "sha256": "ddcfa118e8d95f255753ebd9dd48d4f60692e8a5b989efff51d1915a64181967"
+    },
+    "sdist": {
+      "name": "project_workflow-0.4.0.tar.gz",
+      "sha256": "51262bfa5690036418701fc7761245e612f724fc6988a02176848fb09a2a61da"
+    },
+    "package_journey": {
+      "path": "evidence/package-journey.json",
+      "sha256": "959d49e41dff172c8d21406278995c037bac18d4c7334483fce46e70d69e3b12",
+      "fresh_hosts": [
+        "claude-code",
+        "codex",
+        "cursor",
+        "github-copilot"
+      ],
+      "legacy_owner_collision_preserved": true
+    },
+    "current_codex_lifecycle": {
+      "path": "evidence/current-codex-lifecycle-receipt.json",
+      "sha256": "4627dcf792a8dd1145a12f245709e1bef44de2038efdfa266352946f69ef7a10"
+    }
+  },
+  "proof_boundaries": [
+    "Automated checks prove candidate source, lifecycle state machines, managed assets, package contents, and disposable init and upgrade behavior.",
+    "The live Codex canary proves current-session host creation, isolation, monitoring, reconciliation, archival, and archive confirmation from the committed base; it does not prove the uncommitted candidate executed live.",
+    "Claude Code, GitHub Copilot, and Cursor are package and syntax validated only, not runtime validated.",
+    "No merge, release, deployment, consumer upgrade, or owner acceptance is claimed."
+  ]
+}

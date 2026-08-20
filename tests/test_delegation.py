@@ -34,6 +34,7 @@ def unit(
     parallel_safe: bool = True,
     state: str = "pending",
     order: int = 0,
+    needs: str = "bounded-return",
 ) -> workflow_cli.DelegationUnit:
     return workflow_cli.DelegationUnit(
         unit_id=unit_id,
@@ -44,6 +45,9 @@ def unit(
         canonical_state=state,
         source_order=order,
         source_path=".project-workflow/tasks/plan.md",
+        execution_needs=workflow_cli._delegation_execution_needs(
+            needs, unit_id=unit_id
+        ),
     )
 
 
@@ -139,6 +143,36 @@ def test_task_table_parser_preserves_legacy_and_round_trips_delegation_metadata(
     assert modern_rows[0]["Write Scope"] == "src/app"
     assert modern_rows[0]["Parallel Safe"] == "Yes"
 
+    with_needs = modern.replace(
+        " | Parallel Safe |\n",
+        " | Parallel Safe | Execution Needs |\n",
+    ).replace(
+        "|---|---|---|---|---|---|---|---|---|\n",
+        "|---|---|---|---|---|---|---|---|---|---|\n",
+    ).replace(" | Yes |\n", " | Yes | isolated-worktree |\n")
+    found, rows, malformed = workflow_cli._implementation_task_table_rows(with_needs)
+    assert found and not malformed
+    assert rows[0]["Execution Needs"] == "isolated-worktree"
+
+
+def test_execution_needs_default_parse_and_validation_are_deterministic() -> None:
+    default = workflow_cli._delegation_execution_needs("", unit_id="1")
+    explicit = workflow_cli._delegation_execution_needs(
+        "bounded-return, isolated-worktree, peer:reviewers, isolated-worktree",
+        unit_id="1",
+    )
+
+    assert default.tokens == ("bounded-return",)
+    assert default.properties()["communication"] == "coordinator-mediated"
+    assert explicit.tokens == ("isolated-worktree", "peer:reviewers")
+    assert explicit.peer_group == "reviewers"
+    assert explicit.isolated_worktree
+
+    for invalid in ("magic", "peer:", "peer:a, peer:b", "bounded-return,,isolated-worktree"):
+        with pytest.raises(workflow_cli.DelegationPlanError) as caught:
+            workflow_cli._delegation_execution_needs(invalid, unit_id="1")
+        assert caught.value.code == "PW_DELEGATION_EXECUTION_NEEDS_INVALID"
+
 
 def test_legacy_task_plan_is_readable_but_delegate_fails_closed(tmp_path: Path) -> None:
     implementation = write_task_fixture(tmp_path, legacy=True)
@@ -166,7 +200,7 @@ def test_build_plan_orders_graph_and_reports_readiness_executor_capacity_and_pro
     assert built.effective_concurrency == built.effective_child_concurrency == 1
     assert "Reduced from requested 4" in built.concurrency_reason
     assert built.provenance[-1] == "capability:2026-08-19 codex adapter observation 42"
-    assert workflow_cli.delegation_plan_payload(built)["schema_version"] == 1
+    assert workflow_cli.delegation_plan_payload(built)["schema_version"] == 2
 
 
 def test_zero_child_capacity_excludes_coordinator_and_reports_sequential_fallback() -> None:
@@ -260,7 +294,13 @@ def test_capability_requires_observed_adapter_provenance() -> None:
 
 
 def test_persistent_task_executor_requires_separate_owner_authority() -> None:
-    epic_units = (unit("TASK-001", scope=()),)
+    epic_units = (
+        unit(
+            "TASK-001",
+            scope=(),
+            needs="durable-resume, isolated-worktree",
+        ),
+    )
     without_authority = workflow_cli.build_delegation_plan(
         target=target("epic"),
         units=epic_units,
@@ -268,7 +308,8 @@ def test_persistent_task_executor_requires_separate_owner_authority() -> None:
         capability_source="2026-08-19 codex adapter",
         available_child_capacity=1,
     )
-    assert without_authority.units[0].executor == "coordinator"
+    assert without_authority.units[0].executor == "none"
+    assert without_authority.units[0].readiness == "blocked"
 
     authorized = workflow_cli.build_delegation_plan(
         target=target("epic"),
@@ -278,7 +319,7 @@ def test_persistent_task_executor_requires_separate_owner_authority() -> None:
         persistent_task_authority="owner approval EPIC-001",
         available_child_capacity=1,
     )
-    assert authorized.units[0].executor == "coordinator"
+    assert authorized.units[0].executor == "none"
     assert authorized.persistent_task_authority == "owner approval EPIC-001"
 
     fully_supported = workflow_cli.build_delegation_plan(
@@ -289,6 +330,8 @@ def test_persistent_task_executor_requires_separate_owner_authority() -> None:
             "isolated-worktree",
             "task-monitoring",
             "task-reconciliation",
+            "task-retirement",
+            "task-retirement-reconciliation",
         ),
         capability_source="2026-08-19 current codex adapter observation",
         persistent_task_authority="owner approval EPIC-001",
@@ -297,17 +340,206 @@ def test_persistent_task_executor_requires_separate_owner_authority() -> None:
     assert fully_supported.units[0].executor == "persistent-task"
 
 
-def test_epic_never_falls_through_to_task_row_subagents() -> None:
-    built = workflow_cli.build_delegation_plan(
-        target=target("epic"),
-        units=(unit("TASK-001", scope=()),),
-        observed_capabilities=("subagent",),
-        capability_source="2026-08-19 current session subagent observation",
+def test_target_kind_does_not_change_subagent_selection() -> None:
+    values = {
+        "units": (unit("TASK-001", scope=()),),
+        "observed_capabilities": ("subagent",),
+        "capability_source": "2026-08-19 current session subagent observation",
+        "available_child_capacity": 1,
+    }
+    task_plan = workflow_cli.build_delegation_plan(target=target("task"), **values)
+    epic_plan = workflow_cli.build_delegation_plan(target=target("epic"), **values)
+
+    assert task_plan.units[0].executor == epic_plan.units[0].executor == "subagent"
+    assert task_plan.units[0].requested_executor == epic_plan.units[0].requested_executor
+    assert task_plan.effective_child_concurrency == epic_plan.effective_child_concurrency == 1
+
+
+def test_isolation_uses_surface_specific_capability_then_persistent_fallback() -> None:
+    isolated = (unit("1", needs="isolated-worktree"),)
+    subagent_plan = workflow_cli.build_delegation_plan(
+        target=target(),
+        units=isolated,
+        observed_capabilities=("subagent", "subagent-isolated-worktree"),
+        capability_source="2026-08-20 isolated subagent adapter",
         available_child_capacity=1,
     )
+    assert subagent_plan.units[0].executor == "subagent"
 
-    assert built.units[0].executor == "coordinator"
-    assert built.effective_child_concurrency == 0
+    persistent_plan = workflow_cli.build_delegation_plan(
+        target=target(),
+        units=isolated,
+        observed_capabilities=(
+            "persistent-task",
+            "persistent-task-isolated-worktree",
+            "task-monitoring",
+            "task-reconciliation",
+            "task-retirement",
+            "task-retirement-reconciliation",
+        ),
+        capability_source="2026-08-20 persistent task adapter",
+        persistent_task_authority="owner request for this run",
+        available_child_capacity=1,
+    )
+    selected = persistent_plan.units[0]
+    assert selected.requested_executor == "subagent"
+    assert selected.executor == "persistent-task"
+    assert selected.visibility_class == "visible-retirable"
+    assert selected.retention_policy == "retire-on-verified"
+
+
+def test_persistent_surface_without_retirement_stays_visible_and_reported() -> None:
+    built = workflow_cli.build_delegation_plan(
+        target=target(),
+        units=(unit("1", needs="durable-resume"),),
+        available_child_capacity=1,
+        observed_capabilities=(
+            "persistent-task",
+            "task-monitoring",
+            "task-reconciliation",
+        ),
+        unsupported_capabilities=(
+            "task-retirement",
+            "task-retirement-reconciliation",
+        ),
+        capability_source="2026-08-20 generic host adapter",
+        persistent_task_authority="owner request for this run",
+    )
+
+    selected = built.units[0]
+    assert selected.executor == "persistent-task"
+    assert selected.visibility_class == "visible-retained"
+    assert selected.retention_policy == "retain"
+    assert "task-retirement" not in built.observed_capabilities
+
+
+def test_binding_persistent_and_peer_needs_block_instead_of_silent_downgrade() -> None:
+    durable = plan(units=(unit("1", needs="durable-resume"),))
+    assert durable.units[0].readiness == "blocked"
+    assert durable.units[0].executor == "none"
+    assert "explicit current-request persistent-task authority is absent" in durable.units[0].executor_reason
+
+    peer = workflow_cli.build_delegation_plan(
+        target=target("epic"),
+        units=(unit("1", needs="peer:reviewers"),),
+        requested_concurrency=2,
+        available_child_capacity=2,
+        observed_capabilities=("peer-team", "peer-messaging"),
+        capability_source="2026-08-20 peer team adapter",
+    )
+    assert peer.units[0].executor == "peer-team"
+    assert peer.units[0].schedule == "parallel"
+
+    exhausted = workflow_cli.build_delegation_plan(
+        target=target(),
+        units=(unit("1", needs="peer:reviewers"),),
+        available_child_capacity=1,
+        observed_capabilities=("peer-team", "peer-messaging"),
+        capability_source="2026-08-20 peer team adapter",
+    )
+    assert exhausted.units[0].readiness == "blocked"
+    assert "requires at least 2 available child slots" in exhausted.units[0].executor_reason
+
+    under_requested = workflow_cli.build_delegation_plan(
+        target=target(),
+        units=(unit("1", needs="peer:reviewers"),),
+        requested_concurrency=1,
+        available_child_capacity=2,
+        observed_capabilities=("peer-team", "peer-messaging"),
+        capability_source="2026-08-20 peer team adapter",
+    )
+    assert under_requested.units[0].readiness == "blocked"
+    assert "requested concurrency of at least 2" in under_requested.units[0].executor_reason
+
+
+def test_composite_peer_persistence_blocks_and_owner_steering_stays_visible() -> None:
+    composite = workflow_cli.build_delegation_plan(
+        target=target(),
+        units=(unit("1", needs="peer:reviewers, durable-resume"),),
+        requested_concurrency=2,
+        available_child_capacity=2,
+        observed_capabilities=("peer-team", "peer-messaging"),
+        capability_source="2026-08-20 peer team adapter",
+    )
+    assert composite.units[0].readiness == "blocked"
+    assert "additional persistent need" in composite.units[0].executor_reason
+
+    owner_steered = workflow_cli.build_delegation_plan(
+        target=target(),
+        units=(unit("1", needs="direct-owner-steering"),),
+        available_child_capacity=1,
+        observed_capabilities=(
+            "persistent-task",
+            "persistent-task-owner-steering",
+            "task-monitoring",
+            "task-reconciliation",
+            "task-retirement",
+            "task-retirement-reconciliation",
+        ),
+        capability_source="2026-08-20 persistent task adapter",
+        persistent_task_authority="owner request for this run",
+    )
+    assert owner_steered.units[0].executor == "persistent-task"
+    assert owner_steered.units[0].visibility_class == "visible-retained"
+    assert owner_steered.units[0].retention_policy == "retain"
+
+
+def test_peer_team_capacity_uses_two_child_slots_per_team() -> None:
+    built = workflow_cli.build_delegation_plan(
+        target=target(),
+        units=(
+            unit("1", scope=("src/a",), needs="peer:alpha"),
+            unit("2", scope=("src/b",), needs="peer:beta", order=1),
+        ),
+        requested_concurrency=2,
+        available_child_capacity=2,
+        observed_capabilities=("peer-team", "peer-messaging"),
+        capability_source="2026-08-20 peer team adapter",
+    )
+    assert built.effective_child_concurrency == 1
+    assert built.effective_child_slots == 2
+
+
+def test_repository_scope_prevents_false_cross_repository_collision() -> None:
+    left = replace(unit("1", scope=("src",)), repository_scope=("repo-a",))
+    right = replace(
+        unit("2", scope=("src",), order=1), repository_scope=("repo-b",)
+    )
+    built = plan(units=(left, right))
+    assert built.selected_units == ("1", "2")
+
+
+def test_plan_projection_exposes_needs_requested_effective_schedule_and_visibility() -> None:
+    built = plan(
+        available_child_capacity=1,
+        observed_capabilities=("subagent",),
+        capability_source="2026-08-20 bounded subagent adapter",
+    )
+    payload = workflow_cli.delegation_plan_payload(built)
+    projected = payload["units"][0]
+    assert projected["required_properties"] == {
+        "tokens": ["bounded-return"],
+        "durability": "bounded-return",
+        "isolation": "shared-worktree",
+        "communication": "coordinator-mediated",
+        "peer_group": None,
+        "owner_interaction": "coordinator-mediated",
+        "parallel_safe": True,
+        "write_scope": ["src/one"],
+        "repository_scope": ["."],
+    }
+    assert projected["requested_executor"] == projected["effective_executor"] == "subagent"
+    assert projected["visibility_class"] == "ephemeral"
+    assert projected["required_child_slots"] == 1
+    assert payload["concurrency"]["effective_child_slots"] == 1
+    human = workflow_cli._format_delegation_plan_human(built)
+    assert "requested=subagent; effective=subagent" in human
+    assert "parallel-safe=yes" in human
+    assert "write-scope=src/one" in human
+    assert "repositories=." in human
+    assert "subagent=verified" in human
+    assert "2026-08-20 bounded subagent adapter" in human
+    assert "retention=not-applicable" in human
 
 
 def test_exact_target_resolution_rejects_mixed_unknown_and_unapproved(tmp_path: Path) -> None:

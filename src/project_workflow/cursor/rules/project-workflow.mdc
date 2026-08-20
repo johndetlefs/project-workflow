@@ -31,18 +31,29 @@ Project Workflow is owner-directed and agent-operated. The owner supplies produc
 ## Delegate Boundary
 
 - Delegate coordinates canonical execution units for exactly one approved Task or Epic. Task
-  implementation rows, Epic child Tasks, Cursor agents, Codex persistent tasks, and subagents are
-  distinct concepts; installed assets do not prove native orchestration support.
-- Resolve subagent, persistent-task, isolated-worktree, monitoring, reconciliation, and capacity
-  capabilities as runtime-observed `verified`, `unsupported`, or `unknown`. Only verified current
-  capability authorises native launch. Cursor defaults to safe sequential/coordinator execution
-  until its native capability is observed; never hard-code a worker count.
+  implementation rows and Epic child Tasks are workflow units; Cursor agents, other persistent or
+  background tasks, in-session subagents, and peer teams are executor surfaces. Select the lightest
+  sufficient surface from approved execution needs, not Task-versus-Epic kind. Blank legacy
+  metadata means bounded return; `durable-resume`, `direct-owner-steering`,
+  `isolated-worktree`, and `peer:<group-id>` are binding when present.
+- Resolve subagent, subagent isolation, `persistent-task`/background-task, persistent isolation,
+  monitoring, reconciliation, peer-team, peer-messaging, retirement, retirement reconciliation,
+  and capacity capabilities as current-runtime `verified`, `unsupported`, or `unknown`. Only
+  verified capability and required authority authorise native launch or retirement. Cursor defaults
+  to safe sequential/coordinator execution when that still satisfies all binding properties;
+  otherwise block. Never hard-code a worker count or infer native support from installed assets.
+- Use peer/team execution only for an explicit peer-communication group. Ordinary dependencies stay
+  coordinator-mediated. Treat temporary user-visible subordinate work as retire-on-verified only
+  after a terminal verified durable disposition. Keep active, unverified, failed, orphaned,
+  unintegrated, awaiting-owner, owner-promoted, or explicitly retained work visible; never retire the
+  coordinator. Retirement is idempotent and reversible where supported, not deletion.
 - The coordinator alone writes shared workflow state and verifies each worker's identity, exact
   source, allowed diff, validation, and evidence before satisfying dependencies. A failed unit
   blocks descendants; unrelated branches continue only while shared premises remain valid.
 - Delegate routes bounded execution through Implement and then independent QA. It cannot create
   scope, approve requirements, add unplanned children, certify Epic closeout, or imply release,
-  deployment, adoption, or owner acceptance.
+  deployment, adoption, or owner acceptance. Generated parity demonstrates contract alignment, not
+  live Cursor or cross-host runtime validation.
 
 ## Cursor Usage
 

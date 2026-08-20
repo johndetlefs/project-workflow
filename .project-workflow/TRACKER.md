@@ -28,3 +28,5 @@
 | FIX-005 | Harden Workspace Journey Proof | Complete | `tasks/FIX-005-Harden-Workspace-Journey-Proof/FIX.md` |
 | EPIC-010 | Delegate Execution Orchestrator | Complete | `tasks/EPIC-010-Delegate-Execution-Orchestrator/REQUIREMENTS.md` |
 | EPIC-011 | Release And Roll Out Project Workflow 0.4.0 | Complete | `tasks/EPIC-011-Release-And-Roll-Out-Project-Workflow-0-4-0/REQUIREMENTS.md` |
+| EPIC-012 | Capability-Aware Delegate Execution And Child Lifecycle | Complete | `tasks/EPIC-012-Capability-Aware-Delegate-Execution-And-Child-Lifecycle/REQUIREMENTS.md` |
+| EPIC-013 | Release And Roll Out Project Workflow 0.5.0 | In Progress | `tasks/EPIC-013-Release-And-Roll-Out-Project-Workflow-0-5-0/REQUIREMENTS.md` |

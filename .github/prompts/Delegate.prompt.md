@@ -17,29 +17,40 @@ Inputs:
 - Requested concurrency: `${input:requestedConcurrency:1}`
 - Explicit persistent-task authority, when applicable: `${input:persistentTaskAuthority:not authorized}`
 
-## Capability Contract
+## Capability And Selection Contract
 
-- Resolve every relevant capability as `verified`, `unsupported`, or `unknown`, with dated current-runtime observation provenance (`YYYY-MM-DD`). Relevant capabilities include subagents, persistent tasks, isolated worktrees, monitoring, resume/reconciliation, and available child capacity.
-- Only a capability observed as `verified` in the current runtime authorises its native execution path. `unsupported` and `unknown` never mean supported.
-- Do not infer general Codex or cross-host support from installed text, generated parity, repository tests, fixtures, or another session.
-- If native execution is not verified, use explicit sequential/coordinator execution only when every authority, dependency, write-scope, validation, and evidence invariant remains satisfiable. Otherwise block with the exact reason.
-- Never hard-code a worker count. Effective child concurrency is bounded by requested concurrency, currently observed available child capacity excluding the coordinator, eligible units, dependency readiness, and non-overlapping write scopes.
-- Report requested and effective executor, requested and effective concurrency, capability state/provenance, and every downgrade or block reason.
+- Derive each unit's execution needs from approved metadata. The supported tokens are `bounded-return` (and the blank legacy default), `durable-resume`, `direct-owner-steering`, `isolated-worktree`, and `peer:<group-id>`. Also respect `Parallel Safe`, write scope, and repository scope.
+- Select the lightest sufficient surface from `coordinator`, `subagent`, `persistent-task`, and `peer-team`. Task-versus-Epic kind does not determine the surface. Ordinary dependency graphs stay coordinator-mediated; `peer-team` is eligible only for an explicit `peer:<group-id>` need.
+- Resolve every relevant capability as `verified`, `unsupported`, or `unknown`, with dated current-runtime observation provenance (`YYYY-MM-DD`). Distinguish `subagent`, `subagent-isolated-worktree`, `persistent-task`, persistent `isolated-worktree`, `persistent-task-owner-steering`, `task-monitoring`, `task-reconciliation`, `peer-team`, `peer-messaging`, `task-retirement`, `task-retirement-reconciliation`, and available child capacity.
+- Only capability observed as `verified` in the current runtime authorises its native execution path. Installed text, generated parity, repository tests, fixtures, or another session do not prove general or cross-host support.
+- Native persistent-task creation also requires explicit authority applicable to the current request. Task or Epic approval alone is not creation authority.
+- If native execution is not verified or authorised, use explicit sequential/coordinator execution only when every binding need, authority, dependency, write-scope, validation, and evidence invariant remains satisfiable. Otherwise block with the exact unmet property.
+- Never hard-code a worker count. Effective child concurrency is bounded by requested concurrency, observed available capacity excluding the coordinator, eligible units, dependency readiness, and non-overlapping parallel-safe scopes.
+- Report each unit's required properties, requested and effective executor, `sequential` or `parallel` schedule, requested and effective concurrency, capability state/provenance, visibility (`ephemeral`, `visible-retirable`, or `visible-retained`), retention policy, and every selection, fallback, or block reason.
 
-## Execution Contract
+## Execution And Retirement Contract
 
-1. Run `./.project-workflow/cli/workflow delegate plan --id <TARGET> ...` or `delegate status` to derive the canonical graph. Treat Task implementation rows and Epic child Tasks as distinct execution-unit types.
-2. Validate exactly one target, approved lifecycle/requirements, canonical units, dependency closure, unknown/self/cyclic dependencies, write-scope overlap, and `Parallel Safe` metadata before launch.
+1. Run `./.project-workflow/cli/workflow delegate plan --id <TARGET> ...` or `delegate status` to derive the canonical graph without launching or retiring work.
+2. Validate exactly one target, approved lifecycle/requirements, canonical units, dependency closure, unknown/self/cyclic dependencies, execution needs, scope overlap, and `Parallel Safe` metadata before launch.
 3. Preserve one coordinator as the only writer of shared trackers, implementation-row status, acceptance maps, evidence indexes, delegation runtime state, and target lifecycle.
-4. Give every worker a bounded packet containing target/unit identity, acceptance criteria, dependencies, repository and write scope, required validation, required evidence, forbidden actions, stop conditions, exact source revision, and return format.
+4. Give every worker a bounded packet containing target/unit identity, acceptance criteria, dependencies, repository and write scope, required validation/evidence, forbidden actions, stop conditions, exact source revision, and return format.
 5. Workers may not push, merge, release, deploy, contact third parties, create unapproved persistent tasks/worktrees, mutate shared workflow state, or write outside their packet.
-6. A dependency is satisfied only after the coordinator inspects the returned scope/diff, validation, and evidence and records a verified result. A worker completion assertion alone is insufficient.
-7. Launch only eligible units. A failed unit blocks its descendants. Unrelated branches may continue only while the shared baseline and premises remain valid; do not blanket-stop independent in-flight or future work.
-8. Allow in-flight work to return, then verify scope, identity, source/worktree, validation, and evidence before integration or canonical status changes. Treat missing, duplicate, stale, orphaned, or mismatched handles as blocked until reconciled.
-9. Keep machine-local handles, leases, cursors, credentials, and private transcripts under ignored runtime state. Canonical repository evidence must remain reviewable and contain no private runtime data.
-10. Move a Task to `Testing` only after all required implementation rows are complete. Epic child completion, Epic closeout, and final completion retain their existing QA, evidence, audit, deferral, retro, and owner-authority gates.
-11. Route implementation through Implement and independent QA/code review through QA Review. Delegate's aggregate report is not independent QA, owner acceptance, integration, release, deployment, adoption, or effectiveness proof.
+6. A dependency is satisfied only after the coordinator inspects returned identity, source/worktree, scope/diff, validation, and evidence and records a verified result. A worker completion assertion alone is insufficient.
+7. Launch only eligible units. A failed unit blocks its descendants. Unrelated branches may continue only while shared premises remain valid; do not blanket-stop independent work.
+8. Allow in-flight work to return, then reconcile missing, duplicate, stale, orphaned, or mismatched handles before integration or canonical status changes.
+9. Treat temporary user-visible subordinate work as `archive-on-verified` on Codex, and as host-neutral retirement elsewhere. Retire only after a terminal coordinator-verified result is durably integrated or has a verified no-integration disposition and durable receipt, with no unresolved child or owner attention.
+10. Never retire the coordinator, active, returned-but-unverified, failed, rejected, orphaned, blocked, awaiting-owner, unintegrated, explicitly retained, or owner-promoted work. Keep it visible with the exact retention reason.
+11. Retirement is an idempotent host action, not deletion. Emit one stable intent, observe and record the host outcome, retain the handle until success, and leave failed or unknown retirement pending for resume. On Codex, map retirement to reversible task archival only when `task-retirement` and `task-retirement-reconciliation` are verified.
+12. Keep machine-local handles, leases, cursors, credentials, and private transcripts under ignored runtime state. Canonical evidence remains reviewable and contains no private runtime data.
+13. Move a Task to `Testing` only after all required implementation rows are complete. Epic child completion, Epic closeout, and final completion retain their existing QA, evidence, audit, deferral, retro, and owner-authority gates.
+14. Route implementation through Implement and independent QA/code review through QA Review. Delegate's aggregate or retirement report is not independent QA, owner acceptance, integration, release, deployment, adoption, or effectiveness proof.
+
+## Host Boundary
+
+- Codex may use current-session subagents for bounded work and isolated persistent tasks for approved durable/owner-steered work when the corresponding current-runtime capability and authority gates pass; archive successful disposable visible children only after verified reconciliation.
+- Claude Code may use subagents, isolated subagents, or teams only when the current runtime verifies the needed surfaces; teams require explicit peer communication. GitHub Copilot and Cursor follow the same property policy using their native surfaces only when observed.
+- For every host not exercised in the current run, report the asset as contract-aligned or expected to work, never runtime-validated.
 
 ## Required Report
 
-Return the target and exact source, selected graph, per-unit canonical and execution state, dependencies, requested/effective executor, requested/effective concurrency, capability matrix with provenance, launched/returned/coordinator-verified results, blocked descendants, unrelated continuation decisions, validation/evidence, privacy boundary, and remaining QA/delivery gates.
+Return the target and exact source, selected graph, per-unit canonical and execution state, dependencies and execution needs, requested/effective executor and schedule, requested/effective concurrency, visibility and retention, capability matrix with provenance, launched/returned/coordinator-verified results, retirement intents and observed outcomes, retained attention reasons, blocked descendants, unrelated continuation decisions, validation/evidence, privacy boundary, cross-host proof boundary, and remaining QA/delivery gates.

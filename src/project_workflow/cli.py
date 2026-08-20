@@ -66,11 +66,11 @@ BACKLOG_ID_PREFIX = "BL"
 ID_PADDING = 3
 WORKFLOW_CONFIG_FILENAME = "config.json"
 WORKFLOW_MANIFEST_FILENAME = "manifest.json"
-CURRENT_PACKAGE_VERSION = "0.4.0"
+CURRENT_PACKAGE_VERSION = "0.5.0"
 CURRENT_MANIFEST_VERSION = 1
-CURRENT_ASSET_VERSION = 2
+CURRENT_ASSET_VERSION = 3
 CURRENT_SCHEMA_VERSION = 1
-SUPPORTED_ASSET_VERSIONS = (1, 2)
+SUPPORTED_ASSET_VERSIONS = (1, 2, 3)
 SUPPORTED_SCHEMA_VERSIONS = (0, 1)
 REPOSITORY_COMPATIBILITY_STATES = (
     "current",
@@ -348,7 +348,11 @@ DELEGATION_IMPLEMENTATION_TASK_COLUMNS = (
     "Write Scope",
     "Parallel Safe",
 )
-DELEGATION_SCHEMA_VERSION = 1
+DELEGATION_EXECUTION_NEEDS_TASK_COLUMNS = (
+    *DELEGATION_IMPLEMENTATION_TASK_COLUMNS,
+    "Execution Needs",
+)
+DELEGATION_SCHEMA_VERSION = 2
 DELEGATION_RUNTIME_SCHEMA_VERSION = 1
 DELEGATION_RUNTIME_RELATIVE_DIR = Path(".project-workflow/runtime/delegations")
 DELEGATION_CAPABILITIES = (
@@ -358,6 +362,26 @@ DELEGATION_CAPABILITIES = (
     "task-reconciliation",
     "subagent",
     "worktree",
+    "subagent-isolated-worktree",
+    "persistent-task-isolated-worktree",
+    "peer-team",
+    "peer-messaging",
+    "peer-team-isolated-worktree",
+    "persistent-task-owner-steering",
+    "task-retirement",
+    "task-retirement-reconciliation",
+)
+DELEGATION_EXECUTOR_SURFACES = (
+    "coordinator",
+    "subagent",
+    "persistent-task",
+    "peer-team",
+)
+DELEGATION_EXECUTION_NEED_TOKENS = (
+    "bounded-return",
+    "durable-resume",
+    "direct-owner-steering",
+    "isolated-worktree",
 )
 DELEGATION_CAPABILITY_STATES = ("verified", "unsupported", "unknown")
 DELEGATION_UNIT_STATES = ("pending", "active", "complete", "blocked", "orphaned")
@@ -428,6 +452,10 @@ DECOMPOSITION_PLAN_COLUMNS = (
     "Source",
 )
 DELEGATION_DECOMPOSITION_PLAN_COLUMNS = (*DECOMPOSITION_PLAN_COLUMNS, "Dependencies")
+DELEGATION_EXECUTION_NEEDS_DECOMPOSITION_PLAN_COLUMNS = (
+    *DELEGATION_DECOMPOSITION_PLAN_COLUMNS,
+    "Execution Needs",
+)
 EPIC_AMENDMENT_COLUMNS = (
     "ID",
     "Title",
@@ -911,14 +939,18 @@ def _managed_project_workflow_block() -> str:
         "- For a sanitized client handoff, use canonical `project smoke-bomb` from a clean "
         "dedicated worktree to review exact removal, run explicit validations, preserve useful "
         "client agent guidance, and export a ZIP without Git or workflow internals.\n"
-        "- Delegate coordinates existing approved rows for exactly one Task or Epic. Resolve "
-        "subagent, persistent-task, isolated-worktree, monitoring, reconciliation, and capacity "
-        "capabilities as runtime-observed `verified`, `unsupported`, or `unknown`; only verified "
-        "capability authorizes native launch, otherwise use safe coordinator/sequential fallback "
-        "or block. Never hard-code worker capacity.\n"
+        "- Delegate coordinates existing approved rows for exactly one Task or Epic. Select the "
+        "lightest sufficient coordinator, subagent, persistent-task, or peer-team surface from "
+        "approved Execution Needs rather than Task-versus-Epic kind. Resolve surface-specific "
+        "isolation, monitoring, reconciliation, retirement, and capacity capabilities as "
+        "runtime-observed `verified`, `unsupported`, or `unknown`; only verified capability plus "
+        "current-host authority authorizes native launch, otherwise use a safe coordinator/"
+        "sequential fallback or block. Never hard-code worker capacity.\n"
         "- The coordinator alone writes shared workflow state and verifies worker identity, source, "
         "scope, validation, and evidence before satisfying dependencies. A failure blocks its "
         "descendants; unrelated branches continue only while shared premises remain valid. "
+        "Temporary visible subordinate tasks retire only after verified durable disposition; "
+        "Codex maps retirement to reversible archival, while attention-bearing work stays visible. "
         "Delegate never replaces Implement, independent QA, Epic closeout, owner acceptance, or "
         "delivery proof.\n"
         "- Run `./.project-workflow/cli/workflow doctor` after tracker or task-doc changes.\n"
@@ -1189,6 +1221,37 @@ class DelegationTarget:
 
 
 @dataclass(frozen=True)
+class DelegationExecutionNeeds:
+    """Host-neutral work properties; these are plan facts, never capability claims."""
+
+    tokens: tuple[str, ...] = ("bounded-return",)
+    durable_resume: bool = False
+    direct_owner_steering: bool = False
+    isolated_worktree: bool = False
+    peer_group: str | None = None
+
+    @property
+    def requested_executor(self) -> str:
+        if self.peer_group is not None:
+            return "peer-team"
+        if self.durable_resume or self.direct_owner_steering:
+            return "persistent-task"
+        return "subagent"
+
+    def properties(self) -> dict[str, object]:
+        return {
+            "tokens": list(self.tokens),
+            "durability": "durable-resume" if self.durable_resume else "bounded-return",
+            "isolation": "isolated-worktree" if self.isolated_worktree else "shared-worktree",
+            "communication": "peer" if self.peer_group is not None else "coordinator-mediated",
+            "peer_group": self.peer_group,
+            "owner_interaction": (
+                "direct-owner-steering" if self.direct_owner_steering else "coordinator-mediated"
+            ),
+        }
+
+
+@dataclass(frozen=True)
 class DelegationUnit:
     unit_id: str
     title: str
@@ -1199,6 +1262,8 @@ class DelegationUnit:
     source_order: int
     source_path: str
     authority_acs: tuple[str, ...] = ()
+    execution_needs: DelegationExecutionNeeds = field(default_factory=DelegationExecutionNeeds)
+    repository_scope: tuple[str, ...] = (".",)
 
 
 @dataclass(frozen=True)
@@ -1211,7 +1276,14 @@ class DelegationPlannedUnit:
     canonical_state: str
     readiness: str
     blocking_reasons: tuple[str, ...]
+    execution_needs: DelegationExecutionNeeds
+    repository_scope: tuple[str, ...]
+    requested_executor: str
     executor: str
+    schedule: str
+    visibility_class: str
+    retention_policy: str
+    required_child_slots: int
     executor_reason: str
     source_path: str
     authority_acs: tuple[str, ...] = ()
@@ -1228,6 +1300,7 @@ class DelegationPlan:
     available_child_capacity: int
     effective_concurrency: int
     effective_child_concurrency: int
+    effective_child_slots: int
     concurrency_reason: str
     observed_capabilities: tuple[str, ...]
     capability_matrix: tuple["DelegationCapabilityObservation", ...]
@@ -1258,6 +1331,7 @@ class TaskHostCapabilities:
     current_session_verified: bool
     bounded_subagents: bool
     available_child_capacity: int
+    additional_capabilities: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.available_child_capacity < 0:
@@ -1271,6 +1345,26 @@ class TaskHostCapabilities:
                 "PW_TASK_CAPABILITY_UNVERIFIED",
                 "Bounded subagent execution requires verified current-session capabilities.",
             )
+        unknown = sorted(set(self.additional_capabilities) - set(DELEGATION_CAPABILITIES))
+        if unknown:
+            raise TaskOrchestrationError(
+                "PW_TASK_CAPABILITY_UNKNOWN",
+                "Unknown Task runtime capability: " + ", ".join(unknown) + ".",
+            )
+        if self.additional_capabilities and (
+            not self.current_session_verified or not self.source.strip()
+        ):
+            raise TaskOrchestrationError(
+                "PW_TASK_CAPABILITY_UNVERIFIED",
+                "Additional Task host capabilities require a named current-session observation source.",
+            )
+
+    @property
+    def verified_capabilities(self) -> frozenset[str]:
+        capabilities = set(self.additional_capabilities)
+        if self.bounded_subagents:
+            capabilities.add("subagent")
+        return frozenset(capabilities) if self.current_session_verified else frozenset()
 
 
 @dataclass(frozen=True)
@@ -1659,6 +1753,12 @@ def _task_execution_fingerprint(
                 "dependencies": unit.dependencies,
                 "write_scope": unit.write_scope,
                 "parallel_safe": unit.parallel_safe,
+                "execution_needs": unit.execution_needs.properties(),
+                "requested_executor": unit.requested_executor,
+                "executor": unit.executor,
+                "schedule": unit.schedule,
+                "visibility_class": unit.visibility_class,
+                "retention_policy": unit.retention_policy,
                 "obligations": {
                     "acceptance_criteria": obligations[unit.unit_id].acceptance_criteria,
                     "validations": obligations[unit.unit_id].validations,
@@ -1689,6 +1789,18 @@ class TaskOrchestrator:
         if plan.target.kind != "task":
             raise TaskOrchestrationError(
                 "PW_TASK_TARGET_REQUIRED", "Task orchestration requires exactly one Task target."
+            )
+        durable_surfaces = sorted(
+            unit.unit_id
+            for unit in plan.units
+            if unit.executor in {"persistent-task", "peer-team"}
+        )
+        if durable_surfaces:
+            raise TaskOrchestrationError(
+                "PW_TASK_SURFACE_RUNTIME_REQUIRED",
+                "Task units selected for persistent-task or peer-team execution require "
+                "DelegationSurfaceOrchestrator so visible handles, disposition, and retirement "
+                "remain resumable: " + ", ".join(durable_surfaces) + ".",
             )
         if plan.target.lifecycle != "In Progress":
             raise TaskOrchestrationError(
@@ -1883,15 +1995,23 @@ class TaskOrchestrator:
     def decisions(self) -> tuple[TaskExecutorDecision, ...]:
         actual_active = self._active_ids()
         active = list(actual_active)
-        reserved = len(active)
-        execution_limit = min(
-            self.plan.requested_concurrency,
-            self.capabilities.available_child_capacity,
+        reserved_slots = sum(
+            self.units[unit_id].required_child_slots
+            for unit_id in actual_active
+            if self.units[unit_id].executor
+            in {"subagent", "persistent-task", "peer-team"}
         )
+        available_slots = max(0, min(
+            self.plan.requested_concurrency - reserved_slots,
+            self.plan.available_child_capacity - reserved_slots,
+            self.capabilities.available_child_capacity,
+        ))
         exclusive_reserved = any(
-            self.state.units[unit_id].executor in {"sequential-worker", "coordinator"}
+            self.units[unit_id].executor == "coordinator"
+            or self.units[unit_id].schedule == "sequential"
             for unit_id in actual_active
         )
+        runtime_capabilities = self.capabilities.verified_capabilities
         decisions: list[TaskExecutorDecision] = []
         for unit in self.plan.units:
             run = self.state.units[unit.unit_id]
@@ -1926,10 +2046,18 @@ class TaskOrchestrator:
                     )
                 )
                 continue
-            coordinator_owned = any(
-                _task_worker_scope_forbidden(scope) for scope in unit.write_scope
-            )
-            if coordinator_owned:
+            if unit.executor == "none":
+                decisions.append(
+                    TaskExecutorDecision(
+                        unit.unit_id,
+                        "none",
+                        False,
+                        "Immutable delegation plan has no executable surface: "
+                        + unit.executor_reason,
+                    )
+                )
+                continue
+            if unit.executor == "coordinator":
                 launchable = not active and not exclusive_reserved
                 decisions.append(
                     TaskExecutorDecision(
@@ -1943,64 +2071,91 @@ class TaskOrchestrator:
                     active.append(unit.unit_id)
                     exclusive_reserved = True
                 continue
-            if not (
-                self.capabilities.current_session_verified
-                and self.capabilities.bounded_subagents
-                and self.capabilities.available_child_capacity > 0
-            ):
+            required: set[str]
+            if unit.executor == "subagent":
+                required = {"subagent"}
+                if unit.execution_needs.isolated_worktree:
+                    required.add("subagent-isolated-worktree")
+            elif unit.executor == "persistent-task":
+                required = {"persistent-task", "task-monitoring", "task-reconciliation"}
+                if unit.execution_needs.isolated_worktree and not {
+                    "persistent-task-isolated-worktree", "isolated-worktree"
+                }.intersection(runtime_capabilities):
+                    required.add("persistent-task-isolated-worktree")
+                if unit.execution_needs.direct_owner_steering:
+                    required.add("persistent-task-owner-steering")
+            elif unit.executor == "peer-team":
+                required = {"peer-team", "peer-messaging"}
+                if unit.execution_needs.isolated_worktree:
+                    required.add("peer-team-isolated-worktree")
+            else:
                 decisions.append(
                     TaskExecutorDecision(
-                        unit.unit_id,
-                        "coordinator",
-                        not active and not exclusive_reserved,
-                        "No verified current-session bounded child capacity is available.",
+                        unit.unit_id, "none", False,
+                        f"Immutable delegation plan executor {unit.executor} is unsupported.",
                     )
                 )
-                if not active and not exclusive_reserved:
-                    active.append(unit.unit_id)
-                    exclusive_reserved = True
+                continue
+            missing_plan = sorted(required - set(self.plan.observed_capabilities))
+            missing_runtime = sorted(required - runtime_capabilities)
+            source_mismatch = (
+                self.plan.capability_source.strip() != self.capabilities.source.strip()
+            )
+            if missing_plan or missing_runtime or source_mismatch:
+                reasons = [f"immutable plan lacks verified {item}" for item in missing_plan]
+                reasons.extend(
+                    f"current runtime lacks verified {item}" for item in missing_runtime
+                )
+                if source_mismatch:
+                    reasons.append("runtime capability source does not match the immutable plan")
+                decisions.append(
+                    TaskExecutorDecision(
+                        unit.unit_id, "none", False, "; ".join(reasons) + "."
+                    )
+                )
                 continue
             collision = any(self._scope_collision(unit.unit_id, item) for item in active)
-            capacity = reserved < execution_limit
-            if unit.parallel_safe and not collision and capacity and not exclusive_reserved:
+            capacity = unit.required_child_slots <= available_slots
+            parallel = unit.schedule == "parallel"
+            launchable = (
+                not collision
+                and capacity
+                and not exclusive_reserved
+                and (parallel or not active)
+            )
+            if launchable:
                 decisions.append(
                     TaskExecutorDecision(
                         unit.unit_id,
-                        "bounded-subagent",
+                        unit.executor,
                         True,
-                        f"Verified current-session capacity from {self.capabilities.source}.",
+                        f"Immutable {unit.executor} selection is supported by current-session "
+                        f"capacity from {self.capabilities.source}.",
                     )
                 )
                 active.append(unit.unit_id)
-                reserved += 1
+                reserved_slots += unit.required_child_slots
+                available_slots -= unit.required_child_slots
+                if not parallel:
+                    exclusive_reserved = True
             else:
                 reasons = []
-                if not unit.parallel_safe:
-                    reasons.append("Parallel Safe is No")
                 if collision:
                     reasons.append("write scope overlaps in-flight work")
                 if not capacity:
                     reasons.append("requested or available child capacity is exhausted")
                 if exclusive_reserved:
                     reasons.append("exclusive sequential/coordinator execution is reserved")
-                launchable = (
-                    not unit.parallel_safe
-                    and not actual_active
-                    and not active
-                    and capacity
-                    and not exclusive_reserved
-                )
+                if not parallel and active:
+                    reasons.append("sequential schedule requires no in-flight work")
                 decisions.append(
                     TaskExecutorDecision(
                         unit.unit_id,
-                        "sequential-worker",
-                        launchable,
-                        "; ".join(reasons) + ".",
+                        unit.executor,
+                        False,
+                        "; ".join(dict.fromkeys(reasons)) + ".",
                     )
                 )
-                if launchable:
-                    active.append(unit.unit_id)
-                    exclusive_reserved = True
         return tuple(decisions)
 
     def launch(
@@ -2031,7 +2186,7 @@ class TaskOrchestrator:
                 "PW_TASK_COORDINATOR_EXECUTION_REQUIRED",
                 f"{unit_id} is coordinator-owned and cannot receive a worker launch packet.",
             )
-        if decision.executor == "sequential-worker" and any(
+        if self.units[unit_id].schedule == "sequential" and any(
             self._scope_collision(unit_id, active) for active in self._active_ids()
         ):
             raise TaskOrchestrationError(
@@ -2515,6 +2670,7 @@ class EpicHostCapabilities:
     monitoring: bool
     reconciliation: bool
     available_child_capacity: int
+    additional_capabilities: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.available_child_capacity < 0:
@@ -2536,17 +2692,42 @@ class EpicHostCapabilities:
                 "PW_EPIC_CAPABILITY_UNVERIFIED",
                 "Epic host capabilities require a named current-session observation source.",
             )
+        unknown = sorted(set(self.additional_capabilities) - set(DELEGATION_CAPABILITIES))
+        if unknown:
+            raise EpicOrchestrationError(
+                "PW_EPIC_CAPABILITY_UNKNOWN",
+                "Unknown Epic runtime capability: " + ", ".join(unknown) + ".",
+            )
+        if self.additional_capabilities and (
+            not self.current_session_verified or not self.source.strip()
+        ):
+            raise EpicOrchestrationError(
+                "PW_EPIC_CAPABILITY_UNVERIFIED",
+                "Additional Epic host capabilities require a named current-session observation source.",
+            )
 
     @property
     def creation_supported(self) -> bool:
         return bool(
             self.current_session_verified
             and self.persistent_tasks
-            and self.isolated_worktrees
             and self.monitoring
             and self.reconciliation
             and self.available_child_capacity > 0
         )
+
+    @property
+    def verified_capabilities(self) -> frozenset[str]:
+        capabilities = set(self.additional_capabilities)
+        if self.persistent_tasks:
+            capabilities.add("persistent-task")
+        if self.isolated_worktrees:
+            capabilities.update({"isolated-worktree", "persistent-task-isolated-worktree"})
+        if self.monitoring:
+            capabilities.add("task-monitoring")
+        if self.reconciliation:
+            capabilities.add("task-reconciliation")
+        return frozenset(capabilities) if self.current_session_verified else frozenset()
 
 
 @dataclass(frozen=True)
@@ -2618,6 +2799,7 @@ EPIC_CHILD_STOP_CONDITIONS = (
 @dataclass(frozen=True)
 class EpicChildWorkPacket:
     target_id: str
+    target_kind: str
     target_source: str
     target_source_hash: str
     unit_id: str
@@ -2632,20 +2814,24 @@ class EpicChildWorkPacket:
     stop_conditions: tuple[str, ...]
     base_commit: str
     plan_fingerprint: str
+    executor: str
+    visibility_class: str
+    retention_policy: str
+    isolated_worktree_required: bool
     attempt: int
 
     def payload(self) -> dict[str, object]:
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "target": {
                 "id": self.target_id,
-                "kind": "epic",
+                "kind": self.target_kind,
                 "authority_source": self.target_source,
                 "authority_hash": self.target_source_hash,
             },
             "unit": {
                 "id": self.unit_id,
-                "kind": "epic-child",
+                "kind": "epic-child" if self.target_kind == "epic" else "task-unit",
                 "title": self.unit_title,
                 "parent_acs": list(self.parent_acs),
             },
@@ -2653,7 +2839,7 @@ class EpicChildWorkPacket:
             "scope": {
                 "repositories": list(self.repositories),
                 "write_prefixes": list(self.write_scope),
-                "isolated_worktree_required": True,
+                "isolated_worktree_required": self.isolated_worktree_required,
             },
             "obligations": {
                 "validation": list(self.validations),
@@ -2663,7 +2849,37 @@ class EpicChildWorkPacket:
             "stop_conditions": list(self.stop_conditions),
             "base_commit": self.base_commit,
             "plan_fingerprint": self.plan_fingerprint,
+            "executor": self.executor,
+            "visibility_class": self.visibility_class,
+            "retention_policy": self.retention_policy,
             "attempt": self.attempt,
+        }
+
+
+@dataclass(frozen=True)
+class EpicLaunchIntent:
+    intent_id: str
+    unit_id: str
+    attempt: int
+    executor: str
+    packet: EpicChildWorkPacket
+    capability_source: str
+
+    def payload(self) -> dict[str, object]:
+        operation = {
+            "subagent": "launch-subagent",
+            "persistent-task": "create-persistent-task",
+            "peer-team": "launch-peer-team",
+        }.get(self.executor, "launch-worker")
+        return {
+            "schema_version": 1,
+            "intent_id": self.intent_id,
+            "operation": operation,
+            "unit_id": self.unit_id,
+            "attempt": self.attempt,
+            "executor": self.executor,
+            "capability_source": self.capability_source,
+            "work_packet": self.packet.payload(),
         }
 
 
@@ -2676,15 +2892,41 @@ class PersistentTaskCreationIntent:
     capability_source: str
 
     def payload(self) -> dict[str, object]:
+        requires = ["persistent-task", "task-monitoring", "task-reconciliation"]
+        if self.packet.isolated_worktree_required:
+            requires.append("isolated-worktree")
+        if self.packet.retention_policy == "retire-on-verified":
+            requires.extend(("task-retirement", "task-retirement-reconciliation"))
         return {
             "schema_version": 1,
             "intent_id": self.intent_id,
             "operation": "create-persistent-task",
             "unit_id": self.unit_id,
             "attempt": self.attempt,
-            "requires": ["persistent-task", "isolated-worktree", "task-monitoring"],
+            "requires": requires,
             "capability_source": self.capability_source,
             "work_packet": self.packet.payload(),
+        }
+
+
+@dataclass(frozen=True)
+class EpicRetirementIntent:
+    intent_id: str
+    unit_id: str
+    attempt: int
+    handle: str
+    capability_source: str
+
+    def payload(self) -> dict[str, object]:
+        return {
+            "schema_version": 1,
+            "intent_id": self.intent_id,
+            "operation": "retire-visible-task",
+            "unit_id": self.unit_id,
+            "attempt": self.attempt,
+            "handle": self.handle,
+            "requires": ["task-retirement", "task-retirement-reconciliation"],
+            "capability_source": self.capability_source,
         }
 
 
@@ -2720,6 +2962,18 @@ class EpicUnitRun:
     issues: tuple[str, ...] = ()
     blocked_by: tuple[str, ...] = ()
     completion_provenance: str | None = None
+    executor: str = "coordinator"
+    visibility_class: str = "ephemeral"
+    retention_policy: str = "not-applicable"
+    disposition_state: str = "pending"
+    disposition_receipt: str | None = None
+    attention_reasons: tuple[str, ...] = ()
+    owner_promoted: bool = False
+    explicit_retain_reason: str | None = None
+    retirement_state: str = "not-applicable"
+    retirement_intent_id: str | None = None
+    retirement_ack: str | None = None
+    prior_handles: tuple[str, ...] = ()
 
 
 @dataclass
@@ -2736,12 +2990,13 @@ class EpicOrchestrationState:
     create_count: int = 0
     used_intents: set[str] = field(default_factory=set)
     used_handles: set[str] = field(default_factory=set)
-    integrated_paths: list[tuple[str, tuple[str, ...]]] = field(default_factory=list)
+    verified_paths: list[tuple[str, tuple[str, ...]]] = field(default_factory=list)
+    migrated_from_version: int | None = None
 
 
 def _epic_orchestration_state_payload(state: EpicOrchestrationState) -> dict[str, object]:
     return {
-        "schema_version": state.schema_version,
+        "schema_version": 2,
         "target_id": state.target_id,
         "plan_fingerprint": state.plan_fingerprint,
         "coordinator_hash": state.coordinator_hash,
@@ -2752,8 +3007,8 @@ def _epic_orchestration_state_payload(state: EpicOrchestrationState) -> dict[str
         "create_count": state.create_count,
         "used_intents": sorted(state.used_intents),
         "used_handles": sorted(state.used_handles),
-        "integrated_paths": [
-            [unit_id, list(paths)] for unit_id, paths in state.integrated_paths
+        "verified_paths": [
+            [unit_id, list(paths)] for unit_id, paths in state.verified_paths
         ],
         "units": {
             unit_id: {
@@ -2768,6 +3023,18 @@ def _epic_orchestration_state_payload(state: EpicOrchestrationState) -> dict[str
                 "issues": list(run.issues),
                 "blocked_by": list(run.blocked_by),
                 "completion_provenance": run.completion_provenance,
+                "executor": run.executor,
+                "visibility_class": run.visibility_class,
+                "retention_policy": run.retention_policy,
+                "disposition_state": run.disposition_state,
+                "disposition_receipt": run.disposition_receipt,
+                "attention_reasons": list(run.attention_reasons),
+                "owner_promoted": run.owner_promoted,
+                "explicit_retain_reason": run.explicit_retain_reason,
+                "retirement_state": run.retirement_state,
+                "retirement_intent_id": run.retirement_intent_id,
+                "retirement_ack": run.retirement_ack,
+                "prior_handles": list(run.prior_handles),
             }
             for unit_id, run in state.units.items()
         },
@@ -2779,11 +3046,17 @@ def _epic_orchestration_state_from_payload(payload: object) -> EpicOrchestration
         raise EpicOrchestrationError(
             "PW_EPIC_RUNTIME_INVALID", "Epic orchestration runtime must be an object."
         )
+    schema_version = payload.get("schema_version")
+    if schema_version not in {1, 2}:
+        raise EpicOrchestrationError(
+            "PW_EPIC_RUNTIME_INVALID", "Epic orchestration runtime schema is invalid."
+        )
     allowed = {
         "schema_version", "target_id", "plan_fingerprint", "coordinator_hash",
         "coordinator_worktree", "base_commit", "shared_premise_valid", "failure_seen",
-        "create_count", "used_intents", "used_handles", "integrated_paths", "units",
+        "create_count", "used_intents", "used_handles", "units",
     }
+    allowed.add("integrated_paths" if schema_version == 1 else "verified_paths")
     if set(payload) - allowed:
         raise EpicOrchestrationError(
             "PW_EPIC_RUNTIME_PRIVATE_FIELD",
@@ -2795,15 +3068,17 @@ def _epic_orchestration_state_from_payload(payload: object) -> EpicOrchestration
         "target_id", "plan_fingerprint", "coordinator_hash", "coordinator_worktree", "base_commit"
     )
     if (
-        payload.get("schema_version") != 1
-        or any(not isinstance(payload.get(key), str) or not payload.get(key) for key in required_strings)
+        any(not isinstance(payload.get(key), str) or not payload.get(key) for key in required_strings)
         or not isinstance(payload.get("shared_premise_valid"), bool)
         or not isinstance(payload.get("failure_seen"), bool)
         or not isinstance(payload.get("create_count"), int)
         or int(payload.get("create_count", -1)) < 0
         or not isinstance(payload.get("used_intents"), list)
         or not isinstance(payload.get("used_handles"), list)
-        or not isinstance(payload.get("integrated_paths"), list)
+        or not isinstance(
+            payload.get("integrated_paths" if schema_version == 1 else "verified_paths"),
+            list,
+        )
         or not isinstance(payload.get("units"), dict)
     ):
         raise EpicOrchestrationError(
@@ -2827,22 +3102,33 @@ def _epic_orchestration_state_from_payload(payload: object) -> EpicOrchestration
         raise EpicOrchestrationError(
             "PW_EPIC_RUNTIME_INVALID", "Epic runtime creation identity counts are inconsistent."
         )
-    raw_integrated = payload["integrated_paths"]
-    integrated: list[tuple[str, tuple[str, ...]]] = []
-    for item in raw_integrated:
+    raw_verified = payload[
+        "integrated_paths" if schema_version == 1 else "verified_paths"
+    ]
+    verified_paths: list[tuple[str, tuple[str, ...]]] = []
+    for item in raw_verified:
         if (
             not isinstance(item, list) or len(item) != 2 or not isinstance(item[0], str)
             or not isinstance(item[1], list) or not all(isinstance(path, str) for path in item[1])
         ):
             raise EpicOrchestrationError(
-                "PW_EPIC_RUNTIME_INVALID", "Epic integrated path history is invalid."
+                "PW_EPIC_RUNTIME_INVALID", "Epic verified path history is invalid."
             )
-        integrated.append((item[0], tuple(item[1])))
+        verified_paths.append((item[0], tuple(item[1])))
     units: dict[str, EpicUnitRun] = {}
     unit_allowed = {
         "state", "attempt", "intent_id", "handle", "branch", "worktree", "base_commit",
         "checkpointed", "issues", "blocked_by", "completion_provenance",
     }
+    if schema_version == 2:
+        unit_allowed.update(
+            {
+                "executor", "visibility_class", "retention_policy", "disposition_state",
+                "disposition_receipt", "attention_reasons", "owner_promoted",
+                "explicit_retain_reason", "retirement_state", "retirement_intent_id",
+                "retirement_ack", "prior_handles",
+            }
+        )
     valid_states = {
         "pending", "active", "returned", "verified", "failed", "blocked", "halted", "orphaned"
     }
@@ -2853,7 +3139,11 @@ def _epic_orchestration_state_from_payload(payload: object) -> EpicOrchestration
             raise EpicOrchestrationError(
                 "PW_EPIC_RUNTIME_PRIVATE_FIELD", f"{unit_id} runtime entry is malformed."
             )
-        optional_strings = ("intent_id", "handle", "branch", "worktree", "base_commit", "completion_provenance")
+        optional_strings = (
+            "intent_id", "handle", "branch", "worktree", "base_commit",
+            "completion_provenance", "disposition_receipt", "explicit_retain_reason",
+            "retirement_intent_id", "retirement_ack",
+        )
         intent_id = raw.get("intent_id")
         handle = raw.get("handle")
         if (
@@ -2880,6 +3170,53 @@ def _epic_orchestration_state_from_payload(payload: object) -> EpicOrchestration
             raise EpicOrchestrationError(
                 "PW_EPIC_RUNTIME_INVALID", f"{unit_id} runtime entry is invalid."
             )
+        if schema_version == 2:
+            executor = raw.get("executor")
+            visibility_class = raw.get("visibility_class")
+            retention_policy = raw.get("retention_policy")
+            disposition_state = raw.get("disposition_state")
+            retirement_state = raw.get("retirement_state")
+            attention_reasons = raw.get("attention_reasons")
+            prior_handles = raw.get("prior_handles")
+            retirement_intent_id = raw.get("retirement_intent_id")
+            if (
+                executor not in {*DELEGATION_EXECUTOR_SURFACES, "none"}
+                or visibility_class not in {"ephemeral", "visible-retirable", "visible-retained"}
+                or retention_policy not in {"not-applicable", "retire-on-verified", "retain"}
+                or disposition_state not in {"pending", "integrated", "no-integration"}
+                or retirement_state not in {
+                    "not-applicable", "pending", "requested", "confirmed", "failed",
+                    "unknown", "retained",
+                }
+                or not isinstance(attention_reasons, list)
+                or not all(
+                    isinstance(item, str) and re.fullmatch(r"[a-z][a-z0-9-]{0,63}", item)
+                    for item in attention_reasons
+                )
+                or not isinstance(raw.get("owner_promoted"), bool)
+                or not isinstance(prior_handles, list)
+                or not all(
+                    _epic_opaque_handle_valid(item) and item in used_handles
+                    for item in prior_handles
+                )
+                or retirement_intent_id is not None
+                and not re.fullmatch(r"[0-9a-f]{64}", retirement_intent_id)
+            ):
+                raise EpicOrchestrationError(
+                    "PW_EPIC_RUNTIME_INVALID", f"{unit_id} lifecycle entry is invalid."
+                )
+        else:
+            launched = bool(intent_id or handle or raw.get("branch") or raw.get("worktree"))
+            executor = "persistent-task" if launched else "coordinator"
+            visibility_class = "visible-retained" if launched else "ephemeral"
+            retention_policy = "retain" if launched else "not-applicable"
+            disposition_state = "pending"
+            retirement_state = "retained" if launched else "not-applicable"
+            attention_reasons = (
+                ["legacy-handle-unavailable"] if launched and handle is None else []
+            )
+            prior_handles = []
+            retirement_intent_id = None
         units[unit_id] = EpicUnitRun(
             state=str(raw["state"]), attempt=int(raw["attempt"]),
             intent_id=raw.get("intent_id"), handle=raw.get("handle"),
@@ -2887,9 +3224,20 @@ def _epic_orchestration_state_from_payload(payload: object) -> EpicOrchestration
             base_commit=raw.get("base_commit"), checkpointed=bool(raw["checkpointed"]),
             issues=tuple(raw["issues"]), blocked_by=tuple(raw["blocked_by"]),
             completion_provenance=raw.get("completion_provenance"),
+            executor=str(executor), visibility_class=str(visibility_class),
+            retention_policy=str(retention_policy),
+            disposition_state=str(disposition_state),
+            disposition_receipt=raw.get("disposition_receipt"),
+            attention_reasons=tuple(attention_reasons),
+            owner_promoted=bool(raw.get("owner_promoted", False)),
+            explicit_retain_reason=raw.get("explicit_retain_reason"),
+            retirement_state=str(retirement_state),
+            retirement_intent_id=retirement_intent_id,
+            retirement_ack=raw.get("retirement_ack"),
+            prior_handles=tuple(prior_handles),
         )
     return EpicOrchestrationState(
-        schema_version=1, target_id=str(payload["target_id"]),
+        schema_version=2, target_id=str(payload["target_id"]),
         plan_fingerprint=str(payload["plan_fingerprint"]),
         coordinator_hash=str(payload["coordinator_hash"]),
         coordinator_worktree=str(payload["coordinator_worktree"]),
@@ -2897,13 +3245,55 @@ def _epic_orchestration_state_from_payload(payload: object) -> EpicOrchestration
         shared_premise_valid=bool(payload["shared_premise_valid"]),
         failure_seen=bool(payload["failure_seen"]), create_count=int(payload["create_count"]),
         used_intents=set(used_intents), used_handles=set(used_handles),
-        integrated_paths=integrated,
+        verified_paths=verified_paths,
+        migrated_from_version=1 if schema_version == 1 else None,
     )
 
 
 def _epic_execution_fingerprint(
     plan: DelegationPlan, obligations: Mapping[str, EpicChildObligations], base_commit: str
 ) -> str:
+    payload = {
+        "target": {"id": plan.target.target_id, "source": plan.target.source_path,
+                   "source_hash": plan.target.source_hash},
+        "base_commit": base_commit,
+        "execution_authority": {
+            "requested_concurrency": plan.requested_concurrency,
+            "available_child_capacity": plan.available_child_capacity,
+            "observed_capabilities": plan.observed_capabilities,
+            "capability_source": plan.capability_source,
+            "persistent_task_authority": plan.persistent_task_authority,
+        },
+        "units": [
+            {
+                "id": unit.unit_id, "dependencies": unit.dependencies,
+                "authority_acs": unit.authority_acs,
+                "execution_needs": unit.execution_needs.properties(),
+                "requested_executor": unit.requested_executor,
+                "executor": unit.executor,
+                "schedule": unit.schedule,
+                "visibility_class": unit.visibility_class,
+                "retention_policy": unit.retention_policy,
+                "obligations": {
+                    "parent_acs": obligations[unit.unit_id].parent_acs,
+                    "repositories": obligations[unit.unit_id].repositories,
+                    "write_scope": obligations[unit.unit_id].write_scope,
+                    "validations": obligations[unit.unit_id].validations,
+                    "evidence": obligations[unit.unit_id].evidence,
+                },
+            }
+            for unit in plan.units
+        ],
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def _epic_execution_fingerprint_v1(
+    plan: DelegationPlan, obligations: Mapping[str, EpicChildObligations], base_commit: str
+) -> str:
+    """Reproduce the 0.4 runtime identity solely to migrate exact legacy state."""
     payload = {
         "target": {"id": plan.target.target_id, "source": plan.target.source_path,
                    "source_hash": plan.target.source_hash},
@@ -2936,16 +3326,17 @@ def _epic_execution_fingerprint(
 
 
 class EpicOrchestrator:
-    """Coordinator-only state machine for approved Epic child persistent tasks."""
+    """Coordinator-only state machine for durable capability-aware execution surfaces."""
 
     def __init__(
         self, *, plan: DelegationPlan, obligations: Mapping[str, EpicChildObligations],
         capabilities: EpicHostCapabilities, coordinator_token: str,
         coordinator_worktree: Path, base_commit: str,
     ) -> None:
-        if plan.target.kind != "epic":
+        if plan.target.kind not in {"task", "epic"}:
             raise EpicOrchestrationError(
-                "PW_EPIC_TARGET_REQUIRED", "Epic orchestration requires exactly one Epic target."
+                "PW_EPIC_TARGET_REQUIRED",
+                "Surface orchestration requires exactly one Task or Epic target.",
             )
         if plan.target.lifecycle != "In Progress":
             raise EpicOrchestrationError(
@@ -2968,7 +3359,10 @@ class EpicOrchestrator:
                 "Epic child obligations must match every selected canonical child exactly.",
             )
         for unit_id, duty in obligations.items():
-            if tuple(duty.parent_acs) != tuple(self.units[unit_id].authority_acs):
+            if (
+                plan.target.kind == "epic"
+                and tuple(duty.parent_acs) != tuple(self.units[unit_id].authority_acs)
+            ):
                 raise EpicOrchestrationError(
                     "PW_EPIC_AUTHORITY_MISMATCH",
                     f"{unit_id} packet parent ACs do not match decomposition authority.",
@@ -2983,7 +3377,7 @@ class EpicOrchestrator:
         }
         fingerprint = _epic_execution_fingerprint(plan, obligations, base_commit)
         self.state = EpicOrchestrationState(
-            schema_version=1, target_id=plan.target.target_id,
+            schema_version=2, target_id=plan.target.target_id,
             plan_fingerprint=fingerprint,
             coordinator_hash=self._token_hash(coordinator_token),
             coordinator_worktree=str(coordinator_worktree.resolve()),
@@ -2995,6 +3389,21 @@ class EpicOrchestrator:
                     completion_provenance=(
                         f"canonical:{plan.target.source_path}#{plan.target.source_hash}"
                         if unit.canonical_state == "complete" else None
+                    ),
+                    executor=unit.executor,
+                    visibility_class=unit.visibility_class,
+                    retention_policy=unit.retention_policy,
+                    disposition_state=(
+                        "integrated" if unit.canonical_state == "complete" else "pending"
+                    ),
+                    disposition_receipt=(
+                        f"canonical:{plan.target.source_hash}"
+                        if unit.canonical_state == "complete" else None
+                    ),
+                    retirement_state=(
+                        "pending" if unit.visibility_class == "visible-retirable"
+                        else "retained" if unit.visibility_class == "visible-retained"
+                        else "not-applicable"
                     ),
                 )
                 for unit in plan.units
@@ -3018,7 +3427,14 @@ class EpicOrchestrator:
         # represent verified canonical predecessors rather than unknown work.
         return all(
             dependency not in self.state.units
-            or self.state.units[dependency].state == "verified"
+            or (
+                self.state.units[dependency].state == "verified"
+                and (
+                    self.state.units[dependency].visibility_class == "ephemeral"
+                    or self.state.units[dependency].disposition_state
+                    in {"integrated", "no-integration"}
+                )
+            )
             for dependency in unit.dependencies
         )
 
@@ -3037,10 +3453,17 @@ class EpicOrchestrator:
         reasons: list[str] = []
         required = {
             "persistent-task",
-            "isolated-worktree",
             "task-monitoring",
             "task-reconciliation",
         }
+        persistent_units = tuple(
+            unit for unit in self.plan.units if unit.executor == "persistent-task"
+        )
+        isolation_required = any(
+            unit.execution_needs.isolated_worktree for unit in persistent_units
+        )
+        if isolation_required:
+            required.add("isolated-worktree")
         if not _delegation_explicit_authority(self.plan.persistent_task_authority):
             reasons.append("explicit owner authority is absent")
         if not required.issubset(self.plan.observed_capabilities):
@@ -3053,7 +3476,7 @@ class EpicOrchestrator:
             reasons.append("current-session capability observation is absent")
         if not self.capabilities.persistent_tasks:
             reasons.append("persistent task creation is unsupported or unknown")
-        if not self.capabilities.isolated_worktrees:
+        if isolation_required and not self.capabilities.isolated_worktrees:
             reasons.append("isolated worktree creation is unsupported or unknown")
         if not self.capabilities.monitoring:
             reasons.append("task monitoring is unsupported or unknown")
@@ -3063,8 +3486,16 @@ class EpicOrchestrator:
             reasons.append("available persistent-task capacity is zero")
         supported = not reasons
         resume_reasons: list[str] = []
+        if self.plan.capability_source.strip() != self.capabilities.source.strip():
+            resume_reasons.append("runtime capability source does not match the immutable plan")
+        if not self.capabilities.current_session_verified:
+            resume_reasons.append("current-session capability observation is absent")
         if "task-reconciliation" not in self.plan.observed_capabilities:
             resume_reasons.append("immutable plan lacks verified task reconciliation")
+        if "task-monitoring" not in self.plan.observed_capabilities:
+            resume_reasons.append("immutable plan lacks verified task monitoring")
+        if not self.capabilities.monitoring:
+            resume_reasons.append("current-session task monitoring is unsupported or unknown")
         if not self.capabilities.reconciliation:
             resume_reasons.append("current-session task reconciliation is unsupported or unknown")
         return {
@@ -3072,18 +3503,55 @@ class EpicOrchestrator:
                 self.plan.persistent_task_authority
             ),
             "creation_supported": supported,
-            "resume_supported": supported and not resume_reasons,
+            "resume_supported": not resume_reasons,
             "resume_reasons": resume_reasons,
             "fallback": None if supported else "safe-sequential-coordinator",
             "reasons": reasons,
             "source": self.capabilities.source or "not observed",
         }
 
+    def _surface_runtime_reasons(self, unit: DelegationPlannedUnit) -> tuple[str, ...]:
+        runtime = self.capabilities.verified_capabilities
+        if self.plan.capability_source.strip() != self.capabilities.source.strip():
+            return ("runtime capability source does not match the immutable plan",)
+        if not self.capabilities.current_session_verified:
+            return ("current-session capability observation is absent",)
+        required: set[str]
+        if unit.executor == "subagent":
+            required = {"subagent"}
+            if unit.execution_needs.isolated_worktree:
+                required.add("subagent-isolated-worktree")
+        elif unit.executor == "persistent-task":
+            required = {
+                "persistent-task", "task-monitoring", "task-reconciliation",
+            }
+            if unit.execution_needs.isolated_worktree:
+                if not {
+                    "persistent-task-isolated-worktree", "isolated-worktree"
+                }.intersection(runtime):
+                    required.add("persistent-task-isolated-worktree")
+        elif unit.executor == "peer-team":
+            required = {"peer-team", "peer-messaging"}
+            if unit.execution_needs.isolated_worktree:
+                required.add("peer-team-isolated-worktree")
+        else:
+            return ()
+        missing_plan = sorted(required - set(self.plan.observed_capabilities))
+        missing = sorted(required - runtime)
+        reasons = [f"immutable plan lacks verified {item}" for item in missing_plan]
+        reasons.extend(f"current runtime lacks verified {item}" for item in missing)
+        if unit.executor == "persistent-task" and not _delegation_explicit_authority(
+            self.plan.persistent_task_authority
+        ):
+            reasons.append("explicit owner authority is absent")
+        return tuple(reasons)
+
     def _packet(self, unit_id: str, attempt: int) -> EpicChildWorkPacket:
         unit = self.units[unit_id]
         duty = self.obligations[unit_id]
         return EpicChildWorkPacket(
-            target_id=self.state.target_id, target_source=self.plan.target.source_path,
+            target_id=self.state.target_id, target_kind=self.plan.target.kind,
+            target_source=self.plan.target.source_path,
             target_source_hash=self.plan.target.source_hash,
             unit_id=unit_id, unit_title=unit.title, parent_acs=duty.parent_acs,
             verified_dependencies=tuple(
@@ -3096,23 +3564,16 @@ class EpicOrchestrator:
             forbidden_actions=EPIC_CHILD_FORBIDDEN_ACTIONS,
             stop_conditions=EPIC_CHILD_STOP_CONDITIONS,
             base_commit=self.state.base_commit, plan_fingerprint=self.state.plan_fingerprint,
+            executor=unit.executor, visibility_class=unit.visibility_class,
+            retention_policy=unit.retention_policy,
+            isolated_worktree_required=unit.execution_needs.isolated_worktree,
             attempt=attempt,
         )
 
-    def _creation_evaluation(
+    def _launch_evaluation(
         self,
-    ) -> tuple[
-        tuple[PersistentTaskCreationIntent, ...], dict[str, tuple[str, ...]]
-    ]:
-        boundary = self.capability_boundary()
+    ) -> tuple[tuple[EpicLaunchIntent, ...], dict[str, tuple[str, ...]]]:
         reasons: dict[str, tuple[str, ...]] = {}
-        if not boundary["creation_supported"]:
-            blocked = tuple(str(item) for item in boundary["reasons"])
-            return (), {
-                unit.unit_id: blocked
-                for unit in self.plan.units
-                if self.state.units[unit.unit_id].state == "pending"
-            }
         if not self.state.shared_premise_valid:
             return (), {
                 unit.unit_id: ("shared Epic premise is invalid",)
@@ -3123,13 +3584,19 @@ class EpicOrchestrator:
             unit_id for unit_id, run in self.state.units.items()
             if run.state in {"active", "returned"}
         ]
-        available = min(
-            self.plan.requested_concurrency,
-            self.plan.available_child_capacity,
+        active_child_slots = sum(
+            self.units[unit_id].required_child_slots
+            for unit_id in active
+            if self.units[unit_id].executor
+            in {"subagent", "persistent-task", "peer-team"}
+        )
+        available = max(0, min(
+            self.plan.requested_concurrency - active_child_slots,
+            self.plan.available_child_capacity - active_child_slots,
             self.capabilities.available_child_capacity,
-        ) - len(active)
+        ))
         reserved = list(active)
-        intents: list[PersistentTaskCreationIntent] = []
+        intents: list[EpicLaunchIntent] = []
         for unit in self.plan.units:
             run = self.state.units[unit.unit_id]
             if run.state != "pending":
@@ -3137,10 +3604,11 @@ class EpicOrchestrator:
             unit_reasons: list[str] = []
             if not self._dependencies_verified(unit):
                 unit_reasons.append("waiting for coordinator-verified dependencies")
-            if unit.executor != "persistent-task":
+            if unit.executor not in {"subagent", "persistent-task", "peer-team"}:
                 unit_reasons.append(
-                    f"immutable plan executor is {unit.executor}, not persistent-task"
+                    f"immutable plan executor is {unit.executor}, not a host-launched surface"
                 )
+            unit_reasons.extend(self._surface_runtime_reasons(unit))
             collisions = [
                 other_id
                 for other_id in reserved
@@ -3152,49 +3620,64 @@ class EpicOrchestrator:
                     + ", ".join(collisions)
                 )
             if available <= 0:
-                unit_reasons.append("effective persistent-task capacity is exhausted")
+                unit_reasons.append("effective child capacity is exhausted")
+            if unit.executor == "peer-team" and available < 2:
+                unit_reasons.append("peer-team requires at least two available child slots")
             if unit_reasons:
                 reasons[unit.unit_id] = tuple(unit_reasons)
                 continue
             attempt = run.attempt + 1
             packet = self._packet(unit.unit_id, attempt)
-            intent_id = hashlib.sha256(
-                f"{self.state.plan_fingerprint}:{unit.unit_id}:{attempt}".encode("utf-8")
-            ).hexdigest()
+            identity = f"{self.state.plan_fingerprint}:{unit.unit_id}:{attempt}"
+            if unit.executor != "persistent-task":
+                identity += f":{unit.executor}"
+            intent_id = hashlib.sha256(identity.encode("utf-8")).hexdigest()
             intents.append(
-                PersistentTaskCreationIntent(
+                EpicLaunchIntent(
                     intent_id=intent_id, unit_id=unit.unit_id, attempt=attempt,
+                    executor=unit.executor,
                     packet=packet, capability_source=self.capabilities.source,
                 )
             )
             reserved.append(unit.unit_id)
-            available -= 1
+            available -= 2 if unit.executor == "peer-team" else 1
         return tuple(intents), reasons
 
-    def creation_intents(self) -> tuple[PersistentTaskCreationIntent, ...]:
-        intents, _reasons = self._creation_evaluation()
+    def launch_intents(self) -> tuple[EpicLaunchIntent, ...]:
+        intents, _reasons = self._launch_evaluation()
         return intents
 
-    def register_creation(
-        self, intent: PersistentTaskCreationIntent, *, handle: str, branch: str,
+    def creation_intents(self) -> tuple[PersistentTaskCreationIntent, ...]:
+        return tuple(
+            PersistentTaskCreationIntent(
+                intent_id=intent.intent_id, unit_id=intent.unit_id,
+                attempt=intent.attempt, packet=intent.packet,
+                capability_source=intent.capability_source,
+            )
+            for intent in self.launch_intents()
+            if intent.executor == "persistent-task"
+        )
+
+    def register_launch(
+        self, intent: EpicLaunchIntent, *, handle: str, branch: str,
         worktree: Path, coordinator_token: str,
     ) -> EpicChildWorkPacket:
         self._require_coordinator(coordinator_token)
-        expected = {item.intent_id: item for item in self.creation_intents()}
+        expected = {item.intent_id: item for item in self.launch_intents()}
         if intent.intent_id not in expected or expected[intent.intent_id] != intent:
             raise EpicOrchestrationError(
-                "PW_EPIC_CREATION_INTENT_INVALID",
-                "Persistent task creation did not match a currently eligible bounded intent.",
+                "PW_EPIC_LAUNCH_INTENT_INVALID",
+                "Worker launch did not match a currently eligible bounded intent.",
             )
         run = self.state.units[intent.unit_id]
         if intent.intent_id in self.state.used_intents or run.state != "pending":
             raise EpicOrchestrationError(
-                "PW_EPIC_DUPLICATE_CREATION", "A child intent may create at most one task."
+                "PW_EPIC_DUPLICATE_CREATION", "A child intent may launch at most one worker."
             )
         if not _epic_opaque_handle_valid(handle) or handle in self.state.used_handles:
             raise EpicOrchestrationError(
                 "PW_EPIC_HANDLE_REUSE",
-                "Every persistent child requires a unique bounded opaque native handle.",
+                "Every delegated child requires a unique bounded opaque native handle.",
             )
         named_branch = bool(
             branch.strip() and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", branch)
@@ -3203,20 +3686,28 @@ class EpicOrchestrator:
         if not named_branch and not detached_identity:
             raise EpicOrchestrationError(
                 "PW_EPIC_BRANCH_INVALID",
-                "Persistent child checkout identity must be a named branch or the exact "
-                "detached@<base-commit> observed from the host.",
+                "Child checkout identity must be a named branch or exact detached base identity.",
             )
         resolved_worktree = worktree.resolve()
-        if resolved_worktree == Path(self.state.coordinator_worktree).resolve():
+        coordinator_worktree = Path(self.state.coordinator_worktree).resolve()
+        if intent.packet.isolated_worktree_required and resolved_worktree == coordinator_worktree:
             raise EpicOrchestrationError(
-                "PW_EPIC_WORKTREE_NOT_ISOLATED", "Persistent children require isolated worktrees."
+                "PW_EPIC_WORKTREE_NOT_ISOLATED", "This selected surface requires an isolated worktree."
             )
         for other in self.state.units.values():
-            if other.worktree and Path(other.worktree).resolve() == resolved_worktree:
+            if (
+                resolved_worktree != coordinator_worktree
+                and other.worktree
+                and Path(other.worktree).resolve() == resolved_worktree
+            ):
                 raise EpicOrchestrationError(
-                    "PW_EPIC_WORKTREE_REUSE", "Persistent child worktrees must be distinct."
+                    "PW_EPIC_WORKTREE_REUSE", "Isolated child worktrees must be distinct."
                 )
-            if named_branch and other.branch == branch:
+            if (
+                intent.executor == "persistent-task"
+                and named_branch
+                and other.branch == branch
+            ):
                 raise EpicOrchestrationError(
                     "PW_EPIC_BRANCH_REUSE", "Persistent child branches must be distinct."
                 )
@@ -3229,10 +3720,30 @@ class EpicOrchestrator:
         run.base_commit = self.state.base_commit
         run.checkpointed = False
         run.issues = ()
+        run.executor = intent.executor
         self.state.create_count += 1
         self.state.used_intents.add(intent.intent_id)
         self.state.used_handles.add(handle)
         return intent.packet
+
+    def register_creation(
+        self, intent: PersistentTaskCreationIntent, *, handle: str, branch: str,
+        worktree: Path, coordinator_token: str,
+    ) -> EpicChildWorkPacket:
+        expected = {
+            item.intent_id: item for item in self.launch_intents()
+            if item.executor == "persistent-task"
+        }
+        launch = expected.get(intent.intent_id)
+        if launch is None or launch.packet != intent.packet:
+            raise EpicOrchestrationError(
+                "PW_EPIC_CREATION_INTENT_INVALID",
+                "Persistent task creation did not match a currently eligible bounded intent.",
+            )
+        return self.register_launch(
+            launch, handle=handle, branch=branch, worktree=worktree,
+            coordinator_token=coordinator_token,
+        )
 
     def _descendants(self, unit_id: str) -> tuple[str, ...]:
         pending = list(self._dependants[unit_id])
@@ -3251,7 +3762,8 @@ class EpicOrchestrator:
         run.issues = (
             "PW_EPIC_SHARED_PREMISE_FAILED" if shared else "PW_EPIC_CHILD_FAILED",
         )
-        run.handle = None
+        if run.visibility_class == "ephemeral":
+            run.handle = None
         self.state.failure_seen = True
         if shared:
             self.state.shared_premise_valid = False
@@ -3295,7 +3807,8 @@ class EpicOrchestrator:
             )
         if not self.state.shared_premise_valid:
             run.state = "halted"
-            run.handle = None
+            if run.visibility_class == "ephemeral":
+                run.handle = None
             run.checkpointed = True
             run.issues = ("PW_EPIC_SHARED_PREMISE_INVALID",)
             return TaskVerificationResult(result.unit_id, False, "halted", run.issues, ())
@@ -3350,7 +3863,7 @@ class EpicOrchestrator:
                     self.obligations[other_id].repositories
                 )
                 and _delegation_scope_overlap(path, prior)
-                for other_id, prior_paths in self.state.integrated_paths
+                for other_id, prior_paths in self.state.verified_paths
                 for prior in prior_paths
             )
         )
@@ -3386,12 +3899,258 @@ class EpicOrchestrator:
             self._fail(result.unit_id, issues, shared=shared_failure)
             return TaskVerificationResult(result.unit_id, False, "failed", tuple(issues), ())
         run.state = "verified"
-        run.handle = None
+        if run.visibility_class == "ephemeral":
+            run.handle = None
         run.issues = ()
         run.completion_provenance = f"coordinator:{observed_head_commit}"
-        self.state.integrated_paths.append((result.unit_id, observed))
-        newly_eligible = tuple(intent.unit_id for intent in self.creation_intents())
+        self.state.verified_paths.append((result.unit_id, observed))
+        newly_eligible = tuple(intent.unit_id for intent in self.launch_intents())
         return TaskVerificationResult(result.unit_id, True, "verified", (), newly_eligible)
+
+    @staticmethod
+    def _durable_reference(value: str) -> str:
+        normalized = value.strip()
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/#@+-]{0,511}", normalized):
+            raise EpicOrchestrationError(
+                "PW_EPIC_DURABLE_RECEIPT_INVALID",
+                "Durable disposition and retirement receipts must be compact opaque references.",
+            )
+        return normalized
+
+    def complete_coordinator_unit(
+        self, unit_id: str, *, observed_paths: Sequence[str],
+        observed_validations: Mapping[str, bool], observed_evidence: Mapping[str, bool],
+        provenance: str, coordinator_token: str,
+    ) -> TaskVerificationResult:
+        self._require_coordinator(coordinator_token)
+        unit = self.units.get(unit_id)
+        if unit is None:
+            raise EpicOrchestrationError("PW_EPIC_UNIT_UNKNOWN", f"Unknown child {unit_id}.")
+        run = self.state.units[unit_id]
+        if unit.executor != "coordinator" or run.state != "pending" or not self._dependencies_verified(unit):
+            raise EpicOrchestrationError(
+                "PW_EPIC_COORDINATOR_EXECUTION_INVALID",
+                f"{unit_id} is not an eligible coordinator-owned unit.",
+            )
+        durable_provenance = self._durable_reference(provenance)
+        observed = self._normalized_paths(observed_paths)
+        duty = self.obligations[unit_id]
+        issues: list[str] = []
+        outside = tuple(
+            path for path in observed
+            if not any(path == scope or path.startswith(scope + "/") for scope in duty.write_scope)
+        )
+        if outside:
+            issues.append("Out-of-scope paths: " + ", ".join(outside) + ".")
+        if any(observed_validations.get(item) is not True for item in duty.validations):
+            issues.append("Required coordinator validation did not pass.")
+        if any(observed_evidence.get(item) is not True for item in duty.evidence):
+            issues.append("Required coordinator evidence is absent.")
+        if issues:
+            self._fail(unit_id, issues, shared=bool(outside))
+            return TaskVerificationResult(unit_id, False, "failed", tuple(issues), ())
+        run.state = "verified"
+        run.completion_provenance = durable_provenance
+        self.state.verified_paths.append((unit_id, observed))
+        return TaskVerificationResult(
+            unit_id, True, "verified", (),
+            tuple(intent.unit_id for intent in self.launch_intents()),
+        )
+
+    def record_durable_disposition(
+        self, unit_id: str, *, kind: str, receipt: str, coordinator_token: str,
+    ) -> tuple[str, ...]:
+        self._require_coordinator(coordinator_token)
+        run = self.state.units.get(unit_id)
+        if run is None:
+            raise EpicOrchestrationError("PW_EPIC_UNIT_UNKNOWN", f"Unknown child {unit_id}.")
+        if run.state != "verified":
+            raise EpicOrchestrationError(
+                "PW_EPIC_DISPOSITION_UNVERIFIED",
+                "Durable disposition requires an exactly coordinator-verified result.",
+            )
+        if kind not in {"integrated", "no-integration"}:
+            raise EpicOrchestrationError(
+                "PW_EPIC_DISPOSITION_INVALID", "Disposition must be integrated or no-integration."
+            )
+        normalized = self._durable_reference(receipt)
+        if run.disposition_state != "pending":
+            if run.disposition_state == kind and run.disposition_receipt == normalized:
+                return tuple(intent.unit_id for intent in self.launch_intents())
+            raise EpicOrchestrationError(
+                "PW_EPIC_DISPOSITION_CONFLICT", "Durable disposition cannot be rewritten."
+            )
+        run.disposition_state = kind
+        run.disposition_receipt = normalized
+        return tuple(intent.unit_id for intent in self.launch_intents())
+
+    def retain_visible_task(
+        self, unit_id: str, *, reason: str, coordinator_token: str,
+        owner_promoted: bool = False, attention_reasons: Sequence[str] = (),
+    ) -> None:
+        self._require_coordinator(coordinator_token)
+        run = self.state.units.get(unit_id)
+        if run is None:
+            raise EpicOrchestrationError("PW_EPIC_UNIT_UNKNOWN", f"Unknown child {unit_id}.")
+        if run.visibility_class == "ephemeral":
+            raise EpicOrchestrationError(
+                "PW_EPIC_RETENTION_NOT_VISIBLE", f"{unit_id} has no visible task to retain."
+            )
+        normalized_reason = reason.strip().lower().replace("_", "-")
+        normalized_attention = tuple(
+            item.strip().lower().replace("_", "-") for item in attention_reasons
+        )
+        if not re.fullmatch(r"[a-z][a-z0-9-]{0,63}", normalized_reason) or any(
+            not re.fullmatch(r"[a-z][a-z0-9-]{0,63}", item)
+            for item in normalized_attention
+        ):
+            raise EpicOrchestrationError(
+                "PW_EPIC_RETENTION_REASON_INVALID", "Retention reasons must be stable reason codes."
+            )
+        run.explicit_retain_reason = normalized_reason
+        run.owner_promoted = owner_promoted
+        run.attention_reasons = tuple(dict.fromkeys(normalized_attention))
+        run.retirement_state = "retained"
+
+    def _retirement_reasons(self, unit_id: str) -> tuple[str, ...]:
+        run = self.state.units[unit_id]
+        reasons: list[str] = []
+        if run.visibility_class != "visible-retirable":
+            reasons.append("task is not classified as visible-retirable")
+        if run.retention_policy != "retire-on-verified":
+            reasons.append("retention policy is not retire-on-verified")
+        if run.state != "verified":
+            reasons.append(f"execution state is {run.state}, not verified")
+        if run.disposition_state not in {"integrated", "no-integration"}:
+            reasons.append("durable disposition is not recorded")
+        if run.handle is None:
+            reasons.append("exact visible task handle is unavailable")
+        if run.attention_reasons:
+            reasons.append("owner attention remains: " + ", ".join(run.attention_reasons))
+        if run.owner_promoted:
+            reasons.append("task was owner-promoted")
+        if run.explicit_retain_reason:
+            reasons.append("task is explicitly retained: " + run.explicit_retain_reason)
+        required = {"task-retirement", "task-retirement-reconciliation"}
+        if not required.issubset(self.plan.observed_capabilities):
+            reasons.append("immutable plan lacks verified retirement capability")
+        if self.plan.capability_source.strip() != self.capabilities.source.strip():
+            reasons.append("runtime capability source does not match the immutable plan")
+        if not required.issubset(self.capabilities.verified_capabilities):
+            reasons.append("current runtime lacks verified retirement capability")
+        if run.retirement_state in {"confirmed", "failed", "unknown", "retained"}:
+            reasons.append(f"retirement state is {run.retirement_state}")
+        return tuple(reasons)
+
+    def retirement_intents(self) -> tuple[EpicRetirementIntent, ...]:
+        intents: list[EpicRetirementIntent] = []
+        for unit in self.plan.units:
+            run = self.state.units[unit.unit_id]
+            if self._retirement_reasons(unit.unit_id):
+                continue
+            assert run.handle is not None
+            intent_id = run.retirement_intent_id or hashlib.sha256(
+                (
+                    f"{self.state.plan_fingerprint}:{unit.unit_id}:{run.attempt}:"
+                    f"{run.handle}:retire"
+                ).encode("utf-8")
+            ).hexdigest()
+            intents.append(
+                EpicRetirementIntent(
+                    intent_id=intent_id, unit_id=unit.unit_id, attempt=run.attempt,
+                    handle=run.handle, capability_source=self.capabilities.source,
+                )
+            )
+        return tuple(intents)
+
+    def register_retirement_requested(
+        self, intent: EpicRetirementIntent, *, coordinator_token: str,
+    ) -> None:
+        self._require_coordinator(coordinator_token)
+        expected = {item.intent_id: item for item in self.retirement_intents()}
+        if expected.get(intent.intent_id) != intent:
+            raise EpicOrchestrationError(
+                "PW_EPIC_RETIREMENT_INTENT_INVALID",
+                "Retirement request does not match one currently eligible exact task handle.",
+            )
+        run = self.state.units[intent.unit_id]
+        if run.retirement_intent_id not in {None, intent.intent_id}:
+            raise EpicOrchestrationError(
+                "PW_EPIC_RETIREMENT_CONFLICT", "A visible task cannot receive a second intent."
+            )
+        run.retirement_intent_id = intent.intent_id
+        run.retirement_state = "requested"
+
+    def register_retirement_outcome(
+        self, intent: EpicRetirementIntent, *, observed_handle: str, outcome: str,
+        acknowledgement: str, coordinator_token: str,
+    ) -> None:
+        self._require_coordinator(coordinator_token)
+        run = self.state.units.get(intent.unit_id)
+        if run is None or run.retirement_intent_id != intent.intent_id:
+            raise EpicOrchestrationError(
+                "PW_EPIC_RETIREMENT_RESULT_UNMATCHED", "Retirement result has no exact request."
+            )
+        if observed_handle != intent.handle or observed_handle != run.handle:
+            raise EpicOrchestrationError(
+                "PW_EPIC_RETIREMENT_RESULT_UNMATCHED", "Retirement result handle does not match."
+            )
+        if outcome not in {"confirmed", "failed", "unknown"}:
+            raise EpicOrchestrationError(
+                "PW_EPIC_RETIREMENT_RESULT_INVALID", "Unknown retirement outcome."
+            )
+        normalized = self._durable_reference(acknowledgement)
+        if run.retirement_state == "confirmed":
+            if outcome == "confirmed" and run.retirement_ack == normalized:
+                return
+            raise EpicOrchestrationError(
+                "PW_EPIC_RETIREMENT_CONFLICT", "Confirmed retirement cannot be rewritten."
+            )
+        if run.retirement_state not in {"requested", "unknown", "failed"}:
+            raise EpicOrchestrationError(
+                "PW_EPIC_RETIREMENT_RESULT_UNMATCHED", "Retirement result is out of sequence."
+            )
+        run.retirement_state = outcome
+        run.retirement_ack = normalized
+
+    def retry_retirement(self, unit_id: str, *, coordinator_token: str) -> None:
+        self._require_coordinator(coordinator_token)
+        run = self.state.units.get(unit_id)
+        if run is None:
+            raise EpicOrchestrationError("PW_EPIC_UNIT_UNKNOWN", f"Unknown child {unit_id}.")
+        if run.retirement_state not in {"failed", "unknown"} or not run.retirement_intent_id:
+            raise EpicOrchestrationError(
+                "PW_EPIC_RETIREMENT_RETRY_INVALID", f"{unit_id} has no retryable retirement."
+            )
+        run.retirement_state = "pending"
+        run.retirement_ack = None
+
+    def reconcile_retirements(
+        self, observations: Mapping[str, Mapping[str, object]], *, coordinator_token: str,
+    ) -> None:
+        self._require_coordinator(coordinator_token)
+        for unit_id, run in self.state.units.items():
+            if run.retirement_state not in {"requested", "unknown"}:
+                continue
+            observed = observations.get(unit_id)
+            exact = bool(
+                observed
+                and observed.get("intent_id") == run.retirement_intent_id
+                and observed.get("handle") == run.handle
+            )
+            observed_state = observed.get("state") if observed else None
+            if exact and observed_state in {"retired", "archived", "confirmed"}:
+                acknowledgement = self._durable_reference(
+                    str(observed.get("acknowledgement", "host-observed-retired"))
+                )
+                run.retirement_state = "confirmed"
+                run.retirement_ack = acknowledgement
+            elif exact and observed_state == "visible":
+                run.retirement_state = "requested"
+                run.retirement_ack = None
+            else:
+                run.retirement_state = "unknown"
+                run.retirement_ack = None
 
     def checkpoint(self, unit_id: str, *, coordinator_token: str) -> None:
         self._require_coordinator(coordinator_token)
@@ -3401,14 +4160,16 @@ class EpicOrchestrator:
         run.checkpointed = True
         if not self.state.shared_premise_valid:
             run.state = "halted"
-            run.handle = None
+            if run.visibility_class == "ephemeral":
+                run.handle = None
 
     def reconcile(
         self, observations: Mapping[str, Mapping[str, object]], *, coordinator_token: str
     ) -> None:
         self._require_coordinator(coordinator_token)
         active = [run for run in self.state.units.values() if run.state in {"active", "returned"}]
-        if active and not self.capability_boundary()["resume_supported"]:
+        persistent_active = [run for run in active if run.executor == "persistent-task"]
+        if persistent_active and not self.capability_boundary()["resume_supported"]:
             raise EpicOrchestrationError(
                 "PW_EPIC_RECONCILIATION_UNVERIFIED",
                 "Resume requires current-session monitoring and reconciliation support.",
@@ -3417,10 +4178,14 @@ class EpicOrchestrator:
             run = self.state.units[unit.unit_id]
             if unit.canonical_state == "complete":
                 run.state = "verified"
-                run.handle = None
+                if run.visibility_class == "ephemeral":
+                    run.handle = None
                 run.completion_provenance = (
                     f"canonical:{self.plan.target.source_path}#{self.plan.target.source_hash}"
                 )
+                if run.attempt == 0:
+                    run.disposition_state = "integrated"
+                    run.disposition_receipt = f"canonical:{self.plan.target.source_hash}"
                 continue
             if run.state not in {"active", "returned"}:
                 continue
@@ -3441,7 +4206,8 @@ class EpicOrchestrator:
                 self._fail(unit.unit_id, ("Observed persistent child failure.",), shared=False)
             else:
                 run.state = "orphaned"
-                run.handle = None
+                if run.visibility_class == "ephemeral":
+                    run.handle = None
                 run.issues = ("PW_EPIC_HANDLE_ORPHANED",)
 
     def retry(self, unit_id: str, *, coordinator_token: str) -> None:
@@ -3457,6 +4223,8 @@ class EpicOrchestrator:
             raise EpicOrchestrationError(
                 "PW_EPIC_SHARED_PREMISE_INVALID", "A halted Epic run cannot retry in place."
             )
+        if run.handle is not None and run.visibility_class != "ephemeral":
+            run.prior_handles = (*run.prior_handles, run.handle)
         run.state = "pending"
         run.intent_id = None
         run.handle = None
@@ -3464,6 +4232,15 @@ class EpicOrchestrator:
         run.worktree = None
         run.base_commit = None
         run.issues = ()
+        run.disposition_state = "pending"
+        run.disposition_receipt = None
+        run.retirement_intent_id = None
+        run.retirement_ack = None
+        run.retirement_state = (
+            "pending" if run.visibility_class == "visible-retirable"
+            else "retained" if run.visibility_class == "visible-retained"
+            else "not-applicable"
+        )
         for descendant in self._descendants(unit_id):
             descendant_run = self.state.units[descendant]
             descendant_run.blocked_by = tuple(
@@ -3479,7 +4256,7 @@ class EpicOrchestrator:
             stored = initialize_delegation_runtime_state(root, self.plan)
         if (
             stored.get("target_id") != self.plan.target.target_id
-            or stored.get("target_kind") != "epic"
+            or stored.get("target_kind") != self.plan.target.kind
             or Path(str(stored.get("worktree", ""))).resolve() != root.resolve()
         ):
             raise EpicOrchestrationError(
@@ -3488,7 +4265,14 @@ class EpicOrchestrator:
             )
         if "epic_orchestration" in stored:
             previous = _epic_orchestration_state_from_payload(stored["epic_orchestration"])
-            if previous.plan_fingerprint != self.state.plan_fingerprint:
+            accepted_fingerprints = {self.state.plan_fingerprint}
+            if previous.migrated_from_version == 1:
+                accepted_fingerprints.add(
+                    _epic_execution_fingerprint_v1(
+                        self.plan, self.obligations, previous.base_commit
+                    )
+                )
+            if previous.plan_fingerprint not in accepted_fingerprints:
                 raise EpicOrchestrationError(
                     "PW_EPIC_RUNTIME_PLAN_MISMATCH",
                     "Persisted Epic runtime belongs to different approved metadata.",
@@ -3515,6 +4299,7 @@ class EpicOrchestrator:
         cls, *, root: Path, plan: DelegationPlan,
         obligations: Mapping[str, EpicChildObligations], capabilities: EpicHostCapabilities,
         coordinator_token: str, observations: Mapping[str, Mapping[str, object]],
+        retirement_observations: Mapping[str, Mapping[str, object]] | None = None,
     ) -> EpicOrchestrator:
         stored = _load_delegation_runtime_state(root, plan.target.target_id)
         if stored is None or "epic_orchestration" not in stored:
@@ -3525,7 +4310,7 @@ class EpicOrchestrator:
         supplied_root = root.resolve()
         if (
             stored.get("target_id") != plan.target.target_id
-            or stored.get("target_kind") != "epic"
+            or stored.get("target_kind") != plan.target.kind
             or Path(str(stored.get("worktree", ""))).resolve() != supplied_root
             or Path(restored.coordinator_worktree).resolve() != supplied_root
         ):
@@ -3539,9 +4324,14 @@ class EpicOrchestrator:
             coordinator_worktree=supplied_root,
             base_commit=restored.base_commit,
         )
+        accepted_fingerprints = {instance.state.plan_fingerprint}
+        if restored.migrated_from_version == 1:
+            accepted_fingerprints.add(
+                _epic_execution_fingerprint_v1(plan, obligations, restored.base_commit)
+            )
         if (
             restored.target_id != plan.target.target_id
-            or restored.plan_fingerprint != instance.state.plan_fingerprint
+            or restored.plan_fingerprint not in accepted_fingerprints
             or restored.coordinator_hash != instance.state.coordinator_hash
             or set(restored.units) != set(instance.units)
         ):
@@ -3549,8 +4339,14 @@ class EpicOrchestrator:
                 "PW_EPIC_RUNTIME_PLAN_MISMATCH",
                 "Persisted Epic runtime does not match the plan, units, or coordinator.",
             )
+        restored.plan_fingerprint = instance.state.plan_fingerprint
+        restored.migrated_from_version = None
         instance.state = restored
         instance.reconcile(observations, coordinator_token=coordinator_token)
+        if retirement_observations is not None:
+            instance.reconcile_retirements(
+                retirement_observations, coordinator_token=coordinator_token
+            )
         return instance
 
     def assert_child_completion_observed(
@@ -3598,10 +4394,12 @@ class EpicOrchestrator:
                 groups[state].append(unit.unit_id)
             elif self.state.failure_seen and self.state.shared_premise_valid:
                 groups["unaffected"].append(unit.unit_id)
-        intents, eligibility_reasons = self._creation_evaluation()
+        intents, eligibility_reasons = self._launch_evaluation()
         eligible_ids = {intent.unit_id for intent in intents}
+        retirement_intents = self.retirement_intents()
+        retirement_ids = {intent.unit_id for intent in retirement_intents}
         return {
-            "schema_version": 1, "target_id": self.state.target_id,
+            "schema_version": 2, "target_id": self.state.target_id,
             "shared_premise_valid": self.state.shared_premise_valid,
             "create_count": self.state.create_count,
             "capability_boundary": self.capability_boundary(),
@@ -3614,8 +4412,27 @@ class EpicOrchestrator:
                 for unit in self.plan.units
                 if self.state.units[unit.unit_id].state == "pending"
             },
+            "retirement_intents": [intent.unit_id for intent in retirement_intents],
+            "lifecycle": {
+                unit.unit_id: {
+                    "executor": self.state.units[unit.unit_id].executor,
+                    "visibility_class": self.state.units[unit.unit_id].visibility_class,
+                    "retention_policy": self.state.units[unit.unit_id].retention_policy,
+                    "disposition_state": self.state.units[unit.unit_id].disposition_state,
+                    "retirement_state": self.state.units[unit.unit_id].retirement_state,
+                    "retirement_eligible": unit.unit_id in retirement_ids,
+                    "retention_reasons": list(self._retirement_reasons(unit.unit_id)),
+                    "prior_visible_handles": len(self.state.units[unit.unit_id].prior_handles),
+                }
+                for unit in self.plan.units
+            },
             **groups,
         }
+
+
+# Public host-neutral name. EpicOrchestrator remains as a compatibility spelling
+# for existing integrations and schema-v1 runtime payloads.
+DelegationSurfaceOrchestrator = EpicOrchestrator
 
 
 def _operational_status_choices(
@@ -9185,9 +10002,9 @@ def _implementation_template(
         f"| ---------- | ----------- | ---------- | -------- | -------- |\n"
         f"| {repository_id} | not recorded | not recorded | not recorded | not recorded |\n\n"
         f"## Task List\n\n"
-        f"| ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe |\n"
-        f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- |\n"
-        f"| 1 | ____ | ____ | AC1: ____ | ____ | To Do | | ____ | No |\n\n"
+        f"| ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |\n"
+        f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |\n"
+        f"| 1 | ____ | ____ | AC1: ____ | ____ | To Do | | ____ | No | bounded-return |\n\n"
         f"## QA & Code Review\n\n"
         f"- Verdict: ____\n"
         f"- Evidence: ____\n"
@@ -9757,17 +10574,20 @@ def _format_decomposition_plan(
         "",
         "## Authorized Child Rows",
         "",
-        "| ID | Title | Parent ACs | Source | Dependencies |",
-        "|---|---|---|---|---|",
+        "| ID | Title | Parent ACs | Source | Dependencies | Execution Needs |",
+        "|---|---|---|---|---|---|",
     ]
     for row in rows:
         lines.append(
-            "| {id} | {title} | {parent_acs} | {source} | {dependencies} |".format(
+            "| {id} | {title} | {parent_acs} | {source} | {dependencies} | "
+            "{execution_needs} |".format(
                 id=row["ID"],
                 title=row["Title"],
                 parent_acs=_normalize_ac_list(row.get("Parent ACs", "")),
                 source=row.get("Source", "Decomposition plan"),
                 dependencies=row.get("Dependencies", ""),
+                execution_needs=row.get("Execution Needs", "bounded-return")
+                or "bounded-return",
             )
         )
     lines.extend(
@@ -9788,6 +10608,13 @@ def _read_decomposition_plan_rows(plan_path: Path) -> list[dict[str, str]]:
     if not plan_path.exists():
         return []
     text = plan_path.read_text(encoding="utf-8")
+    rows = _markdown_table_rows_from_section(
+        text,
+        "Authorized Child Rows",
+        expected_columns=DELEGATION_EXECUTION_NEEDS_DECOMPOSITION_PLAN_COLUMNS,
+    )
+    if rows:
+        return rows
     rows = _markdown_table_rows_from_section(
         text,
         "Authorized Child Rows",
@@ -10010,6 +10837,68 @@ def _delegation_parallel_safe(value: str, *, unit_id: str) -> bool:
     )
 
 
+def _delegation_execution_needs(
+    value: str, *, unit_id: str
+) -> DelegationExecutionNeeds:
+    """Parse optional execution needs without inferring any host capability."""
+    normalized = value.strip()
+    if not normalized or normalized.lower() in {"none", "n/a", "-"}:
+        return DelegationExecutionNeeds()
+
+    tokens: list[str] = []
+    peer_group: str | None = None
+    durable_resume = False
+    direct_owner_steering = False
+    isolated_worktree = False
+    for raw_token in normalized.split(","):
+        token = raw_token.strip().lower()
+        if not token:
+            raise _delegation_error(
+                "PW_DELEGATION_EXECUTION_NEEDS_INVALID",
+                f"{unit_id} has an empty Execution Needs token.",
+            )
+        if token.startswith("peer:"):
+            group = token.removeprefix("peer:").strip()
+            if not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", group):
+                raise _delegation_error(
+                    "PW_DELEGATION_EXECUTION_NEEDS_INVALID",
+                    f"{unit_id} has invalid peer group '{group}'.",
+                )
+            if peer_group is not None and peer_group != group:
+                raise _delegation_error(
+                    "PW_DELEGATION_EXECUTION_NEEDS_INVALID",
+                    f"{unit_id} declares more than one peer communication group.",
+                )
+            peer_group = group
+            canonical = f"peer:{group}"
+        elif token in DELEGATION_EXECUTION_NEED_TOKENS:
+            canonical = token
+            durable_resume = durable_resume or token == "durable-resume"
+            direct_owner_steering = (
+                direct_owner_steering or token == "direct-owner-steering"
+            )
+            isolated_worktree = isolated_worktree or token == "isolated-worktree"
+        else:
+            raise _delegation_error(
+                "PW_DELEGATION_EXECUTION_NEEDS_INVALID",
+                f"{unit_id} has unknown Execution Needs token '{raw_token.strip()}'.",
+            )
+        if canonical not in tokens:
+            tokens.append(canonical)
+
+    if any(token != "bounded-return" for token in tokens):
+        tokens = [token for token in tokens if token != "bounded-return"]
+    if not tokens:
+        tokens = ["bounded-return"]
+    return DelegationExecutionNeeds(
+        tokens=tuple(tokens),
+        durable_resume=durable_resume,
+        direct_owner_steering=direct_owner_steering,
+        isolated_worktree=isolated_worktree,
+        peer_group=peer_group,
+    )
+
+
 def _delegation_explicit_authority(value: str | None) -> bool:
     if value is None:
         return False
@@ -10057,6 +10946,7 @@ def _delegation_task_units(root: Path, implementation_path: Path) -> tuple[Deleg
             "the legacy six-column plan remains valid for non-Delegate commands.",
         )
     source_path = _delegation_relative_path(root, implementation_path)
+    repository_scope = _delegation_repository_scope(implementation_path)
     units: list[DelegationUnit] = []
     for order, row in enumerate(rows):
         unit_id = row.get("ID", "").strip()
@@ -10086,6 +10976,10 @@ def _delegation_task_units(root: Path, implementation_path: Path) -> tuple[Deleg
                         key=lambda ac_id: int(ac_id[2:]),
                     )
                 ),
+                execution_needs=_delegation_execution_needs(
+                    row.get("Execution Needs", ""), unit_id=unit_id
+                ),
+                repository_scope=repository_scope,
             )
         )
     return tuple(units)
@@ -10098,8 +10992,14 @@ def _delegation_epic_units(
     rows = _markdown_table_rows_from_section(
         text,
         "Authorized Child Rows",
-        expected_columns=DELEGATION_DECOMPOSITION_PLAN_COLUMNS,
+        expected_columns=DELEGATION_EXECUTION_NEEDS_DECOMPOSITION_PLAN_COLUMNS,
     )
+    if not rows:
+        rows = _markdown_table_rows_from_section(
+            text,
+            "Authorized Child Rows",
+            expected_columns=DELEGATION_DECOMPOSITION_PLAN_COLUMNS,
+        )
     if not rows:
         legacy_rows = _markdown_table_rows_from_section(
             text,
@@ -10140,6 +11040,29 @@ def _delegation_epic_units(
                 f"{unit_id} does not match decomposition authority: "
                 + "; ".join(authority_issues),
             )
+        child_write_scope: tuple[str, ...] = ()
+        child_repository_scope: tuple[str, ...] = (".",)
+        docs_rel = _clean_markdown_cell_path(tracker_row.get("Docs", ""))
+        if docs_rel:
+            child_implementation = root / ".project-workflow" / docs_rel
+            if child_implementation.exists():
+                child_repository_scope = _delegation_repository_scope(child_implementation)
+                _found, child_rows, child_malformed = _implementation_task_table_rows(
+                    child_implementation.read_text(encoding="utf-8")
+                )
+                if not child_malformed and child_rows and all(
+                    child.get("_delegation_metadata") == "present" for child in child_rows
+                ):
+                    child_write_scope = tuple(
+                        dict.fromkeys(
+                            scope
+                            for child in child_rows
+                            for scope in _delegation_write_scope(
+                                child.get("Write Scope", ""),
+                                unit_id=f"{unit_id}/{child.get('ID', '').strip() or '?'}",
+                            )
+                        )
+                    )
         units.append(
             DelegationUnit(
                 unit_id=unit_id,
@@ -10147,7 +11070,7 @@ def _delegation_epic_units(
                 dependencies=_delegation_dependency_ids(
                     row.get("Dependencies", ""), unit_id=unit_id
                 ),
-                write_scope=(),
+                write_scope=child_write_scope,
                 parallel_safe=True,
                 canonical_state=_delegation_canonical_state(
                     tracker_row.get("Status", "")
@@ -10160,6 +11083,10 @@ def _delegation_epic_units(
                         key=lambda ac_id: int(ac_id[2:]),
                     )
                 ),
+                execution_needs=_delegation_execution_needs(
+                    row.get("Execution Needs", ""), unit_id=unit_id
+                ),
+                repository_scope=child_repository_scope,
             )
         )
     return tuple(units)
@@ -10169,6 +11096,18 @@ def _delegation_scope_overlap(left: str, right: str) -> bool:
     if left == "." or right == ".":
         return True
     return left == right or left.startswith(right + "/") or right.startswith(left + "/")
+
+
+def _delegation_repository_scope(implementation_path: Path) -> tuple[str, ...]:
+    requirements_path = implementation_path.parent / "REQUIREMENTS.md"
+    if not requirements_path.exists():
+        return (".",)
+    primary, touched = _repository_scope_values(
+        requirements_path.read_text(encoding="utf-8")
+    )
+    values = touched or ((primary,) if primary else ())
+    normalized = tuple(dict.fromkeys(value for value in values if value))
+    return normalized or (".",)
 
 
 def _delegation_has_path(
@@ -10251,6 +11190,222 @@ def _delegation_capability_matrix(
             )
         )
     return tuple(observations)
+
+
+@dataclass(frozen=True)
+class DelegationExecutorDecision:
+    requested_executor: str
+    executor: str
+    schedule: str
+    visibility_class: str
+    retention_policy: str
+    required_child_slots: int
+    reason: str
+    blocking_reasons: tuple[str, ...] = ()
+
+
+def _delegation_capability_issue(
+    capability: str,
+    observations: Mapping[str, DelegationCapabilityObservation],
+) -> str:
+    observation = observations[capability]
+    return (
+        f"{capability} capability is {observation.state} "
+        f"({observation.provenance})"
+    )
+
+
+def _delegation_select_executor(
+    *,
+    unit: DelegationUnit,
+    capability_matrix: tuple[DelegationCapabilityObservation, ...],
+    available_child_capacity: int,
+    requested_concurrency: int,
+    persistent_task_authority: str | None,
+) -> DelegationExecutorDecision:
+    """Select one surface from work properties; target kind is deliberately absent."""
+    observations = {item.capability: item for item in capability_matrix}
+
+    def verified(capability: str) -> bool:
+        return observations[capability].state == "verified"
+
+    def result(
+        executor: str,
+        reason: str,
+        *,
+        requested_executor: str | None = None,
+        blocking_reasons: tuple[str, ...] = (),
+    ) -> DelegationExecutorDecision:
+        required_child_slots = 2 if executor == "peer-team" else (
+            1 if executor in {"subagent", "persistent-task"} else 0
+        )
+        schedule = (
+            "parallel"
+            if required_child_slots
+            and unit.parallel_safe
+            and requested_concurrency >= required_child_slots
+            and available_child_capacity >= required_child_slots
+            else "sequential"
+        )
+        if executor == "persistent-task":
+            retirement_verified = verified("task-retirement") and verified(
+                "task-retirement-reconciliation"
+            )
+            owner_retained = unit.execution_needs.direct_owner_steering
+            visibility_class = "visible-retained" if owner_retained else (
+                "visible-retirable" if retirement_verified else "visible-retained"
+            )
+            retention_policy = "retain" if owner_retained else (
+                "retire-on-verified" if retirement_verified else "retain"
+            )
+        else:
+            visibility_class = "ephemeral"
+            retention_policy = "not-applicable"
+        return DelegationExecutorDecision(
+            requested_executor=requested_executor or unit.execution_needs.requested_executor,
+            executor=executor,
+            schedule=schedule,
+            visibility_class=visibility_class,
+            retention_policy=retention_policy,
+            required_child_slots=required_child_slots,
+            reason=reason,
+            blocking_reasons=blocking_reasons,
+        )
+
+    needs = unit.execution_needs
+    coordinator_owned = any(
+        _task_worker_scope_forbidden(scope) for scope in unit.write_scope
+    )
+    binding_needs = (
+        needs.durable_resume
+        or needs.direct_owner_steering
+        or needs.isolated_worktree
+        or needs.peer_group is not None
+    )
+    if coordinator_owned:
+        if binding_needs:
+            issue = (
+                "Coordinator-owned workflow scope conflicts with binding execution needs: "
+                + ", ".join(needs.tokens)
+                + "."
+            )
+            return result("none", issue, blocking_reasons=(issue,))
+        return result(
+            "coordinator",
+            "Coordinator-owned workflow scope requires the single shared-state writer.",
+            requested_executor="coordinator",
+        )
+
+    if needs.peer_group is not None:
+        composite = tuple(
+            token
+            for token, enabled in (
+                ("durable-resume", needs.durable_resume),
+                ("direct-owner-steering", needs.direct_owner_steering),
+            )
+            if enabled
+        )
+        if composite:
+            reason = (
+                "Binding peer communication cannot satisfy additional persistent need(s): "
+                + ", ".join(composite)
+                + "."
+            )
+            return result("none", reason, blocking_reasons=(reason,))
+        required = ["peer-team", "peer-messaging"]
+        if needs.isolated_worktree:
+            required.append("peer-team-isolated-worktree")
+        issues = tuple(
+            _delegation_capability_issue(capability, observations)
+            for capability in required
+            if not verified(capability)
+        )
+        if available_child_capacity < 2:
+            issues += (
+                "peer-team requires at least 2 available child slots; "
+                f"observed {available_child_capacity}",
+            )
+        if requested_concurrency < 2:
+            issues += (
+                "peer-team requires requested concurrency of at least 2; "
+                f"requested {requested_concurrency}",
+            )
+        if issues:
+            reason = "Binding peer communication requirement is unmet: " + "; ".join(issues) + "."
+            return result("none", reason, blocking_reasons=(reason,))
+        return result(
+            "peer-team",
+            f"Selected verified peer-team surface for peer group {needs.peer_group}.",
+        )
+
+    persistent_required = needs.durable_resume or needs.direct_owner_steering
+    persistent_capabilities = [
+        "persistent-task",
+        "task-monitoring",
+        "task-reconciliation",
+    ]
+    if needs.isolated_worktree:
+        persistent_isolation_verified = verified(
+            "persistent-task-isolated-worktree"
+        ) or verified("isolated-worktree")
+    else:
+        persistent_isolation_verified = True
+    if needs.direct_owner_steering:
+        persistent_capabilities.append("persistent-task-owner-steering")
+
+    if needs.isolated_worktree and not persistent_required:
+        subagent_isolated = verified("subagent") and verified(
+            "subagent-isolated-worktree"
+        )
+        if subagent_isolated and available_child_capacity > 0:
+            return result(
+                "subagent",
+                "Selected the lightest verified isolated subagent surface.",
+            )
+        persistent_required = True
+
+    if persistent_required:
+        issues = [
+            _delegation_capability_issue(capability, observations)
+            for capability in persistent_capabilities
+            if not verified(capability)
+        ]
+        if needs.isolated_worktree and not persistent_isolation_verified:
+            issues.append(
+                _delegation_capability_issue(
+                    "persistent-task-isolated-worktree", observations
+                )
+                + "; legacy isolated-worktree capability is also not verified"
+            )
+        if not _delegation_explicit_authority(persistent_task_authority):
+            issues.append("explicit current-request persistent-task authority is absent")
+        if available_child_capacity < 1:
+            issues.append("persistent-task child capacity is exhausted")
+        if issues:
+            reason = "Binding persistent execution requirement is unmet: " + "; ".join(issues) + "."
+            return result("none", reason, blocking_reasons=(reason,))
+        return result(
+            "persistent-task",
+            "Selected verified persistent-task surface for "
+            + ", ".join(needs.tokens)
+            + ".",
+        )
+
+    if verified("subagent") and available_child_capacity > 0:
+        return result(
+            "subagent",
+            "Selected the lightest verified bounded-return subagent surface.",
+        )
+    fallback_issues: list[str] = []
+    if not verified("subagent"):
+        fallback_issues.append(_delegation_capability_issue("subagent", observations))
+    if available_child_capacity < 1:
+        fallback_issues.append("subagent child capacity is exhausted")
+    return result(
+        "coordinator",
+        "; ".join(fallback_issues)
+        + "; coordinator sequential fallback satisfies bounded-return.",
+    )
 
 
 def build_delegation_plan(
@@ -10364,6 +11519,8 @@ def build_delegation_plan(
                 dependencies, right.unit_id, left.unit_id
             ):
                 continue
+            if not set(left.repository_scope).intersection(right.repository_scope):
+                continue
             overlaps = sorted(
                 {
                     f"{left_scope} <> {right_scope}"
@@ -10385,34 +11542,34 @@ def build_delegation_plan(
     planned_units: list[DelegationPlannedUnit] = []
     eligible: list[str] = []
     blocked: list[str] = []
-    worker_capability: str | None = None
-    persistent_creation_capabilities = {
-        "persistent-task",
-        "isolated-worktree",
-        "task-monitoring",
-        "task-reconciliation",
-    }
-    if target.kind == "epic":
-        if (
-            persistent_creation_capabilities.issubset(capabilities)
-            and _delegation_explicit_authority(persistent_task_authority)
-        ):
-            worker_capability = "persistent-task"
-    elif "subagent" in capabilities:
-        worker_capability = "subagent"
-    worker_observed = worker_capability is not None and available_child_capacity > 0
     for unit_id in selected_order:
         unit = by_id[unit_id]
         reasons: list[str] = []
+        decision = _delegation_select_executor(
+            unit=unit,
+            capability_matrix=capability_matrix,
+            available_child_capacity=available_child_capacity,
+            requested_concurrency=requested_concurrency,
+            persistent_task_authority=persistent_task_authority,
+        )
         if unit.canonical_state == "complete":
             readiness = "complete"
-            executor = "none"
-            executor_reason = "Canonical workflow state is complete."
+            executor = decision.executor
+            executor_reason = (
+                "Canonical workflow state is complete; no launch is eligible. "
+                + decision.reason
+            )
+            schedule = decision.schedule
+            visibility_class = decision.visibility_class
+            retention_policy = decision.retention_policy
         elif unit.canonical_state == "blocked":
             readiness = "blocked"
             reasons.append("Canonical workflow state is blocked.")
-            executor = "none"
-            executor_reason = "Blocked units are not executable."
+            executor = decision.executor
+            executor_reason = "Blocked units are not executable. " + decision.reason
+            schedule = decision.schedule
+            visibility_class = decision.visibility_class
+            retention_policy = decision.retention_policy
             blocked.append(unit_id)
         else:
             incomplete_dependencies = [
@@ -10424,25 +11581,18 @@ def build_delegation_plan(
                     "Waiting for dependencies: " + ", ".join(incomplete_dependencies) + "."
                 )
                 blocked.append(unit_id)
+            elif decision.blocking_reasons:
+                readiness = "blocked"
+                reasons.extend(decision.blocking_reasons)
+                blocked.append(unit_id)
             else:
                 readiness = "eligible"
                 eligible.append(unit_id)
-            if worker_observed:
-                if unit.parallel_safe:
-                    executor = worker_capability
-                    executor_reason = (
-                        f"Observed {worker_capability} capability from {capability_source}."
-                    )
-                else:
-                    executor = "sequential-worker"
-                    executor_reason = (
-                        f"Observed {worker_capability} capability, but Parallel Safe is No."
-                    )
-            else:
-                executor = "coordinator"
-                executor_reason = (
-                    "No observed child executor with available capacity; coordinator fallback."
-                )
+            executor = decision.executor
+            executor_reason = decision.reason
+            schedule = decision.schedule
+            visibility_class = decision.visibility_class
+            retention_policy = decision.retention_policy
         planned_units.append(
             DelegationPlannedUnit(
                 unit_id=unit.unit_id,
@@ -10453,7 +11603,14 @@ def build_delegation_plan(
                 canonical_state=unit.canonical_state,
                 readiness=readiness,
                 blocking_reasons=tuple(reasons),
+                execution_needs=unit.execution_needs,
+                repository_scope=unit.repository_scope,
+                requested_executor=decision.requested_executor,
                 executor=executor,
+                schedule=schedule,
+                visibility_class=visibility_class,
+                retention_policy=retention_policy,
+                required_child_slots=decision.required_child_slots,
                 executor_reason=executor_reason,
                 source_path=unit.source_path,
                 authority_acs=unit.authority_acs,
@@ -10463,11 +11620,17 @@ def build_delegation_plan(
     eligible_workers = [
         unit
         for unit in planned_units
-        if unit.readiness == "eligible" and unit.executor in DELEGATION_CAPABILITIES
+        if unit.readiness == "eligible"
+        and unit.executor in {"subagent", "persistent-task", "peer-team"}
     ]
-    effective_child_concurrency = min(
-        requested_concurrency, available_child_capacity, len(eligible_workers)
-    )
+    child_slot_budget = min(requested_concurrency, available_child_capacity)
+    effective_child_concurrency = 0
+    effective_child_slots = 0
+    for unit in eligible_workers:
+        if effective_child_slots + unit.required_child_slots > child_slot_budget:
+            continue
+        effective_child_concurrency += 1
+        effective_child_slots += unit.required_child_slots
     if not eligible:
         effective_concurrency = 0
         concurrency_reason = "No units are currently eligible."
@@ -10477,7 +11640,8 @@ def build_delegation_plan(
             concurrency_reason = (
                 f"Reduced from requested {requested_concurrency} to {effective_concurrency}: "
                 f"available child capacity is {available_child_capacity} and "
-                f"{len(eligible_workers)} child-executable unit(s) are eligible."
+                f"{len(eligible_workers)} child-executable unit(s) require "
+                f"{effective_child_slots} effective child slot(s)."
             )
         else:
             concurrency_reason = "Requested concurrency is supported by observed child capacity."
@@ -10515,6 +11679,7 @@ def build_delegation_plan(
         available_child_capacity=available_child_capacity,
         effective_concurrency=effective_concurrency,
         effective_child_concurrency=effective_child_concurrency,
+        effective_child_slots=effective_child_slots,
         concurrency_reason=concurrency_reason,
         observed_capabilities=capabilities,
         capability_matrix=capability_matrix,
@@ -10664,7 +11829,19 @@ def delegation_plan_payload(plan: DelegationPlan) -> dict[str, object]:
                 "canonical_state": unit.canonical_state,
                 "readiness": unit.readiness,
                 "blocking_reasons": list(unit.blocking_reasons),
+                "required_properties": {
+                    **unit.execution_needs.properties(),
+                    "parallel_safe": unit.parallel_safe,
+                    "write_scope": list(unit.write_scope),
+                    "repository_scope": list(unit.repository_scope),
+                },
+                "requested_executor": unit.requested_executor,
+                "effective_executor": unit.executor,
                 "executor": unit.executor,
+                "schedule": unit.schedule,
+                "visibility_class": unit.visibility_class,
+                "retention_policy": unit.retention_policy,
+                "required_child_slots": unit.required_child_slots,
                 "executor_reason": unit.executor_reason,
                 "source": unit.source_path,
                 "authority_acs": list(unit.authority_acs),
@@ -10679,6 +11856,7 @@ def delegation_plan_payload(plan: DelegationPlan) -> dict[str, object]:
             "available_child_capacity": plan.available_child_capacity,
             "effective": plan.effective_concurrency,
             "effective_child": plan.effective_child_concurrency,
+            "effective_child_slots": plan.effective_child_slots,
             "reason": plan.concurrency_reason,
         },
         "capabilities": {
@@ -10718,8 +11896,15 @@ def _format_delegation_plan_human(plan: DelegationPlan, *, heading: str = "Deleg
         suffix = f" — {reasons}" if reasons else ""
         lines.append(
             f"- {unit.unit_id}: {unit.readiness}; dependencies={dependencies}; "
-            f"executor={unit.executor}{suffix}"
+            f"needs={','.join(unit.execution_needs.tokens)}; "
+            f"parallel-safe={'yes' if unit.parallel_safe else 'no'}; "
+            f"write-scope={','.join(unit.write_scope) or 'none'}; "
+            f"repositories={','.join(unit.repository_scope)}; "
+            f"requested={unit.requested_executor}; effective={unit.executor}; "
+            f"schedule={unit.schedule}; visibility={unit.visibility_class}; "
+            f"retention={unit.retention_policy}; child-slots={unit.required_child_slots}{suffix}"
         )
+        lines.append(f"  Reason: {unit.executor_reason}")
     lines.extend(
         [
             "Eligible: " + (", ".join(plan.eligible_units) or "none"),
@@ -10728,13 +11913,15 @@ def _format_delegation_plan_human(plan: DelegationPlan, *, heading: str = "Deleg
                 f"Concurrency: requested={plan.requested_concurrency}, "
                 f"available-child={plan.available_child_capacity}, "
                 f"effective={plan.effective_concurrency}, "
-                f"effective-child={plan.effective_child_concurrency}"
+                f"effective-child={plan.effective_child_concurrency}, "
+                f"effective-child-slots={plan.effective_child_slots}"
             ),
             f"Concurrency reason: {plan.concurrency_reason}",
             "Capability source: " + plan.capability_source,
             "Capability matrix: "
             + ", ".join(
-                f"{item.capability}={item.state}" for item in plan.capability_matrix
+                f"{item.capability}={item.state} ({item.provenance})"
+                for item in plan.capability_matrix
             ),
             "Persistent task authority: "
             + (plan.persistent_task_authority or "not authorized"),
@@ -11139,6 +12326,33 @@ def _delegation_status_payload(
                         for unit_id, run in sorted(epic_runtime.units.items())
                     },
                     "create_count": epic_runtime.create_count,
+                    "lifecycle": {
+                        unit_id: {
+                            "executor": run.executor,
+                            "visibility_class": run.visibility_class,
+                            "retention_policy": run.retention_policy,
+                            "disposition_state": run.disposition_state,
+                            "retirement_state": run.retirement_state,
+                            "attention_reasons": list(run.attention_reasons),
+                            "owner_promoted": run.owner_promoted,
+                            "explicit_retain_reason": run.explicit_retain_reason,
+                            "prior_visible_handles": len(run.prior_handles),
+                        }
+                        for unit_id, run in sorted(epic_runtime.units.items())
+                    },
+                    "retirement_confirmed": sorted(
+                        unit_id for unit_id, run in epic_runtime.units.items()
+                        if run.retirement_state == "confirmed"
+                    ),
+                    "retirement_pending": sorted(
+                        unit_id for unit_id, run in epic_runtime.units.items()
+                        if run.retirement_state in {"pending", "requested", "failed", "unknown"}
+                    ),
+                    "visible_retained": sorted(
+                        unit_id for unit_id, run in epic_runtime.units.items()
+                        if run.visibility_class.startswith("visible-")
+                        and run.retirement_state != "confirmed"
+                    ),
                     "no_relaunch": sorted(
                         unit_id for unit_id, run in epic_runtime.units.items()
                         if run.state != "pending"
@@ -12435,9 +13649,9 @@ def _epic_child_implementation_template(
         f"| ---------- | ----------- | ---------- | -------- | -------- |\n"
         f"| {repository_id} | not recorded | not recorded | not recorded | not recorded |\n\n"
         f"## Task List\n\n"
-        f"| ID | Title | Description | Acceptance Criteria | User Verification | Status |\n"
-        f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ |\n"
-        f"| 1 | ____ | ____ | AC1 / parent AC(s) {parent_ac_value}: ____ | ____ | To Do |\n\n"
+        f"| ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |\n"
+        f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |\n"
+        f"| 1 | ____ | ____ | AC1 / parent AC(s) {parent_ac_value}: ____ | ____ | To Do | | ____ | No | bounded-return |\n\n"
         f"## Parent AC Evidence\n\n"
         f"- {parent_ac_value}: Pending implementation evidence. Recipe-triggered claims must "
         f"also be backed by `{STRUCTURED_EVIDENCE_FILENAME}`.\n\n"
@@ -12524,6 +13738,10 @@ def _implementation_task_table_rows(
     table_columns: tuple[str, ...] | None = None
     for idx, line in enumerate(lines):
         cells = _parse_markdown_table_cells(line)
+        if cells == list(DELEGATION_EXECUTION_NEEDS_TASK_COLUMNS):
+            header_idx = idx
+            table_columns = DELEGATION_EXECUTION_NEEDS_TASK_COLUMNS
+            break
         if cells == list(DELEGATION_IMPLEMENTATION_TASK_COLUMNS):
             header_idx = idx
             table_columns = DELEGATION_IMPLEMENTATION_TASK_COLUMNS
@@ -12550,7 +13768,13 @@ def _implementation_task_table_rows(
             continue
         row = dict(zip(table_columns, cells))
         row["_delegation_metadata"] = (
-            "present" if table_columns == DELEGATION_IMPLEMENTATION_TASK_COLUMNS else "legacy"
+            "present"
+            if table_columns
+            in (
+                DELEGATION_IMPLEMENTATION_TASK_COLUMNS,
+                DELEGATION_EXECUTION_NEEDS_TASK_COLUMNS,
+            )
+            else "legacy"
         )
         row["_line_idx"] = str(row_idx + 1)
         rows.append(row)
@@ -12580,6 +13804,7 @@ def _task_testing_integrity_issues(docs_text: str) -> tuple[str, ...]:
         for idx, line in enumerate(section_lines)
         if _parse_markdown_table_cells(line)
         in (
+            list(DELEGATION_EXECUTION_NEEDS_TASK_COLUMNS),
             list(DELEGATION_IMPLEMENTATION_TASK_COLUMNS),
             list(IMPLEMENTATION_TASK_COLUMNS),
         )
