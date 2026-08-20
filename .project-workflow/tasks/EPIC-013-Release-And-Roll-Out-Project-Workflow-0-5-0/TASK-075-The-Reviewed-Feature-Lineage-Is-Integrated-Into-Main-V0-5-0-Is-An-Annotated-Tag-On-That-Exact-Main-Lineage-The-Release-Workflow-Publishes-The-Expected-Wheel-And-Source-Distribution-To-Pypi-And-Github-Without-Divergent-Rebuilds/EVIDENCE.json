@@ -1,4 +1,21 @@
 {
   "task_id": "TASK-075",
-  "claims": []
+  "claims": [
+    {
+      "id": "TASK-075-AC1",
+      "recipe": "deployed-artifact-alignment",
+      "status": "pass",
+      "commit": "fdd4e15c621cb6805e1455d0658c60ee24b92b0c",
+      "timestamp": "2026-08-20T18:15:00+10:00",
+      "parent_ac": "AC3",
+      "claim": "The reviewed main commit, annotated v0.5.0 tag, Trusted Publishing run, PyPI files, and GitHub Release identify one release lineage and one recorded artifact set.",
+      "execution_target": "PyPI project-workflow 0.5.0 and GitHub Release v0.5.0",
+      "source_artifact": "Git commit fdd4e15c621cb6805e1455d0658c60ee24b92b0c and release workflow run 32336460480",
+      "artifact_identity": "wheel sha256:b970773f0681424cd8e6a02f2aa42a224241e3fbcca40ba55dc25f1294389489; sdist sha256:7d0ef1a5bb1fc454d87b9d5a490f8891c7dbc6ef17f472b67cd65698ec3c2ef9",
+      "observation_method": "Compared remote main ancestry, annotated tag target, successful GitHub Actions jobs, public PyPI metadata, GitHub Release metadata, and downloaded artifact hashes.",
+      "evidence_artifact": "evidence/release-rollout-receipt.json",
+      "evidence_artifact_hash": "sha256:c9ed45ab47b081b388a8edf4ce39bbe4b38fddd045ef7b22faff4e2690c91dff",
+      "invalid_substitutes": []
+    }
+  ]
 }

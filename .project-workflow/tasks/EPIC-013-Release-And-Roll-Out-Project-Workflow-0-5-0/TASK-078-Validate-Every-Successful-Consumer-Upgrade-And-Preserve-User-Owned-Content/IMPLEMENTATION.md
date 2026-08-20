@@ -34,11 +34,11 @@ As the owner, I want each local adoption proven safe so that a nominal upgrade c
 
 ### Parent AC Proof Ownership
 
-- AC6: owner `TASK-077`; required evidence: Per-project plan/apply/diff/manifest/helper/Doctor validation
+- AC6: owner `TASK-078`; required evidence: Per-project plan/apply/diff/manifest/helper/Doctor validation
 
 ## Acceptance Criteria
 
-- [ ] AC1: Covers parent AC6 when every successful upgrade has scoped diffs, version 0.5.0, managed/helper validation, and applicable Doctor success without user-owned-content loss.
+- [x] AC1: Covers parent AC6 when every successful upgrade has scoped diffs, version 0.5.0, managed/helper validation, and applicable Doctor success without user-owned-content loss.
 
 ## Validation
 
@@ -48,29 +48,29 @@ As the owner, I want each local adoption proven safe so that a nominal upgrade c
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | codex/EPIC-012-delegate-executor-lifecycle | Planned validation recorded in this task | Pending release/adoption stage | Coordinator command output and retained evidence |
+| Six upgraded consumer roots | Local upgrade commits `e52bfe8`, `8cf371f`, `71402de`, `0f53668`, `d69795c`, `f91fa52` | Exact five-file managed diff, manifest 0.5.0/asset 3/schema 1, helper hash `ae1db517...`, second public plan current, Doctor results retained | Local commits only; no consumer push or deployment | `evidence/release-rollout-receipt.json`; child `EVIDENCE.json` |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |
-| 1 | Validate consumer upgrades | Verify each upgraded root's scoped diff, manifest, generated helper, managed assets, and Doctor result. | AC1: every successful upgrade has scoped diffs, version 0.5.0, managed/helper validation, and applicable Doctor success without user-owned-content loss. | Inspect the retained before/after evidence for every successful upgrade. | To Do | | Only consumer roots upgraded by TASK-077 | No | bounded-return |
+| 1 | Validate consumer upgrades | Verify each upgraded root's scoped diff, manifest, generated helper, managed assets, and Doctor result. | AC1: every successful upgrade has scoped diffs, version 0.5.0, managed/helper validation, and applicable Doctor success without user-owned-content loss. | Inspect the retained before/after evidence for every successful upgrade. | Done | | Only consumer roots upgraded by TASK-077 | No | bounded-return |
 
 ## Parent AC Evidence
 
-- AC6: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC6: Every successful upgrade changed only the five planned managed paths, reports `project 0.5.0`, has manifest asset 3/schema 1 and helper SHA-256 `ae1db517...`, and returns current/versions-current on a second public plan. Game Foundation, Toby's Games, and Strategic Advisor are Doctor-clean; pre-existing owner-owned Doctor findings remain visible in Mechanics Playground, Daily Checklist, and Client Management without being rewritten. Structured runtime/source evidence passes in `EVIDENCE.json`.
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass (2026-08-20)
+- Evidence: Before/after commits, exact plan fingerprints, five-file diff lists, manifest/version/hash checks, Doctor JSON, no-op second plans, and clean post-commit worktrees.
+- Findings: Existing workflow debt remains in three consumers. It is not caused by the upgrade and was not silently treated as resolved.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: Retain both the canonical no-op post-plan and the Doctor summary; they prove different things—upgrade currency versus repository workflow health.
+- Conventions or agent assets updated: None.
+- Follow-up tasks: Address the recorded owner-owned Doctor debt in each affected product's own workflow, not in this release epic.
 
 ## Notes
 

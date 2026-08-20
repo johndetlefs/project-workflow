@@ -46,5 +46,5 @@
 | AC3 | TASK-075 | Main integration, tag ancestry, release workflow, PyPI and GitHub records |
 | AC4 | TASK-076 | Fresh public install, public artifact hashes, attestation/provenance |
 | AC5 | TASK-077 | Codex project inventory and per-project disposition |
-| AC6 | TASK-077 | Per-project plan/apply/diff/manifest/helper/Doctor validation |
-| AC7 | TASK-077 | Consolidated receipt and parent acceptance audit |
+| AC6 | TASK-078 | Per-project plan/apply/diff/manifest/helper/Doctor validation |
+| AC7 | TASK-079 | Consolidated receipt and parent acceptance audit |

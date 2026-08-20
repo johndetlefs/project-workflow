@@ -38,7 +38,7 @@ As a Project Workflow user, I want public 0.5.0 independently verified so that c
 
 ## Acceptance Criteria
 
-- [ ] AC1: Covers parent AC4 when fresh public installation and public artifact/provenance checks pass against the released identities.
+- [x] AC1: Covers parent AC4 when fresh public installation and public artifact/provenance checks pass against the released identities.
 
 ## Validation
 
@@ -48,29 +48,29 @@ As a Project Workflow user, I want public 0.5.0 independently verified so that c
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | codex/EPIC-012-delegate-executor-lifecycle | Planned validation recorded in this task | Pending release/adoption stage | Coordinator command output and retained evidence |
+| . | Public `project-workflow==0.5.0` from source commit `fdd4e15c621cb6805e1455d0658c60ee24b92b0c` | Public UVX reports `project 0.5.0`; all four public package journeys and SLSA attestation verification pass | Public artifacts verified | `evidence/release-rollout-receipt.json`; child `EVIDENCE.json` |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |
-| 1 | Verify public release | Exercise the public exact-version package and match PyPI/GitHub artifacts and provenance. | AC1: fresh public installation and public artifact/provenance checks pass against the released identities. | Run the fresh public install and compare all recorded identities. | To Do | | Disposable temporary repository; public PyPI and GitHub release metadata | No | bounded-return |
+| 1 | Verify public release | Exercise the public exact-version package and match PyPI/GitHub artifacts and provenance. | AC1: fresh public installation and public artifact/provenance checks pass against the released identities. | Run the fresh public install and compare all recorded identities. | Done | | Disposable temporary repository; public PyPI and GitHub release metadata | No | bounded-return |
 
 ## Parent AC Evidence
 
-- AC4: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC4: Public `uvx --from project-workflow==0.5.0 project --version` returned `project 0.5.0`; public exact-version Codex, Claude Code, Cursor, and GitHub Copilot journeys passed; downloaded hashes matched the release; GitHub SLSA provenance verified source commit, tag ref, release workflow, and runner. Structured runtime/source evidence passes in `EVIDENCE.json`.
 
 ## QA & Code Review
 
-- Verdict: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass (2026-08-20)
+- Evidence: Public wheel `b970773...`, sdist `7d0ef1...`, public-package journey receipt `872c21d4...`, and verified GitHub attestation provenance.
+- Findings: None. Non-Codex host proof is package-install guidance parity, not native runtime activation.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: GitHub attestation verification may need a task-local `XDG_CACHE_HOME` when the normal TUF cache is sandbox-inaccessible.
+- Conventions or agent assets updated: None; this is environment setup evidence rather than a source defect.
+- Follow-up tasks: None.
 
 ## Notes
 
