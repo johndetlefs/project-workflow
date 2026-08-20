@@ -127,6 +127,19 @@ def test_delegate_source_and_development_assets_share_the_graph_contract() -> No
             "unrelated",
             "independent qa",
             "dated",
+            "bounded-return",
+            "durable-resume",
+            "direct-owner-steering",
+            "isolated-worktree",
+            "peer:<group-id>",
+            "peer-team",
+            "task-retirement",
+            "task-retirement-reconciliation",
+            "persistent-task-owner-steering",
+            "visible-retirable",
+            "archive-on-verified",
+            "owner-promoted",
+            "runtime-validated",
         ):
             assert required in lowered
         assert "workers:4" not in lowered
@@ -135,6 +148,7 @@ def test_delegate_source_and_development_assets_share_the_graph_contract() -> No
         assert "enter fail-fast mode" not in lowered
 
     assert workflow_cli.GENERATED_MARKER in installed_skill
+    assert "isolated-worktree creation for every persistent Codex child" in skill
     assert installed_skill == workflow_cli._with_generated_marker(
         REPO_ROOT / ".agents/skills/project-delegate/SKILL.md", skill
     )
@@ -144,6 +158,56 @@ def test_delegate_source_and_development_assets_share_the_graph_contract() -> No
     assert (
         REPO_ROOT / "src/project_workflow/cli.py"
     ).read_bytes() == (REPO_ROOT / ".project-workflow/cli/workflow.py").read_bytes()
+
+
+def test_planner_assets_author_execution_needs_as_work_facts() -> None:
+    prompt = (REPO_ROOT / "src/project_workflow/prompts/Planner.prompt.md").read_text()
+    github = (REPO_ROOT / ".github/prompts/Planner.prompt.md").read_text()
+    skill = (
+        REPO_ROOT / "src/project_workflow/codex/skills/project-planner/SKILL.md"
+    ).read_text()
+    installed = (REPO_ROOT / ".agents/skills/project-planner/SKILL.md").read_text()
+    assert prompt == github
+    for text in (prompt, skill, installed):
+        for required in (
+            "Execution Needs",
+            "bounded-return",
+            "durable-resume",
+            "direct-owner-steering",
+            "isolated-worktree",
+            "peer:<group-id>",
+            "work facts",
+        ):
+            assert required in text
+    assert installed == workflow_cli._with_generated_marker(
+        REPO_ROOT / ".agents/skills/project-planner/SKILL.md", skill
+    )
+
+
+def test_managed_host_guidance_uses_property_selection_and_safe_retirement() -> None:
+    codex_agents = (REPO_ROOT / "src/project_workflow/codex/AGENTS.md").read_text()
+    cursor_rules = (
+        REPO_ROOT / "src/project_workflow/cursor/rules/project-workflow.mdc"
+    ).read_text()
+    readme = (REPO_ROOT / "README.md").read_text()
+
+    for text in (codex_agents, cursor_rules, readme):
+        lowered = " ".join(text.lower().split())
+        assert "task-versus-epic" in lowered
+        assert "durable-resume" in lowered
+        assert "direct-owner-steering" in lowered
+        assert "peer:<group-id>" in lowered
+        assert "coordinator" in lowered
+        assert "subagent" in lowered
+        assert "persistent-task" in lowered
+        assert "peer-team" in lowered
+        assert "owner-promoted" in lowered
+        assert "never retire the coordinator" in lowered or "coordinator is never retired" in lowered
+
+    assert "Positive examples:" in readme
+    assert "Negative examples:" in readme
+    assert "archive-on-verified" in readme
+    assert "not runtime-validated" in readme
 
 
 @pytest.mark.parametrize("agent", sorted(workflow_cli.AGENT_CHOICES))
@@ -169,6 +233,10 @@ def test_each_host_init_installs_native_truthful_delegate_asset(
     if agent == "codex":
         delegate = (root / ".agents/skills/project-delegate/SKILL.md").read_text()
         assert "current Codex session" in delegate
+        assert "current Codex task-archive capability" in delegate
+        managed = (root / "AGENTS.md").read_text()
+        assert "Task-versus-Epic kind" in managed
+        assert "verified durable disposition" in managed
     elif agent == "github-copilot":
         delegate = (root / ".github/prompts/Delegate.prompt.md").read_text()
         assert "${input:targetId" in delegate
@@ -180,10 +248,24 @@ def test_each_host_init_installs_native_truthful_delegate_asset(
         )
         assert "${input:" not in all_agents
         assert "Invocation contract" in delegate
+        expected_host = "Claude Code" if agent == "claude-code" else "Cursor"
+        assert f"Invocation contract ({expected_host})" in delegate
 
     lowered = delegate.lower()
     assert "task or epic" in lowered
     assert all(state in lowered for state in ("verified", "unsupported", "unknown"))
+    for required in (
+        "bounded-return",
+        "durable-resume",
+        "direct-owner-steering",
+        "peer:<group-id>",
+        "peer-team",
+        "visible-retirable",
+        "archive-on-verified",
+        "owner-promoted",
+        "runtime-validated",
+    ):
+        assert required in lowered
     assert "worker limit" not in lowered
     assert "workers:4" not in lowered
 
@@ -236,7 +318,7 @@ def test_asset_v1_upgrade_preserves_user_delegate_collision_and_then_noops(
     pending = delegate.with_name("SKILL.md.new")
     assert pending.is_file()
     assert "Task or Epic" in pending.read_text()
-    assert json.loads(manifest.read_text())["asset_version"] == 2
+    assert json.loads(manifest.read_text())["asset_version"] == workflow_cli.CURRENT_ASSET_VERSION
 
     subprocess.run(("git", "add", "."), cwd=tmp_path, check=True)
     subprocess.run(("git", "commit", "-qm", "upgrade"), cwd=tmp_path, check=True)

@@ -23,13 +23,21 @@ This repository uses project-workflow for spec-driven development. Keep workflow
 10. Retro: use `project-retro` after completion when there is a reusable lesson or follow-up.
 
 For multi-item orchestration, use `project-delegate` after planning. Delegate targets exactly one
-approved Task or Epic and executes only its canonical rows/children. Resolve current-session
-subagent, persistent-task, isolated-worktree, monitoring, reconciliation, and available-capacity
-capabilities as runtime-observed `verified`, `unsupported`, or `unknown`; only verified capability
-authorises native launch. Do not hard-code worker capacity or infer host parity from generated
-assets. The coordinator alone writes shared workflow state and verifies worker returns before
-satisfying dependencies. A failure blocks descendants; unrelated branches continue only while the
-shared baseline remains valid. Delegate does not replace Implement, independent QA, Epic closeout,
+approved Task or Epic and executes only its canonical rows/children. Choose `coordinator`,
+`subagent`, `persistent-task`, or `peer-team` from each unit's approved execution needs, not from
+Task-versus-Epic kind. Blank legacy metadata means bounded coordinator-mediated return;
+`durable-resume`, `direct-owner-steering`, `isolated-worktree`, and `peer:<group-id>` are binding
+requirements. Use a team only for explicit peer communication. Resolve distinct subagent,
+subagent-isolation, persistent-task, persistent isolation, monitoring, reconciliation, peer,
+retirement, and available-capacity capabilities as current-runtime `verified`, `unsupported`, or
+`unknown`; only verified capability authorises native action. Do not hard-code worker capacity or
+infer host parity from generated assets. Current Codex persistent-task creation also requires
+explicit owner authority applicable to the request. The coordinator alone writes shared workflow
+state and verifies worker returns before satisfying dependencies. A failure blocks descendants;
+unrelated branches continue only while the shared baseline remains valid. Temporary visible child
+tasks default to reversible archive-on-verified after durable disposition. Never retire the
+coordinator or any active, unverified, failed, orphaned, unintegrated, owner-promoted, explicitly
+retained, or attention-bearing task. Delegate does not replace Implement, independent QA, Epic closeout,
 owner acceptance, or delivery proof. For large bodies of work, use `project-epic` to create
 proposal-first epic trackers and approved child tasks.
 

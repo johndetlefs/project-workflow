@@ -14,6 +14,7 @@ from project_workflow import cli as workflow_cli
 TOKEN = "coordinator-only-token"
 SHARED_HASH = "shared-state-sha256"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+TASK_CAPABILITY_SOURCE = "2026-08-20 current Codex session"
 COMMANDS = (
     (sys.executable, "-m", "project_workflow.cli"),
     (str(Path(sys.executable).parent / "project"),),
@@ -46,6 +47,7 @@ def plan(
     *units: workflow_cli.DelegationUnit,
     requested_concurrency: int | None = None,
 ) -> workflow_cli.DelegationPlan:
+    requested = requested_concurrency or max(1, len(units))
     return workflow_cli.build_delegation_plan(
         target=workflow_cli.DelegationTarget(
             target_id="TASK-001",
@@ -56,7 +58,10 @@ def plan(
             source_hash="plan-hash",
         ),
         units=tuple(units),
-        requested_concurrency=requested_concurrency or max(1, len(units)),
+        requested_concurrency=requested,
+        available_child_capacity=requested,
+        observed_capabilities=("subagent",),
+        capability_source=TASK_CAPABILITY_SOURCE,
     )
 
 
@@ -82,7 +87,7 @@ def coordinator(
         plan=built,
         obligations=duties(*(item.unit_id for item in built.units)),
         capabilities=workflow_cli.TaskHostCapabilities(
-            source="current Codex session" if verified else "",
+            source=built.capability_source if verified else "",
             current_session_verified=verified,
             bounded_subagents=bounded_subagents,
             available_child_capacity=capacity,
@@ -129,9 +134,9 @@ def test_executor_selection_uses_verified_capacity_safety_dependencies_and_no_ta
     run = coordinator(built, capacity=2)
     decisions = {item.unit_id: item for item in run.decisions()}
 
-    assert decisions["A"].executor == decisions["B"].executor == "bounded-subagent"
+    assert decisions["A"].executor == decisions["B"].executor == "subagent"
     assert decisions["A"].launchable and decisions["B"].launchable
-    assert decisions["C"].executor == "sequential-worker"
+    assert decisions["C"].executor == "subagent"
     assert not decisions["C"].launchable
     assert decisions["D"].executor == "none"
 
@@ -139,7 +144,8 @@ def test_executor_selection_uses_verified_capacity_safety_dependencies_and_no_ta
     assert packet.payload()["persistent_task_intent"] is None
 
     fallback = coordinator(built, capacity=0, bounded_subagents=False)
-    assert fallback.decisions()[0].executor == "coordinator"
+    assert fallback.decisions()[0].executor == "none"
+    assert "current runtime lacks verified subagent" in fallback.decisions()[0].reason
 
 
 def test_subagent_capability_must_be_verified_in_the_current_session() -> None:
@@ -383,7 +389,7 @@ def test_worker_scope_cannot_include_shared_workflow_state() -> None:
     assert completed.accepted
 
     allowed_helper = plan(unit("A", scope=(".project-workflow/cli/workflow.py",)))
-    assert coordinator(allowed_helper).decisions()[0].executor == "bounded-subagent"
+    assert coordinator(allowed_helper).decisions()[0].executor == "subagent"
 
     git_control = coordinator(plan(unit("A", scope=(".git/config",))))
     assert git_control.decisions()[0].executor == "coordinator"
@@ -431,7 +437,7 @@ def test_unsafe_execution_is_exclusive_in_both_launch_orders() -> None:
         plan(unit("A", parallel_safe=False), unit("B", order=1)), capacity=2
     )
     decisions = {item.unit_id: item for item in unsafe_first.decisions()}
-    assert decisions["A"].executor == "sequential-worker" and decisions["A"].launchable
+    assert decisions["A"].executor == "subagent" and decisions["A"].launchable
     assert not decisions["B"].launchable
     unsafe_first.launch("A", handle="unsafe-a", coordinator_token=TOKEN)
     assert not next(item for item in unsafe_first.decisions() if item.unit_id == "B").launchable
@@ -458,6 +464,24 @@ def test_requested_concurrency_bounds_larger_observed_capacity() -> None:
     assert caught.value.code == "PW_TASK_NOT_LAUNCHABLE"
 
 
+def test_refreshed_task_capacity_is_free_capacity_not_total_capacity() -> None:
+    run = coordinator(
+        plan(unit("A"), unit("B", order=1), unit("C", order=2)),
+        capacity=3,
+    )
+    run.launch("A", handle="bounded-a", coordinator_token=TOKEN)
+    run.capabilities = workflow_cli.TaskHostCapabilities(
+        source=TASK_CAPABILITY_SOURCE,
+        current_session_verified=True,
+        bounded_subagents=True,
+        available_child_capacity=2,
+    )
+
+    decisions = {item.unit_id: item for item in run.decisions()}
+    assert decisions["B"].launchable
+    assert decisions["C"].launchable
+
+
 def test_subset_plan_preserves_omitted_canonically_complete_dependency() -> None:
     target = workflow_cli.DelegationTarget(
         target_id="TASK-001",
@@ -475,6 +499,9 @@ def test_subset_plan_preserves_omitted_canonically_complete_dependency() -> None
         ),
         selected_unit_ids=("B",),
         requested_concurrency=1,
+        available_child_capacity=1,
+        observed_capabilities=("subagent",),
+        capability_source=TASK_CAPABILITY_SOURCE,
     )
     run = coordinator(built, capacity=1)
     packet = run.launch("B", handle="bounded-b", coordinator_token=TOKEN)
@@ -595,6 +622,9 @@ def test_persisted_resume_preserves_attempts_active_handles_and_orphans(tmp_path
         target=target,
         units=units,
         requested_concurrency=2,
+        available_child_capacity=2,
+        observed_capabilities=("subagent",),
+        capability_source=TASK_CAPABILITY_SOURCE,
     )
     run = coordinator(built)
     run.launch("A", handle="bounded-a-1", coordinator_token=TOKEN)
@@ -712,6 +742,9 @@ def test_persisted_resume_preserves_attempts_active_handles_and_orphans(tmp_path
         target=refreshed_target,
         units=refreshed_units,
         requested_concurrency=2,
+        available_child_capacity=2,
+        observed_capabilities=("subagent",),
+        capability_source=TASK_CAPABILITY_SOURCE,
     )
     after_canonical_write = workflow_cli.TaskOrchestrator.resume(
         root=tmp_path,
@@ -764,7 +797,10 @@ def test_resume_applies_refreshed_canonical_block_without_relaunch(
     (task_dir / "REQUIREMENTS.md").write_text("# Requirements\n", encoding="utf-8")
     target, units = workflow_cli._resolve_delegation_target(tmp_path, ("TASK-001",))
     initial_plan = workflow_cli.build_delegation_plan(
-        target=target, units=units, requested_concurrency=1
+        target=target, units=units, requested_concurrency=1,
+        available_child_capacity=1,
+        observed_capabilities=("subagent",),
+        capability_source=TASK_CAPABILITY_SOURCE,
     )
     run = coordinator(initial_plan, capacity=1)
     if launch_before_block:
@@ -779,7 +815,10 @@ def test_resume_applies_refreshed_canonical_block_without_relaunch(
         tmp_path, ("TASK-001",)
     )
     refreshed_plan = workflow_cli.build_delegation_plan(
-        target=refreshed_target, units=refreshed_units, requested_concurrency=1
+        target=refreshed_target, units=refreshed_units, requested_concurrency=1,
+        available_child_capacity=1,
+        observed_capabilities=("subagent",),
+        capability_source=TASK_CAPABILITY_SOURCE,
     )
     resumed = workflow_cli.TaskOrchestrator.resume(
         root=tmp_path,

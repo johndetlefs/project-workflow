@@ -613,10 +613,47 @@ Delegate coordinates existing approved execution units for exactly one target:
 
 - for a Task, the units are implementation-plan rows and Implement performs each bounded unit;
 - for an Epic, the units are approved child Tasks from the decomposition/amendment authority;
-- a Codex persistent task, a current-session subagent, a Claude/Cursor agent, and a workflow Task
-  are executor or host concepts, not interchangeable workflow units;
+- a coordinator, current-session subagent, persistent/background task, and peer-capable team are
+  executor surfaces, not interchangeable workflow units;
 - independent QA reviews coordinator-verified results after implementation; Delegate's aggregate
-  report cannot complete QA, Epic closeout, owner acceptance, release, or deployment.
+  or retirement report cannot complete QA, Epic closeout, owner acceptance, integration, release,
+  deployment, or adoption.
+
+### Choose By Execution Need
+
+Delegate selects the lightest surface that satisfies the unit's approved properties.
+Task-versus-Epic kind does not decide the executor. Units use these execution-needs tokens:
+
+- `bounded-return`, or blank metadata in a legacy plan, means the result can return through the
+  current coordinator session;
+- `durable-resume` requires cross-session recovery;
+- `direct-owner-steering` requires a child the owner can interact with directly;
+- `isolated-worktree` makes filesystem isolation binding;
+- `peer:<group-id>` requires workers in that group to communicate directly.
+
+The router still enforces parallel safety, write scope, repository scope, dependencies, validation,
+and evidence. It chooses between a `sequential` and `parallel` schedule separately from the surface.
+
+Positive examples:
+
+- Two independent, bounded Epic children with disjoint scopes may use in-session `subagent`
+  executors when current capacity is verified. Being Epic children does not force visible tasks.
+- One Task implementation row that must survive coordinator interruption and needs direct owner
+  steering may use an authorised `persistent-task`, even though it belongs to a Task.
+- Two workers that genuinely need to negotiate a shared protocol may use `peer-team` when both the
+  explicit `peer:<group-id>` need and current peer-team/peer-messaging capability are verified.
+- A coupled migration whose steps mutate the same files remains `coordinator`-owned and sequential.
+
+Negative examples:
+
+- Parallel-safe work alone is not a reason to create a peer team; ordinary dependencies remain
+  coordinator-mediated.
+- An Epic approval is not authority to create a persistent Codex task. The current request must
+  explicitly authorise visible task creation, and all required runtime capabilities must be
+  verified.
+- An unavailable isolated subagent cannot be replaced with a shared-filesystem subagent when
+  isolation is binding. Use another verified isolated surface or block with the unmet property.
+- A clean sidebar is not authority to archive active, failed, unresolved, or owner-promoted work.
 
 Inspect a canonical graph without launching work:
 
@@ -640,11 +677,18 @@ specific runtime observation rather than assuming host support or a fixed worker
 
 Capability provenance must contain the runtime observation date in `YYYY-MM-DD` form. The resulting
 capability matrix is tri-state: runtime-observed `verified`, runtime-observed
-`unsupported`, or `unknown`. Only verified capability authorises native launch. Unknown Task worker
-capability uses safe sequential/coordinator execution when the packet and authority remain
-satisfiable. Unknown Epic persistent-task, isolated-worktree, monitoring, or reconciliation support
-creates no persistent task; the coordinator falls back safely or blocks. Persistent Epic execution
-also requires explicit owner authority.
+`unsupported`, or `unknown`. Only verified current-host capability authorises native launch or
+retirement. Distinguish ordinary subagents from isolated subagents; persistent creation from
+persistent isolation, monitoring, and reconciliation; peer-team from peer messaging; and task
+retirement from retirement reconciliation. Unknown or unsupported capability may use safe
+sequential/coordinator execution only when every binding property remains satisfiable. Otherwise
+the unit blocks before launch with the exact unmet property. Native persistent-task creation also
+requires explicit owner authority applicable to the current request.
+
+Plans and status are read-only. Human and versioned JSON output explain each unit's required
+properties, requested/effective executor, schedule, concurrency, visibility
+(`ephemeral`, `visible-retirable`, or `visible-retained`), retention policy, capability provenance,
+and selection, fallback, or block reason.
 
 The coordinator is the only writer of shared trackers, row status, acceptance maps, evidence
 indexes, delegation runtime state, and lifecycle. Every worker receives a bounded packet and returns
@@ -652,12 +696,32 @@ identity, exact source/worktree, allowed diff, validation, and evidence for coor
 A failure blocks its descendants, while unrelated graph branches continue only if the shared
 baseline and premises remain valid.
 
+### Retire Temporary Visible Children Safely
+
+Temporary user-visible subordinate tasks default to host-neutral retirement-on-verified. In Codex,
+the adapter maps that policy to reversible `archive-on-verified`. The coordinator emits one stable
+retirement intent only after the child is terminal, coordinator-verified, durably integrated into
+the authoritative target—or closed with a verified no-integration disposition and durable
+receipt—and has no unresolved child-local or owner attention. It then observes the host action and
+records the outcome. A confirmed archive is not repeated after resume.
+
+The coordinator is never retired. Active, returned-but-unverified, failed, rejected, orphaned,
+blocked, awaiting-owner, unintegrated, explicitly retained, and owner-promoted work stays visible
+with its retention reason. Failed or unknown retirement remains pending and keeps the task handle;
+Delegate never reports cleanup it did not observe. Retirement is sidebar lifecycle management, not
+deletion of the task or its transcript.
+
+Codex, Claude Code, GitHub Copilot, and Cursor use the same property policy through host-native
+adapters. Installed syntax, generated parity, tests, and package inspection prove contract
+alignment only. A host that was not exercised in the current run must be reported as expected or
+aligned, not runtime-validated.
+
 Invalid uses include delegating an arbitrary batch of standalone Tasks, treating a generated host
 asset as proof of native support, asking a worker to mutate shared workflow state, treating a worker
-completion assertion as dependency proof, or treating Delegate output as independent QA or
-closeout. Use an Epic to coordinate standalone Tasks, Planner to add approved graph metadata,
-Implement for bounded changes, QA Review for independent verification, and Epic closeout for final
-parent acceptance gates.
+completion assertion as dependency proof, blanket-archiving subordinate work, or treating Delegate
+output as independent QA or closeout. Use an Epic to coordinate standalone Tasks, Planner to add
+approved graph metadata, Implement for bounded changes, QA Review for independent verification,
+and Epic closeout for final parent acceptance gates.
 
 ## Day-To-Day Guidance
 

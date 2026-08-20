@@ -416,7 +416,7 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
     assert manifest == workflow_cli.WorkflowManifest(
         manifest_version=1,
         package_version=__version__,
-        asset_version=2,
+        asset_version=3,
         schema_version=1,
         applied_migrations=(),
     )
@@ -424,7 +424,7 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
         "{\n"
         '  "manifest_version": 1,\n'
         '  "package_version": "0.4.0",\n'
-        '  "asset_version": 2,\n'
+        '  "asset_version": 3,\n'
         '  "schema_version": 1,\n'
         '  "applied_migrations": []\n'
         "}\n"
@@ -496,7 +496,7 @@ def test_repository_compatibility_classifies_supported_states(tmp_path: Path) ->
     ("update", "reason"),
     [
         ({"manifest_version": 2, "extension": "future"}, "future-manifest-version"),
-        ({"asset_version": 3}, "future-asset-version"),
+        ({"asset_version": 4}, "future-asset-version"),
         ({"schema_version": 2}, "future-schema-version"),
     ],
 )

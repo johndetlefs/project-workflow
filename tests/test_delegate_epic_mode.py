@@ -23,6 +23,7 @@ def unit(
     parent_acs: tuple[str, ...] = ("AC3",),
     state: str = "pending",
     order: int = 0,
+    needs: str = "durable-resume, isolated-worktree",
 ) -> workflow_cli.DelegationUnit:
     return workflow_cli.DelegationUnit(
         unit_id=unit_id,
@@ -34,6 +35,9 @@ def unit(
         source_order=order,
         source_path=".project-workflow/tasks/EPIC-001/DECOMPOSITION.md",
         authority_acs=parent_acs,
+        execution_needs=workflow_cli._delegation_execution_needs(
+            needs, unit_id=unit_id
+        ),
     )
 
 
@@ -47,6 +51,8 @@ def plan(
         "isolated-worktree",
         "task-monitoring",
         "task-reconciliation",
+        "task-retirement",
+        "task-retirement-reconciliation",
     ),
     capability_source: str = "2026-08-19 current Codex app task tools",
     selected: tuple[str, ...] = (),
@@ -90,6 +96,8 @@ def capabilities(
     worktrees: bool = True,
     monitoring: bool = True,
     reconciliation: bool = True,
+    retirement: bool = True,
+    retirement_reconciliation: bool = True,
     capacity: int = 3,
 ) -> workflow_cli.EpicHostCapabilities:
     return workflow_cli.EpicHostCapabilities(
@@ -100,6 +108,17 @@ def capabilities(
         monitoring=monitoring,
         reconciliation=reconciliation if verified else False,
         available_child_capacity=capacity,
+        additional_capabilities=(
+            tuple(
+                capability
+                for capability, supported in (
+                    ("task-retirement", retirement),
+                    ("task-retirement-reconciliation", retirement_reconciliation),
+                )
+                if supported
+            )
+            if verified else ()
+        ),
     )
 
 
@@ -341,7 +360,14 @@ def test_packet_is_complete_and_capacity_bounds_two_independent_intents(tmp_path
     assert [item.unit_id for item in intents] == ["A", "B"]
     payload = intents[0].payload()
     packet = payload["work_packet"]
-    assert payload["requires"] == ["persistent-task", "isolated-worktree", "task-monitoring"]
+    assert payload["requires"] == [
+        "persistent-task",
+        "task-monitoring",
+        "task-reconciliation",
+        "isolated-worktree",
+        "task-retirement",
+        "task-retirement-reconciliation",
+    ]
     assert packet["target"]["authority_source"].endswith("DECOMPOSITION.md")
     assert packet["unit"]["parent_acs"] == ["AC3"]
     assert packet["scope"]["isolated_worktree_required"] is True
@@ -513,7 +539,11 @@ def test_dependent_intent_waits_for_coordinator_branch_diff_validation_and_evide
     accepted = verify(run, result(run, "A"))
 
     assert accepted.accepted
-    assert accepted.newly_eligible == ("C",)
+    assert accepted.newly_eligible == ()
+    newly_eligible = run.record_durable_disposition(
+        "A", kind="integrated", receipt=f"git:{HEAD_A}", coordinator_token=TOKEN
+    )
+    assert newly_eligible == ("C",)
     assert [item.unit_id for item in run.creation_intents()] == ["C"]
 
 
@@ -570,6 +600,9 @@ def test_integrated_diff_collision_is_rejected_before_dependency_release(tmp_pat
         coordinator_token=TOKEN,
     )
     assert accepted.accepted
+    run.record_durable_disposition(
+        "A", kind="integrated", receipt=f"git:{HEAD_A}", coordinator_token=TOKEN
+    )
     register(run, "B", tmp_path)
     second = replace(
         result(run, "B", head=HEAD_B),
@@ -934,6 +967,296 @@ def test_lifecycle_gates_remain_independent_of_delegate_verification(tmp_path: P
             owner_completion_authority=False,
         )
     assert parent_gate.value.code == "PW_EPIC_CLOSEOUT_GATED"
+
+
+def test_epic_runtime_consumes_subagent_surface_without_persistent_creation(
+    tmp_path: Path,
+) -> None:
+    built = plan(
+        unit("A", needs="bounded-return"),
+        observed=("subagent",),
+        authority=None,
+        capacity=1,
+        requested=1,
+    )
+    host = capabilities(
+        persistent=False, worktrees=False, monitoring=False, reconciliation=False,
+        retirement=False, retirement_reconciliation=False, capacity=1,
+    )
+    host = replace(host, additional_capabilities=("subagent",))
+    run = coordinator(built, tmp_path, host=host)
+
+    assert run.creation_intents() == ()
+    launch = run.launch_intents()[0]
+    assert launch.executor == "subagent"
+    assert launch.packet.visibility_class == "ephemeral"
+    run.register_launch(
+        launch, handle="subagent-a", branch=f"detached@{BASE}", worktree=tmp_path,
+        coordinator_token=TOKEN,
+    )
+    accepted = verify(run, result(run, "A"))
+
+    assert accepted.accepted
+    assert run.state.units["A"].handle is None
+    assert run.state.units["A"].disposition_state == "pending"
+    assert run.retirement_intents() == ()
+
+
+def test_task_target_uses_shared_visible_surface_lifecycle_without_losing_handle(
+    tmp_path: Path,
+) -> None:
+    task_target = workflow_cli.DelegationTarget(
+        target_id="TASK-900",
+        kind="task",
+        title="Durable task unit",
+        lifecycle="In Progress",
+        source_path=".project-workflow/tasks/TASK-900/IMPLEMENTATION.md",
+        source_hash="task-plan-hash",
+    )
+    built = workflow_cli.build_delegation_plan(
+        target=task_target,
+        units=(unit("A", needs="durable-resume"),),
+        requested_concurrency=1,
+        available_child_capacity=1,
+        observed_capabilities=(
+            "persistent-task", "task-monitoring", "task-reconciliation",
+        ),
+        unsupported_capabilities=(
+            "task-retirement", "task-retirement-reconciliation",
+        ),
+        capability_source="2026-08-20 generic host adapter",
+        persistent_task_authority="owner request for this run",
+    )
+    host = workflow_cli.EpicHostCapabilities(
+        source="2026-08-20 generic host adapter",
+        current_session_verified=True,
+        persistent_tasks=True,
+        isolated_worktrees=False,
+        monitoring=True,
+        reconciliation=True,
+        available_child_capacity=1,
+    )
+    run = workflow_cli.DelegationSurfaceOrchestrator(
+        plan=built,
+        obligations=duties("A"),
+        capabilities=host,
+        coordinator_token=TOKEN,
+        coordinator_worktree=tmp_path,
+        base_commit=BASE,
+    )
+
+    intent = run.launch_intents()[0]
+    assert intent.packet.payload()["target"]["kind"] == "task"
+    assert run.creation_intents()[0].payload()["requires"] == [
+        "persistent-task", "task-monitoring", "task-reconciliation",
+    ]
+    run.register_launch(
+        intent,
+        handle="task-visible-a",
+        branch="codex/task-visible-a",
+        worktree=tmp_path,
+        coordinator_token=TOKEN,
+    )
+    accepted = verify(run, result(run, "A"))
+
+    assert accepted.accepted
+    assert run.state.units["A"].handle == "task-visible-a"
+    assert run.state.units["A"].visibility_class == "visible-retained"
+    assert run.state.units["A"].retirement_state == "retained"
+    assert run.retirement_intents() == ()
+
+
+def test_active_peer_team_and_runtime_free_capacity_are_not_double_counted_on_resume(
+    tmp_path: Path,
+) -> None:
+    import subprocess
+
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+    (tmp_path / ".gitignore").write_text(
+        ".project-workflow/runtime/delegations/\n", encoding="utf-8"
+    )
+    built = plan(
+        unit("A", needs="peer:pair", order=0),
+        unit("B", needs="bounded-return", order=1),
+        authority=None,
+        capacity=3,
+        requested=3,
+        observed=("peer-team", "peer-messaging", "subagent"),
+        capability_source="2026-08-20 mixed surface adapter",
+    )
+    host = workflow_cli.EpicHostCapabilities(
+        source="2026-08-20 mixed surface adapter",
+        current_session_verified=True,
+        persistent_tasks=False,
+        isolated_worktrees=False,
+        monitoring=False,
+        reconciliation=False,
+        available_child_capacity=3,
+        additional_capabilities=("peer-team", "peer-messaging", "subagent"),
+    )
+    run = coordinator(built, tmp_path, host=host)
+    peer_intent = next(item for item in run.launch_intents() if item.unit_id == "A")
+    run.register_launch(
+        peer_intent,
+        handle="peer-a",
+        branch=f"detached@{BASE}",
+        worktree=tmp_path,
+        coordinator_token=TOKEN,
+    )
+    run.persist(tmp_path, coordinator_token=TOKEN)
+
+    resumed_host = replace(host, available_child_capacity=1)
+    resumed = workflow_cli.EpicOrchestrator.resume(
+        root=tmp_path,
+        plan=built,
+        obligations=duties("A", "B"),
+        capabilities=resumed_host,
+        coordinator_token=TOKEN,
+        observations={
+            "A": {
+                "handle": "peer-a",
+                "attempt": 1,
+                "branch": f"detached@{BASE}",
+                "worktree": str(tmp_path),
+                "state": "active",
+            }
+        },
+    )
+    assert [intent.unit_id for intent in resumed.launch_intents()] == ["B"]
+
+
+def test_existing_persistent_child_resumes_without_new_creation_capacity(
+    tmp_path: Path,
+) -> None:
+    import subprocess
+
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+    (tmp_path / ".gitignore").write_text(
+        ".project-workflow/runtime/delegations/\n", encoding="utf-8"
+    )
+    built = plan(unit("A"), capacity=1, requested=1)
+    run = coordinator(built, tmp_path, host=capabilities(capacity=1))
+    register(run, "A", tmp_path)
+    run.persist(tmp_path, coordinator_token=TOKEN)
+    observed = run.state.units["A"]
+    resumed_host = capabilities(capacity=0)
+
+    resumed = workflow_cli.EpicOrchestrator.resume(
+        root=tmp_path,
+        plan=built,
+        obligations=duties("A"),
+        capabilities=resumed_host,
+        coordinator_token=TOKEN,
+        observations={
+            "A": {
+                "handle": observed.handle,
+                "attempt": observed.attempt,
+                "branch": observed.branch,
+                "worktree": observed.worktree,
+                "state": "active",
+            }
+        },
+    )
+
+    assert resumed.capability_boundary()["creation_supported"] is False
+    assert resumed.capability_boundary()["resume_supported"] is True
+    assert resumed.state.units["A"].state == "active"
+    assert resumed.state.units["A"].handle == observed.handle
+
+
+def test_visible_task_verification_disposition_and_retirement_are_separate_idempotent_steps(
+    tmp_path: Path,
+) -> None:
+    run = coordinator(plan(unit("A")), tmp_path)
+    register(run, "A", tmp_path)
+    native_handle = run.state.units["A"].handle
+
+    assert verify(run, result(run, "A")).accepted
+    assert run.state.units["A"].handle == native_handle
+    assert run.state.units["A"].disposition_state == "pending"
+    assert run.retirement_intents() == ()
+
+    run.record_durable_disposition(
+        "A", kind="integrated", receipt=f"git:{HEAD_A}", coordinator_token=TOKEN
+    )
+    first = run.retirement_intents()[0]
+    assert run.retirement_intents()[0].intent_id == first.intent_id
+    run.register_retirement_requested(first, coordinator_token=TOKEN)
+    assert run.retirement_intents()[0].intent_id == first.intent_id
+    run.register_retirement_outcome(
+        first, observed_handle=str(native_handle), outcome="confirmed",
+        acknowledgement="codex:archived", coordinator_token=TOKEN,
+    )
+    run.register_retirement_outcome(
+        first, observed_handle=str(native_handle), outcome="confirmed",
+        acknowledgement="codex:archived", coordinator_token=TOKEN,
+    )
+
+    assert run.retirement_intents() == ()
+    assert run.state.units["A"].retirement_state == "confirmed"
+    assert run.state.units["A"].handle == native_handle
+    with pytest.raises(workflow_cli.EpicOrchestrationError) as conflict:
+        run.register_retirement_outcome(
+            first, observed_handle=str(native_handle), outcome="failed",
+            acknowledgement="codex:visible", coordinator_token=TOKEN,
+        )
+    assert conflict.value.code == "PW_EPIC_RETIREMENT_CONFLICT"
+
+
+def test_retirement_failure_and_unknown_resume_keep_exact_handle_and_intent(
+    tmp_path: Path,
+) -> None:
+    run = coordinator(plan(unit("A")), tmp_path)
+    register(run, "A", tmp_path)
+    assert verify(run, result(run, "A")).accepted
+    run.record_durable_disposition(
+        "A", kind="no-integration", receipt="receipt:no-change", coordinator_token=TOKEN
+    )
+    intent = run.retirement_intents()[0]
+    run.register_retirement_requested(intent, coordinator_token=TOKEN)
+    run.register_retirement_outcome(
+        intent, observed_handle=intent.handle, outcome="failed",
+        acknowledgement="codex:archive-failed", coordinator_token=TOKEN,
+    )
+
+    assert run.state.units["A"].handle == intent.handle
+    assert run.retirement_intents() == ()
+    run.retry_retirement("A", coordinator_token=TOKEN)
+    assert run.retirement_intents()[0].intent_id == intent.intent_id
+    run.register_retirement_requested(intent, coordinator_token=TOKEN)
+    run.reconcile_retirements({}, coordinator_token=TOKEN)
+
+    assert run.state.units["A"].retirement_state == "unknown"
+    assert run.state.units["A"].handle == intent.handle
+
+
+def test_legacy_epic_runtime_migrates_visible_work_to_conservative_retention(
+    tmp_path: Path,
+) -> None:
+    run = coordinator(plan(unit("A")), tmp_path)
+    register(run, "A", tmp_path)
+    legacy = workflow_cli._epic_orchestration_state_payload(run.state)
+    legacy["schema_version"] = 1
+    legacy["integrated_paths"] = legacy.pop("verified_paths")
+    raw_unit = legacy["units"]["A"]
+    for key in (
+        "executor", "visibility_class", "retention_policy", "disposition_state",
+        "disposition_receipt", "attention_reasons", "owner_promoted",
+        "explicit_retain_reason", "retirement_state", "retirement_intent_id",
+        "retirement_ack", "prior_handles",
+    ):
+        raw_unit.pop(key)
+
+    migrated = workflow_cli._epic_orchestration_state_from_payload(legacy)
+    restored = migrated.units["A"]
+
+    assert migrated.schema_version == 2
+    assert migrated.migrated_from_version == 1
+    assert restored.visibility_class == "visible-retained"
+    assert restored.retention_policy == "retain"
+    assert restored.disposition_state == "pending"
+    assert restored.retirement_state == "retained"
+    assert restored.handle == "native-a"
 
 
 def test_epic_runtime_rejects_transcripts_credentials_and_unknown_fields() -> None:

@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-08-20",
+  "host": "Codex desktop current local session",
+  "implementation_candidate": {
+    "branch": "codex/EPIC-012-delegate-executor-lifecycle",
+    "base_commit": "bf60dc5ba9cc01cc5bbefb9343d4292b01968b2e",
+    "cli_sha256": "164972ce90039feacce999c37792748d50a4d28bbbc883a721f0587fddff569d",
+    "state": "uncommitted candidate at observation time"
+  },
+  "capabilities_observed": {
+    "bounded_subagents": "verified",
+    "persistent_tasks": "verified",
+    "isolated_worktrees": "verified",
+    "task_monitoring": "verified",
+    "task_reconciliation": "verified",
+    "task_retirement": "verified",
+    "task_retirement_reconciliation": "verified"
+  },
+  "subagent_observation": {
+    "surface": "in-session multi-agent",
+    "bounded_workers_used": 3,
+    "user_visible_task_created": false,
+    "coordinator_owned_workflow_state": true
+  },
+  "visible_task_canary": {
+    "creation_count": 1,
+    "retirement_request_count": 1,
+    "retirement_confirmation_count": 1,
+    "duplicate_creation_count": 0,
+    "duplicate_retirement_count": 0,
+    "isolated_worktree": true,
+    "source_commit": "bf60dc5ba9cc01cc5bbefb9343d4292b01968b2e",
+    "tracked_changes": 0,
+    "terminal_marker_observed": true,
+    "durable_disposition": "verified no-integration",
+    "visible_before_disposition": true,
+    "archived_after_disposition": true,
+    "absent_from_active_task_list_after_archive": true,
+    "coordinator_remained_active": true
+  },
+  "privacy": {
+    "task_ids_recorded": false,
+    "agent_ids_recorded": false,
+    "cursors_recorded": false,
+    "transcripts_recorded": false
+  },
+  "proof_boundaries": [
+    "The live canary proves the dated Codex create, isolate, monitor, reconcile, archive, and archive-confirmation host actions.",
+    "The canary intentionally made no repository change and therefore proves a verified no-integration disposition, not code integration.",
+    "Repository tests and package journeys prove the implementation candidate; the live canary was created from the committed base because Codex worktree tasks require committed source.",
+    "Claude Code, GitHub Copilot, and Cursor assets are syntax- and contract-tested only; their native runtimes were not exercised."
+  ]
+}
