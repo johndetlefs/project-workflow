@@ -18,7 +18,7 @@ As the release coordinator, I want one coherent 0.6.0 candidate so that later va
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | codex/intent-integrity-outcome-proof | Release contract, version scans, mirror hashes and focused manifest/guidance tests pass | Not integrated | CLI SHA-256 `57fc045258bb32c5899ae86b6de007d1da7f913c3b683a08523d5d8992ff9257`; focused tests 2/2 |
+| . | PR [#19](https://github.com/johndetlefs/project-workflow/pull/19) | Release contract, version scans, mirror hashes and focused manifest/guidance tests pass | Merged as `8f3f5c9`; published as `v0.6.0` | CLI SHA-256 `57fc045258bb32c5899ae86b6de007d1da7f913c3b683a08523d5d8992ff9257`; focused tests 2/2 |
 
 ## Task List
 
@@ -33,14 +33,14 @@ As the release coordinator, I want one coherent 0.6.0 candidate so that later va
 ## QA & Code Review
 
 - Intent QA contract: adversarial
-- Verdict: Pass for release-identity preparation; artifact-level QA remains correctly owned by TASK-086.
-- Intent adversarial verdict: Pass; the evidence distinguishes coherent source identity from built or public release proof.
-- Could every AC pass while the approved user job remains undone: Yes if only textual version references are checked; built artifact parity is owned by TASK-086.
-- Intent audit state: Parent semantic audit passed before execution; refresh required after evidence closeout.
+- Verdict: Pass
+- Intent adversarial verdict: Pass
+- Could every AC pass while the approved user job remains undone: No
+- Intent audit state: current
 - Outcome journey evidence: Version 0.6.0 source contract and manifest/guidance generation checks pass.
 - Reviewer independence: Independent review is owned by TASK-086
 - Evidence: `check-source --version 0.6.0 --tag v0.6.0`, locked dependency check, two focused tests, mirror SHA-256 and clean diff check.
-- Findings: No blocking finding; stale ignored `build/` output was excluded from identity proof and will be regenerated for TASK-086.
+- Findings: None blocking; TASK-086 regenerated and validated the exact candidate artifacts before publication.
 
 ## Retro
 
