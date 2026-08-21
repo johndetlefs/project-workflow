@@ -19,8 +19,8 @@ ambiguous projects untouched with an explicit disposition instead of forcing ado
 - OC1 — Completion capability: Project Workflow 0.6.0 is publicly installable from PyPI, its tag
   and GitHub Release are on the reviewed `main` lineage, and every safe canonical consumer reports
   an upgraded validated installation or a concrete blocker.
-- OC2 — Material capabilities: Prepare one coherent versioned candidate; independently validate
-  source and built artifacts; integrate through reviewed GitHub checks; publish and verify the
+- OC2 — Material capabilities: Prepare one coherent versioned candidate; validate source and
+  built artifacts; integrate through reviewed GitHub checks; publish and verify the
   exact public artifacts; inventory all saved projects; safely upgrade eligible installed roots;
   retain a complete release and rollout receipt.
 - OC3 — Success journey: Review and merge the candidate, tag the exact main commit, observe the
@@ -48,8 +48,8 @@ ambiguous projects untouched with an explicit disposition instead of forcing ado
 - Approved scope envelope: Yes
 - Approved by: John Detlefs
 - Approval date: 2026-08-21
-- Approval note / source: Clerical Proposed Child Work table schema repair on 2026-08-21; no semantic change from the owner-approved EPIC-015 intent, capabilities, boundaries, proof, or five-child envelope.
-- Approved artifact identity: sha256:71fa64f9c5449cc6c641a48c3fb93cf4ef5e6ebc11419d830017ed43cd64df96
+- Approval note / source: Current Codex task 2026-08-21: explicitly approved building the three-outcome post-proof stop gate and completing the 0.6.0 release
+- Approved artifact identity: sha256:b98e6dd36817729280a5387a7121a8c5d7bc9495b658e8fd8e8e67c7dbe3ae0c
 
 ## Goal
 
@@ -89,8 +89,10 @@ targets.
 - Prepare one 0.6.0 release candidate whose version authorities, generated/local mirrors, managed
   assets, changelog, README, CI and release workflow agree.
 - Validate the final exact candidate with the complete locked suite, strict Doctor, release
-  contract, built wheel/sdist inspection, exact-wheel four-host journeys, current behavioral
-  fixtures and independent QA before integration.
+  contract, built wheel/sdist inspection, exact-wheel four-host journeys and current behavioral
+  fixtures. After sufficient proof passes, stop; an actual later change records one unaffected,
+  affected or ambiguous impact decision, and an affected decision permits one named validation
+  pass without creating or reopening independent QA.
 - Integrate through a reviewed GitHub PR and passing CI; tag the exact resulting `main` lineage as
   `v0.6.0`; publish the same artifacts through trusted publishing and GitHub Release.
 - Verify public PyPI and GitHub artifacts, hashes, provenance/attestation and a fresh exact-version
@@ -109,8 +111,10 @@ targets.
   packaged and repository-local agent assets align; required CLI mirrors remain byte-identical;
   historical completed evidence is not rewritten.
 - AC2: The exact final candidate passes the complete locked suite, strict Doctor, release-contract
-  checks, independently inspected wheel/sdist, all four exact-wheel host journeys, current
-  intent/continuation behavioral fixtures and independent QA with no blocking finding.
+  checks, wheel/sdist inspection, all four exact-wheel host journeys and current
+  intent/continuation behavioral fixtures. After that proof, status stops unless one recorded
+  affected change names an invalidated proof layer; one passing affected validation returns to the
+  next delivery step and cannot generate another review action for the same change identity.
 - AC3: A reviewed PR with passing required checks is merged into `main`; annotated tag `v0.6.0`
   identifies that exact main lineage; the trusted release workflow publishes one coherent wheel,
   sdist and GitHub release bundle without divergent rebuilds.
@@ -131,7 +135,7 @@ targets.
 | Proposed Child | Parent ACs | Purpose | Dependencies |
 | --- | --- | --- | --- |
 | Prepare the coherent Project Workflow 0.6.0 release identity | AC1 | Align every current release authority without rewriting historical evidence. |  |
-| Validate and independently review the exact 0.6.0 release candidate | AC2 | Prove the final source and built artifacts before integration. | TASK-085 |
+| Validate the exact 0.6.0 release candidate | AC2 | Prove the final source and built artifacts before integration. | TASK-085 |
 | Integrate, tag and publish Project Workflow 0.6.0 | AC3 | Merge the reviewed candidate and publish that exact main lineage. | TASK-086 |
 | Verify the public 0.6.0 artifacts and fresh installation | AC4 | Prove the publicly obtainable release rather than the local build. | TASK-087 |
 | Inventory and safely upgrade every eligible canonical installation, then retain the rollout receipt | AC5, AC6, AC7 | Apply the public package only where safe and retain complete per-project evidence. | TASK-088 |
@@ -156,7 +160,8 @@ targets.
 
 - AC1: version scans, changelog/README/workflow inspection, skill/prompt parity and CLI mirror hashes.
 - AC2: locked full suite, strict Doctor, release contract, deterministic builds, distribution
-  inspection, exact-wheel four-host journeys, behavioral fixtures and independent QA.
+  inspection, exact-wheel four-host journeys, behavioral fixtures and the stop-gate regression
+  proving that passed affected validation cannot generate another review action.
 - AC3: PR diff/review/check evidence, merge ancestry, annotated tag identity and release workflow.
 - AC4: PyPI metadata/download, GitHub release assets/hashes, attestation verification and disposable
   exact-version installation.

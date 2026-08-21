@@ -103,6 +103,12 @@ Guardrails:
 - Name the affected proof layer for a blocking finding. Repeat broad or full-suite checks,
   packaging, deployment, or cross-host journeys only when the correction can affect that layer or
   the approved delivery stage requires it; do not repeat them merely for additional reassurance.
+- A post-proof `workflow validation impact` decision never commissions another review.
+  `unaffected` advances, `affected` permits one validation of the named invalidated proof, and
+  `ambiguous` returns one concise question to the owner.
+- Run independent QA once when the approved work item requires it. Findings may trigger affected
+  validation, but never a fresh open-ended review. Another reviewer invocation requires a new
+  material change, an explicit high-consequence requirement, or direct owner authorization.
 - For delegated work, independently inspect coordinator-verified worker identity, exact source/worktree,
   allowed diff, validations, evidence, capability/capacity provenance, descendant blocking, privacy,
   and single-writer behavior. Delegate's aggregate report and worker assertions are not QA evidence by

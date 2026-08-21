@@ -2,7 +2,6 @@
 name: project-implement
 description: Use when implementing one project-workflow work item with requirements alignment, tracker updates, validation, and concise reporting.
 ---
-<!-- project-workflow:generated -->
 
 # Project Implement
 
@@ -64,6 +63,13 @@ Implement one scoped work item from a project-workflow task and move it to testi
 - Validate the affected proof layer. Repeat broad or full-suite checks, packaging, deployment, or
   cross-host journeys only when the change can affect that layer or the approved delivery stage
   requires it; do not rerun them merely for additional reassurance.
+- After sufficient proof passes, stop. Only an actual later change authorizes one governed
+  `workflow validation impact` decision: `unaffected` advances without more validation,
+  `affected` names the invalidated proof layer and permits one affected validation pass, and
+  `ambiguous` asks the owner one concise clarification question before further investigation.
+- A passed affected validation ends continuation work for that change identity. The impact
+  decision never creates, broadens, or reopens independent QA; QA remains a separate gate only
+  when the approved work item already requires it.
 
 If requirements conflict with repo constraints or validation is not testable, stop and use `project-clarify`.
 

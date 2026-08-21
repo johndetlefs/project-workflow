@@ -255,6 +255,18 @@ OPERATIONAL_STATUS_PROOF_LAYER_STATES = (
     "pass",
     "fail",
 )
+VALIDATION_IMPACT_CLASSIFICATIONS = (
+    "unaffected",
+    "affected",
+    "ambiguous",
+)
+VALIDATION_IMPACT_VERDICTS = ("pending", "pass", "fail", "not-required")
+VALIDATION_IMPACT_IDENTITY_PREFIX = "sha256:"
+VALIDATION_IMPACT_REQUIREMENTS = {
+    "unaffected": "none",
+    "affected": "affected-proof-layer",
+    "ambiguous": "clarify",
+}
 OPERATIONAL_STATUS_ACTION_PRECEDENCE = (
     "installation-safety",
     "blocking-current-finding",
@@ -6267,7 +6279,7 @@ def _operational_item_proof_layers(
         qa_summary = qa_summary_pass
     elif item.lifecycle in {"Review", "Closeout", "Complete"}:
         qa_state = "fail"
-        qa_summary = "Lifecycle requires a passing QA verdict, but none is recorded."
+        qa_summary = "No passing QA verdict is recorded."
     else:
         qa_state = "not-recorded"
         qa_summary = "No passing QA verdict is recorded yet."
@@ -6926,7 +6938,96 @@ def _operational_item_layer_map(
     return {layer.name: layer for layer in item.proof_layers}
 
 
+def _operational_validation_impact_action(
+    root: Path,
+    item: OperationalStatusWorkItem,
+    work_order: int,
+) -> _OperationalStatusActionCandidate | None:
+    _requirements_path, implementation_path, _epic_dir = _operational_work_item_paths(root, item)
+    if implementation_path is None or not implementation_path.exists():
+        return None
+    decision, issues = _validation_impact_from_text(
+        implementation_path.read_text(encoding="utf-8")
+    )
+    if issues:
+        return _operational_action_candidate(
+            "missing-workflow-gate",
+            _operational_action(
+                "PW_STATUS_VALIDATION_IMPACT_INVALID",
+                f"Repair validation impact for {item.item_id}",
+                "agent",
+                "Validation impact decision is invalid: " + "; ".join(issues),
+                (
+                    _operational_status_document_source(
+                        root,
+                        "implementation",
+                        implementation_path,
+                        item.sources[0],
+                    ),
+                ),
+                request=(
+                    "Record one coherent unaffected, affected, or ambiguous decision; "
+                    "do not start validation or review while the decision is invalid."
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+    if decision is None:
+        return None
+    classification = str(decision["classification"])
+    verdict = str(decision["validation_verdict"])
+    source = (
+        _operational_status_document_source(
+            root,
+            "implementation",
+            implementation_path,
+            item.sources[0],
+        ),
+    )
+    if classification == "ambiguous":
+        return _operational_action_candidate(
+            "owner-decision",
+            _operational_action(
+                "PW_STATUS_VALIDATION_IMPACT_CLARIFICATION_REQUIRED",
+                f"Clarify validation impact for {item.item_id}",
+                "owner",
+                "The later change cannot yet be tied to a specific prior proof layer.",
+                source,
+                request=(
+                    "Identify the exact prior proof that the later change can invalidate, "
+                    "or confirm that it is unaffected. Do not investigate further first."
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+    if classification == "affected" and verdict != "pass":
+        return _operational_action_candidate(
+            "missing-workflow-gate",
+            _operational_action(
+                "PW_STATUS_AFFECTED_VALIDATION_REQUIRED",
+                f"Validate affected proof for {item.item_id}",
+                "agent",
+                (
+                    "The recorded later change invalidates only: "
+                    + ", ".join(str(value) for value in decision["affected_proof_layers"])
+                    + f"; validation verdict is {verdict}."
+                ),
+                source,
+                request=(
+                    "Run the named affected validation once, update its verdict, then stop "
+                    "validation work. This decision does not authorize independent QA."
+                ),
+            ),
+            work_order=work_order,
+            item_id=item.item_id,
+        )
+    return None
+
+
 def _operational_item_action(
+    root: Path,
     item: OperationalStatusWorkItem,
     work_order: int,
 ) -> _OperationalStatusActionCandidate | None:
@@ -7064,19 +7165,26 @@ def _operational_item_action(
             item_id=item.item_id,
         )
 
+    impact_action = _operational_validation_impact_action(root, item, work_order)
+    if impact_action is not None:
+        return impact_action
+
     qa = layers.get("qa-review")
     if qa is not None and qa.state != "pass" and item.lifecycle in {"Review", "Complete"}:
+        if qa.state == "not-required":
+            qa = None
+    if qa is not None and qa.state not in {"pass", "not-required"} and item.lifecycle in {"Review", "Complete"}:
         return _operational_action_candidate(
             "missing-workflow-gate",
             _operational_action(
                 "PW_STATUS_QA_REQUIRED",
-                f"Review {item.item_id}",
+                f"Run required review for {item.item_id}",
                 "agent",
                 qa.summary,
                 qa.sources,
                 request=(
-                    f"Run QA and code review for {item.item_id}, record an evidence-backed "
-                    "verdict, and address any findings."
+                    "Complete only the QA gate already required by the approved work item. "
+                    "A validation-impact decision never creates or broadens QA."
                 ),
             ),
             work_order=work_order,
@@ -7345,7 +7453,7 @@ def resolve_operational_actions(
         item for item in work_items if focus_id is None or item.item_id == focus_id
     )
     for order, item in enumerate(selected_work):
-        candidate = _operational_item_action(item, order)
+        candidate = _operational_item_action(root, item, order)
         if candidate is not None:
             candidates.append(candidate)
 
@@ -7748,6 +7856,70 @@ def cmd_status(args: argparse.Namespace) -> None:
         print(json.dumps(operational_status_payload(snapshot), indent=2))
     else:
         print(render_operational_status_human(snapshot), end="")
+
+
+def cmd_validation_impact(args: argparse.Namespace) -> None:
+    root = Path(args.root).resolve() if args.root else Path.cwd()
+    inspection = inspect_operational_status_repository(root)
+    matches = tuple(item for item in inspection.active_work if item.item_id == args.id)
+    if not matches:
+        raise SystemExit(
+            f"Active operational state contains no work item named '{args.id}'."
+        )
+    if len(matches) > 1:
+        raise SystemExit(f"Active operational state contains duplicate ID '{args.id}'.")
+    item = matches[0]
+    requirements_path, implementation_path, _epic_dir = _operational_work_item_paths(
+        root, item
+    )
+    if implementation_path is None or not implementation_path.exists():
+        raise SystemExit(
+            f"{args.id} has no implementation or Fix document for an impact decision."
+        )
+    try:
+        decision = _validation_impact_decision(
+            classification=args.classification,
+            proof_layers=tuple(args.proof_layer or ()),
+            validation_verdict=args.validation_verdict,
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    section = _validation_impact_section(
+        baseline=args.baseline,
+        change_summary=args.change_summary,
+        decided_by=args.decided_by,
+        decision=decision,
+    )
+    docs_text = implementation_path.read_text(encoding="utf-8")
+    updated = _upsert_markdown_section(
+        docs_text,
+        heading="Validation Impact",
+        section=section,
+        before_heading="QA & Code Review",
+    )
+    implementation_path.write_text(updated, encoding="utf-8")
+    payload = {
+        "work_item": item.item_id,
+        "artifact": _operational_status_artifact(root, implementation_path),
+        "baseline_proof": args.baseline.strip(),
+        "change_summary": args.change_summary.strip(),
+        "decided_by": args.decided_by.strip(),
+        **decision,
+    }
+    payload["decision_identity"] = _validation_impact_identity(
+        baseline=args.baseline,
+        change_summary=args.change_summary,
+        decided_by=args.decided_by,
+        decision=decision,
+    )
+    if args.format == "json":
+        print(json.dumps(payload, indent=2))
+        return
+    print(f"Recorded validation impact for {item.item_id}:")
+    print(f"- Classification: {decision['classification']}")
+    print(f"- Required validation: {decision['required_validation']}")
+    print(f"- Validation verdict: {decision['validation_verdict']}")
+    print(f"- Artifact: {payload['artifact']}")
 
 
 def _migration_target_is_safe(target: str) -> bool:
@@ -13987,6 +14159,176 @@ def _parse_key_value_section(section: str) -> dict[str, str]:
     return values
 
 
+def _validation_impact_decision(
+    *,
+    classification: str,
+    proof_layers: tuple[str, ...],
+    validation_verdict: str,
+) -> dict[str, object]:
+    if classification not in VALIDATION_IMPACT_CLASSIFICATIONS:
+        raise ValueError(f"Unknown validation-impact classification: {classification}")
+    if validation_verdict not in VALIDATION_IMPACT_VERDICTS:
+        raise ValueError(f"Unknown validation-impact verdict: {validation_verdict}")
+    invalid_layers = sorted(set(proof_layers) - set(OPERATIONAL_STATUS_PROOF_LAYER_NAMES))
+    if invalid_layers:
+        raise ValueError("Unknown proof layer(s): " + ", ".join(invalid_layers))
+    if classification == "affected" and not proof_layers:
+        raise ValueError("affected impact requires at least one invalidated proof layer")
+    if classification == "unaffected":
+        if proof_layers:
+            raise ValueError("unaffected impact cannot name an invalidated proof layer")
+        if validation_verdict != "not-required":
+            raise ValueError("unaffected impact requires validation verdict not-required")
+    elif classification == "ambiguous":
+        if validation_verdict != "pending":
+            raise ValueError("ambiguous impact must remain pending until clarified")
+    elif validation_verdict == "not-required":
+        raise ValueError(
+            f"{classification} impact requires a pending, pass, or fail validation verdict"
+        )
+    affected_layers = tuple(dict.fromkeys(proof_layers))
+    required_validation = VALIDATION_IMPACT_REQUIREMENTS[classification]
+    return {
+        "classification": classification,
+        "affected_proof_layers": affected_layers,
+        "required_validation": required_validation,
+        "validation_verdict": validation_verdict,
+    }
+
+
+def _validation_impact_from_text(
+    docs_text: str,
+) -> tuple[dict[str, object] | None, tuple[str, ...]]:
+    section = _markdown_section(docs_text, "Validation Impact")
+    if not section:
+        return None, ()
+    values = _parse_key_value_section(section)
+    required_fields = (
+        "baseline proof",
+        "change summary",
+        "impact",
+        "invalidated proof layers",
+        "required validation",
+        "validation verdict",
+        "decided by",
+        "change identity",
+    )
+    missing = tuple(
+        field
+        for field in required_fields
+        if not values.get(field, "").strip() or values.get(field, "").strip() == "____"
+    )
+    if missing:
+        return None, tuple(f"record `{field}`" for field in missing)
+    classification = values["impact"].strip().lower()
+    validation_verdict = values["validation verdict"].strip().lower()
+    layer_value = values["invalidated proof layers"].strip()
+    proof_layers = (
+        ()
+        if layer_value.lower() == "none"
+        else tuple(part.strip() for part in layer_value.split(",") if part.strip())
+    )
+    try:
+        decision = _validation_impact_decision(
+            classification=classification,
+            proof_layers=proof_layers,
+            validation_verdict=validation_verdict,
+        )
+    except ValueError as exc:
+        return None, (str(exc),)
+    issues: list[str] = []
+    if values["required validation"].strip().lower() != decision["required_validation"]:
+        issues.append("required validation contradicts the change classification")
+    expected_identity = _validation_impact_identity(
+        baseline=values["baseline proof"],
+        change_summary=values["change summary"],
+        decided_by=values["decided by"],
+        decision=decision,
+    )
+    if values["change identity"].strip().lower() != expected_identity:
+        issues.append("change identity does not match the recorded impact decision")
+    decision["decision_identity"] = expected_identity
+    return (decision if not issues else None), tuple(issues)
+
+
+def _validation_impact_identity(
+    *,
+    baseline: str,
+    change_summary: str,
+    decided_by: str,
+    decision: dict[str, object],
+) -> str:
+    payload = {
+        "baseline_proof": baseline.strip(),
+        "change_summary": change_summary.strip(),
+        "decided_by": decided_by.strip(),
+        "classification": decision["classification"],
+        "affected_proof_layers": list(decision["affected_proof_layers"]),
+        "required_validation": decision["required_validation"],
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return VALIDATION_IMPACT_IDENTITY_PREFIX + hashlib.sha256(encoded).hexdigest()
+
+
+def _validation_impact_section(
+    *,
+    baseline: str,
+    change_summary: str,
+    decided_by: str,
+    decision: dict[str, object],
+) -> str:
+    layers = decision["affected_proof_layers"]
+    rendered_layers = ", ".join(str(layer) for layer in layers) if layers else "None"
+    decision_identity = _validation_impact_identity(
+        baseline=baseline,
+        change_summary=change_summary,
+        decided_by=decided_by,
+        decision=decision,
+    )
+    return (
+        "## Validation Impact\n\n"
+        f"- Baseline proof: {baseline.strip()}\n"
+        f"- Change summary: {change_summary.strip()}\n"
+        f"- Impact: {decision['classification']}\n"
+        f"- Invalidated proof layers: {rendered_layers}\n"
+        f"- Required validation: {decision['required_validation']}\n"
+        f"- Validation verdict: {decision['validation_verdict']}\n"
+        f"- Decided by: {decided_by.strip()}\n"
+        f"- Change identity: {decision_identity}\n"
+    )
+
+
+def _upsert_markdown_section(
+    text: str,
+    *,
+    heading: str,
+    section: str,
+    before_heading: str | None = None,
+) -> str:
+    lines = text.splitlines(keepends=True)
+    target = f"## {heading}".lower()
+    start: int | None = None
+    end: int | None = None
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.lower() == target:
+            start = index
+            continue
+        if start is not None and index > start and stripped.startswith("## "):
+            end = index
+            break
+    replacement = section.rstrip() + "\n\n"
+    if start is not None:
+        section_end = len(lines) if end is None else end
+        return "".join(lines[:start]) + replacement + "".join(lines[section_end:])
+    if before_heading is not None:
+        before_target = f"## {before_heading}".lower()
+        for index, line in enumerate(lines):
+            if line.strip().lower() == before_target:
+                return "".join(lines[:index]) + replacement + "".join(lines[index:])
+    return text.rstrip() + "\n\n" + replacement
+
+
 def _remove_markdown_section(text: str, heading: str) -> str:
     target = f"## {heading}".lower()
     lines = text.splitlines()
@@ -14587,7 +14929,11 @@ def _task_testing_integrity_issues(docs_text: str) -> tuple[str, ...]:
     return ()
 
 
-def _has_qa_review_evidence(text: str) -> bool:
+def _has_qa_review_evidence(
+    text: str,
+    *,
+    requirements_text: str | None = None,
+) -> bool:
     section = _markdown_section(text, "QA & Code Review")
     if not section or "____" in section:
         return False
@@ -16224,7 +16570,10 @@ def _update_global_tracker_row_status(
                     "pre-adoption evidence as untrusted; refresh evidence or re-adopt with "
                     "--evidence-refreshed."
                 )
-            if not _has_qa_review_evidence(docs_text):
+            if not _has_qa_review_evidence(
+                docs_text,
+                requirements_text=requirements_text,
+            ):
                 raise SystemExit(
                     f"{row_id} cannot move to Complete without non-placeholder "
                     "QA/code-review evidence."
@@ -16471,7 +16820,10 @@ def _update_epic_child_status(
             )
             if repository_issues:
                 raise SystemExit(_format_readiness_block(row_id, repository_issues))
-            if not _has_qa_review_evidence(docs_text):
+            if not _has_qa_review_evidence(
+                docs_text,
+                requirements_text=requirements_text,
+            ):
                 raise SystemExit(
                     f"{row_id} cannot move to Complete without non-placeholder "
                     "QA/code-review evidence."
@@ -17244,8 +17596,13 @@ def _doctor_check_task_doc(
         _add_issue(issues, "error", docs_path, f"Could not read docs for {row_id}: {exc}")
         return
 
+    requirements_path = docs_path.parent / "REQUIREMENTS.md"
+    requirements_text: str | None = None
+    if requirements_path.exists():
+        requirements_text = requirements_path.read_text(encoding="utf-8")
     has_completion_evidence = _has_qa_review_evidence(
-        docs_text
+        docs_text,
+        requirements_text=requirements_text,
     ) or _has_epic_acceptance_audit_evidence(docs_path, row_id)
     if status == "Complete" and not has_completion_evidence:
         _add_issue(
@@ -17263,10 +17620,6 @@ def _doctor_check_task_doc(
                 f"{row_id} intent-adversarial QA: {intent_qa_issue}.",
             )
 
-    requirements_path = docs_path.parent / "REQUIREMENTS.md"
-    requirements_text: str | None = None
-    if requirements_path.exists():
-        requirements_text = requirements_path.read_text(encoding="utf-8")
     if requirements_text is not None and status in ("Review", "Complete"):
         if _legacy_adoption_evidence_untrusted(requirements_text):
             _add_issue(
@@ -19774,6 +20127,58 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output format (default: human)",
     )
     status_parser.set_defaults(func=cmd_status)
+
+    validation_parser = subparsers.add_parser(
+        "validation",
+        help="Record whether a later change invalidates prior proof",
+    )
+    validation_sub = validation_parser.add_subparsers(
+        dest="validation_command", required=True
+    )
+    validation_impact_parser = validation_sub.add_parser(
+        "impact",
+        help="Classify later change impact and record the smallest sufficient proof scope",
+    )
+    validation_impact_parser.add_argument(
+        "--root", help="Repository root (default: current directory)"
+    )
+    validation_impact_parser.add_argument(
+        "--id", required=True, help="Active Task, Epic child, or Fix ID"
+    )
+    validation_impact_parser.add_argument(
+        "--baseline", required=True, help="Identity of the last sufficient passing proof"
+    )
+    validation_impact_parser.add_argument(
+        "--change-summary", required=True, help="Exact change since the baseline proof"
+    )
+    validation_impact_parser.add_argument(
+        "--classification",
+        required=True,
+        choices=VALIDATION_IMPACT_CLASSIFICATIONS,
+        help="Whether the later change leaves proof unaffected, affects named proof, or is ambiguous",
+    )
+    validation_impact_parser.add_argument(
+        "--proof-layer",
+        action="append",
+        choices=OPERATIONAL_STATUS_PROOF_LAYER_NAMES,
+        help="Invalidated existing proof layer; repeat when more than one is affected",
+    )
+    validation_impact_parser.add_argument(
+        "--validation-verdict",
+        required=True,
+        choices=VALIDATION_IMPACT_VERDICTS,
+        help="Current result of the required validation scope",
+    )
+    validation_impact_parser.add_argument(
+        "--decided-by", required=True, help="Identity recording the impact decision"
+    )
+    validation_impact_parser.add_argument(
+        "--format",
+        choices=("human", "json"),
+        default="human",
+        help="Output format (default: human)",
+    )
+    validation_impact_parser.set_defaults(func=cmd_validation_impact)
 
     delegate_parser = subparsers.add_parser(
         "delegate",

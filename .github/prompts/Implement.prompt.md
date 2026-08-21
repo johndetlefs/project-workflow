@@ -114,6 +114,11 @@ Continuation and validation sufficiency:
 - Validate the affected proof layer. Repeat broad or full-suite checks, packaging, deployment, or
   cross-host journeys only when the change can affect that layer or the approved delivery stage
   requires it; do not rerun them merely for additional reassurance.
+- After sufficient proof passes, stop. Only an actual later change authorizes one governed
+  `workflow validation impact` decision: `unaffected` advances, `affected` permits one validation
+  of the named invalidated proof, and `ambiguous` asks the owner one concise question.
+- A passed affected validation ends continuation work for that change identity. Validation impact
+  never creates, broadens, or reopens independent QA.
 
 E2E exception:
 

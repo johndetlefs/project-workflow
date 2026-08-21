@@ -2,7 +2,6 @@
 name: project-qa-review
 description: Use after implementation validation to run the QA and code review gate before a project-workflow task is completed.
 ---
-<!-- project-workflow:generated -->
 
 # Project QA & Code Review
 
@@ -62,6 +61,13 @@ Run the post-implementation quality gate for a project-workflow task.
 - Identify the affected proof layer for every blocking finding. Rerun broad or full-suite checks,
   packaging, deployment, or cross-host journeys only when the correction can affect that layer or
   the approved delivery stage requires it; do not repeat them merely for additional reassurance.
+- A post-proof `workflow validation impact` decision never commissions another review. An
+  `unaffected` decision advances, an `affected` decision permits one named validation pass, and an
+  `ambiguous` decision returns one concise question to the owner.
+- Run independent QA once for the approved work item when its requirements require that gate.
+  Findings may trigger affected validation, but never a fresh open-ended review. Another reviewer
+  invocation requires a new material change, an explicit high-consequence requirement, or direct
+  owner authorization.
 
 ## Verdicts
 

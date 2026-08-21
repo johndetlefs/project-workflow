@@ -1,5 +1,5 @@
 {
-  "artifact_identity": "sha256:40b6ba87f9bd7c36d57db6ada44714d5311baca558957b5ef47d51ef6a549c7a",
+  "artifact_identity": "sha256:2f433648025ed97c33a619fdbba62671d2fabf59e4aaf5ef6e5295cc2f00702b",
   "commitments": [
     {
       "amendment": null,
@@ -100,7 +100,7 @@
       "user_visible_consequence": "The lifecycle remains subordinate to the approved release-and-rollout meaning rather than to task IDs alone."
     }
   ],
-  "review_source": "Fresh sourced semantic mapping against the owner-approved EPIC-015 Intent, Epic contract, five-child decomposition and current child plans after clerical schema normalization.",
+  "review_source": "Fresh sourced semantic mapping against the owner-approved EPIC-015 Intent, Epic contract, five-child decomposition and current child plans after the owner-approved three-outcome stop-gate amendment.",
   "reviewed_at": "2026-08-21",
   "reviewed_by": "Project Workflow release coordination review",
   "schema_version": 1,
