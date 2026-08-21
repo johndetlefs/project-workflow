@@ -119,7 +119,7 @@
       "observation_method": "The reviewer independently read requirements, contracts, child implementations, the complete dirty diff, test/evaluation corpus, package verifier and TASK-084 receipts without write authority or reliance on implementation summaries.",
       "target_used_source_proof": "The preserved report cites the exact TASK-084 files and verifier lines it inspected, records a Changes requested verdict, and identifies the empty structured evidence, scripted proxy classification, incomplete parity, unbound package, narrative dogfood and incomplete run provenance found in that candidate.",
       "evidence_artifact": "evidence/independent-qa-initial.md",
-      "evidence_artifact_hash": "sha256:d9e7a60f9b1edbd0f1fcf390ccb7973fcad6fb90d54282ea37f75bd2d43c976c",
+      "evidence_artifact_hash": "sha256:b69b5a83e1cccf18b406d9a202f8de8942fd4bc071ce9721a9a1b6554b9fcc8b",
       "invalid_substitutes": []
     },
     {

@@ -500,7 +500,7 @@ def test_repository_compatibility_classifies_supported_states(tmp_path: Path) ->
     ("update", "reason"),
     [
         ({"manifest_version": 2, "extension": "future"}, "future-manifest-version"),
-        ({"asset_version": 5}, "future-asset-version"),
+        ({"asset_version": 6}, "future-asset-version"),
         ({"schema_version": 2}, "future-schema-version"),
     ],
 )
