@@ -4,7 +4,7 @@
 
 - Fix: FIX-009
 - Title: Enforce Proportionate Post-Proof Validation
-- Status: Review
+- Status: Complete
 - Created: 2026-08-21
 - Intent contract: compact
 
@@ -93,7 +93,7 @@ both automatic full re-review and unproved continuation by stopping briefly when
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | `codex/intent-integrity-outcome-proof`; no PR | 79/79 focused stop-gate/status tests; final locked suite pending; CLI mirrors and diff hygiene pass | Local candidate only; no integration, release, publication or rollout | `tests/test_continuation_sufficiency.py`; `tests/test_operational_status_actions.py`; `evaluations/intent_integrity/continuation-cases.json`; TASK-086 `Validation Impact` |
+| . | `codex/intent-integrity-outcome-proof` at `d06eb8b`; no PR | 79/79 focused stop-gate/status tests; one 442-test process completed without a recorded failure but its detached session lost the final summary; strict Doctor; exact package receipt and four-host journeys pass | Committed candidate; not integrated, published or rolled out | `tests/test_continuation_sufficiency.py`; `release/release-receipt.json`; `release/package-journeys.json`; TASK-086 `Validation Impact` |
 
 ## Verification
 
@@ -108,18 +108,18 @@ both automatic full re-review and unproved continuation by stopping briefly when
 - Original acceptance criteria result: FIX-008's stop/reopen and affected-layer boundaries remain,
   but their previously advisory enforcement gap is corrected by this executable decision.
 - Regression evidence: Seven sanitized continuation cases; three-outcome invalid-input matrix;
-  compact command recording; repeated affected-pass stop regression; managed four-host policy
-  installation. One final full-suite and package pass remains before release.
+  compact command recording; repeated affected-pass stop regression; exact final wheel/sdist
+  receipt and all supported packaged host journeys.
 - Residual risk: Project Workflow cannot prevent arbitrary raw host tool calls outside its governed
   commands. It can stop recommending them and prohibit them in managed guidance. Because packaged
   CLI and guidance changed, final release artifacts and package journeys must be rebuilt once.
 
 ## Outcome
 
-- Disposition: Pending
-- Decision: ____
-- Closed by: ____
-- Closed date: ____
+- Disposition: Fixed
+- Decision: Replaced recursive review scheduling with a three-outcome stop gate that permits one affected validation and never creates QA.
+- Closed by: Codex
+- Closed date: 2026-08-21
 - Promoted to: None
 
 ## Validation Impact
@@ -132,3 +132,11 @@ both automatic full re-review and unproved continuation by stopping briefly when
 - Validation verdict: pass
 - Decided by: Codex
 - Change identity: sha256:fa36e38a49ca9fc4e5734cd216616acf5a3aa3884671b942c374512de4a3de5a
+
+## QA & Code Review
+
+- Verdict: Pass
+- Evidence: 79/79 focused stop-gate and operational-status tests; strict Doctor; CLI mirror hashes;
+  exact `d06eb8b` wheel/sdist receipt; four fresh-host and legacy package journeys.
+- Findings: The overbuilt review scheduler was removed. Validation impact has three outcomes,
+  cannot create QA, and repeated affected-pass evaluation returns no continuation action.

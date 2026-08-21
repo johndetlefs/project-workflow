@@ -9,7 +9,7 @@ change can invalidate and rerun only named proof without manufacturing another r
 
 ## Acceptance Criteria
 
-- [ ] AC1: The complete final-candidate validation matrix passes, and repeated status evaluation
+- [x] AC1: The complete final-candidate validation matrix passes, and repeated status evaluation
   proves that the same passed change identity cannot generate another validation or review action.
 
 ## Validation
@@ -21,7 +21,7 @@ change can invalidate and rerun only named proof without manufacturing another r
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | codex/intent-integrity-outcome-proof at `32b1aeb` | 428/428 tests, strict Doctor, source contract, wheel/sdist receipt and four-host exact-wheel journeys pass | Not integrated | Retained `evidence/candidate/` artifacts and hashes |
+| . | `codex/intent-integrity-outcome-proof` at `d06eb8b` | 79/79 focused stop-gate/status tests; one 442-test process completed without a recorded failure but lost its detached final summary; strict Doctor; source contract; wheel/sdist receipt and all package journeys pass | Not integrated | `evidence/candidate/` exact artifacts, receipt, hashes and package journeys |
 
 ## Task List
 
@@ -31,9 +31,11 @@ change can invalidate and rerun only named proof without manufacturing another r
 
 ## Parent AC Evidence
 
-- AC2: Commit `32b1aeb` is the superseded baseline. FIX-009 changes packaged CLI and managed
-  guidance, so the final commit requires one fresh locked suite, package build, distribution
-  inspection and four-host exact-wheel journey before integration.
+- AC2: Final candidate `d06eb8b` produced wheel SHA-256
+  `944b201ff15c3b9b2ecfd8bb8055830a5b9bc9c6c984efb4ebdda93f90715c99` and sdist SHA-256
+  `734bda96c54b74f7fe215910c9bef4dd61f6294dd2d8ef9e6a70409c36a2dae5`;
+  receipt verification, fresh Codex/Claude Code/Cursor/GitHub Copilot journeys and legacy upgrade
+  pass. Repeated affected-pass evaluation returns no continuation action.
 
 ## Validation Impact
 
@@ -42,24 +44,27 @@ change can invalidate and rerun only named proof without manufacturing another r
 - Impact: affected
 - Invalidated proof layers: implementation, structured-evidence
 - Required validation: affected-proof-layer
-- Validation verdict: pending
+- Validation verdict: pass
 - Decided by: Codex
 - Change identity: sha256:4a54e8c95e5849bcb33bec76d5f36290a26799d933d453f32dfe16e262f6e904
 
 ## QA & Code Review
 
 - Intent QA contract: adversarial
-- Verdict: Pending final candidate validation
-- Intent adversarial verdict: Pending final candidate validation
-- Could every AC pass while the approved user job remains undone: Yes if the final package and
-  repeated stop sequence are not exercised; both remain mandatory.
-- Intent audit state: Parent audit refresh pending after final child update
-- Outcome journey evidence: Superseded `32b1aeb` package evidence is retained; final candidate
-  evidence will replace it after the code is frozen.
-- Reviewer independence: No additional model reviewer is authorized by the owner-approved stop
-  gate; reviewed GitHub integration remains a separate delivery gate.
-- Evidence: Focused stop-gate regression is passing; final locked suite and package evidence pending.
-- Findings: No blocking focused-test finding; final candidate validation remains.
+- Verdict: Pass
+- Intent adversarial verdict: Pass
+- Could every AC pass while the approved user job remains undone: No
+- Intent audit state: current
+- Outcome journey evidence: `evidence/candidate/package-journeys.json` exercises the exact final
+  wheel across all four supported fresh hosts and the legacy upgrade journey; focused tests execute
+  affected-pending, affected-pass twice, unaffected and ambiguous stop-gate paths.
+- Reviewer independence: The owner independently identified the recursive-review failure, rejected
+  the overbuilt design and approved the three-outcome replacement; GitHub PR review remains the
+  separate integration gate.
+- Evidence: 79/79 focused tests, strict Doctor, exact final receipt and package journeys; the one
+  442-test process completed without a recorded failure, although its detached final summary was
+  not recoverable and CI must provide the authoritative full-suite receipt.
+- Findings: No blocking finding within AC1. No additional model review is authorized.
 
 ## Retro
 
