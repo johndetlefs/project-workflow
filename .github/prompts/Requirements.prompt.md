@@ -14,7 +14,12 @@ This is an iterative prompt. Expect to run it multiple times:
 
 Operating model: the owner/PM/BA provides product intent and decisions conversationally; the agent extracts, drafts, records, and validates workflow artifacts. Do not ask the owner to manually fill templates as the normal path.
 
-Approval model: requirements capture ends with one explicit owner review of requirements and acceptance criteria. Record that approval with `task approve-requirements` or `epic approve-requirements` only after the owner confirms the drafted requirements/ACs. Do not treat the agent's draft, implementation intent, or silence as approval.
+Approval model: requirements capture ends with one explicit owner confirmation that the brief
+plain-language Intent accurately reflects what they mean. Run `task approval-summary` or
+`epic approval-summary`, show the Intent, completion capability, exclusions and proof journey,
+and ask whether that meaning is accurate. Do not ask the owner to approve task IDs, AC IDs,
+hashes or a document bundle as a substitute for comprehension. Record approval with
+`task approve-requirements` or `epic approve-requirements` only after that confirmation.
 
 After that approval, the agent normally continues autonomously through Planner, a post-plan
 Clarify pass, `task ready`, and `Ready`. Pause after requirements only when the user requests a
@@ -68,6 +73,9 @@ Process:
   - If the request is explicitly discovery work, record it as `Type: Discovery` with a question, decision enabled, boundary, output, and validation signal.
 
 - Step 1: Draft the user story (only after Discovery is answered).
+  - First write a one- or two-sentence `## Intent` in the owner's language and a stable
+    `## Intent Spine` covering completion capability, material capabilities, success journey,
+    successful-but-wrong result, exclusions, assumptions and authority source.
   - Based on the user’s Discovery answer (or the provided inputs), write a first-draft user story (may be imperfect) and put it in BOTH:
     - `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md` under `## User Story`
     - `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` under `## User Story`
@@ -87,13 +95,31 @@ Process:
 - Update `REQUIREMENTS.md` to be internally consistent.
 - If any critical requirement is ambiguous, untestable, or missing, write it as an open question and then ask the user the minimum set of questions to resolve it.
 - Stop after asking questions. Do not proceed to planning/implementation until open questions are resolved or explicitly accepted as risks and recorded.
-- Once open questions are resolved and the owner confirms the final requirements/ACs, record the approval envelope with the workflow CLI. After that, downstream agents should not ask for repeated approval unless the requirements/ACs, artifact identity, source-of-truth interpretation, proof obligations, or scope materially change.
+- Once open questions are resolved, run the relevant `approval-summary`, present it verbatim and
+  ask: "Does this Intent accurately capture what you want and what success means?" After the owner
+  confirms that meaning, record the approval envelope with the workflow CLI. IDs and hashes remain
+  provenance, not the meaning approved. Downstream agents should not ask for repeated approval
+  unless the intent, scope, proof obligations or source-of-truth interpretation materially change.
 
 ## Overview
 
 - Goal (in user terms):
 - Primary user(s):
 - Desired outcome:
+
+## Intent
+
+State the owner's desired outcome in one or two plain-language sentences.
+
+## Intent Spine
+
+- OC1 — Completion capability:
+- OC2 — Material capabilities:
+- OC3 — Success journey:
+- OC4 — Successful-but-wrong result:
+- OC5 — Exclusions:
+- OC6 — Assumptions:
+- OC7 — Authority source:
 
 ## User Story
 

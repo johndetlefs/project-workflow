@@ -90,6 +90,9 @@ Validation execution requirement:
 Validation alignment guardrail:
 
 - Use `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` as the validation checklist source of truth.
+- For a full-contract Epic child, require the parent `epic intent-audit` to be current before
+  implementation and refresh it after material child-plan changes. A narrower proxy does not
+  become authorized merely because the child ACs are internally consistent.
 - Explicitly map each `## Acceptance Criteria` item by AC ID (and any must-have `## Requirements`) to at least one validation step (automated test, manual verification, or query).
 - In workspace mode, run Git/status and validation commands against the recorded repository IDs
   and update every touched repository's `Repository Evidence` row with explicit branch/PR,
@@ -97,6 +100,25 @@ Validation alignment guardrail:
   or deploy in another repository without separate authority.
 - After running validation, report results in AC-by-AC form (`AC1 -> validation evidence/result`, `AC2 -> ...`) for the current work item.
 - If a requirement is not verifiable, stop and route to Clarify to make it testable and record the decision/update in `REQUIREMENTS.md`.
+
+Continuation and validation sufficiency:
+
+- Once the current stage's approved Intent, in-scope acceptance criteria, required proof, and
+  validation are satisfied, stop implementation-oriented investigation and advance to the next
+  required gate.
+- Reopen implementation only when a new finding shows that the owner cannot accomplish the
+  approved Intent, a material delivery claim is false, an explicitly required lifecycle stage is
+  blocked, or a material safety, security, privacy, data-integrity, or hard-to-reverse risk exists.
+  Route adjacent improvements, optional consistency work, speculative hardening, and non-material
+  diagnostics to a separate follow-up without implementing them.
+- Validate the affected proof layer. Repeat broad or full-suite checks, packaging, deployment, or
+  cross-host journeys only when the change can affect that layer or the approved delivery stage
+  requires it; do not rerun them merely for additional reassurance.
+- After sufficient proof passes, stop. Only an actual later change authorizes one governed
+  `workflow validation impact` decision: `unaffected` advances, `affected` permits one validation
+  of the named invalidated proof, and `ambiguous` asks the owner one concise question.
+- A passed affected validation ends continuation work for that change identity. Validation impact
+  never creates, broadens, or reopens independent QA.
 
 E2E exception:
 

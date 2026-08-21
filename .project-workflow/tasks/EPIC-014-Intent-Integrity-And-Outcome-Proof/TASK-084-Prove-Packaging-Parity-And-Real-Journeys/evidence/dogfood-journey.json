@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-21T13:44:45+10:00",
+  "epic_id": "EPIC-014",
+  "task_id": "TASK-084",
+  "source_revision": "6bf7601f47bc1362347d1c067e5bd2db6b67fe4c+working-tree-candidate",
+  "owner_observation": {
+    "artifact": ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-084-Prove-Packaging-Parity-And-Real-Journeys/evidence/owner-observation.json",
+    "sha256": "sha256:b5d34689e18975cd9fd54690b25ac8d1d532a0c0b7d324ee844ec1023f745051",
+    "thread_id": "01a02192-de86-77f2-842b-c470bfffadf8",
+    "approval_turn_id": "01a021a7-5985-73c1-a089-9ff8f44e7d7f",
+    "approval_text": "Yeah, that's so much more useful. Okay, I'm happy with that. Let's get on with it.",
+    "retrieval_surface": "Codex app read_thread",
+    "raw_session_event": {
+      "artifact": ".codex/sessions/2026/08/21/rollout-2026-08-21T09-47-48-01a02192-de86-77f2-842b-c470bfffadf8.jsonl",
+      "line": 339,
+      "event_timestamp": "2026-08-21T00:10:10.869Z",
+      "message_id": "msg_01a021a7-5a35-7693-9ab7-3169ea4f6d68",
+      "turn_id": "01a021a7-5985-73c1-a089-9ff8f44e7d7f",
+      "event_line_sha256": "sha256:c19f4a9f13584c103e31897b31c6faa819c24040fd3a8e6305263a3ee4b309f2"
+    }
+  },
+  "approval_synopsis": {
+    "output": "Approval synopsis\n\nIntent\nMake Project Workflow stop agents from watering down what the owner asked for into the easiest narrow result they can defend. State the owner's intent plainly before approval, then hold requirements, planning, implementation and QA accountable to that intent\u2014not merely to internally consistent documents and checklists.\n\nAt completion\npreserve the plain-language `## Intent` above as the primary meaning against which all derived requirements, plans, tasks, evidence and completion claims are judged, while showing the owner what completion will and will not enable and the exact journey that will prove the outcome.\n\nMaterial capabilities\npreserve source intent, expose assumptions and exclusions, trace outcome commitments through decomposition, detect silent narrowing, require outcome-level proof, and retain independent owner acceptance where it is genuinely required.\n\nProof journey\na realistic user request is captured, planned, decomposed, implemented and reviewed; if downstream artifacts reduce the requested capability to a canary, preview, internal representation, subset, or surrogate, the workflow blocks before implementation or completion and explains the exact lost capability.\n\nA green result that would still be wrong\nevery generated document, AC mapping, test, build, evidence record and Doctor gate passes while the user still cannot perform the requested job.\n\nStill outside this work\nthe workflow does not guarantee perfect semantic interpretation, force exhaustive scope, require owner approval for every child or implementation detail, or add a heavyweight document stack to ordinary bounded fixes.\n\nMaterial assumptions\nthe owner's stated outcome is authoritative; semantic fidelity requires reviewable judgment as well as deterministic traceability; and outcome proof must match the product claim rather than merely demonstrate related implementation activity.\n\nApproval question\nDoes this Intent accurately capture what you want and what success means?\n\nProvenance note\nThe workflow records artifact identity after approval, but IDs and hashes are not the meaning being approved.\n",
+    "sha256": "sha256:7d7f4ee67515162ac2994be74ee928051a920ffa8f84dd5b52ab8564e26edfa3",
+    "meaning_first": true,
+    "semantic_question_present": true,
+    "workflow_identifier_substitute_present": false
+  },
+  "approved_requirements": {
+    "Intent reviewed and accurately reflected": "Yes",
+    "Requirements reviewed by owner": "Yes",
+    "Acceptance criteria reviewed by owner": "Yes",
+    "Approved scope envelope": "Yes",
+    "Approved by": "John Detlefs",
+    "Approval date": "2026-08-21",
+    "Approval note / source": "Codex owner confirmation on 2026-08-21: revised plain-language Intent is approved; proceed (clerical full-contract schema normalization only)",
+    "Approved artifact identity": "sha256:46cb105a43fe2f700b5b239a64f628a8fb7730fe6b7471910740d4b6b37f81e5"
+  },
+  "intent_audit": {
+    "state": "current",
+    "verdict": "pass",
+    "audit_identity": "sha256:48e9600a6a69e85f6a11dfd2544be85891328086dbf3635029e893abeb9b999b",
+    "issues": [],
+    "unresolved_drift": []
+  },
+  "lifecycle_observation": {
+    "epic_status": "In Progress",
+    "child_statuses": {
+      "TASK-080": "Complete",
+      "TASK-081": "Complete",
+      "TASK-082": "Complete",
+      "TASK-083": "Complete",
+      "TASK-084": "Review"
+    },
+    "qa_blocking_child": "TASK-084",
+    "blocking_reviews": [
+      {
+        "artifact": ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-084-Prove-Packaging-Parity-And-Real-Journeys/evidence/independent-qa-initial.md",
+        "sha256": "sha256:d9e7a60f9b1edbd0f1fcf390ccb7973fcad6fb90d54282ea37f75bd2d43c976c",
+        "verdict": "changes-requested"
+      },
+      {
+        "artifact": ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-084-Prove-Packaging-Parity-And-Real-Journeys/evidence/independent-qa-second.md",
+        "sha256": "sha256:497e3d980e17ce4917401ecb144a85a0df61e0def87537283807007b093ee6b6",
+        "verdict": "changes-requested"
+      }
+    ]
+  },
+  "artifact_identities": {
+    ".project-workflow/TRACKER.md": "sha256:df746e9a7549169ba510c9427ec1a0bf6df28a71adfacb661671b098e30d3cf5",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/DECOMPOSITION.md": "sha256:7162a2f2cfd8a60bb1fce1a4b9288d00fa9c5a85562789f6383bad52768b366a",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/EPIC-CONTRACT.md": "sha256:ba506565fe3e7fda9fa3cac71b8410da763a10b2371e6f2f093f5fbbb3350515",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/INTENT-AUDIT.json": "sha256:62d51ad37e01ceb72340a2e2d7e26d1bd3ff58fad8ee988d46e38f9f47d59e63",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/REQUIREMENTS.md": "sha256:e31cb8a297150210f8acd1fa1187d501bfc9ae5bf39459b7a4918e4070d77c57",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-080-Define-Intent-Spine-And-Semantic-Approval/IMPLEMENTATION.md": "sha256:6961c32cc80dda702173f9465746e7dcd3669ff5d4f6d9d74b2e2b82d21feb5c",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-080-Define-Intent-Spine-And-Semantic-Approval/REQUIREMENTS.md": "sha256:fd1c63b02b1d1f39c3747296a400cdfd6b098f2afd64e6ba050629249a87c61c",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-081-Build-Intent-Audit-And-Narrowing-Gates/IMPLEMENTATION.md": "sha256:3b24db68caf3e5601c19802ff8a80ef0604513ee6baecdf685b31dfece1ead98",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-081-Build-Intent-Audit-And-Narrowing-Gates/REQUIREMENTS.md": "sha256:8e0a5b124f5e213d44ba1a95279b405ee4d474f80b296eb446f95216ca794f1a",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-082-Add-Outcome-Journey-Proof-And-Independent-Review/IMPLEMENTATION.md": "sha256:38cc5902d2b25ad1ba183136dd8668d37d7172e0307cc19e7822687747fae301",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-082-Add-Outcome-Journey-Proof-And-Independent-Review/REQUIREMENTS.md": "sha256:fdf364f39d6e27452eca2552557473c741290ac732be88836b8b057394c95dfe",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-083-Create-Behavioural-Regression-Evals/IMPLEMENTATION.md": "sha256:aab70f8cbdf57fbe79aca56dd008eaa074e2956cf4439511233b63f3cc4dfbcc",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-083-Create-Behavioural-Regression-Evals/REQUIREMENTS.md": "sha256:aac27da2d6f9d2c7574f1b308428a48e2a4f5f204488c954deecb0a9e91eacde",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-084-Prove-Packaging-Parity-And-Real-Journeys/IMPLEMENTATION.md": "sha256:d72417af68e806671530446d507fa6c7e3b8477bf15b8881b370fa4dca5ab550",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-084-Prove-Packaging-Parity-And-Real-Journeys/REQUIREMENTS.md": "sha256:a5953ddafbb193d60631dfce20ce66fb9f4b7ff5135fc4505033e33820b0010b",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-084-Prove-Packaging-Parity-And-Real-Journeys/evidence/independent-qa-initial.md": "sha256:d9e7a60f9b1edbd0f1fcf390ccb7973fcad6fb90d54282ea37f75bd2d43c976c",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-084-Prove-Packaging-Parity-And-Real-Journeys/evidence/independent-qa-second.md": "sha256:497e3d980e17ce4917401ecb144a85a0df61e0def87537283807007b093ee6b6",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-084-Prove-Packaging-Parity-And-Real-Journeys/evidence/package-journeys.json": "sha256:6ca2e2ca1f5c95f3de3bec31acdc8a9158c1b59de71752832518891889e8b563",
+    ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TRACKER.md": "sha256:7a54731d21a8f60708d8ce50d50ab53f96843866c901b777ea4267db0167924d",
+    "scripts/capture_dogfood_journey.py": "sha256:b6d77d8da171424fee1a88658d97ecb5235ec52d46fadaa060435592f20e1f3c"
+  },
+  "authority_boundary": "Local dogfood evidence only; no publication, merge, release, rollout, consumer adoption, final owner acceptance or commercial validation."
+}

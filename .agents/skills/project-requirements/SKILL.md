@@ -2,6 +2,7 @@
 name: project-requirements
 description: Use when drafting or updating project-workflow REQUIREMENTS.md with user story, scope, acceptance criteria, decisions, and open questions.
 ---
+<!-- project-workflow:generated -->
 
 # Project Requirements
 
@@ -9,9 +10,11 @@ Capture what is being built before planning or coding.
 
 Project Workflow is owner-directed and agent-operated. The owner provides product context and decisions conversationally; the agent extracts them into workflow artifacts and asks focused questions only when needed.
 
-Requirements capture must end with one explicit owner confirmation of requirements and acceptance
-criteria before planning. Record that authority with `task approve-requirements` or
-`epic approve-requirements` after confirmation. Do not treat an agent draft, silence, or
+Requirements capture must end with one explicit owner confirmation that the brief Intent
+accurately reflects what they mean. Present the Intent, completion capability, exclusions and
+proof journey before detailed requirements; do not ask the owner to approve IDs, hashes or a
+document bundle as a substitute for meaning. Record that authority with `task approve-requirements`
+or `epic approve-requirements` after confirmation. Do not treat an agent draft, silence, or
 implementation request as approval. After approval, normally continue autonomously through
 Planner, post-plan Clarify, `task ready`, and `Ready`; pause only for material drift, exceptional
 authority, requested/high-risk plan review, or an explicit setup-only boundary.
@@ -37,6 +40,10 @@ authority, requested/high-risk plan review, or an explicit setup-only boundary.
 3. If the feature or bugfix is not clear, ask only for discovery context: what change, where in the product, who is affected, and what success looks like.
    Minimum context should cover problem/opportunity, desired outcome, affected user or system, scope boundaries, acceptance signal, constraints, priority/risk, and examples or failure modes.
 4. Draft or update `REQUIREMENTS.md` with:
+   - A one- or two-sentence plain-language `## Intent` stating the owner's desired outcome
+   - An `## Intent Spine` with stable outcome commitments for completion capability, material
+     capabilities, success journey, successful-but-wrong result, exclusions, assumptions and
+     authority source when the full intent contract is triggered
    - Overview
    - User Story
    - Goal
@@ -57,7 +64,12 @@ authority, requested/high-risk plan review, or an explicit setup-only boundary.
 8. Keep only the `## User Story` section in `IMPLEMENTATION.md` synced with `REQUIREMENTS.md`. Do not add implementation tasks here.
 9. If critical requirements are ambiguous, record them as open questions in `REQUIREMENTS.md`, then ask the user the minimum questions needed.
 10. Do not proceed to planning or implementation until open questions are resolved or explicitly accepted as risks and recorded.
-11. After requirements and ACs are complete, ask the owner to confirm that exact requirements/AC envelope once, then record approval with the workflow CLI. Downstream work inside that unchanged envelope should not ask for repeated approval.
+11. After requirements and ACs are complete, run `task approval-summary` or
+    `epic approval-summary` and present its meaning-first synopsis. Ask: "Does this Intent
+    accurately capture what you want and what success means?" Do not replace that question with
+    a request to approve task IDs, AC IDs or artifact hashes. After confirmation, record approval
+    with the workflow CLI; the artifact identity is provenance behind the approved meaning.
+    Downstream work inside that unchanged envelope should not ask for repeated approval.
 12. After approval, move to `Analysing`, run `project-planner`, run a post-plan
     `project-clarify` pass, validate with `task ready`, and move to `Ready` without another generic
     approval request.

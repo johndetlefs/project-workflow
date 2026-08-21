@@ -145,7 +145,19 @@ Do not mark work `Complete` from implementation alone. Use `./.project-workflow/
 
 ## Drift Gate Requirements
 
-- Before implementation-oriented work, record one owner-approved requirements/AC envelope with `task approve-requirements` or `epic approve-requirements`. Do not treat an agent draft, silence, or implementation request as approval.
+- Begin current-contract Task and Epic requirements with a one- or two-sentence plain-language
+  Intent and stable outcome commitments. The Intent states what the owner actually wants; detailed
+  requirements, ACs and hashes elaborate or bind it but never replace it.
+- Before implementation-oriented work, run `task approval-summary` or `epic approval-summary`,
+  show the Intent/capability/boundary/proof synopsis, and ask whether that meaning accurately
+  reflects what the owner wants. Do not ask the owner to approve task IDs, AC IDs, hashes or a
+  document bundle as a substitute for comprehension. Record the confirmation with
+  `task approve-requirements` or `epic approve-requirements`.
+- Full-contract epics keep sourced OC-to-AC/child/proof coverage and reviewable semantic
+  classifications in `INTENT-AUDIT.json`. Use `epic intent-audit --epic-id <EPIC-ID>` to inspect
+  current, stale, unknown, review-required, or changes-requested state without mutation. Child
+  readiness, Review, and Complete require a current audit; material narrowing, proxy substitution,
+  omission, or broadening requires restoration or a current owner-approved capability amendment.
 - Do not ask for repeated generic approval when work remains inside the unchanged approved envelope. Fix concrete drift/evidence gaps directly, and ask the owner only for material scope changes, amendments, deviations, deferrals, artifact identity changes, or proof-obligation changes.
 - For pre-existing work, use `task adopt` or `epic adopt`; pre-adoption inferred evidence remains untrusted until refreshed.
 - New/adopted epics require non-placeholder `EPIC-CONTRACT.md` before decomposition, child approval/scaffolding, or movement into `Ready`/`In Progress`.

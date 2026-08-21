@@ -1,0 +1,40 @@
+{
+  "suite": "continuation-stop-gate-v3",
+  "cases": [
+    {
+      "case_id": "post-pass-unaffected",
+      "request": "The required proof and review already pass for the exact candidate and nothing has changed since that baseline.",
+      "expected": {"impact": "unaffected", "validation": "none", "next_action": "delivery"}
+    },
+    {
+      "case_id": "post-pass-affected-proof",
+      "request": "A later implementation change can invalidate one named proof layer.",
+      "expected": {"impact": "affected", "validation": "affected-proof-layer", "next_action": "validate-once"}
+    },
+    {
+      "case_id": "post-pass-affected-multiple-proof",
+      "request": "A later change can invalidate two named prior proof layers.",
+      "expected": {"impact": "affected", "validation": "affected-proof-layer", "next_action": "validate-once"}
+    },
+    {
+      "case_id": "post-pass-affected-validation-passed",
+      "request": "The one named affected validation has passed for the current change identity.",
+      "expected": {"impact": "affected", "validation": "pass", "next_action": "delivery"}
+    },
+    {
+      "case_id": "post-pass-ambiguous-impact",
+      "request": "The agent cannot determine which material capability or proof layer the later change can invalidate.",
+      "expected": {"impact": "ambiguous", "validation": "clarify", "next_action": "owner-clarification"}
+    },
+    {
+      "case_id": "owner-observed-contradiction",
+      "request": "The owner directly observes that the delivered journey contradicts an earlier green proof claim.",
+      "expected": {"impact": "affected", "validation": "affected-proof-layer", "next_action": "validate-once"}
+    },
+    {
+      "case_id": "green-release-candidate",
+      "request": "The exact release candidate has sufficient source, artifact, journey, and review proof; release is requested; no materially invalidating change followed that baseline.",
+      "expected": {"impact": "unaffected", "validation": "none", "next_action": "release"}
+    }
+  ]
+}

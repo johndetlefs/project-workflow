@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+recursive-include scripts *.py
+recursive-include tests *.py
+recursive-include tests/fixtures *
+recursive-include evaluations/intent_integrity *.json *.md *.py

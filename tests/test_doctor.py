@@ -174,6 +174,10 @@ def ready_requirements(task_id: str, title: str, ac_lines: list[str] | None = No
 
 def ready_fix_text(fix_path: Path, *, hotfix: bool = False) -> str:
     text = fix_path.read_text(encoding="utf-8")
+    text = text.replace(
+        "State the bounded correction and restored outcome in one or two plain-language sentences.",
+        "Restore successful export for supported accounts without adding a new export capability.",
+    )
     values = (
         ("Report", "Observed or requested", "Export fails after the delivered release."),
         ("Report", "Expected", "Export completes for supported accounts."),
@@ -416,15 +420,15 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
     assert manifest == workflow_cli.WorkflowManifest(
         manifest_version=1,
         package_version=__version__,
-        asset_version=4,
+        asset_version=5,
         schema_version=1,
         applied_migrations=(),
     )
     assert workflow_cli._serialize_workflow_manifest(manifest) == (
         "{\n"
         '  "manifest_version": 1,\n'
-        '  "package_version": "0.5.1",\n'
-        '  "asset_version": 4,\n'
+        '  "package_version": "0.6.0",\n'
+        '  "asset_version": 5,\n'
         '  "schema_version": 1,\n'
         '  "applied_migrations": []\n'
         "}\n"
@@ -496,7 +500,7 @@ def test_repository_compatibility_classifies_supported_states(tmp_path: Path) ->
     ("update", "reason"),
     [
         ({"manifest_version": 2, "extension": "future"}, "future-manifest-version"),
-        ({"asset_version": 5}, "future-asset-version"),
+        ({"asset_version": 6}, "future-asset-version"),
         ({"schema_version": 2}, "future-schema-version"),
     ],
 )
@@ -2495,7 +2499,7 @@ def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
     )
     assert missing_tracker.returncode != 0
     assert (
-        "uvx --from project-workflow==0.5.1 project init"
+        "uvx --from project-workflow==0.6.0 project init"
         in missing_tracker.stderr
     )
 
@@ -2957,7 +2961,7 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "# Existing Agent Notes" in codex_agents
     assert "<!-- project-workflow:start -->" in codex_agents
     assert (
-        "uvx --from project-workflow==0.5.1 project init"
+        "uvx --from project-workflow==0.6.0 project init"
         in codex_agents
     )
     assert "To initialize a new repository" in codex_agents
@@ -2969,6 +2973,8 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "task status" in codex_agents
     assert "task approve-requirements" in codex_agents
     assert "epic approve-requirements" in codex_agents
+    assert "task approval-summary" in codex_agents
+    assert "plain-language Intent" in codex_agents
     assert "EPIC-CONTRACT.md" in codex_agents
     assert "DECOMPOSITION.md" in codex_agents
     assert "EVIDENCE.json" in codex_agents
@@ -3003,6 +3009,12 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     ).read_text(encoding="utf-8")
     assert "Promoted rows stay in the backlog" in backlog_skill
     assert "Existing roadmap/backlog documents" in backlog_skill
+    requirements_skill = (
+        codex_root / ".agents" / "skills" / "project-requirements" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    assert "Does this Intent" in requirements_skill
+    assert "accurately capture what you want and what success means?" in requirements_skill
+    assert "Do not replace that question" in requirements_skill
 
     cursor_root = tmp_path / "cursor"
     cursor_root.mkdir()
@@ -3019,6 +3031,8 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "Existing roadmap/backlog documents" in cursor_rules
     assert "task approve-requirements" in cursor_rules
     assert "epic approve-requirements" in cursor_rules
+    assert "task approval-summary" in cursor_rules
+    assert "one- or two-sentence Intent" in cursor_rules
     assert "EPIC-CONTRACT.md" in cursor_rules
     assert "DECOMPOSITION.md" in cursor_rules
     assert "EVIDENCE.json" in cursor_rules
@@ -3045,6 +3059,21 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "task approve-requirements" in claude_implement
     assert "approved envelope" in claude_implement
     assert "EVIDENCE.json" in claude_implement
+    claude_requirements = (
+        claude_root / ".claude" / "agents" / "project-requirements.md"
+    ).read_text(encoding="utf-8")
+    assert "task approval-summary" in claude_requirements
+    assert "Do not ask the owner to approve task IDs" in claude_requirements
+
+    copilot_root = tmp_path / "copilot"
+    copilot_root.mkdir()
+    copilot_init = run_project(["init", "--agent", "github-copilot"], cwd=copilot_root)
+    assert copilot_init.returncode == 0, copilot_init.stderr
+    copilot_requirements = (
+        copilot_root / ".github" / "prompts" / "Requirements.prompt.md"
+    ).read_text(encoding="utf-8")
+    assert "task approval-summary" in copilot_requirements
+    assert "Do not ask the owner to approve task IDs" in copilot_requirements
 
 
 def test_upgrade_refreshes_marked_generated_files_and_managed_blocks(tmp_path: Path) -> None:

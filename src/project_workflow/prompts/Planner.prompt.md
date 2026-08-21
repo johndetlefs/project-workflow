@@ -134,6 +134,9 @@ Planning guardrails:
   gaps autonomously. Return to the owner only for material scope drift, new product decisions,
   exceptional authority, or a deliberately requested/high-risk plan review.
 - If you detect conflicts between `REQUIREMENTS.md`, the `## User Story` in `IMPLEMENTATION.md`, and repo constraints, stop and instruct the user to run the `project.clarify` prompt to resolve them and record decisions back into `REQUIREMENTS.md`.
+- For a full-contract Epic child, preserve assigned OC commitments in the plan and update sourced
+  `INTENT-AUDIT.json` coverage. A canary, preview, internal representation, subset or debug-only
+  proxy is a material narrowing unless the owner plainly amended the capability.
 
 Task list guardrails:
 

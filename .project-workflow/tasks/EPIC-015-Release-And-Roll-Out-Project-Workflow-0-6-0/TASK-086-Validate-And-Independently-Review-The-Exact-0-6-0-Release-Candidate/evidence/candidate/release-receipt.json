@@ -1,0 +1,33 @@
+{
+  "artifacts": [
+    {
+      "filename": "project_workflow-0.6.0-py3-none-any.whl",
+      "kind": "wheel",
+      "sha256": "944b201ff15c3b9b2ecfd8bb8055830a5b9bc9c6c984efb4ebdda93f90715c99",
+      "size": 409646
+    },
+    {
+      "filename": "project_workflow-0.6.0.tar.gz",
+      "kind": "sdist",
+      "sha256": "734bda96c54b74f7fe215910c9bef4dd61f6294dd2d8ef9e6a70409c36a2dae5",
+      "size": 532755
+    }
+  ],
+  "asset_version": 5,
+  "changelog_heading": "## 0.6.0 - 2026-08-21",
+  "commands": {
+    "init": "uvx --from project-workflow==0.6.0 project init",
+    "upgrade": "uvx --from project-workflow==0.6.0 project upgrade"
+  },
+  "commit": "d06eb8b3b94b32b31f73e190f2c31cf658448ff6",
+  "project": "project-workflow",
+  "repository": "johndetlefs/project-workflow",
+  "repository_schema_version": 1,
+  "schema_version": 1,
+  "tag": "v0.6.0",
+  "version": "0.6.0",
+  "workflow": {
+    "run_id": "local-candidate-20260821-stop-gate",
+    "run_url": "local://project-workflow/EPIC-015/TASK-086"
+  }
+}

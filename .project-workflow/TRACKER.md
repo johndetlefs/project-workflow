@@ -31,3 +31,8 @@
 | EPIC-012 | Capability-Aware Delegate Execution And Child Lifecycle | Complete | `tasks/EPIC-012-Capability-Aware-Delegate-Execution-And-Child-Lifecycle/REQUIREMENTS.md` |
 | EPIC-013 | Release And Roll Out Project Workflow 0.5.0 | Complete | `tasks/EPIC-013-Release-And-Roll-Out-Project-Workflow-0-5-0/REQUIREMENTS.md` |
 | FIX-006 | Preserve Wrapped Epic Contract Bullets In Child Charters | Complete | `tasks/FIX-006-Preserve-Wrapped-Epic-Contract-Bullets-In-Child-Charters/FIX.md` |
+| EPIC-014 | Intent Integrity And Outcome Proof | Complete | `tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/REQUIREMENTS.md` |
+| FIX-007 | Aggregate Epic Outcome Evidence In Status | Complete | `tasks/FIX-007-Aggregate-Epic-Outcome-Evidence-In-Status/FIX.md` |
+| FIX-008 | Bound Continuation And Validation Scope | Complete | `tasks/FIX-008-Bound-Continuation-And-Validation-Scope/FIX.md` |
+| EPIC-015 | Release And Roll Out Project Workflow 0.6.0 | To Do | `tasks/EPIC-015-Release-And-Roll-Out-Project-Workflow-0-6-0/REQUIREMENTS.md` |
+| FIX-009 | Enforce Proportionate Post-Proof Validation | Complete | `tasks/FIX-009-Enforce-Proportionate-Post-Proof-Validation/FIX.md` |

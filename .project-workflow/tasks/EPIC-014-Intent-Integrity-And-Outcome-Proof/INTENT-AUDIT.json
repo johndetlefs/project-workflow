@@ -1,0 +1,224 @@
+{
+  "artifact_identity": "sha256:1d536811fc18b25c471632cd847353abcbac97c03558d2a3daef8309ca1847a4",
+  "commitments": [
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-080"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC1",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [
+        "AC1",
+        "AC2"
+      ],
+      "required_outcome_proof": "Inspect the meaning-first approval synopsis and prove generated full-contract requirements retain the exact approved Intent and stable OC1-OC7 commitments.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent",
+        "REQUIREMENTS.md#intent-spine"
+      ],
+      "target_locations": [
+        "TASK-080-Define-Intent-Spine-And-Semantic-Approval/REQUIREMENTS.md#intent",
+        "TASK-080-Define-Intent-Spine-And-Semantic-Approval/IMPLEMENTATION.md#parent-ac-evidence"
+      ],
+      "user_visible_consequence": "The owner sees and approves the requested outcome itself before detailed requirements can narrow it."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-080",
+        "TASK-081",
+        "TASK-082"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC2",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [
+        "AC1",
+        "AC3",
+        "AC4",
+        "AC6",
+        "AC7",
+        "AC8",
+        "AC9"
+      ],
+      "required_outcome_proof": "Trace every material capability through sourced coverage, semantic classifications, lifecycle enforcement, outcome evidence and adversarial QA.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc2",
+        "EPIC-CONTRACT.md#invariants"
+      ],
+      "target_locations": [
+        "TASK-080-Define-Intent-Spine-And-Semantic-Approval/IMPLEMENTATION.md",
+        "TASK-081-Build-Intent-Audit-And-Narrowing-Gates/IMPLEMENTATION.md",
+        "TASK-082-Add-Outcome-Journey-Proof-And-Independent-Review/IMPLEMENTATION.md"
+      ],
+      "user_visible_consequence": "Source intent, capability coverage, narrowing decisions and outcome proof remain inspectable across the whole workflow."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-081",
+        "TASK-082",
+        "TASK-084"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC3",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [
+        "AC5",
+        "AC7",
+        "AC8",
+        "AC14",
+        "AC15"
+      ],
+      "required_outcome_proof": "Run a realistic disposable workflow and current dogfood journey where a green-but-wrong proxy is rejected before closeout.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc3",
+        "REQUIREMENTS.md#acceptance-criteria-verifiable"
+      ],
+      "target_locations": [
+        "TASK-081-Build-Intent-Audit-And-Narrowing-Gates/IMPLEMENTATION.md",
+        "TASK-082-Add-Outcome-Journey-Proof-And-Independent-Review/IMPLEMENTATION.md",
+        "TASK-084-Prove-Packaging-Parity-And-Real-Journeys/IMPLEMENTATION.md"
+      ],
+      "user_visible_consequence": "An implementation cannot pass by proving a related canary while leaving the requested normal job impossible."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-081",
+        "TASK-082",
+        "TASK-083",
+        "TASK-084"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC4",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [
+        "AC4",
+        "AC5",
+        "AC8",
+        "AC11",
+        "AC12",
+        "AC15"
+      ],
+      "required_outcome_proof": "Present internally consistent downstream artifacts whose proxy outcome is still rejected by audit, QA and behavioural evaluation.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc4",
+        "EPIC-CONTRACT.md#invalid-substitutes"
+      ],
+      "target_locations": [
+        "TASK-081-Build-Intent-Audit-And-Narrowing-Gates/IMPLEMENTATION.md",
+        "TASK-082-Add-Outcome-Journey-Proof-And-Independent-Review/IMPLEMENTATION.md",
+        "TASK-083-Create-Behavioural-Regression-Evals/IMPLEMENTATION.md",
+        "TASK-084-Prove-Packaging-Parity-And-Real-Journeys/IMPLEMENTATION.md"
+      ],
+      "user_visible_consequence": "Green documents, tests and hashes cannot conceal that the owner still cannot do the requested job."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-080",
+        "TASK-083",
+        "TASK-084"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC5",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": [
+        "AC10",
+        "AC11",
+        "AC12",
+        "AC13"
+      ],
+      "required_outcome_proof": "Verify bounded Fix proportionality, gold-plating avoidance, sanitized fixtures and package compatibility without claiming perfect semantic certainty.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc5",
+        "REQUIREMENTS.md#non-goals"
+      ],
+      "target_locations": [
+        "TASK-080-Define-Intent-Spine-And-Semantic-Approval/IMPLEMENTATION.md",
+        "TASK-083-Create-Behavioural-Regression-Evals/IMPLEMENTATION.md",
+        "TASK-084-Prove-Packaging-Parity-And-Real-Journeys/IMPLEMENTATION.md"
+      ],
+      "user_visible_consequence": "The stronger controls remain proportionate and do not turn bounded work into maximal scope or repeated ceremony."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-081",
+        "TASK-082"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC6",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": [
+        "AC3",
+        "AC4",
+        "AC6",
+        "AC8",
+        "AC9"
+      ],
+      "required_outcome_proof": "Keep semantic classifications sourced and reviewable while deterministic checks enforce identity, coverage, freshness and lifecycle state.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc6",
+        "REQUIREMENTS.md#decisions-resolved"
+      ],
+      "target_locations": [
+        "TASK-081-Build-Intent-Audit-And-Narrowing-Gates/REQUIREMENTS.md",
+        "TASK-082-Add-Outcome-Journey-Proof-And-Independent-Review/REQUIREMENTS.md"
+      ],
+      "user_visible_consequence": "The workflow exposes judgment and uncertainty instead of laundering a semantic confidence score into truth."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-080",
+        "TASK-081",
+        "TASK-084"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC7",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": [
+        "AC1",
+        "AC2",
+        "AC3",
+        "AC6",
+        "AC13"
+      ],
+      "required_outcome_proof": "Retain the owner-approved parent requirements identity and sourced child mappings through package and self-hosted parity checks.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine",
+        "REQUIREMENTS.md#owner-approval"
+      ],
+      "target_locations": [
+        "DECOMPOSITION.md",
+        "TASK-080-Define-Intent-Spine-And-Semantic-Approval/REQUIREMENTS.md",
+        "TASK-081-Build-Intent-Audit-And-Narrowing-Gates/REQUIREMENTS.md",
+        "TASK-084-Prove-Packaging-Parity-And-Real-Journeys/REQUIREMENTS.md"
+      ],
+      "user_visible_consequence": "Every downstream claim remains subordinate to the exact owner-approved Intent rather than to agent-authored IDs alone."
+    }
+  ],
+  "review_source": "Fresh sourced mapping review against the owner-approved parent Intent, Epic contract, decomposition and all child plans after the complete package-parity and inspectable-dogfood remediation.",
+  "reviewed_at": "2026-08-21",
+  "reviewed_by": "Project Workflow implementation review",
+  "schema_version": 1,
+  "verdict": "pass"
+}

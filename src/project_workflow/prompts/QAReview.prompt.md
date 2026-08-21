@@ -45,6 +45,10 @@ Required workflow:
    - manual verification result
    - code inspection finding
 5. If a requirement, acceptance criterion, child charter, epic contract, or material claim triggers a proof recipe, inspect child-local `EVIDENCE.json` and the referenced evidence artifact before accepting the claim. Visual/reference fidelity requires rendered comparison against the delivered user-facing artifact, not code review, tests, build output, or a surrogate surface. Runtime target/source proof requires the exact target/source pair and positive proof that target used that source.
+   For `user-outcome-journey`, verify the exact actor, normal entry point, starting state, material
+   operations, resulting artifact/state, observations, source/revision and environment. Reject
+   tests, builds, screenshots, internal data, debug-only controls, related environments and a
+   canary as sole proof of a broader user job.
 6. Run any missing narrow validation that is necessary to support the review. Do not ask the user to manually test behavior that the agent can validate directly with available commands, tests, scripts, browser tools, screenshots, or local tools. Do not rerun broad checks unless they are the most meaningful available check.
 7. Review code for:
    - correctness against requirements and decisions
@@ -63,6 +67,10 @@ Required workflow:
      validation, delivery, and evidence attribution consistent with read-only repository status
    - findings, if any
    - verdict: `Pass`, `Pass with follow-ups`, or `Changes requested`
+   - for an adversarial Intent QA contract: the Intent adversarial verdict, a Yes/No answer to
+     whether every AC could pass while the approved job remains undone, current Intent-audit state,
+     exact outcome-journey evidence, and reviewer-independence basis. A Yes or unknown answer
+     requires `Changes requested`.
 9. Run `./.project-workflow/cli/workflow doctor` when available and include any workflow-state warnings or errors in the review output.
 10. If issues are found:
    - keep tracker status as `Review` or set it to `Blocked` if the issue prevents safe release
@@ -86,6 +94,21 @@ Guardrails:
 - Do not use this prompt to implement new scope. Small review fixes are allowed only when they directly address review findings and remain within the accepted requirements.
 - If review reveals a requirements conflict, route back to `project.clarify` and record the decision before continuing.
 - Do not accept unsupported prose claims as closeout evidence. If prose claims contradict structured evidence, report the contradiction as a blocking finding.
+- Once the approved Intent, in-scope acceptance criteria, required proof, and QA verdict pass, stop
+  review-oriented investigation. Continue or reopen work only when a finding shows the owner
+  cannot accomplish the approved Intent, a material delivery claim is false, an explicitly
+  required lifecycle stage is blocked, or a material safety, security, privacy, data-integrity, or
+  hard-to-reverse risk exists. Route other adjacent improvements and non-material diagnostics to a
+  separate follow-up.
+- Name the affected proof layer for a blocking finding. Repeat broad or full-suite checks,
+  packaging, deployment, or cross-host journeys only when the correction can affect that layer or
+  the approved delivery stage requires it; do not repeat them merely for additional reassurance.
+- A post-proof `workflow validation impact` decision never commissions another review.
+  `unaffected` advances, `affected` permits one validation of the named invalidated proof, and
+  `ambiguous` returns one concise question to the owner.
+- Run independent QA once when the approved work item requires it. Findings may trigger affected
+  validation, but never a fresh open-ended review. Another reviewer invocation requires a new
+  material change, an explicit high-consequence requirement, or direct owner authorization.
 - For delegated work, independently inspect coordinator-verified worker identity, exact source/worktree,
   allowed diff, validations, evidence, capability/capacity provenance, descendant blocking, privacy,
   and single-writer behavior. Delegate's aggregate report and worker assertions are not QA evidence by

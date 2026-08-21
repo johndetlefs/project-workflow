@@ -1,6 +1,6 @@
 # Releasing project-workflow
 
-This runbook governs public releases. The current release is `0.5.1`; all commands and identities
+This runbook governs public releases. The current release is `0.6.0`; all commands and identities
 below are intentionally immutable.
 
 ## Authority and release states
@@ -25,7 +25,7 @@ export PATH="/opt/homebrew/bin:$PATH"
 uv sync --locked --extra dev --python 3.10
 uv lock --check
 uv run --locked pytest -q
-python scripts/release_contract.py check-source --version 0.5.1 --tag v0.5.1 --clean
+python scripts/release_contract.py check-source --version 0.6.0 --tag v0.6.0 --clean
 uv run --locked python -m build --no-isolation
 ```
 
@@ -52,8 +52,8 @@ fails publication rather than falling back to another credential.
 After the candidate is merged and its required `main` CI run passes:
 
 ```bash
-git tag --annotate v0.5.1 --message "project-workflow 0.5.1"
-git push origin v0.5.1
+git tag --annotate v0.6.0 --message "project-workflow 0.6.0"
+git push origin v0.6.0
 ```
 
 The workflow rejects any other tag identity, commits outside `main`, dirty source state, lock
@@ -66,9 +66,9 @@ Download the GitHub Release bundle and the PyPI files independently. Verify `SHA
 compare filenames, sizes, and SHA-256 values with `release-receipt.json`. Run:
 
 ```bash
-uvx --from project-workflow==0.5.1 project --version
-python scripts/verify_package_journeys.py --from project-workflow==0.5.1 --version 0.5.1
-gh attestation verify project_workflow-0.5.1-py3-none-any.whl --repo johndetlefs/project-workflow
+uvx --from project-workflow==0.6.0 project --version
+python scripts/verify_package_journeys.py --from project-workflow==0.6.0 --version 0.6.0
+gh attestation verify project_workflow-0.6.0-py3-none-any.whl --repo johndetlefs/project-workflow
 ```
 
 Record the public PyPI page, GitHub Release, tag commit, successful workflow run, attestation,
@@ -81,7 +81,7 @@ receipt, digests, and disposable journey output in the task-local evidence file.
   tag only after confirming no public artifact or release exists; correct the source and create a
   new tag from the corrected reviewed commit.
 - Never move or reuse a public tag or version. PyPI files are immutable and versions cannot be
-  overwritten. If PyPI accepts `0.5.1` but a later step fails, preserve `v0.5.1`, repair the GitHub
+  overwritten. If PyPI accepts `0.6.0` but a later step fails, preserve `v0.6.0`, repair the GitHub
   Release from the retained workflow bundle when identity is unchanged, or make the next source
   correction as `0.5.2`.
 - A yanked PyPI release remains part of history; yanking is an owner decision for harmful releases,

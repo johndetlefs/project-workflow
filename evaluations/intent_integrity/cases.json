@@ -1,0 +1,35 @@
+{
+  "suite": "intent-integrity-held-out-v1",
+  "cases": [
+    {
+      "case_id": "narrowed-authoring",
+      "request": "Create a complete authoring workflow so a level designer can shape terrain, place and configure all required mission objects, save the level, reload it, and play the authored result through the ordinary game entry point. A preview plus one editable control is not completion.",
+      "candidate": "The plan offers a truthful level preview and one editable launch-speed control. All planned ACs and tests pass, but terrain and mission objects remain fixed."
+    },
+    {
+      "case_id": "rendered-product-proxy",
+      "request": "Make the account recovery screen usable at phone and desktop sizes through the normal browser route, including error recovery and keyboard navigation.",
+      "candidate": "Types, unit tests, a production build and component snapshots pass. No rendered browser journey was exercised."
+    },
+    {
+      "case_id": "wrong-runtime-artifact",
+      "request": "Verify that the currently deployed worker is running the exact reviewed source revision and processes the live contract correctly.",
+      "candidate": "A local worker using the reviewed source passes the contract fixture, and the deployment command returned success. The deployed worker source identity was not observed."
+    },
+    {
+      "case_id": "checklist-complete-outcome-incomplete",
+      "request": "Complete the onboarding Epic so a new organisation administrator can invite a member, the member can join, and both see the correct resulting organisation state.",
+      "candidate": "Every child row, AC mapping, unit test and QA checkbox is complete. The invitation email journey and joined-member state were never exercised end to end."
+    },
+    {
+      "case_id": "bounded-fix-no-gold-plating",
+      "request": "Correct the misspelled Export label in the already accepted settings screen. Do not change export behaviour or redesign the screen.",
+      "candidate": "The proposal fixes the label, adds a focused assertion and leaves behaviour and layout unchanged."
+    },
+    {
+      "case_id": "replacement-subset",
+      "request": "Replace the legacy importer for all documented customer record shapes while preserving validation errors and rollback.",
+      "candidate": "The replacement imports the simplest record shape and reports a successful canary. Other documented shapes and rollback remain on the legacy path."
+    }
+  ]
+}

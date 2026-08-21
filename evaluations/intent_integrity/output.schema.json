@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["suite", "trial_id", "decisions"],
+  "properties": {
+    "suite": {"type": "string", "const": "intent-integrity-held-out-v1"},
+    "trial_id": {"type": "string", "minLength": 1},
+    "decisions": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id", "intent", "route", "material_capabilities", "explicit_descoping",
+          "proof_journey", "invalid_substitutes", "unnecessary_scope", "approval_requests",
+          "verdict", "rationale"
+        ],
+        "properties": {
+          "case_id": {"type": "string"},
+          "intent": {"type": "string", "minLength": 20},
+          "route": {"enum": ["full", "compact"]},
+          "material_capabilities": {"type": "array", "items": {"type": "string"}},
+          "explicit_descoping": {"type": "array", "items": {"type": "string"}},
+          "proof_journey": {"type": "string", "minLength": 20},
+          "invalid_substitutes": {"type": "array", "items": {"type": "string"}},
+          "unnecessary_scope": {"type": "array", "items": {"type": "string"}},
+          "approval_requests": {"type": "integer", "minimum": 0},
+          "verdict": {"enum": ["proceed", "changes-requested"]},
+          "rationale": {"type": "string", "minLength": 20}
+        }
+      }
+    }
+  }
+}

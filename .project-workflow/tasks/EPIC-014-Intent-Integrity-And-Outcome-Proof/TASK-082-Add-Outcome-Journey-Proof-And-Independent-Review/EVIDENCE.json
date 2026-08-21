@@ -1,0 +1,135 @@
+{
+  "task_id": "TASK-082",
+  "claims": [
+    {
+      "id": "CLM-082-AC7",
+      "recipe": "user-outcome-journey",
+      "status": "pass",
+      "commit": "6bf7601f47bc1362347d1c067e5bd2db6b67fe4c",
+      "timestamp": "2026-08-21T00:00:00+10:00",
+      "parent_ac": "AC7",
+      "claim": "The built-in outcome recipe proves the exact normal user job and rejects proxy-only evidence.",
+      "claim_scope": "self-hosted Project Workflow outcome-journey validation and proxy rejection",
+      "journey_scope": "self-hosted Project Workflow outcome-journey validation and proxy rejection",
+      "actor": "Project Workflow maintainer reviewing an active full-contract Epic",
+      "normal_entry_point": "Repository-root .project-workflow/cli/workflow commands",
+      "starting_state": "EPIC-014 has approved Intent, decomposed child plans and a sourced audit.",
+      "material_operations": [
+        "Inspect the current intent audit through the normal Epic CLI.",
+        "Validate a claim-matched normal journey record.",
+        "Submit preview plus one canary as a proxy for the broader authoring job."
+      ],
+      "resulting_state_or_artifact": "The valid journey is outcome-proven and the green proxy is changes-requested.",
+      "outcome_observations": [
+        "All journey identity and observation fields validate.",
+        "Scope mismatch, debug entry and substitute-only evidence are rejected."
+      ],
+      "source_artifact": ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-084-Prove-Packaging-Parity-And-Real-Journeys/evidence/candidate/project_workflow-0.5.1-py3-none-any.whl",
+      "source_artifact_member": "project_workflow/cli.py",
+      "source_revision": "sha256:42daae38002db3ee561948cea4b5834bd28cf845fd7c31f7db8cac30e7e1c51b",
+      "artifact_identity": "self-hosted-cli-sha256:42daae38002db3ee561948cea4b5834bd28cf845fd7c31f7db8cac30e7e1c51b",
+      "environment": "Local repository self-hosted workflow CLI and sanitized deterministic fixtures",
+      "invalid_substitute_policy": [
+        "builds",
+        "canary",
+        "debug-only",
+        "internal-data",
+        "related-environment",
+        "screenshots",
+        "tests"
+      ],
+      "invalid_substitutes": [],
+      "owner_acceptance_required": false,
+      "owner_acceptance_status": "not-required",
+      "evidence_artifact": "evidence/outcome-journey-receipt.md",
+      "evidence_artifact_hash": "sha256:f4144a1eda747fda0968260ba19898b66f4421b5167e8612b072340e5774b2cc"
+    },
+    {
+      "id": "CLM-082-AC8",
+      "recipe": "user-outcome-journey",
+      "status": "pass",
+      "commit": "6bf7601f47bc1362347d1c067e5bd2db6b67fe4c",
+      "timestamp": "2026-08-21T00:00:00+10:00",
+      "parent_ac": "AC8",
+      "claim": "Intent-adversarial QA requests changes when all derived ACs could pass but the approved user job remains undone.",
+      "claim_scope": "self-hosted Project Workflow intent-adversarial QA decision",
+      "journey_scope": "self-hosted Project Workflow intent-adversarial QA decision",
+      "actor": "Fresh QA reviewer assessing the implemented workflow candidate",
+      "normal_entry_point": "QA and Code Review section plus normal Epic completion gate",
+      "starting_state": "Implementation evidence is green and the current parent Intent audit is available.",
+      "material_operations": [
+        "Compare AC evidence with the approved Intent and outcome journey.",
+        "Answer whether all ACs could pass while the user job remains undone.",
+        "Attempt completion with a Yes or unknown adversarial answer."
+      ],
+      "resulting_state_or_artifact": "The green-but-wrong candidate receives Changes requested and cannot complete.",
+      "outcome_observations": [
+        "The adversarial QA fields are required by current templates.",
+        "A Yes or unknown answer fails the completion contract."
+      ],
+      "source_artifact": ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-084-Prove-Packaging-Parity-And-Real-Journeys/evidence/candidate/project_workflow-0.5.1-py3-none-any.whl",
+      "source_artifact_member": "project_workflow/cli.py",
+      "source_revision": "sha256:42daae38002db3ee561948cea4b5834bd28cf845fd7c31f7db8cac30e7e1c51b",
+      "artifact_identity": "self-hosted-cli-sha256:42daae38002db3ee561948cea4b5834bd28cf845fd7c31f7db8cac30e7e1c51b",
+      "environment": "Local repository self-hosted workflow CLI and sanitized QA fixtures",
+      "invalid_substitute_policy": [
+        "builds",
+        "canary",
+        "debug-only",
+        "internal-data",
+        "related-environment",
+        "screenshots",
+        "tests"
+      ],
+      "invalid_substitutes": [],
+      "owner_acceptance_required": false,
+      "owner_acceptance_status": "not-required",
+      "evidence_artifact": "evidence/outcome-journey-receipt.md",
+      "evidence_artifact_hash": "sha256:f4144a1eda747fda0968260ba19898b66f4421b5167e8612b072340e5774b2cc"
+    },
+    {
+      "id": "CLM-082-AC9",
+      "recipe": "user-outcome-journey",
+      "status": "pass",
+      "commit": "6bf7601f47bc1362347d1c067e5bd2db6b67fe4c",
+      "timestamp": "2026-08-21T00:00:00+10:00",
+      "parent_ac": "AC9",
+      "claim": "Status and lifecycle keep implementation, outcome proof, owner acceptance and delivery as distinct states.",
+      "claim_scope": "self-hosted Project Workflow proof and authority state projection",
+      "journey_scope": "self-hosted Project Workflow proof and authority state projection",
+      "actor": "Owner or maintainer inspecting work status",
+      "normal_entry_point": "Repository-root workflow status command",
+      "starting_state": "A passing outcome journey requires owner acceptance that is still pending.",
+      "material_operations": [
+        "Inspect operational status facts.",
+        "Attempt completion before owner acceptance.",
+        "Record owner acceptance and inspect status again."
+      ],
+      "resulting_state_or_artifact": "Outcome-proven, ready-for-owner-acceptance, owner-accepted and delivery remain distinguishable.",
+      "outcome_observations": [
+        "Pending acceptance does not become owner-accepted.",
+        "Completion blocks while required owner acceptance is pending.",
+        "Delivery remains a separate operational projection."
+      ],
+      "source_artifact": ".project-workflow/tasks/EPIC-014-Intent-Integrity-And-Outcome-Proof/TASK-084-Prove-Packaging-Parity-And-Real-Journeys/evidence/candidate/project_workflow-0.5.1-py3-none-any.whl",
+      "source_artifact_member": "project_workflow/cli.py",
+      "source_revision": "sha256:42daae38002db3ee561948cea4b5834bd28cf845fd7c31f7db8cac30e7e1c51b",
+      "artifact_identity": "self-hosted-cli-sha256:42daae38002db3ee561948cea4b5834bd28cf845fd7c31f7db8cac30e7e1c51b",
+      "environment": "Local repository self-hosted workflow CLI and sanitized lifecycle fixtures",
+      "invalid_substitute_policy": [
+        "builds",
+        "canary",
+        "debug-only",
+        "internal-data",
+        "related-environment",
+        "screenshots",
+        "tests"
+      ],
+      "invalid_substitutes": [],
+      "owner_acceptance_required": false,
+      "owner_acceptance_status": "not-required",
+      "evidence_artifact": "evidence/outcome-journey-receipt.md",
+      "evidence_artifact_hash": "sha256:f4144a1eda747fda0968260ba19898b66f4421b5167e8612b072340e5774b2cc"
+    }
+  ]
+}

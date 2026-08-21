@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "suite": "intent-integrity-held-out-v1",
+  "shared_runtime": {
+    "runner": "OpenAI Codex CLI 0.145.0-alpha.30",
+    "model": "gpt-5.6-terra",
+    "provider": "openai",
+    "reasoning_effort": "high",
+    "sandbox": "read-only",
+    "approval": "never",
+    "command_mode": "codex exec --ephemeral --skip-git-repo-check",
+    "cases_sha256": "cfd161417da05fa568024c5d4413bba1d0d6d90f55616126111175793aaa8cd2",
+    "output_schema_sha256": "81e2dcc50591f48279dd4dfb3e5e6e2073f8f07a969806385092d78f2b4aefb8",
+    "expectations_sha256": "be0a08f267f4493a2e934b298959114aeb779594e91a5c44591a99c57b7a8690",
+    "evaluator_sha256": "f31eb8213b40848ad8b7413d934a7f2b4b5a05b2a1e8144edcf9bce68a2344e5"
+  },
+  "trials": [
+    {
+      "trial_id": "trial-1",
+      "role": "calibration",
+      "prompt_ref": "prompts.json#trial-1",
+      "prompt_sha256": "42b387f0d54d8cc73b3b9b74215a48cc8c26c20dda5b79b1004f2e3261c3632d",
+      "session_id": "01a021e8-4311-7b70-aa9b-3e82635efffc",
+      "raw_result": "results/trial-1.json",
+      "raw_result_sha256": "91ca20add254e7e6eba59f9be9170f9b7bc515fdc2d0ed570d166e9ab10f460f",
+      "final_grade": "expected-disagreement"
+    },
+    {
+      "trial_id": "trial-2",
+      "role": "release-repeat-1",
+      "prompt_ref": "prompts.json#trial-2",
+      "prompt_sha256": "43c3961200a6c46b7648a7d1b7aaeda0f49b822cbd39138ef88d28d2157ca87c",
+      "session_id": "01a02256-0535-7060-9c99-444adf69722c",
+      "raw_result": "results/trial-2.json",
+      "raw_result_sha256": "0bf975dcb8e9149fea6f2a784f65bbdcb010174a07465dc59be091bf014d9739",
+      "final_grade": "pass-6-of-6"
+    },
+    {
+      "trial_id": "trial-3",
+      "role": "release-repeat-2",
+      "prompt_ref": "prompts.json#trial-3",
+      "prompt_sha256": "abb66308fb3663fcc251185ea787e24a02fb328113f8323898905aed4e683266",
+      "session_id": "01a021ec-a256-7b80-ae34-4eb467b24732",
+      "raw_result": "results/trial-3.json",
+      "raw_result_sha256": "ce88a048c7c74de84fc8339fbd83183ed7b9ed8da228de856805775777675959",
+      "final_grade": "pass-6-of-6"
+    }
+  ]
+}

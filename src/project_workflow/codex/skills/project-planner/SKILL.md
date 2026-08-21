@@ -68,9 +68,13 @@ Turn confirmed requirements into a safe, incremental implementation plan.
     high-risk plans, not the default checkpoint.
 13. Return to the owner if the plan exposes material scope drift, a new product decision,
     exceptional authority, or changed proof obligations/artifact identity.
-14. Include QA/code review as the required gate after implementation validation
+14. For a child of a full-contract Epic, preserve every assigned OC commitment in the plan and
+    update its sourced `INTENT-AUDIT.json` coverage. `epic intent-audit` must not classify a full
+    capability as a canary, preview, internal representation, subset, debug-only path or other
+    proxy without a plain owner-approved capability amendment.
+15. Include QA/code review as the required gate after implementation validation
     and before completion.
-15. Do not implement code during planning.
+16. Do not implement code during planning.
 
 For Delegate-capable plans, extend the task table with `Dependencies`, `Write Scope`,
 `Parallel Safe`, and `Execution Needs`. Use blank or `bounded-return` for ordinary bounded work;
