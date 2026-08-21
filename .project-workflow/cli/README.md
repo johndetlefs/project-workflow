@@ -30,6 +30,7 @@ Customize folder name suffix:
 Move a task through the lifecycle:
 
 ```bash
+./.project-workflow/cli/workflow task approval-summary --id TASK-001
 ./.project-workflow/cli/workflow task approve-requirements --id TASK-001 --approved-by "Product Owner" --source "Owner approved requirements in planning thread"
 ./.project-workflow/cli/workflow task status --id TASK-001 --to "In Progress"
 ./.project-workflow/cli/workflow task status --id TASK-001 --to Testing
@@ -49,13 +50,27 @@ Create and manage proposal-first epics:
 
 ```bash
 ./.project-workflow/cli/workflow epic init --title "Checkout Reliability"
+./.project-workflow/cli/workflow epic approval-summary --epic-id EPIC-001
 ./.project-workflow/cli/workflow epic approve-requirements --epic-id EPIC-001 --approved-by "Product Owner" --source "Owner approved epic requirements and decomposition boundary"
 ./.project-workflow/cli/workflow epic decompose --epic-id EPIC-001 --limit 5 --type Task
 ./.project-workflow/cli/workflow epic approve --epic-id EPIC-001 --id TASK-014
 ./.project-workflow/cli/workflow epic scaffold-child --epic-id EPIC-001 --id TASK-014
 ```
 
-Approval is an authority envelope, not a repeated prompt. Once requirements/ACs and the epic boundary are approved, unchanged work inside that envelope should proceed; stale requirements, out-of-envelope work, and evidence gaps should fail with concrete drift reasons.
+Current Task and Epic requirements begin with a one- or two-sentence plain-language Intent plus a
+stable Intent Spine. `approval-summary` presents the Intent, completion capability, exclusions and
+proof journey before approval. The owner confirms that meaning; task, AC and artifact identifiers
+remain provenance and are not the substance of the approval request.
+
+Approval is an authority envelope, not a repeated prompt. Once the meaning and its detailed
+requirements are approved, unchanged work inside that envelope should proceed; stale requirements,
+out-of-envelope work, and evidence gaps should fail with concrete drift reasons.
+
+Full-contract epics also keep a sourced `INTENT-AUDIT.json` mapping each OC commitment to parent
+ACs, child owners, disposition, required outcome proof, source/target locations and user-visible
+consequence. Inspect it without mutation using `epic intent-audit --epic-id EPIC-001`. Child
+readiness, Review and Complete require a `current` audit; stale, unknown, review-required and
+changes-requested states fail closed.
 
 New/adopted epics also require a non-placeholder `EPIC-CONTRACT.md` before decomposition, child approval/scaffolding, or movement into `Ready`/`In Progress`. The contract records sources of truth, invalid substitutes, invariants, artifact targets, and parent AC proof owners.
 
@@ -67,7 +82,7 @@ New/adopted epics also require a non-placeholder `EPIC-CONTRACT.md` before decom
 
 `epic scaffold-child` copies parent AC coverage plus a contract-derived `Child Charter` into child requirements and implementation docs, and creates child-local `EVIDENCE.json`.
 
-When requirements or material claims trigger a proof recipe, QA prose is not enough. `epic status` blocks `Review`/`Complete`, `epic audit` refuses parent AC credit, and `doctor` fails invalid current states until `EVIDENCE.json` has passing structured claim records for the triggered recipe. Built-in recipes include `visual-reference-fidelity`, `external-contract-alignment`, `deployed-artifact-alignment`, `runtime-target-source`, and `responsive-visual-behavior`.
+When requirements or material claims trigger a proof recipe, QA prose is not enough. `epic status` blocks `Review`/`Complete`, `epic audit` refuses parent AC credit, and `doctor` fails invalid current states until `EVIDENCE.json` has passing structured claim records for the triggered recipe. Built-in recipes include `visual-reference-fidelity`, `external-contract-alignment`, `deployed-artifact-alignment`, `runtime-target-source`, `responsive-visual-behavior`, and `user-outcome-journey`.
 
 Invalid substitutes are rejected. Visual/reference fidelity needs evidence against the delivered user-facing artifact, not code review, tests, build output, or surrogate surfaces. Runtime target/source claims need the exact execution target, source/artifact under test, observation method, and positive proof that the target used that source.
 
@@ -117,7 +132,7 @@ project doctor
 Use init only to create project-workflow in a new repository. Upgrade an existing repository with the canonical UVX command from the target repository root:
 
 ```bash
-uvx --from project-workflow==0.5.1 project upgrade --agent codex
+uvx --from project-workflow==0.6.0 project upgrade --agent codex
 ```
 
 Canonical upgrade obtains the current package and plans managed assets plus repository schema as one transaction. It shows the plan and asks for confirmation; authorized agents can add `--yes`. Use `--plan --format json` and fingerprinted `--apply` only when automation requires a separated review. Unmarked existing files are preserved and receive generated `*.new` content for review.

@@ -56,13 +56,13 @@ For epic-managed work, preserve parent epic acceptance criteria coverage from th
 When a user asks to initialize project-workflow in a new repository, run the canonical UVX init command from that repository root:
 
 ```bash
-uvx --from project-workflow==0.5.1 project init
+uvx --from project-workflow==0.6.0 project init
 ```
 
 When a user asks to update, refresh, reinstall, align, or upgrade an existing repository, use canonical UVX upgrade instead; do not run init first:
 
 ```bash
-uvx --from project-workflow==0.5.1 project upgrade
+uvx --from project-workflow==0.6.0 project upgrade
 ```
 
 Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github-copilot` for the target mode. Canonical UVX upgrade obtains current software and plans managed assets and repository schema together. Use `--yes` for an authorized non-interactive one-command apply, or `--plan --format json` followed by `--apply --plan-fingerprint <SHA256>` when automation requires separate review.
@@ -87,7 +87,19 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 
 ## Drift Gate Requirements
 
-- Before implementation-oriented work, record one owner-approved requirements/AC envelope with `task approve-requirements` or `epic approve-requirements`. Do not treat an agent draft, silence, or implementation request as approval.
+- Begin current-contract Task and Epic requirements with a one- or two-sentence plain-language
+  Intent and stable outcome commitments. The Intent states what the owner actually wants; detailed
+  requirements, ACs and hashes elaborate or bind it but never replace it.
+- Before implementation-oriented work, run `task approval-summary` or `epic approval-summary`,
+  show the Intent/capability/boundary/proof synopsis, and ask whether that meaning accurately
+  reflects the owner's intent. Do not ask the owner to approve task IDs, AC IDs, hashes or a
+  document bundle as a substitute for comprehension. Record the confirmation with
+  `task approve-requirements` or `epic approve-requirements`.
+- Full-contract epics keep sourced OC-to-AC/child/proof coverage and reviewable semantic
+  classifications in `INTENT-AUDIT.json`. Use `epic intent-audit --epic-id <EPIC-ID>` to inspect
+  current, stale, unknown, review-required, or changes-requested state without mutation. Child
+  readiness, Review, and Complete require a current audit; material narrowing, proxy substitution,
+  omission, or broadening requires restoration or a current owner-approved capability amendment.
 - Do not ask for repeated generic approval when work remains inside the unchanged approved envelope. Fix concrete drift/evidence gaps directly, and ask the owner only for material scope changes, amendments, deviations, deferrals, artifact identity changes, or proof-obligation changes.
 - For pre-existing work, use `task adopt` or `epic adopt`; pre-adoption inferred evidence remains untrusted until refreshed.
 - New/adopted epics require non-placeholder `EPIC-CONTRACT.md` before decomposition, child approval/scaffolding, or movement into `Ready`/`In Progress`.
@@ -124,7 +136,7 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 - When planning, make every implementation task row map to one or more stable acceptance criteria IDs (`AC1`, `AC2`, etc.) from the task requirements or implementation acceptance criteria section.
 - When planning epic-managed child tasks, keep both the child AC IDs and parent epic AC coverage visible in requirements, implementation rows, validation evidence, and QA notes.
 - Before implementation-oriented status transitions, run readiness gates where available: `task ready`, `epic ready`, or `epic ready-child`. If a gate fails, remediate repo-gatherable gaps directly and ask the owner only for decisions, missing product context, or material authority changes listed above.
-- Owner approval of requirements/ACs occurs before planning. After approval, run Planner,
+- Owner confirmation of the meaning-first approval synopsis occurs before planning. After approval, run Planner,
   post-plan Clarify, `task ready`, and move to `Ready` autonomously unless setup-only scope,
   material drift, exceptional authority, or optional requested/high-risk plan review requires a pause.
 - Keep `.project-workflow/TRACKER.md` status aligned with the current workflow state using `./.project-workflow/cli/workflow task status --id <TASK-ID> --to <STATUS>` when the command is available.

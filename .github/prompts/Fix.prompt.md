@@ -36,8 +36,10 @@ baseline and report evidence.
 
    `./.project-workflow/cli/workflow fix init --title "<TITLE>"`
 
-3. Complete the single `FIX.md`: report/baseline, routing rationale, classification, risk,
-   related work, repo metadata, bounded plan, and verification plan.
+3. Complete the single `FIX.md`: its compact one- or two-sentence Intent, report/baseline,
+   routing rationale, classification, risk, related work, repo metadata, bounded plan, and
+   verification plan. "Fix the bug" or another procedural placeholder is not sufficient Intent;
+   the compact path does not require the full Epic Intent Spine.
 4. Classify `Type` as `Defect`, `Regression`, `Change Request`, or `Incident`. `Hotfix` is a
    mode, not a fifth type.
 5. Run `fix triage --id <FIX-ID>` to validate the authority/risk packet and move to `Ready`.

@@ -47,8 +47,10 @@ Guided setup mode (`action=setup`):
 - Drive the complete lifecycle so users do not miss gates:
   1. Initialize epic.
   2. Verify epic requirements are ready for decomposition.
-  3. Ask the owner to confirm the drafted requirements, acceptance criteria, and authority envelope once.
-  4. Record that approval with `epic approve-requirements`.
+  3. Run `epic approval-summary`, show its Intent/capability/boundary/proof synopsis and ask
+     whether that meaning accurately captures what the owner wants.
+  4. Record that meaning-first approval with `epic approve-requirements`; IDs and hashes remain
+     provenance rather than the substance of the approval.
   5. Confirm `EPIC-CONTRACT.md` has concrete sources of truth, invalid substitutes, invariants, artifact targets, and proof owners.
   6. Decompose into Proposed rows and `DECOMPOSITION.md`.
   7. Approve/scaffold matching rows inside the approved decomposition plan as needed; do not ask for repeated owner approval unless the row is outside the plan or changes material scope.
@@ -86,8 +88,10 @@ Requirements interview flow (when requirements are missing/skeletal):
   - Unknowns/dependencies/API notes -> `## Open Questions (Answer Needed)`
 - Keep source fidelity: preserve critical terms, links, and proper nouns from the pasted text.
 - If the pasted block includes desktop/mobile/backend variants, keep those distinctions explicit in the normalized bullets.
-- Read back the drafted `## Requirements` and `## Acceptance Criteria` bullets and ask for confirmation before decomposition.
-- Only proceed after the owner confirms the drafted requirements and acceptance criteria, then record that confirmation with `epic approve-requirements`.
+- Draft and read back the one- or two-sentence `## Intent` before the detailed contract.
+- Run `epic approval-summary` and ask whether its meaning accurately captures what the owner wants;
+  do not ask the owner to approve Epic, AC or child IDs.
+- Only proceed after that confirmation, then record it with `epic approve-requirements`.
 - If requirements, acceptance criteria, `EPIC-CONTRACT.md`, or `DECOMPOSITION.md` materially change after approval, re-run the relevant gate and seek owner confirmation only for the changed authority envelope.
 
 Readiness minimums for decomposition:
@@ -95,6 +99,9 @@ Readiness minimums for decomposition:
 - `## Requirements` has at least 3 non-placeholder bullet items, or `## Acceptance Criteria` has at least 3 non-placeholder bullet items.
 - At least one acceptance bullet is objectively testable (contains a measurable or observable outcome).
 - `EPIC-CONTRACT.md` has non-placeholder sources of truth, invalid substitutes, invariants, artifact targets, and proof owners before decomposition or child lifecycle movement.
+- After decomposition and child planning, `INTENT-AUDIT.json` maps every OC commitment to parent
+  ACs, child owners, disposition, required outcome proof, source/target locations and user-visible
+  consequence. `epic intent-audit` must report current before child readiness, Review or Complete.
 
 Execution:
 
@@ -106,6 +113,8 @@ Execution:
   - `setup` (orchestrated flow):
 
 `./.project-workflow/cli/workflow epic init --title "<TITLE>"`
+
+`./.project-workflow/cli/workflow epic approval-summary --epic-id <EPIC_ID>`
 
 `./.project-workflow/cli/workflow epic approve-requirements --epic-id <EPIC_ID> --approved-by "<OWNER>" --source "<OWNER CONFIRMATION SOURCE>"`
 
@@ -131,6 +140,14 @@ child row into one configured namespace.
 - `approve-requirements`:
 
 `./.project-workflow/cli/workflow epic approve-requirements --epic-id <EPIC_ID> --approved-by "<OWNER>" --source "<OWNER CONFIRMATION SOURCE>"`
+
+- `approval-summary`:
+
+`./.project-workflow/cli/workflow epic approval-summary --epic-id <EPIC_ID>`
+
+- `intent-audit` (read-only sourced coverage, classifications and freshness):
+
+`./.project-workflow/cli/workflow epic intent-audit --epic-id <EPIC_ID> [--format json]`
 
 - `amend`:
 

@@ -1,0 +1,142 @@
+{
+  "task_id": "TASK-084",
+  "claims": [
+    {
+      "id": "CLM-084-AC13",
+      "recipe": "runtime-target-source",
+      "status": "pass",
+      "commit": "6bf7601f47bc1362347d1c067e5bd2db6b67fe4c+working-tree-candidate",
+      "timestamp": "2026-08-21T13:30:00+10:00",
+      "parent_ac": "AC13",
+      "claim": "The exact candidate wheel and source distribution match the current intent-control source, generate the complete managed asset set for all four supported hosts, and preserve the historical legacy fixture during fingerprinted upgrade.",
+      "execution_target": "Fresh disposable Codex, GitHub Copilot, Claude Code and Cursor repositories plus the legacy-unversioned fixture, all executed from the retained exact wheel",
+      "source_artifact": "evidence/candidate/project_workflow-0.5.1-py3-none-any.whl sha256:0558c818146f91c90b4c9506806dda40735e7588d7f99640c55706cd5ee600a1 and source distribution sha256:b93fde4cf936f6fce86c9dccc83ad6ef5e61dd0348b3d273dcb2d1d915a018b8",
+      "observation_method": "Compared every packaged CLI, template, prompt, Codex skill, host rule and README byte with current source; bound every manifest-covered script, test, fixture, evaluation artifact and root document in the sdist; inspected every generated host asset; then ran fresh init, Doctor, upgrade, legacy fingerprinted apply and second no-op plan.",
+      "target_used_source_proof": "The retained wheel hash equals the verifier source hash; all four installed helpers report sha256:42daae38002db3ee561948cea4b5834bd28cf845fd7c31f7db8cac30e7e1c51b, 31 package resources share manifest sha256:7a58ce20d5e1b15e91f7500724cd6cbea97213a48150240bfbfcf84d2e6f28ff, 40 manifest-covered sdist sources match current bytes, and every host has a complete generated-asset manifest.",
+      "evidence_artifact": "evidence/package-journeys.json",
+      "evidence_artifact_hash": "sha256:a43a54d5ee80dbef2e6e6cb2af3dd08039d5fae7bd84484e83c9baf6fcb84d1c",
+      "invalid_substitutes": []
+    },
+    {
+      "id": "CLM-084-AC14-PACKAGE",
+      "recipe": "user-outcome-journey",
+      "status": "pass",
+      "commit": "6bf7601f47bc1362347d1c067e5bd2db6b67fe4c+working-tree-candidate",
+      "timestamp": "2026-08-21T13:30:00+10:00",
+      "parent_ac": "AC14",
+      "claim": "The exact packaged workflow detects and rejects an actually narrowed preview-only child before accepting the restored complete archive journey.",
+      "claim_scope": "exact-package detection and rejection of a preview-only substitute for complete archive export",
+      "journey_scope": "exact-package detection and rejection of a preview-only substitute for complete archive export",
+      "actor": "Project Workflow maintainer reviewing a disposable member archive Epic",
+      "normal_entry_point": "The retained wheel invoked through the canonical project CLI in a fresh disposable Git repository",
+      "starting_state": "The owner-approved Epic requires a member to export and open a complete account archive through ordinary Settings.",
+      "material_operations": [
+        "Approve the brief parent Intent and decompose one child.",
+        "Create an internally green child whose actual outcome fields provide only a preview and internal success flag.",
+        "Review the sourced child claim, journey scope, result, observations and outcome artifact against the parent capability.",
+        "Attempt child readiness, restore the complete archive journey, and continue through QA and Epic closeout."
+      ],
+      "resulting_state_or_artifact": "The sourced review records that no complete archive was created or opened, readiness names the lost capability, and only the restored complete journey reaches Epic Complete.",
+      "outcome_observations": [
+        "The wrong child had checked ACs, a passing QA verdict and a status-pass structured record but its actual result remained a preview.",
+        "The sourced review classified that child as a proxy from its recorded outcome fields rather than accepting a supplied proxy label.",
+        "The exact packaged lifecycle rejected readiness and named the missing complete exported archive."
+      ],
+      "source_artifact": "evidence/package-journeys.json",
+      "source_revision": "sha256:a43a54d5ee80dbef2e6e6cb2af3dd08039d5fae7bd84484e83c9baf6fcb84d1c",
+      "artifact_identity": "package-journey-sha256:a43a54d5ee80dbef2e6e6cb2af3dd08039d5fae7bd84484e83c9baf6fcb84d1c",
+      "environment": "Fresh disposable repository using retained wheel sha256:0558c818146f91c90b4c9506806dda40735e7588d7f99640c55706cd5ee600a1",
+      "invalid_substitute_policy": [
+        "builds",
+        "canary",
+        "debug-only",
+        "internal-data",
+        "related-environment",
+        "screenshots",
+        "tests"
+      ],
+      "invalid_substitutes": [],
+      "owner_acceptance_required": false,
+      "owner_acceptance_status": "not-required",
+      "evidence_artifact": "evidence/package-journeys.json",
+      "evidence_artifact_hash": "sha256:a43a54d5ee80dbef2e6e6cb2af3dd08039d5fae7bd84484e83c9baf6fcb84d1c"
+    },
+    {
+      "id": "CLM-084-AC14-DOGFOOD",
+      "recipe": "user-outcome-journey",
+      "status": "pass",
+      "commit": "6bf7601f47bc1362347d1c067e5bd2db6b67fe4c+working-tree-candidate",
+      "timestamp": "2026-08-21T13:30:00+10:00",
+      "parent_ac": "AC14",
+      "claim": "EPIC-014 itself uses one brief meaning-first owner approval and then proceeds autonomously through intent-aware implementation and evidence correction without repeated granular approvals, with the real owner and lifecycle journey captured as inspectable artifacts.",
+      "claim_scope": "current EPIC-014 meaning-first approval through intent-aware local closeout preparation",
+      "journey_scope": "current EPIC-014 meaning-first approval through intent-aware local closeout preparation",
+      "actor": "Project Workflow owner and maintaining agent",
+      "normal_entry_point": "Owner request followed by Epic approval synopsis and normal Project Workflow child lifecycle",
+      "starting_state": "The owner reported repeated lazy under-delivery and rejected an ID-heavy approval synopsis that did not state the intended outcome.",
+      "material_operations": [
+        "Show and confirm a one- or two-sentence Intent before detailed identifiers.",
+        "Implement the approved five-child Epic sequentially inside the stable envelope.",
+        "Run deterministic, behavioural, exact-package and independent adversarial checks.",
+        "Treat each QA false-pass finding as blocking until the underlying proof is corrected."
+      ],
+      "resulting_state_or_artifact": "The captured packet contains the actual owner approval turn, exact CLI synopsis output, current approved requirements and Intent audit, all child plan hashes, tracker lifecycle and both blocking review identities; four children are Complete and TASK-084 remains in Review.",
+      "outcome_observations": [
+        "The owner approved the plain-language meaning once rather than approving AC and Task ranges as a substitute for comprehension.",
+        "No repeated child approval was requested inside the unchanged envelope.",
+        "Independent QA stopped a scripted proxy proof that could have reproduced the original under-delivery problem.",
+        "A second independent review stopped the narrative dogfood receipt from self-certifying the journey; the replacement packet binds its statements to the live Codex task and workflow artifacts."
+      ],
+      "source_artifact": "evidence/dogfood-journey.json",
+      "source_revision": "sha256:aaf04c0d2f755a218c6aa0e1925967bdd53b4d463e68fb57405bd6fe7bfce258",
+      "artifact_identity": "dogfood-journey-sha256:aaf04c0d2f755a218c6aa0e1925967bdd53b4d463e68fb57405bd6fe7bfce258",
+      "environment": "Current EPIC-014 repository plus Codex app task 01a02192-de86-77f2-842b-c470bfffadf8; the task-local owner extract is excluded from public package, fixtures, documentation and evaluations",
+      "invalid_substitute_policy": [
+        "builds",
+        "canary",
+        "debug-only",
+        "internal-data",
+        "related-environment",
+        "screenshots",
+        "tests"
+      ],
+      "invalid_substitutes": [],
+      "owner_acceptance_required": false,
+      "owner_acceptance_status": "not-required",
+      "evidence_artifact": "evidence/dogfood-journey.json",
+      "evidence_artifact_hash": "sha256:aaf04c0d2f755a218c6aa0e1925967bdd53b4d463e68fb57405bd6fe7bfce258"
+    },
+    {
+      "id": "CLM-084-AC15-INITIAL-QA",
+      "recipe": "runtime-target-source",
+      "status": "pass",
+      "commit": "6bf7601f47bc1362347d1c067e5bd2db6b67fe4c+initial-working-tree-candidate",
+      "timestamp": "2026-08-21T12:45:00+10:00",
+      "parent_ac": "AC15",
+      "claim": "A separate read-only adversarial review inspected the Epic contract, all child plans, dirty diff, behavioural trials and package/dogfood receipts, returned Changes requested, and kept completion blocked on six concrete evidence failures.",
+      "execution_target": "OpenAI Codex CLI 0.145.0-alpha.30 read-only session 01a02200-fca4-7c33-87b7-3361812b56cb using gpt-5.6-terra",
+      "source_artifact": "EPIC-014 branch codex/intent-integrity-outcome-proof at base commit 6bf7601f47bc1362347d1c067e5bd2db6b67fe4c plus the then-current working-tree candidate",
+      "observation_method": "The reviewer independently read requirements, contracts, child implementations, the complete dirty diff, test/evaluation corpus, package verifier and TASK-084 receipts without write authority or reliance on implementation summaries.",
+      "target_used_source_proof": "The preserved report cites the exact TASK-084 files and verifier lines it inspected, records a Changes requested verdict, and identifies the empty structured evidence, scripted proxy classification, incomplete parity, unbound package, narrative dogfood and incomplete run provenance found in that candidate.",
+      "evidence_artifact": "evidence/independent-qa-initial.md",
+      "evidence_artifact_hash": "sha256:d9e7a60f9b1edbd0f1fcf390ccb7973fcad6fb90d54282ea37f75bd2d43c976c",
+      "invalid_substitutes": []
+    },
+    {
+      "id": "CLM-084-AC15-FINAL-QA",
+      "recipe": "runtime-target-source",
+      "status": "pass",
+      "commit": "6bf7601f47bc1362347d1c067e5bd2db6b67fe4c+working-tree-candidate",
+      "timestamp": "2026-08-21T14:06:51+10:00",
+      "parent_ac": "AC15",
+      "claim": "Fresh independent read-only QA inspected the exact candidate code, retained package and dogfood artifacts, behavioural provenance and all nine earlier findings, returned Pass with no blockers, and answered that every detailed AC cannot pass while the approved owner job remains undone within the tested scope.",
+      "execution_target": "OpenAI Codex CLI read-only session 01a02279-e6c1-7fa0-a652-4980667e18d4 using gpt-5.6-terra with high reasoning",
+      "source_artifact": "EPIC-014 branch codex/intent-integrity-outcome-proof at base commit 6bf7601f47bc1362347d1c067e5bd2db6b67fe4c plus the independently reviewed pre-FIX-007 candidate retained under evidence/candidate/reviewed-pre-fix/: wheel sha256:be3a7486fa38a4e5ca6b2e747223135b8cbff4e4725c4e86c898f9011f980e9e and sdist sha256:2a1abf1778410d09e15f21ee18431e3065103a96c9af7a5fdf0eb4ea26a37d27",
+      "observation_method": "The reviewer independently read the Epic contract, decomposition, all child requirements and implementations, complete candidate diff, structured receipts, retained distributions, raw approval session evidence, behavioural run manifest/results/evaluator and both earlier blocking reports; it also regenerated the dogfood packet, reran release-trial grading and compared package/source bytes without write authority.",
+      "target_used_source_proof": "The retained report records Pass for AC13-AC15, no blocking findings, resolution of all nine prior findings, exact package hashes and the pre-verdict dogfood packet sha256:531815391594c1a622db95be53ddd317165c460dcde9ed22f3e95c93e07813ee, direct inclusion of both previously omitted tests, and a No answer to the intent-level adversarial question within the tested scope. The current dogfood packet was mechanically refreshed after recording this verdict.",
+      "evidence_artifact": "evidence/independent-qa.md",
+      "evidence_artifact_hash": "sha256:2aa768c0446800618bf9a543b86df613e7a114d99aeee49fd406b196e8d2c809",
+      "invalid_substitutes": []
+    }
+  ]
+}

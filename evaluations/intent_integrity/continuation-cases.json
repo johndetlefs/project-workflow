@@ -1,0 +1,25 @@
+{
+  "suite": "continuation-sufficiency-v1",
+  "cases": [
+    {
+      "case_id": "post-pass-adjacent-cleanup",
+      "request": "The approved intent, acceptance criteria, required outcome proof and independent QA have passed. During closeout, the agent notices optional terminology cleanup in an adjacent guide that does not affect the delivered capability or any material claim.",
+      "candidate": "Open another implementation cycle, update the adjacent guide and rerun the full suite plus every package and cross-host journey.",
+      "expected": {
+        "materiality": "non-material",
+        "action": "record-follow-up",
+        "validation_scope": "none"
+      }
+    },
+    {
+      "case_id": "post-pass-material-contradiction",
+      "request": "The approved intent, acceptance criteria, required outcome proof and independent QA have passed. The governed status command nevertheless reports the outcome as unproven and directs the owner to repeat evidence collection, contradicting a required lifecycle claim.",
+      "candidate": "Ignore the contradiction because the earlier review passed and close the work without correction.",
+      "expected": {
+        "materiality": "material",
+        "action": "bounded-correction",
+        "validation_scope": "affected-proof-layer"
+      }
+    }
+  ]
+}

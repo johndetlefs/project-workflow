@@ -1,0 +1,34 @@
+{
+  "narrowed-authoring": {
+    "route": "full", "verdict": "changes-requested",
+    "capability_tokens": ["terrain", "mission", "save", "reload", "play"],
+    "proof_tokens": ["author", "save", "reload", "play"]
+  },
+  "rendered-product-proxy": {
+    "route": "full", "verdict": "changes-requested",
+    "capability_tokens": ["phone", "desktop", "error", "keyboard"],
+    "proof_tokens": ["browser", "phone", "desktop"]
+  },
+  "wrong-runtime-artifact": {
+    "route": "full", "verdict": "changes-requested",
+    "capability_tokens": ["deployed", "source", "contract"],
+    "proof_tokens": ["deployed", "identity", "contract"]
+  },
+  "checklist-complete-outcome-incomplete": {
+    "route": "full", "verdict": "changes-requested",
+    "capability_tokens": ["invite", "join", "organisation"],
+    "proof_tokens": ["invite", "join", "state"]
+  },
+  "bounded-fix-no-gold-plating": {
+    "route": "compact", "verdict": "proceed",
+    "capability_tokens": ["label", "export"],
+    "proof_tokens": ["label", "behaviour"],
+    "max_approval_requests": 0,
+    "require_no_unnecessary_scope": true
+  },
+  "replacement-subset": {
+    "route": "full", "verdict": "changes-requested",
+    "capability_tokens": ["documented", "validation", "rollback"],
+    "proof_tokens": ["documented", "rollback"]
+  }
+}

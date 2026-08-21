@@ -1,0 +1,22 @@
+# Outcome Journey Receipt
+
+- Recorded: 2026-08-21
+- Source revision: working tree on `codex/intent-integrity-outcome-proof`
+- Execution target: installed self-hosted `.project-workflow/cli/workflow`
+- Actor: Project Workflow maintainer reviewing an active full-contract Epic
+- Normal entry point: repository-root workflow CLI
+- Starting state: EPIC-014 has an owner-approved Intent, decomposed children and a sourced intent audit
+- Material operations:
+  - run `epic intent-audit --epic-id EPIC-014` and inspect commitment classifications, provenance and consequences;
+  - run `status --id EPIC-014` and inspect distinct intent, proof, owner-acceptance and delivery projections;
+  - exercise the sanitized proxy fixture where a broad authoring job becomes preview plus one canary control;
+  - exercise a valid normal-journey evidence record and an owner-acceptance-pending record.
+- Resulting state: the real CLI reports the EPIC-014 intent audit `current`; the valid journey is outcome-proven; the proxy is changes-requested; and pending owner acceptance remains distinct from completion.
+- Outcome observations:
+  - `epic intent-audit` reports `State: current`, exact OC mappings and the next action without mutating the audit;
+  - `status --id EPIC-014` reports `intent current` separately from repository proof and delivery;
+  - `tests/test_user_outcome_journey.py` rejects scope mismatch, debug entry and declared substitute evidence;
+  - `tests/test_intent_integrity.py` rejects the internally green narrowed-authoring proxy and detects stale source identity;
+  - completion gates reject a journey whose required owner acceptance remains pending.
+- Invalid substitutes excluded: test success alone, build success, screenshots, internal data, debug-only controls, a related environment and one canary capability.
+- Proof boundary: this is current self-hosted workflow and deterministic fixture evidence. Exact packaged-artifact disposable-repository and broader behavioural evidence remain assigned to TASK-083 and TASK-084; no release, deployment, adoption or owner acceptance is claimed.

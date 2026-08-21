@@ -15,6 +15,8 @@ Add local conventions, validation commands, safety constraints, handoff rules, a
 - Distinguish automated fixture coverage from a manual end-to-end product journey. For destructive, export, packaging, or handoff workflows, do not call the user-visible journey proven until a disposable realistic repository or artifact has been created, exercised, independently inspected, and retested.
 - Record both proof levels explicitly: automated regression evidence protects breadth and edge cases; the manual journey proves the intended operator experience and resulting artifact.
 - For Markdown parsers and generated scaffolds, assert complete logical content rather than only headings or first physical lines. Include wrapped-item, section-boundary, and delivered-legacy integrity coverage when silent truncation could remove workflow authority.
+- For release candidates, retain the exact wheel and source distribution used by journey evidence, bind every shipped or manifest-covered source rather than sampling selected files, and keep publication or adoption as a separate proof gate.
+- A dogfood narrative is context, not outcome proof. Bind the actual owner observation, meaning-first approval output, current workflow artifacts and independent blocking reviews in a mechanically regenerable packet; preserve each Changes-requested report instead of overwriting the evidence that caused remediation.
 
 ## Release Adoption
 

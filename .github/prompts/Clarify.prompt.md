@@ -135,3 +135,7 @@ proof obligations, artifact identity, or scope materially, stop, update the prop
 and return the changed envelope to the owner for review/re-approval. When no such drift remains,
 run `task ready`, move the task to `Ready`, and continue autonomously if implementation was
 authorized.
+
+For a full-contract Epic child, also run the parent `epic intent-audit` read-only. Treat stale,
+unknown, review-required or changes-requested state as a real coverage or narrowing gap and name
+the exact user-visible consequence; internally consistent ACs are not a substitute for Intent.

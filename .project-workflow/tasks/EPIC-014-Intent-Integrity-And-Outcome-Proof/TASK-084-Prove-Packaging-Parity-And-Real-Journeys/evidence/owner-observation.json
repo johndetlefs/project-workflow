@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-21T13:44:45+10:00",
+  "retrieval_surface": "Codex app read_thread",
+  "session_artifact": ".codex/sessions/2026/08/21/rollout-2026-08-21T09-47-48-01a02192-de86-77f2-842b-c470bfffadf8.jsonl",
+  "thread_id": "01a02192-de86-77f2-842b-c470bfffadf8",
+  "host_id": "local",
+  "task_title": "PW: Prevent Undercooked Delivery",
+  "approval": {
+    "turn_id": "01a021a7-5985-73c1-a089-9ff8f44e7d7f",
+    "message_id": "msg_01a021a7-5a35-7693-9ab7-3169ea4f6d68",
+    "text": "Yeah, that's so much more useful. Okay, I'm happy with that. Let's get on with it."
+  },
+  "subsequent_owner_messages": [
+    {
+      "turn_id": "01a021a7-5985-73c1-a089-9ff8f44e7d7f",
+      "text": "While we're working on this, are you using Delegate for this?"
+    },
+    {
+      "turn_id": "01a02248-7cb3-70c3-a498-6a4f8f86eb96",
+      "text": "Okay, so where are we at here?"
+    },
+    {
+      "turn_id": "01a02250-2530-7ca1-8fad-de61b1190735",
+      "text": "Continue please"
+    }
+  ],
+  "observation": "The owner approved the revised plain-language meaning and then requested execution/status, not granular AC, Task, hash, or child approvals.",
+  "privacy_boundary": "This task-local evidence retains only the minimum owner statements needed to verify approval and continuation. It is not included in the public package, fixtures, documentation, or evaluation corpus."
+}

@@ -66,11 +66,11 @@ BACKLOG_ID_PREFIX = "BL"
 ID_PADDING = 3
 WORKFLOW_CONFIG_FILENAME = "config.json"
 WORKFLOW_MANIFEST_FILENAME = "manifest.json"
-CURRENT_PACKAGE_VERSION = "0.5.1"
+CURRENT_PACKAGE_VERSION = "0.6.0"
 CURRENT_MANIFEST_VERSION = 1
-CURRENT_ASSET_VERSION = 4
+CURRENT_ASSET_VERSION = 5
 CURRENT_SCHEMA_VERSION = 1
-SUPPORTED_ASSET_VERSIONS = (1, 2, 3, 4)
+SUPPORTED_ASSET_VERSIONS = (1, 2, 3, 4, 5)
 SUPPORTED_SCHEMA_VERSIONS = (0, 1)
 REPOSITORY_COMPATIBILITY_STATES = (
     "current",
@@ -94,6 +94,7 @@ DOCTOR_FINDING_CODES = (
     "PW_FIX_INVALID",
     "PW_GENERATED_ASSET_DRIFT",
     "PW_GENERATED_UPDATE_PENDING",
+    "PW_INTENT_AUDIT_NOT_CURRENT",
     "PW_OWNER_DECISION_REQUIRED",
     "PW_REPOSITORY_ASSETS_BEHIND",
     "PW_REPOSITORY_INVALID",
@@ -168,6 +169,7 @@ OPERATIONAL_STATUS_SOURCE_KINDS = (
     "git",
     "global-tracker",
     "implementation",
+    "intent-audit",
     "local-helper",
     "manifest",
     "repository-compatibility",
@@ -181,6 +183,7 @@ OPERATIONAL_STATUS_SOURCE_PRECEDENCE = (
     ("workspace", ("workspace-config", "git")),
     ("work", ("epic-tracker", "global-tracker")),
     ("approval", ("requirements",)),
+    ("intent", ("intent-audit",)),
     ("implementation", ("implementation",)),
     ("qa", ("implementation",)),
     ("repository-evidence", ("repository-evidence",)),
@@ -299,6 +302,8 @@ MIGRATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 EPIC_CONTRACT_FILENAME = "EPIC-CONTRACT.md"
 DECOMPOSITION_PLAN_FILENAME = "DECOMPOSITION.md"
 EPIC_AMENDMENTS_FILENAME = "AMENDMENTS.md"
+INTENT_AUDIT_FILENAME = "INTENT-AUDIT.json"
+INTENT_AUDIT_SCHEMA_VERSION = 1
 STRUCTURED_EVIDENCE_FILENAME = "EVIDENCE.json"
 ID_GENERATION_KINDS = ("tasks", "epics", "fixes", "backlog")
 ID_GENERATION_MODES = ("sequential", "unique")
@@ -537,6 +542,29 @@ PROOF_RECIPE_REQUIRED_FIELDS = {
         "evidence_artifact",
         "evidence_artifact_hash",
     ),
+    "user-outcome-journey": (
+        "commit",
+        "timestamp",
+        "parent_ac",
+        "claim",
+        "claim_scope",
+        "journey_scope",
+        "actor",
+        "normal_entry_point",
+        "starting_state",
+        "material_operations",
+        "resulting_state_or_artifact",
+        "outcome_observations",
+        "source_artifact",
+        "source_revision",
+        "artifact_identity",
+        "environment",
+        "invalid_substitute_policy",
+        "owner_acceptance_required",
+        "owner_acceptance_status",
+        "evidence_artifact",
+        "evidence_artifact_hash",
+    ),
 }
 PROOF_RECIPE_TRIGGER_PATTERNS = {
     "visual-reference-fidelity": (
@@ -573,6 +601,13 @@ PROOF_RECIPE_TRIGGER_PATTERNS = {
         r"\bmobile\s+and\s+desktop\b",
         r"\bmulti-context\b",
     ),
+    "user-outcome-journey": (
+        r"\buser-outcome-journey\b",
+        r"\buser outcome journey\b",
+        r"\bnormal user journey\b",
+        r"\buser-operable outcome\b",
+        r"\brequested (?:user )?job\b",
+    ),
 }
 PROOF_RECIPE_INVALID_SUBSTITUTE_PATTERNS = {
     "visual-reference-fidelity": (
@@ -605,6 +640,24 @@ PROOF_RECIPE_INVALID_SUBSTITUTE_PATTERNS = {
         "mobile only",
         "unit test",
     ),
+    "user-outcome-journey": (
+        "debug-only evidence",
+        "related environment evidence",
+        "canary-only evidence",
+        "internal-data-only evidence",
+        "screenshot-only evidence",
+        "build-only evidence",
+        "test-only evidence",
+    ),
+}
+USER_OUTCOME_INVALID_SUBSTITUTE_POLICY = {
+    "tests",
+    "builds",
+    "screenshots",
+    "internal-data",
+    "debug-only",
+    "related-environment",
+    "canary",
 }
 EPIC_CHILD_GATED_STATUSES = (
     "Approved",
@@ -912,10 +965,21 @@ def _managed_project_workflow_block() -> str:
         "independent items to a Task, and coordinated workstreams to an Epic. The user's label "
         "is evidence, not a binding classification. Fixes use one `FIX.md`, the shared tasks "
         "directory, and the global tracker; do not create a separate Fix tracker.\n"
-        "- Before planning, record one owner approval envelope with "
-        "`task approve-requirements` or `epic approve-requirements`; unchanged work inside "
-        "that envelope should proceed without repeated approval prompts, while drift, stale "
-        "requirements, or evidence gaps must be fixed or amended.\n"
+        "- Begin current-contract Task and Epic requirements with a one- or two-sentence "
+        "plain-language Intent and stable outcome commitments. Before planning, run "
+        "`task approval-summary` or `epic approval-summary`, show its Intent/capability/"
+        "boundary/proof synopsis, and ask whether that meaning accurately reflects what the "
+        "owner wants. Do not ask the owner to approve IDs or hashes as a substitute for "
+        "comprehension. Record the confirmation with `task approve-requirements` or "
+        "`epic approve-requirements`; unchanged work inside that envelope should proceed "
+        "without repeated approval prompts, while drift, stale requirements, or evidence gaps "
+        "must be fixed or amended.\n"
+        "- Full-contract epics keep sourced OC-to-AC/child/proof coverage and semantic "
+        "classifications in `INTENT-AUDIT.json`. Run `epic intent-audit --epic-id <EPIC-ID>` "
+        "to inspect `current`, `stale`, `unknown`, `review-required`, or `changes-requested` "
+        "state without mutation. Child readiness, Review, and Complete fail closed on any "
+        "non-current state; material narrowing, proxy substitution, omission, or broadening "
+        "requires restoration or a current owner-approved capability amendment.\n"
         "- After requirements approval, run Planner, post-plan Clarify, `task ready`, and move "
         "new tasks to `Ready` autonomously unless material drift or exceptional risk requires "
         "owner input. `Plan Confirmed` remains legacy-compatible.\n"
@@ -5966,6 +6030,29 @@ def _operational_implementation_complete(implementation_text: str) -> bool:
     )
 
 
+def _operational_epic_child_documents(
+    root: Path, epic_dir: Path
+) -> tuple[tuple[dict[str, str], Path, Path], ...]:
+    """Return tracker-bound child requirements and implementation paths for an Epic."""
+    tracker_path = epic_dir / "TRACKER.md"
+    if not tracker_path.exists():
+        return ()
+    try:
+        _lines, _header, rows = _epic_tracker_rows(tracker_path)
+    except (OSError, SystemExit):
+        return ()
+    children: list[tuple[dict[str, str], Path, Path]] = []
+    for row in rows:
+        docs_rel = _clean_markdown_cell_path(row.get("Docs", ""))
+        if not docs_rel:
+            continue
+        implementation_path = root / ".project-workflow" / docs_rel
+        requirements_path = implementation_path.parent / "REQUIREMENTS.md"
+        if requirements_path.exists() and implementation_path.exists():
+            children.append((row, requirements_path, implementation_path))
+    return tuple(children)
+
+
 def _operational_item_proof_layers(
     root: Path,
     item: OperationalStatusWorkItem,
@@ -6153,11 +6240,32 @@ def _operational_item_proof_layers(
         implementation_source,
     )
 
-    qa_pass = bool(implementation_text and _qa_passed(implementation_text))
+    epic_children = (
+        _operational_epic_child_documents(root, epic_dir)
+        if item.kind == "epic" and epic_dir is not None
+        else ()
+    )
+    if item.kind == "epic":
+        qa_pass = bool(epic_children) and len(epic_children) == len(child_rows) and all(
+            row.get("Status") == "Complete"
+            and _qa_passed(implementation_path.read_text(encoding="utf-8"))
+            for row, _requirements_path, implementation_path in epic_children
+        )
+        qa_summary_pass = "Every completed Epic child records a passing QA verdict."
+        qa_sources = tuple(
+            _operational_status_document_source(
+                root, "implementation", implementation_path, fallback
+            )
+            for _row, _requirements_path, implementation_path in epic_children
+        ) or (fallback,)
+    else:
+        qa_pass = bool(implementation_text and _qa_passed(implementation_text))
+        qa_summary_pass = "QA and code review verdict is Pass."
+        qa_sources = (implementation_source,)
     if qa_pass:
         qa_state = "pass"
-        qa_summary = "QA and code review verdict is Pass."
-    elif item.lifecycle in {"Review", "Complete"}:
+        qa_summary = qa_summary_pass
+    elif item.lifecycle in {"Review", "Closeout", "Complete"}:
         qa_state = "fail"
         qa_summary = "Lifecycle requires a passing QA verdict, but none is recorded."
     else:
@@ -6167,7 +6275,7 @@ def _operational_item_proof_layers(
         "qa-review",
         qa_state,
         qa_summary,
-        implementation_source,
+        *qa_sources,
     )
 
     if item.kind == "epic-child":
@@ -6211,9 +6319,61 @@ def _operational_item_proof_layers(
     )
 
     triggered_recipes = _triggered_proof_recipes(requirements_text, implementation_text)
+    evidence_sources: tuple[OperationalStatusSource, ...] = ()
     if not triggered_recipes:
         evidence_state = "not-required"
         evidence_summary = "No structured proof recipe is triggered."
+    elif item.kind == "epic":
+        passing_recipes: set[str] = set()
+        evidence_issues: list[str] = []
+        evidence_sources_list: list[OperationalStatusSource] = []
+        for row, child_requirements, child_implementation in epic_children:
+            child_requirements_text = child_requirements.read_text(encoding="utf-8")
+            child_implementation_text = child_implementation.read_text(encoding="utf-8")
+            child_triggered = _triggered_proof_recipes(
+                child_requirements_text, child_implementation_text
+            )
+            relevant_recipes = triggered_recipes & child_triggered
+            if not relevant_recipes:
+                continue
+            child_issues = _structured_evidence_issues(
+                requirements_path=child_requirements,
+                implementation_path=child_implementation,
+                parent_ac_ids=_extract_ac_ids(_extract_parent_ac_coverage(row)),
+            )
+            if child_issues:
+                evidence_issues.extend(child_issues)
+                continue
+            evidence_path = child_implementation.parent / STRUCTURED_EVIDENCE_FILENAME
+            records, load_issues = _load_structured_evidence(evidence_path)
+            if load_issues:
+                evidence_issues.extend(load_issues)
+                continue
+            passing_recipes.update(
+                str(record.get("recipe", "")).strip()
+                for record in records
+                if str(record.get("status", "")).strip().lower() == "pass"
+                and str(record.get("recipe", "")).strip() in relevant_recipes
+            )
+            evidence_sources_list.append(
+                _operational_status_document_source(
+                    root, "structured-evidence", evidence_path, fallback
+                )
+            )
+        missing_recipes = triggered_recipes - passing_recipes
+        if missing_recipes:
+            evidence_issues.append(
+                "missing passing child evidence for: " + ", ".join(sorted(missing_recipes))
+            )
+        if evidence_issues:
+            evidence_state = "fail" if item.lifecycle in {"Closeout", "Complete"} else "pending"
+            evidence_summary = (
+                f"Aggregated child structured evidence has {len(evidence_issues)} issue(s)."
+            )
+        else:
+            evidence_state = "pass"
+            evidence_summary = "Every triggered parent proof recipe has valid passing child evidence."
+        evidence_sources = tuple(evidence_sources_list)
     else:
         evidence_issues = _structured_evidence_issues(
             requirements_path=requirements_path or Path("missing-requirements"),
@@ -6234,13 +6394,18 @@ def _operational_item_proof_layers(
         "structured-evidence",
         evidence_state,
         evidence_summary,
-        _operational_status_document_source(
-            root,
-            "structured-evidence",
-            implementation_path.parent / STRUCTURED_EVIDENCE_FILENAME
-            if implementation_path is not None
-            else None,
-            fallback,
+        *(
+            evidence_sources
+            or (
+                _operational_status_document_source(
+                    root,
+                    "structured-evidence",
+                    implementation_path.parent / STRUCTURED_EVIDENCE_FILENAME
+                    if implementation_path is not None
+                    else None,
+                    fallback,
+                ),
+            )
         ),
     )
     return approval, readiness, implementation, qa, acceptance, evidence
@@ -6271,6 +6436,85 @@ def _operational_aggregate_proof_state(
     return state
 
 
+def _operational_outcome_states(
+    root: Path, item: OperationalStatusWorkItem
+) -> tuple[str, str]:
+    requirements_path, implementation_path, epic_dir = _operational_work_item_paths(root, item)
+    if requirements_path is None:
+        return "not-recorded", "not-recorded"
+    requirements_text = (
+        requirements_path.read_text(encoding="utf-8") if requirements_path.exists() else ""
+    )
+    implementation_text = (
+        implementation_path.read_text(encoding="utf-8")
+        if implementation_path is not None and implementation_path.exists()
+        else ""
+    )
+    if "user-outcome-journey" not in _triggered_proof_recipes(
+        requirements_text, implementation_text
+    ):
+        return "not-required", "not-required"
+    if item.kind == "epic" and epic_dir is not None:
+        journey_records: list[dict[str, object]] = []
+        for row, child_requirements, child_implementation in _operational_epic_child_documents(
+            root, epic_dir
+        ):
+            child_requirements_text = child_requirements.read_text(encoding="utf-8")
+            child_implementation_text = child_implementation.read_text(encoding="utf-8")
+            if "user-outcome-journey" not in _triggered_proof_recipes(
+                child_requirements_text, child_implementation_text
+            ):
+                continue
+            if _structured_evidence_issues(
+                requirements_path=child_requirements,
+                implementation_path=child_implementation,
+                parent_ac_ids=_extract_ac_ids(_extract_parent_ac_coverage(row)),
+            ):
+                return "invalid", "unknown"
+            records, load_issues = _load_structured_evidence(
+                child_implementation.parent / STRUCTURED_EVIDENCE_FILENAME
+            )
+            if load_issues:
+                return "invalid", "unknown"
+            journey_records.extend(
+                record
+                for record in records
+                if record.get("recipe") == "user-outcome-journey"
+                and str(record.get("status", "")).strip().lower() == "pass"
+            )
+    elif implementation_path is not None:
+        records, load_issues = _load_structured_evidence(
+            implementation_path.parent / STRUCTURED_EVIDENCE_FILENAME
+        )
+        if load_issues:
+            return "not-recorded", "unknown"
+        journey_records = [
+            record
+            for record in records
+            if record.get("recipe") == "user-outcome-journey"
+            and str(record.get("status", "")).strip().lower() == "pass"
+        ]
+    else:
+        return "not-recorded", "unknown"
+    if not journey_records:
+        return "not-recorded", "unknown"
+    if implementation_path is not None and _structured_evidence_issues(
+        requirements_path=requirements_path,
+        implementation_path=implementation_path,
+    ):
+        return "invalid", "unknown"
+    required_acceptance_states = {
+        str(record.get("owner_acceptance_status", "")).strip().lower()
+        for record in journey_records
+        if record.get("owner_acceptance_required") is True
+    }
+    if "pending" in required_acceptance_states:
+        return "outcome-proven", "ready-for-owner-acceptance"
+    if required_acceptance_states and required_acceptance_states == {"accepted"}:
+        return "outcome-proven", "owner-accepted"
+    return "outcome-proven", "not-required"
+
+
 def classify_operational_proof(
     root: Path,
     work_items: tuple[OperationalStatusWorkItem, ...],
@@ -6294,9 +6538,21 @@ def classify_operational_proof(
         aggregate_states.append(aggregate_state)
         all_sources.extend(source for layer in layers for source in layer.sources)
         item_facts = tuple(
-            fact for fact in item.facts if fact.key != "aggregate_proof_state"
+            fact
+            for fact in item.facts
+            if fact.key
+            not in {
+                "aggregate_proof_state",
+                "outcome_proof_state",
+                "owner_acceptance_state",
+            }
         ) + (
             _operational_status_fact("aggregate_proof_state", aggregate_state),
+        )
+        outcome_state, owner_acceptance_state = _operational_outcome_states(root, item)
+        item_facts = item_facts + (
+            _operational_status_fact("outcome_proof_state", outcome_state),
+            _operational_status_fact("owner_acceptance_state", owner_acceptance_state),
         )
         classified.append(
             OperationalStatusWorkItem(
@@ -7243,6 +7499,43 @@ def build_operational_status_snapshot(
     for item in proof_work:
         delivery, item_findings = classify_operational_delivery(inspected_root, item)
         delivery_findings.extend(item_findings)
+        item_facts = item.facts
+        item_sources = item.sources
+        owner_epic = next(
+            (
+                str(fact.value)
+                for fact in item.facts
+                if fact.key == "owner_epic" and fact.value
+            ),
+            None,
+        )
+        intent_epic_id = item.item_id if item.kind == "epic" else owner_epic
+        if intent_epic_id:
+            try:
+                intent_epic_dir = _resolve_epic_dir(
+                    inspected_root / ".project-workflow" / "tasks", intent_epic_id
+                )
+                intent_requirements = (intent_epic_dir / "REQUIREMENTS.md").read_text(
+                    encoding="utf-8"
+                )
+                if _intent_contract_mode(intent_requirements) == "full":
+                    intent_evaluation = _intent_audit_evaluation(intent_epic_dir)
+                    item_facts = item_facts + (
+                        _operational_status_fact(
+                            "intent_audit_state", intent_evaluation["state"]
+                        ),
+                    )
+                    item_sources = item_sources + (
+                        OperationalStatusSource(
+                            "intent-audit",
+                            _operational_status_artifact(
+                                inspected_root, _intent_audit_path(intent_epic_dir)
+                            ),
+                            str(intent_evaluation["state"]),
+                        ),
+                    )
+            except (OSError, SystemExit):
+                pass
         delivered_work.append(
             OperationalStatusWorkItem(
                 item.item_id,
@@ -7250,8 +7543,8 @@ def build_operational_status_snapshot(
                 item.kind,
                 item.lifecycle,
                 item.operational_meaning,
-                item.sources,
-                item.facts,
+                item_sources,
+                item_facts,
                 item.proof_layers,
                 delivery,
             )
@@ -7381,9 +7674,35 @@ def render_operational_status_human(snapshot: OperationalStatusSnapshot) -> str:
                 "not-recorded",
             )
             delivery_state = item.delivery.state if item.delivery is not None else "unknown"
+            intent_state = next(
+                (
+                    fact.value
+                    for fact in item.facts
+                    if fact.key == "intent_audit_state"
+                ),
+                None,
+            )
+            intent_suffix = f"; intent {intent_state}" if intent_state else ""
+            outcome_state = next(
+                (
+                    fact.value
+                    for fact in item.facts
+                    if fact.key == "outcome_proof_state"
+                ),
+                "not-recorded",
+            )
+            owner_acceptance_state = next(
+                (
+                    fact.value
+                    for fact in item.facts
+                    if fact.key == "owner_acceptance_state"
+                ),
+                "not-recorded",
+            )
             lines.append(
                 f"- {item.item_id} [{item.lifecycle}] {item.title} — "
-                f"proof {aggregate_proof}; delivery {delivery_state}"
+                f"proof {aggregate_proof}; outcome {outcome_state}; owner acceptance "
+                f"{owner_acceptance_state}; delivery {delivery_state}{intent_suffix}"
             )
     else:
         lines.append("- None selected or active.")
@@ -10006,7 +10325,13 @@ def _implementation_template(
         f"| --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |\n"
         f"| 1 | ____ | ____ | AC1: ____ | ____ | To Do | | ____ | No | bounded-return |\n\n"
         f"## QA & Code Review\n\n"
+        f"- Intent QA contract: adversarial\n"
         f"- Verdict: ____\n"
+        f"- Intent adversarial verdict: ____\n"
+        f"- Could every AC pass while the approved user job remains undone: ____\n"
+        f"- Intent audit state: ____\n"
+        f"- Outcome journey evidence: ____\n"
+        f"- Reviewer independence: ____\n"
         f"- Evidence: ____\n"
         f"- Findings: ____\n\n"
         f"## Retro\n\n"
@@ -10032,8 +10357,20 @@ def _requirements_template(
         f"## Summary\n\n"
         f"- Task: {task_id}\n"
         f"- Title: {title}\n"
-        f"- Last updated: {date.today().isoformat()}\n\n"
+        f"- Last updated: {date.today().isoformat()}\n"
+        f"- Intent contract: full\n\n"
+        f"## Intent\n\n"
+        f"State the owner's desired outcome in one or two plain-language sentences.\n\n"
+        f"## Intent Spine\n\n"
+        f"- OC1 — Completion capability: ____\n"
+        f"- OC2 — Material capabilities: ____\n"
+        f"- OC3 — Success journey: ____\n"
+        f"- OC4 — Successful-but-wrong result: ____\n"
+        f"- OC5 — Exclusions: ____\n"
+        f"- OC6 — Assumptions: ____\n"
+        f"- OC7 — Authority source: ____\n\n"
         f"## Owner Approval\n\n"
+        f"- Intent reviewed and accurately reflected: No\n"
         f"- Requirements reviewed by owner: No\n"
         f"- Acceptance criteria reviewed by owner: No\n"
         f"- Approved for decomposition: No\n"
@@ -10078,7 +10415,10 @@ def _fix_template(
         f"- Fix: {fix_id}\n"
         f"- Title: {title}\n"
         f"- Status: To Do\n"
-        f"- Created: {date.today().isoformat()}\n\n"
+        f"- Created: {date.today().isoformat()}\n"
+        f"- Intent contract: compact\n\n"
+        f"## Intent\n\n"
+        f"State the bounded correction and restored outcome in one or two plain-language sentences.\n\n"
         f"## Report\n\n"
         f"- Observed or requested: ____\n"
         f"- Expected: ____\n"
@@ -12888,7 +13228,39 @@ def _approved_deferral(row: dict[str, str] | None) -> bool:
 
 def _qa_passed(docs_text: str) -> bool:
     qa_section = _markdown_section(docs_text, "QA & Code Review").lower()
-    return "verdict: pass" in qa_section
+    return "verdict: pass" in qa_section and not _intent_qa_review_issues(docs_text)
+
+
+def _intent_qa_review_issues(docs_text: str) -> list[str]:
+    values = _parse_key_value_section(_markdown_section(docs_text, "QA & Code Review"))
+    mode = values.get("intent qa contract", "").strip().lower()
+    if not mode:
+        return []
+    if mode != "adversarial":
+        return ["set `Intent QA contract` to `adversarial`"]
+    issues: list[str] = []
+    if values.get("verdict", "").strip().lower() != "pass":
+        issues.append("record `Verdict: Pass` after QA")
+    if values.get("intent adversarial verdict", "").strip().lower() != "pass":
+        issues.append("record `Intent adversarial verdict: Pass` only when the user job is fulfilled")
+    undone = values.get(
+        "could every ac pass while the approved user job remains undone", ""
+    ).strip().lower()
+    if undone != "no":
+        issues.append(
+            "answer `Could every AC pass while the approved user job remains undone: No`; "
+            "a Yes or unknown answer requires Changes requested"
+        )
+    if values.get("intent audit state", "").strip().lower() != "current":
+        issues.append("record `Intent audit state: current`")
+    for field in ("outcome journey evidence", "reviewer independence"):
+        value = values.get(field, "")
+        if _evidence_value_missing(value) or not _section_has_substantive_text(value):
+            issues.append(f"record substantive `{field}`")
+    independence = values.get("reviewer independence", "").lower()
+    if any(phrase in independence for phrase in ("same implementation agent", "self review")):
+        issues.append("reviewer independence cannot be satisfied by implementation self-certification")
+    return issues
 
 
 def _parent_ac_evidence_present(docs_text: str, ac_id: str) -> bool:
@@ -12931,6 +13303,24 @@ def _triggered_proof_recipes(*texts: str) -> set[str]:
     for recipe_id, patterns in PROOF_RECIPE_TRIGGER_PATTERNS.items():
         if any(re.search(pattern, combined, flags=re.IGNORECASE) for pattern in patterns):
             triggered.add(recipe_id)
+    user_outcome_sections = (
+        "Goal",
+        "Requirements (Outcome-Focused)",
+        "Acceptance Criteria (Verifiable)",
+        "Acceptance Criteria",
+        "Validation",
+        "Parent AC Evidence",
+    )
+    user_outcome_authority = "\n".join(
+        _markdown_section(text, heading)
+        for text in texts
+        for heading in user_outcome_sections
+    ).lower()
+    if (
+        "user-outcome-journey" in triggered
+        and "user-outcome-journey" not in user_outcome_authority
+    ):
+        triggered.remove("user-outcome-journey")
     return triggered
 
 
@@ -13049,6 +13439,172 @@ def _structured_evidence_contradiction_issues(
     return issues
 
 
+def _user_outcome_journey_record_issues(
+    record: dict[str, object], *, label: str, evidence_dir: Path
+) -> list[str]:
+    issues: list[str] = []
+    for field in ("material_operations", "outcome_observations"):
+        value = record.get(field)
+        if not isinstance(value, list) or not value or any(
+            _evidence_value_missing(item) for item in value
+        ):
+            issues.append(
+                f"structured evidence: {label} `{field}` must be a non-empty list of "
+                "performed or observed journey facts."
+            )
+    policy = record.get("invalid_substitute_policy")
+    policy_values = (
+        {str(value).strip().lower() for value in policy if str(value).strip()}
+        if isinstance(policy, list)
+        else set()
+    )
+    missing_policy = sorted(USER_OUTCOME_INVALID_SUBSTITUTE_POLICY - policy_values)
+    if missing_policy:
+        issues.append(
+            f"structured evidence: {label} invalid_substitute_policy is missing: "
+            + ", ".join(missing_policy)
+            + "."
+        )
+    claim_scope = str(record.get("claim_scope", "")).strip()
+    journey_scope = str(record.get("journey_scope", "")).strip()
+    if claim_scope != journey_scope:
+        issues.append(
+            f"structured evidence: {label} journey_scope must exactly match claim_scope."
+        )
+    source_value = record.get("source_artifact")
+    if isinstance(source_value, str) and source_value.strip() and not re.match(
+        r"^[a-z][a-z0-9+.-]*://", source_value.strip(), flags=re.IGNORECASE
+    ):
+        source_path = Path(source_value.strip())
+        candidates = [evidence_dir / source_path]
+        repository_root = next(
+            (parent for parent in evidence_dir.parents if (parent / ".project-workflow").is_dir()),
+            None,
+        )
+        if repository_root is not None:
+            candidates.append(repository_root / source_path)
+        resolved_source = next((path for path in candidates if path.exists()), None)
+        if resolved_source is None:
+            issues.append(
+                f"structured evidence: {label} source_artifact does not exist: {source_value}."
+            )
+        else:
+            actual_source_hash = _sha256_file(resolved_source)
+            evidence_source_hash = actual_source_hash
+            source_member = str(record.get("source_artifact_member", "")).strip()
+            if source_member:
+                try:
+                    with zipfile.ZipFile(resolved_source) as archive:
+                        evidence_source_hash = (
+                            "sha256:"
+                            + hashlib.sha256(archive.read(source_member)).hexdigest()
+                        )
+                except (KeyError, zipfile.BadZipFile):
+                    issues.append(
+                        f"structured evidence: {label} source_artifact_member does not exist "
+                        f"in a readable ZIP artifact: {source_member}."
+                    )
+            recorded_commit = str(record.get("commit", "")).strip()
+            if not source_member and repository_root is not None and re.fullmatch(
+                r"[a-fA-F0-9]{7,40}", recorded_commit
+            ):
+                try:
+                    current_commit = _run_git(["rev-parse", "HEAD"], cwd=repository_root)
+                    evidence_commit = _run_git(
+                        ["rev-parse", f"{recorded_commit}^{{commit}}"],
+                        cwd=repository_root,
+                    )
+                    relative_source = resolved_source.resolve().relative_to(
+                        repository_root.resolve()
+                    )
+                    ancestor = subprocess.run(
+                        [
+                            "git",
+                            "merge-base",
+                            "--is-ancestor",
+                            evidence_commit,
+                            current_commit,
+                        ],
+                        cwd=str(repository_root),
+                        check=False,
+                        capture_output=True,
+                    )
+                    if evidence_commit != current_commit and ancestor.returncode == 0:
+                        historical = subprocess.run(
+                            [
+                                "git",
+                                "show",
+                                f"{evidence_commit}:{relative_source.as_posix()}",
+                            ],
+                            cwd=str(repository_root),
+                            check=False,
+                            capture_output=True,
+                        )
+                        if historical.returncode == 0:
+                            evidence_source_hash = (
+                                "sha256:" + hashlib.sha256(historical.stdout).hexdigest()
+                            )
+                except (subprocess.CalledProcessError, ValueError):
+                    pass
+            source_revision = _normalized_evidence_hash(record.get("source_revision"))
+            if (
+                source_revision.startswith("sha256:")
+                and source_revision != evidence_source_hash
+            ):
+                issues.append(
+                    f"structured evidence: {label} source_revision is stale "
+                    f"(expected {evidence_source_hash})."
+                )
+            artifact_identity = str(record.get("artifact_identity", ""))
+            if evidence_source_hash.removeprefix("sha256:") not in artifact_identity:
+                issues.append(
+                    f"structured evidence: {label} artifact_identity does not bind the recorded "
+                    "source artifact."
+                )
+    entry_point = str(record.get("normal_entry_point", "")).lower()
+    if any(term in entry_point for term in ("debug", "test-only", "internal-only")):
+        issues.append(
+            f"structured evidence: {label} normal_entry_point cannot be a debug, test-only, "
+            "or internal-only path."
+        )
+    acceptance_required = record.get("owner_acceptance_required")
+    acceptance_status = str(record.get("owner_acceptance_status", "")).strip().lower()
+    if not isinstance(acceptance_required, bool):
+        issues.append(
+            f"structured evidence: {label} owner_acceptance_required must be boolean."
+        )
+    elif acceptance_required and acceptance_status not in {"pending", "accepted"}:
+        issues.append(
+            f"structured evidence: {label} owner_acceptance_status must be pending or accepted "
+            "when owner acceptance is required."
+        )
+    elif not acceptance_required and acceptance_status != "not-required":
+        issues.append(
+            f"structured evidence: {label} owner_acceptance_status must be not-required when "
+            "owner acceptance is not required."
+        )
+    return issues
+
+
+def _owner_acceptance_completion_issues(evidence_path: Path) -> list[str]:
+    records, load_issues = _load_structured_evidence(evidence_path)
+    if load_issues:
+        return []
+    issues: list[str] = []
+    for record in records:
+        if record.get("recipe") != "user-outcome-journey":
+            continue
+        if record.get("owner_acceptance_required") is True and str(
+            record.get("owner_acceptance_status", "")
+        ).strip().lower() != "accepted":
+            label = str(record.get("id", "")).strip() or "user-outcome claim"
+            issues.append(
+                f"structured evidence: {label} is outcome-proven and ready for owner acceptance, "
+                "but owner acceptance is still pending."
+            )
+    return issues
+
+
 def _structured_evidence_issues(
     *,
     requirements_path: Path,
@@ -13081,7 +13637,15 @@ def _structured_evidence_issues(
             continue
         records_by_recipe.setdefault(recipe_id, []).append(record)
         for field in PROOF_RECIPE_REQUIRED_FIELDS[recipe_id]:
-            if _evidence_value_missing(record.get(field)):
+            value_missing = _evidence_value_missing(record.get(field))
+            if (
+                recipe_id == "user-outcome-journey"
+                and field == "owner_acceptance_status"
+                and str(record.get(field, "")).strip().lower()
+                in {"pending", "accepted", "not-required"}
+            ):
+                value_missing = False
+            if value_missing:
                 issues.append(
                     f"structured evidence: {label} missing required field `{field}` "
                     f"for recipe `{recipe_id}`."
@@ -13102,13 +13666,23 @@ def _structured_evidence_issues(
                 f"structured evidence: {label} records invalid substitute evidence: "
                 + ", ".join(invalid_values)
             )
-        text_blob = " ".join(str(value).lower() for value in record.values())
+        text_blob = " ".join(
+            str(value).lower()
+            for key, value in record.items()
+            if key != "invalid_substitute_policy"
+        )
         for invalid_pattern in PROOF_RECIPE_INVALID_SUBSTITUTE_PATTERNS[recipe_id]:
             if invalid_pattern in text_blob:
                 issues.append(
                     f"structured evidence: {label} uses invalid substitute for "
                     f"`{recipe_id}`: {invalid_pattern}."
                 )
+        if recipe_id == "user-outcome-journey":
+            issues.extend(
+                _user_outcome_journey_record_issues(
+                    record, label=label, evidence_dir=implementation_path.parent
+                )
+            )
         if not _evidence_artifact_exists(
             record.get("evidence_artifact"),
             evidence_dir=implementation_path.parent,
@@ -13476,6 +14050,12 @@ def _approval_envelope_issues(
     values = _parse_key_value_section(section)
     issues: list[str] = []
 
+    if _intent_contract_mode(requirements_text) == "full" and not _approval_value_is_yes(
+        values.get("intent reviewed and accurately reflected", "")
+    ):
+        issues.append(
+            "owner input required: the plain-language Intent has not been confirmed as accurate."
+        )
     if not _approval_value_is_yes(values.get("requirements reviewed by owner", "")):
         issues.append("owner input required: requirements have not been reviewed by the owner.")
     if not _approval_value_is_yes(values.get("acceptance criteria reviewed by owner", "")):
@@ -13529,9 +14109,11 @@ def _approval_block(
     decomposition: bool,
     implementation: bool,
     artifact_identity: str,
+    intent_reviewed: str,
 ) -> str:
     return (
         "## Owner Approval\n\n"
+        f"- Intent reviewed and accurately reflected: {intent_reviewed}\n"
         "- Requirements reviewed by owner: Yes\n"
         "- Acceptance criteria reviewed by owner: Yes\n"
         f"- Approved for decomposition: {'Yes' if decomposition else 'No'}\n"
@@ -13565,6 +14147,11 @@ def _requirements_with_approval_envelope(
         decomposition=decomposition,
         implementation=implementation,
         artifact_identity=artifact_identity,
+        intent_reviewed=(
+            "Yes"
+            if _intent_contract_mode(without_approval) == "full"
+            else "Not required (legacy contract)"
+        ),
     )
     marker = "\n## Goal\n"
     if marker in without_approval:
@@ -13664,7 +14251,12 @@ def _epic_lifecycle_gate_issues(root: Path, epic_id: str, target_status: str) ->
     )
     contract_issues = _epic_contract_issues(epic_dir, requirements_text)
     if target_status == "Ready":
-        return [*readiness_issues, *approval_issues, *contract_issues]
+        audit_issues = (
+            _intent_audit_gate_issues(epic_dir)
+            if _decomposition_plan_path(epic_dir).exists()
+            else []
+        )
+        return [*readiness_issues, *approval_issues, *contract_issues, *audit_issues]
 
     epic_dir, audit_rows, audit_gaps = _epic_audit_rows(root, epic_id)
     mapping_gaps = [
@@ -13673,7 +14265,13 @@ def _epic_lifecycle_gate_issues(root: Path, epic_id: str, target_status: str) ->
         if row["Child Rows"] == "None" and row["Deferral"] == "None"
     ]
     if target_status == "In Progress":
-        return [*readiness_issues, *approval_issues, *contract_issues, *mapping_gaps]
+        return [
+            *readiness_issues,
+            *approval_issues,
+            *contract_issues,
+            *mapping_gaps,
+            *_intent_audit_gate_issues(epic_dir),
+        ]
     if target_status == "Closeout":
         return [*audit_gaps, *_epic_retro_issues(epic_dir)]
     return [f"unsupported epic lifecycle status: {target_status}"]
@@ -13776,7 +14374,13 @@ def _epic_child_implementation_template(
         f"- {parent_ac_value}: Pending implementation evidence. Recipe-triggered claims must "
         f"also be backed by `{STRUCTURED_EVIDENCE_FILENAME}`.\n\n"
         f"## QA & Code Review\n\n"
+        f"- Intent QA contract: adversarial\n"
         f"- Verdict: ____\n"
+        f"- Intent adversarial verdict: ____\n"
+        f"- Could every AC pass while the approved user job remains undone: ____\n"
+        f"- Intent audit state: ____\n"
+        f"- Outcome journey evidence: ____\n"
+        f"- Reviewer independence: ____\n"
         f"- Evidence: ____\n"
         f"- Findings: ____\n\n"
         f"## Retro\n\n"
@@ -13816,8 +14420,20 @@ def _epic_child_requirements_template(
         f"- Task: {task_id}\n"
         f"- Title: {title}\n"
         f"- Parent AC Coverage: {parent_ac_value}\n"
-        f"- Last updated: {date.today().isoformat()}\n\n"
+        f"- Last updated: {date.today().isoformat()}\n"
+        f"- Intent contract: full\n\n"
+        f"## Intent\n\n"
+        f"State the child outcome in one or two plain-language sentences without narrowing the parent Intent.\n\n"
+        f"## Intent Spine\n\n"
+        f"- OC1 — Completion capability: ____\n"
+        f"- OC2 — Material capabilities: ____\n"
+        f"- OC3 — Success journey: ____\n"
+        f"- OC4 — Successful-but-wrong result: ____\n"
+        f"- OC5 — Exclusions: ____\n"
+        f"- OC6 — Assumptions: ____\n"
+        f"- OC7 — Authority source: Parent Epic Intent and approved decomposition row.\n\n"
         f"## Owner Approval\n\n"
+        f"- Intent reviewed and accurately reflected: Inherited from parent epic envelope when unchanged\n"
         f"- Requirements reviewed by owner: No\n"
         f"- Acceptance criteria reviewed by owner: No\n"
         f"- Approved for decomposition: No\n"
@@ -14254,6 +14870,27 @@ READINESS_REQUIRED_SECTIONS = (
     "Validation Plan",
 )
 
+INTENT_CONTRACT_MODES = {"full", "compact"}
+INTENT_SPINE_FIELDS = {
+    "OC1": "completion capability",
+    "OC2": "material capabilities",
+    "OC3": "success journey",
+    "OC4": "successful-but-wrong result",
+    "OC5": "exclusions",
+    "OC6": "assumptions",
+    "OC7": "authority source",
+}
+GENERIC_INTENTS = {
+    "build the feature",
+    "complete this task",
+    "deliver the requested outcome",
+    "do the work",
+    "finish the epic",
+    "fix the bug",
+    "follow the workflow",
+    "implement the requirements",
+}
+
 
 def _section_has_placeholder(section: str) -> bool:
     lowered = section.lower()
@@ -14264,8 +14901,558 @@ def _section_has_placeholder(section: str) -> bool:
         "who is affected and in what situation",
         "how we will verify",
         "as a ____",
+        "state the owner's desired outcome",
+        "state the bounded correction and restored outcome",
+        "state the child outcome",
     )
     return any(phrase in lowered for phrase in placeholder_phrases)
+
+
+def _intent_contract_mode(requirements_text: str) -> str | None:
+    summary = _parse_key_value_section(_markdown_section(requirements_text, "Summary"))
+    mode = summary.get("intent contract", "").strip().lower()
+    return mode or None
+
+
+def _intent_plain_text(requirements_text: str) -> str:
+    return " ".join(
+        line.strip()
+        for line in _markdown_section(requirements_text, "Intent").splitlines()
+        if line.strip()
+    )
+
+
+def _normalized_intent_text(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+
+def _intent_sentence_count(value: str) -> int:
+    return len(re.findall(r"[.!?](?=\s|$)", value.strip()))
+
+
+def _intent_spine_records(requirements_text: str) -> list[tuple[str, str, str]]:
+    records: list[tuple[str, str, str]] = []
+    for logical_item, _first_line in _flat_markdown_bullet_records(
+        _markdown_section(requirements_text, "Intent Spine")
+    ):
+        match = re.match(r"^(OC\d+)\s*[—-]\s*([^:]+):\s*(.+)$", logical_item)
+        if not match:
+            continue
+        records.append((match.group(1), match.group(2).strip(), match.group(3).strip()))
+    return records
+
+
+def _intent_spine_values(requirements_text: str) -> dict[str, tuple[str, str]]:
+    return {
+        commitment_id: (label, value)
+        for commitment_id, label, value in _intent_spine_records(requirements_text)
+    }
+
+
+def _intent_contract_issues(requirements_text: str) -> list[str]:
+    mode = _intent_contract_mode(requirements_text)
+    if mode is None:
+        return []
+    if mode not in INTENT_CONTRACT_MODES:
+        return ["set `Intent contract` to `full` or `compact`"]
+
+    issues: list[str] = []
+    intent = _intent_plain_text(requirements_text)
+    if not intent:
+        issues.append("add `## Intent` with the owner's desired outcome")
+    elif _section_has_placeholder(intent):
+        issues.append("replace placeholder content under `## Intent`")
+    else:
+        normalized = _normalized_intent_text(intent)
+        summary = _parse_key_value_section(_markdown_section(requirements_text, "Summary"))
+        title = _normalized_intent_text(summary.get("title", ""))
+        if normalized in GENERIC_INTENTS or normalized in {title, f"deliver {title}"}:
+            issues.append(
+                "replace procedural or circular `## Intent` text with the owner's actual outcome"
+            )
+        if len(re.findall(r"\b[\w'-]+\b", intent)) < 8:
+            issues.append("make `## Intent` substantive enough to identify the desired outcome")
+        sentence_count = _intent_sentence_count(intent)
+        if sentence_count not in {1, 2}:
+            issues.append("keep `## Intent` to one or two complete plain-language sentences")
+
+    if mode == "compact":
+        return issues
+
+    spine_section = _markdown_section(requirements_text, "Intent Spine")
+    if not spine_section:
+        issues.append("add `## Intent Spine` with stable OC1-OC7 commitments")
+        return issues
+    spine_values = _intent_spine_values(requirements_text)
+    spine_ids = [record[0] for record in _intent_spine_records(requirements_text)]
+    duplicate_ids = sorted(
+        commitment_id
+        for commitment_id in set(spine_ids)
+        if spine_ids.count(commitment_id) > 1
+    )
+    if duplicate_ids:
+        issues.append(
+            "remove duplicate Intent Spine commitment IDs: " + ", ".join(duplicate_ids)
+        )
+    for commitment_id, expected_label in INTENT_SPINE_FIELDS.items():
+        parsed = spine_values.get(commitment_id)
+        if parsed is None:
+            issues.append(
+                f"add `{commitment_id} — {expected_label.title()}` to `## Intent Spine`"
+            )
+            continue
+        label, value = parsed
+        if _normalized_intent_text(label) != _normalized_intent_text(expected_label):
+            issues.append(
+                f"label {commitment_id} as `{expected_label}` in `## Intent Spine`"
+            )
+        if not value or _section_has_placeholder(value):
+            issues.append(f"replace placeholder content for {commitment_id} in `## Intent Spine`")
+    return issues
+
+
+def _format_intent_approval_summary(requirements_text: str) -> str:
+    issues = _intent_contract_issues(requirements_text)
+    if _intent_contract_mode(requirements_text) != "full":
+        issues = [
+            "add the current full Intent contract before requesting meaning-first approval",
+            *issues,
+        ]
+    if issues:
+        raise ValueError("; ".join(dict.fromkeys(issues)))
+
+    intent = _intent_plain_text(requirements_text)
+    spine = _intent_spine_values(requirements_text)
+
+    def value(commitment_id: str) -> str:
+        return spine[commitment_id][1]
+
+    return (
+        "Approval synopsis\n\n"
+        "Intent\n"
+        f"{intent}\n\n"
+        "At completion\n"
+        f"{value('OC1')}\n\n"
+        "Material capabilities\n"
+        f"{value('OC2')}\n\n"
+        "Proof journey\n"
+        f"{value('OC3')}\n\n"
+        "A green result that would still be wrong\n"
+        f"{value('OC4')}\n\n"
+        "Still outside this work\n"
+        f"{value('OC5')}\n\n"
+        "Material assumptions\n"
+        f"{value('OC6')}\n\n"
+        "Approval question\n"
+        "Does this Intent accurately capture what you want and what success means?\n\n"
+        "Provenance note\n"
+        "The workflow records artifact identity after approval, but IDs and hashes are not the "
+        "meaning being approved.\n"
+    )
+
+
+INTENT_AUDIT_CLASSIFICATIONS = {
+    "preserved",
+    "narrowed",
+    "proxy",
+    "omitted",
+    "broadened",
+    "amended",
+    "deferred",
+    "unknown",
+}
+INTENT_AUDIT_DRIFT_CLASSIFICATIONS = {"narrowed", "proxy", "omitted", "broadened"}
+INTENT_AUDIT_VERDICTS = {"pass", "changes-requested", "review-required"}
+
+
+def _intent_audit_path(epic_dir: Path) -> Path:
+    return epic_dir / INTENT_AUDIT_FILENAME
+
+
+def _intent_audit_source_paths(epic_dir: Path) -> list[Path]:
+    paths = [
+        epic_dir / "REQUIREMENTS.md",
+        epic_dir / EPIC_CONTRACT_FILENAME,
+        epic_dir / DECOMPOSITION_PLAN_FILENAME,
+        epic_dir / EPIC_AMENDMENTS_FILENAME,
+    ]
+    for child_dir in sorted(path for path in epic_dir.iterdir() if path.is_dir()):
+        paths.extend((child_dir / "REQUIREMENTS.md", child_dir / "IMPLEMENTATION.md"))
+    return sorted((path for path in paths if path.exists()), key=lambda path: path.as_posix())
+
+
+def _intent_audit_source_identity(epic_dir: Path) -> str:
+    records = []
+    for path in _intent_audit_source_paths(epic_dir):
+        records.append(
+            {
+                "path": path.relative_to(epic_dir).as_posix(),
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+        )
+    encoded = json.dumps(records, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return APPROVAL_IDENTITY_PREFIX + hashlib.sha256(encoded).hexdigest()
+
+
+def _intent_audit_template(epic_dir: Path) -> str:
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    requirements_text = (
+        requirements_path.read_text(encoding="utf-8") if requirements_path.exists() else ""
+    )
+    commitments = []
+    for commitment_id, label, value in _intent_spine_records(requirements_text):
+        commitments.append(
+            {
+                "id": commitment_id,
+                "classification": "unknown",
+                "disposition": "active",
+                "material": commitment_id in {"OC1", "OC2", "OC3", "OC4"},
+                "parent_acs": [],
+                "child_owners": [],
+                "required_outcome_proof": "",
+                "source_locations": [f"REQUIREMENTS.md#intent-spine-{commitment_id.lower()}"],
+                "target_locations": [],
+                "user_visible_consequence": value,
+                "lost_capability": "",
+                "amendment": None,
+            }
+        )
+    payload = {
+        "schema_version": INTENT_AUDIT_SCHEMA_VERSION,
+        "artifact_identity": _intent_audit_source_identity(epic_dir),
+        "reviewed_by": "",
+        "reviewed_at": "",
+        "review_source": "",
+        "verdict": "review-required",
+        "commitments": commitments,
+    }
+    return json.dumps(payload, indent=2, sort_keys=True) + "\n"
+
+
+def _load_intent_audit(epic_dir: Path) -> tuple[dict[str, object] | None, list[str]]:
+    audit_path = _intent_audit_path(epic_dir)
+    if not audit_path.exists():
+        return None, [f"{INTENT_AUDIT_FILENAME} is missing"]
+    try:
+        payload = json.loads(audit_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, [f"{INTENT_AUDIT_FILENAME} is invalid JSON: {exc}"]
+    if not isinstance(payload, dict):
+        return None, [f"{INTENT_AUDIT_FILENAME} must contain a JSON object"]
+    return payload, []
+
+
+def _intent_audit_location_issues(
+    epic_dir: Path, value: object, *, field: str, commitment_id: str
+) -> list[str]:
+    if not isinstance(value, list) or not value:
+        return [f"{commitment_id} must record non-empty `{field}`"]
+    issues: list[str] = []
+    for location in value:
+        if not isinstance(location, str) or not location.strip():
+            issues.append(f"{commitment_id} `{field}` contains an invalid location")
+            continue
+        path_part = location.split("#", 1)[0]
+        location_path = Path(path_part)
+        if location_path.is_absolute() or ".." in location_path.parts:
+            issues.append(f"{commitment_id} `{field}` must use repository-relative locations")
+        elif not (epic_dir / location_path).exists():
+            issues.append(
+                f"{commitment_id} `{field}` location does not exist: {location}"
+            )
+    return issues
+
+
+def _intent_audit_amendment_issues(
+    amendment: object, *, commitment_id: str, lost_capability: str
+) -> list[str]:
+    if not isinstance(amendment, dict):
+        capability_detail = (
+            f"; lost or added capability: {lost_capability.strip()}"
+            if lost_capability.strip()
+            else ""
+        )
+        return [
+            f"{commitment_id} material drift requires an owner-approved amendment identifying "
+            "the lost or added capability"
+            + capability_detail
+        ]
+    issues: list[str] = []
+    required = ("approved_by", "decision_date", "source", "capability_change")
+    for field in required:
+        value = amendment.get(field)
+        if not isinstance(value, str) or _approval_source_invalid(value):
+            issues.append(f"{commitment_id} amendment must record substantive `{field}`")
+    decision_date = amendment.get("decision_date")
+    if isinstance(decision_date, str) and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", decision_date):
+        issues.append(f"{commitment_id} amendment `decision_date` must use YYYY-MM-DD")
+    approved_by = amendment.get("approved_by")
+    if isinstance(approved_by, str) and "agent" in approved_by.lower():
+        issues.append(f"{commitment_id} amendment must name the approving owner, not an agent")
+    if not lost_capability.strip() and amendment.get("capability_change", "").strip() == "":
+        issues.append(f"{commitment_id} amendment must plainly identify the capability change")
+    return issues
+
+
+def _intent_audit_evaluation(epic_dir: Path) -> dict[str, object]:
+    current_identity = _intent_audit_source_identity(epic_dir)
+    payload, load_issues = _load_intent_audit(epic_dir)
+    if payload is None:
+        return {
+            "schema_version": INTENT_AUDIT_SCHEMA_VERSION,
+            "state": "unknown",
+            "current_identity": current_identity,
+            "audit_identity": None,
+            "verdict": "review-required",
+            "issues": load_issues,
+            "commitments": [],
+        }
+
+    issues: list[str] = []
+    if payload.get("schema_version") != INTENT_AUDIT_SCHEMA_VERSION:
+        issues.append(
+            f"schema_version must be {INTENT_AUDIT_SCHEMA_VERSION}"
+        )
+    audit_identity = payload.get("artifact_identity")
+    if not isinstance(audit_identity, str) or not audit_identity.startswith(APPROVAL_IDENTITY_PREFIX):
+        issues.append("artifact_identity must be a sha256 identity")
+    for field in ("reviewed_by", "reviewed_at", "review_source"):
+        value = payload.get(field)
+        if not isinstance(value, str) or _approval_source_invalid(value):
+            issues.append(f"record substantive `{field}`")
+    reviewed_at = payload.get("reviewed_at")
+    if isinstance(reviewed_at, str) and reviewed_at and not re.fullmatch(
+        r"\d{4}-\d{2}-\d{2}", reviewed_at
+    ):
+        issues.append("reviewed_at must use YYYY-MM-DD")
+    verdict = payload.get("verdict")
+    if verdict not in INTENT_AUDIT_VERDICTS:
+        issues.append(
+            "verdict must be pass, changes-requested, or review-required"
+        )
+
+    requirements_text = (epic_dir / "REQUIREMENTS.md").read_text(encoding="utf-8")
+    expected_ids = set(_intent_spine_values(requirements_text))
+    parent_ac_ids = _extract_parent_ac_ids_from_requirements(requirements_text)
+    tracker_path = epic_dir / "TRACKER.md"
+    child_rows = {
+        row.get("ID", ""): row
+        for row in (_epic_tracker_rows(tracker_path)[2] if tracker_path.exists() else [])
+    }
+    child_ids = set(child_rows)
+    commitments = payload.get("commitments")
+    normalized_commitments: list[dict[str, object]] = []
+    if not isinstance(commitments, list):
+        issues.append("commitments must be a JSON array")
+        commitments = []
+    seen_ids: list[str] = []
+    unresolved_drift: list[str] = []
+    unknown_ids: list[str] = []
+    for raw in commitments:
+        if not isinstance(raw, dict):
+            issues.append("each commitment audit record must be a JSON object")
+            continue
+        record = dict(raw)
+        commitment_id = str(record.get("id", "")).strip()
+        seen_ids.append(commitment_id)
+        classification = record.get("classification")
+        disposition = record.get("disposition")
+        material = record.get("material")
+        if classification not in INTENT_AUDIT_CLASSIFICATIONS:
+            issues.append(f"{commitment_id or 'commitment'} has invalid classification")
+        if disposition not in {"active", "amended", "deferred"}:
+            issues.append(
+                f"{commitment_id or 'commitment'} disposition must be active, amended, or deferred"
+            )
+        if not isinstance(material, bool):
+            issues.append(f"{commitment_id or 'commitment'} must record boolean `material`")
+        parent_acs = record.get("parent_acs")
+        if not isinstance(parent_acs, list) or not parent_acs:
+            issues.append(f"{commitment_id or 'commitment'} must map one or more parent ACs")
+        else:
+            invalid_acs = sorted(
+                str(ac_id) for ac_id in parent_acs if str(ac_id) not in parent_ac_ids
+            )
+            if invalid_acs:
+                issues.append(
+                    f"{commitment_id} maps unknown parent ACs: {', '.join(invalid_acs)}"
+                )
+        child_owners = record.get("child_owners")
+        if not isinstance(child_owners, list) or not child_owners:
+            issues.append(f"{commitment_id or 'commitment'} must map one or more child owners")
+        else:
+            invalid_children = sorted(
+                str(child_id) for child_id in child_owners if str(child_id) not in child_ids
+            )
+            if invalid_children:
+                issues.append(
+                    f"{commitment_id} maps unknown child owners: {', '.join(invalid_children)}"
+                )
+            if isinstance(parent_acs, list):
+                uncovered_owners = sorted(
+                    str(child_id)
+                    for child_id in child_owners
+                    if str(child_id) in child_rows
+                    and not (
+                        _extract_ac_ids(
+                            _extract_parent_ac_coverage(child_rows[str(child_id)])
+                        )
+                        & {str(ac_id) for ac_id in parent_acs}
+                    )
+                )
+                if uncovered_owners:
+                    issues.append(
+                        f"{commitment_id} child owners lack matching mapped parent ACs: "
+                        + ", ".join(uncovered_owners)
+                    )
+        for field in ("required_outcome_proof", "user_visible_consequence"):
+            value = record.get(field)
+            if not isinstance(value, str) or not _section_has_substantive_text(value):
+                issues.append(f"{commitment_id or 'commitment'} must record substantive `{field}`")
+        issues.extend(
+            _intent_audit_location_issues(
+                epic_dir,
+                record.get("source_locations"),
+                field="source_locations",
+                commitment_id=commitment_id or "commitment",
+            )
+        )
+        issues.extend(
+            _intent_audit_location_issues(
+                epic_dir,
+                record.get("target_locations"),
+                field="target_locations",
+                commitment_id=commitment_id or "commitment",
+            )
+        )
+        lost_capability = record.get("lost_capability", "")
+        if not isinstance(lost_capability, str):
+            issues.append(f"{commitment_id or 'commitment'} `lost_capability` must be text")
+            lost_capability = ""
+        if classification == "unknown":
+            unknown_ids.append(commitment_id)
+        if material is True and classification in INTENT_AUDIT_DRIFT_CLASSIFICATIONS:
+            amendment_issues = _intent_audit_amendment_issues(
+                record.get("amendment"),
+                commitment_id=commitment_id,
+                lost_capability=lost_capability,
+            )
+            if amendment_issues:
+                unresolved_drift.append(commitment_id)
+                issues.extend(amendment_issues)
+                if not lost_capability.strip():
+                    issues.append(
+                        f"{commitment_id} must name the lost or added user-visible capability"
+                    )
+            elif disposition not in {"amended", "deferred"}:
+                unresolved_drift.append(commitment_id)
+                issues.append(
+                    f"{commitment_id} authorized material drift requires disposition "
+                    "`amended` or `deferred`"
+                )
+        if classification in {"amended", "deferred"}:
+            expected_disposition = classification
+            if disposition != expected_disposition:
+                issues.append(
+                    f"{commitment_id} classification `{classification}` requires disposition "
+                    f"`{expected_disposition}`"
+                )
+            issues.extend(
+                _intent_audit_amendment_issues(
+                    record.get("amendment"),
+                    commitment_id=commitment_id,
+                    lost_capability=lost_capability,
+                )
+            )
+        normalized_commitments.append(record)
+
+    duplicate_ids = sorted(
+        commitment_id for commitment_id in set(seen_ids) if seen_ids.count(commitment_id) > 1
+    )
+    if duplicate_ids:
+        issues.append("duplicate commitment records: " + ", ".join(duplicate_ids))
+    missing_ids = sorted(expected_ids - set(seen_ids))
+    extra_ids = sorted(set(seen_ids) - expected_ids)
+    if missing_ids:
+        issues.append("missing commitment coverage: " + ", ".join(missing_ids))
+    if extra_ids:
+        issues.append("unknown commitment coverage: " + ", ".join(extra_ids))
+
+    if audit_identity != current_identity:
+        state = "stale"
+    elif unresolved_drift or verdict == "changes-requested":
+        state = "changes-requested"
+    elif issues or unknown_ids or verdict != "pass":
+        state = "review-required"
+    else:
+        state = "current"
+    return {
+        "schema_version": INTENT_AUDIT_SCHEMA_VERSION,
+        "state": state,
+        "current_identity": current_identity,
+        "audit_identity": audit_identity,
+        "verdict": verdict,
+        "reviewed_by": payload.get("reviewed_by"),
+        "reviewed_at": payload.get("reviewed_at"),
+        "review_source": payload.get("review_source"),
+        "issues": list(dict.fromkeys(issues)),
+        "unresolved_drift": unresolved_drift,
+        "commitments": normalized_commitments,
+    }
+
+
+def _intent_audit_gate_issues(epic_dir: Path) -> list[str]:
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    if not requirements_path.exists():
+        return [f"missing epic requirements file: {requirements_path}"]
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    if _intent_contract_mode(requirements_text) != "full":
+        return []
+    evaluation = _intent_audit_evaluation(epic_dir)
+    if evaluation["state"] == "current":
+        return []
+    details = evaluation.get("issues", [])
+    detail = f" ({'; '.join(str(issue) for issue in details[:3])})" if details else ""
+    return [
+        f"intent audit is {evaluation['state']}{detail}; review `{INTENT_AUDIT_FILENAME}` "
+        "against the current requirements, decomposition and child plans"
+    ]
+
+
+def _format_intent_audit_human(epic_id: str, evaluation: dict[str, object]) -> str:
+    lines = [
+        "Intent audit",
+        f"Epic: {epic_id}",
+        f"State: {evaluation['state']}",
+        f"Verdict: {evaluation.get('verdict') or 'review-required'}",
+        f"Reviewed by: {evaluation.get('reviewed_by') or 'not recorded'}",
+        f"Audit identity: {evaluation.get('audit_identity') or 'not recorded'}",
+        f"Current identity: {evaluation['current_identity']}",
+        "Commitments:",
+    ]
+    for record in evaluation.get("commitments", []):
+        if not isinstance(record, dict):
+            continue
+        lines.append(
+            f"- {record.get('id', 'unknown')}: {record.get('classification', 'unknown')}; "
+            f"disposition={record.get('disposition', 'unknown')}; "
+            f"material={'yes' if record.get('material') is True else 'no'}; "
+            f"owners={','.join(str(value) for value in record.get('child_owners', [])) or 'none'}; "
+            f"consequence={record.get('user_visible_consequence') or 'not recorded'}"
+        )
+    issues = evaluation.get("issues", [])
+    if issues:
+        lines.append("Findings:")
+        lines.extend(f"- {issue}" for issue in issues)
+    next_actions = {
+        "current": "Proceed inside the audited Intent envelope.",
+        "stale": "Refresh the audit against the current source identity.",
+        "unknown": f"Create and review `{INTENT_AUDIT_FILENAME}`.",
+        "review-required": "Complete the sourced commitment coverage and semantic review.",
+        "changes-requested": "Restore the capability or record a current owner-approved amendment.",
+    }
+    lines.append(f"Next action: {next_actions[str(evaluation['state'])]}")
+    return "\n".join(lines)
 
 
 def _section_has_substantive_text(section: str) -> bool:
@@ -14294,7 +15481,10 @@ def _open_questions_resolved(section: str) -> bool:
 
 
 def _requirements_readiness_issues(requirements_text: str) -> list[str]:
-    issues: list[str] = []
+    issues = [
+        f"owner input required: {issue}."
+        for issue in _intent_contract_issues(requirements_text)
+    ]
     for heading in READINESS_REQUIRED_SECTIONS:
         section = _markdown_section(requirements_text, heading)
         if not section:
@@ -14752,7 +15942,7 @@ def _split_fix_repos(value: str) -> list[str]:
 def _fix_triage_issues(
     root: Path, fix_text: str, *, require_active_disposition: bool = True
 ) -> list[str]:
-    issues: list[str] = []
+    issues = _intent_contract_issues(fix_text)
     required_fields = {
         "Report": (
             "observed or requested",
@@ -15039,6 +16229,14 @@ def _update_global_tracker_row_status(
                     f"{row_id} cannot move to Complete without non-placeholder "
                     "QA/code-review evidence."
                 )
+            intent_qa_issues = _intent_qa_review_issues(docs_text)
+            if intent_qa_issues:
+                raise SystemExit(_format_readiness_block(row_id, intent_qa_issues))
+            owner_acceptance_issues = _owner_acceptance_completion_issues(
+                docs_path.parent / STRUCTURED_EVIDENCE_FILENAME
+            )
+            if owner_acceptance_issues:
+                raise SystemExit(_format_readiness_block(row_id, owner_acceptance_issues))
 
         if not _status_transition_allowed(current_status, new_status):
             if not force:
@@ -15256,6 +16454,11 @@ def _update_epic_child_status(
             )
             if structured_issues:
                 raise SystemExit(_format_readiness_block(row_id, structured_issues))
+            owner_acceptance_issues = _owner_acceptance_completion_issues(
+                docs_path.parent / STRUCTURED_EVIDENCE_FILENAME
+            )
+            if owner_acceptance_issues:
+                raise SystemExit(_format_readiness_block(row_id, owner_acceptance_issues))
             requirements_text = (
                 requirements_path.read_text(encoding="utf-8")
                 if requirements_path.exists()
@@ -15273,6 +16476,9 @@ def _update_epic_child_status(
                     f"{row_id} cannot move to Complete without non-placeholder "
                     "QA/code-review evidence."
                 )
+            intent_qa_issues = _intent_qa_review_issues(docs_text)
+            if intent_qa_issues:
+                raise SystemExit(_format_readiness_block(row_id, intent_qa_issues))
             missing_parent_evidence = [
                 ac_id
                 for ac_id in sorted(parent_ac_ids)
@@ -16048,6 +17254,14 @@ def _doctor_check_task_doc(
             docs_path,
             f"{row_id} is Complete but lacks non-placeholder QA/code-review evidence.",
         )
+    if status == "Complete":
+        for intent_qa_issue in _intent_qa_review_issues(docs_text):
+            _add_issue(
+                issues,
+                "warning",
+                docs_path,
+                f"{row_id} intent-adversarial QA: {intent_qa_issue}.",
+            )
 
     requirements_path = docs_path.parent / "REQUIREMENTS.md"
     requirements_text: str | None = None
@@ -16390,6 +17604,35 @@ def _doctor_check_epic_trackers(
                 _epic_contract_path(epic_tracker_path.parent),
                 f"{epic_tracker_path.parent.name} epic contract: {contract_issue}",
             )
+        active_audit_statuses = {
+            row.get("Status", "") for row in rows
+        } & {"In Progress", "Testing", "Review", "Complete"}
+        parent_requirements_text = (
+            parent_requirements_path.read_text(encoding="utf-8")
+            if parent_requirements_path.exists()
+            else ""
+        )
+        if active_audit_statuses and _intent_contract_mode(parent_requirements_text) == "full":
+            audit_evaluation = _intent_audit_evaluation(epic_tracker_path.parent)
+            if audit_evaluation["state"] != "current":
+                severity = (
+                    "error"
+                    if active_audit_statuses & {"Review", "Complete"}
+                    else "warning"
+                )
+                _add_issue(
+                    issues,
+                    severity,
+                    _intent_audit_path(epic_tracker_path.parent),
+                    f"{epic_tracker_path.parent.name} intent audit is "
+                    f"{audit_evaluation['state']}; run `epic intent-audit --epic-id "
+                    f"{epic_tracker_path.parent.name.split('-', 2)[0]}-"
+                    f"{epic_tracker_path.parent.name.split('-', 2)[1]}` and refresh the "
+                    "sourced semantic review.",
+                    code="PW_INTENT_AUDIT_NOT_CURRENT",
+                    remediation_owner="agent",
+                    mechanically_upgradeable=False,
+                )
         for row in rows:
             row_id = row["ID"]
             _doctor_check_row_id_format(
@@ -17021,6 +18264,11 @@ def cmd_backlog_promote(args: argparse.Namespace) -> None:
         _write_file(epic_dir / "DEFERRALS.md", _epic_deferrals_template(), overwrite=True)
         _write_file(epic_dir / EPIC_AMENDMENTS_FILENAME, _epic_amendments_template(), overwrite=True)
         _write_file(epic_dir / "RETRO.md", _epic_retro_template(spec.task_id, spec.title), overwrite=True)
+        _write_file(
+            _intent_audit_path(epic_dir),
+            _intent_audit_template(epic_dir),
+            overwrite=True,
+        )
         _write_acceptance_map(root, spec.task_id)
         docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
         _update_tracker(
@@ -17541,6 +18789,26 @@ def cmd_task_status(args: argparse.Namespace) -> None:
             print(f"Forced transition reason: {args.reason.strip()}")
 
 
+def cmd_task_approval_summary(args: argparse.Namespace) -> None:
+    """Render the meaning-first approval synopsis for one standalone task."""
+    cwd = Path.cwd()
+    tracker_path = cwd / ".project-workflow" / "TRACKER.md"
+    if not tracker_path.exists():
+        raise SystemExit(f"Missing tracker file: {tracker_path}")
+    task_id = _normalize_task_status_id(args.id, root=cwd)
+    requirements_path, _implementation_path, _row = _resolve_global_task_docs(
+        root=cwd,
+        tracker_path=tracker_path,
+        task_id=task_id,
+    )
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    try:
+        summary = _format_intent_approval_summary(requirements_text)
+    except ValueError as exc:
+        raise SystemExit(f"{task_id} approval synopsis is not ready: {exc}") from exc
+    print(summary, end="")
+
+
 def cmd_task_approve_requirements(args: argparse.Namespace) -> None:
     """Record an owner approval envelope for one standalone task."""
     cwd = Path.cwd()
@@ -17576,6 +18844,8 @@ def cmd_task_approve_requirements(args: argparse.Namespace) -> None:
     )
     requirements_path.write_text(updated, encoding="utf-8")
     print(f"Recorded owner approval envelope for {task_id}: {requirements_path}")
+    if _intent_contract_mode(requirements_text) == "full":
+        print(f"Approved Intent: {_intent_plain_text(requirements_text)}")
 
 
 def cmd_task_adopt(args: argparse.Namespace) -> None:
@@ -17707,6 +18977,13 @@ def cmd_epic_init(args: argparse.Namespace) -> None:
         _write_file(amendments_path, _epic_amendments_template(), overwrite=True)
     if args.overwrite or not retro_path.exists():
         _write_file(retro_path, _epic_retro_template(spec.task_id, spec.title), overwrite=True)
+    intent_audit_path = _intent_audit_path(epic_dir)
+    if args.overwrite or not intent_audit_path.exists():
+        _write_file(
+            intent_audit_path,
+            _intent_audit_template(epic_dir),
+            overwrite=True,
+        )
     map_path = _write_acceptance_map(cwd, spec.task_id)
 
     docs_rel = f"tasks/{spec.task_folder_name}/REQUIREMENTS.md"
@@ -17821,6 +19098,33 @@ def cmd_epic_approve(args: argparse.Namespace) -> None:
     print(f"Refreshed acceptance map: {map_path}")
 
 
+def cmd_epic_approval_summary(args: argparse.Namespace) -> None:
+    """Render the meaning-first approval synopsis for one Epic."""
+    cwd = Path.cwd()
+    tasks_dir = cwd / ".project-workflow" / "tasks"
+    epic_dir = _resolve_epic_dir(tasks_dir, args.epic_id)
+    requirements_path = epic_dir / "REQUIREMENTS.md"
+    if not requirements_path.exists():
+        raise SystemExit(f"Missing epic requirements file: {requirements_path}")
+    requirements_text = requirements_path.read_text(encoding="utf-8")
+    try:
+        summary = _format_intent_approval_summary(requirements_text)
+    except ValueError as exc:
+        raise SystemExit(f"{args.epic_id} approval synopsis is not ready: {exc}") from exc
+    print(summary, end="")
+
+
+def cmd_epic_intent_audit(args: argparse.Namespace) -> None:
+    """Inspect the current sourced Intent audit without mutating workflow state."""
+    cwd = Path.cwd()
+    epic_dir = _resolve_epic_dir(cwd / ".project-workflow" / "tasks", args.epic_id)
+    evaluation = _intent_audit_evaluation(epic_dir)
+    if args.format == "json":
+        print(json.dumps(evaluation, indent=2, sort_keys=True))
+    else:
+        print(_format_intent_audit_human(args.epic_id, evaluation))
+
+
 def cmd_epic_approve_requirements(args: argparse.Namespace) -> None:
     """Record an owner approval envelope for one epic."""
     cwd = Path.cwd()
@@ -17845,6 +19149,8 @@ def cmd_epic_approve_requirements(args: argparse.Namespace) -> None:
     )
     requirements_path.write_text(updated, encoding="utf-8")
     print(f"Recorded owner approval envelope for {args.epic_id}: {requirements_path}")
+    if _intent_contract_mode(requirements_text) == "full":
+        print(f"Approved Intent: {_intent_plain_text(requirements_text)}")
 
 
 def cmd_epic_adopt(args: argparse.Namespace) -> None:
@@ -17924,6 +19230,7 @@ def cmd_epic_ready_child(args: argparse.Namespace) -> None:
         implementation_path=implementation_path,
         parent_ac_ids=parent_ac_ids,
     )
+    readiness_issues.extend(_intent_audit_gate_issues(epic_dir))
     if readiness_issues:
         raise SystemExit(_format_readiness_block(args.id, readiness_issues))
     print(f"{args.id} readiness gate passed.")
@@ -17950,6 +19257,10 @@ def cmd_epic_status(args: argparse.Namespace) -> None:
         if contract_issues:
             raise SystemExit(_format_readiness_block(args.epic_id, contract_issues))
         _require_decomposition_plan_authority(epic_dir, target)
+    if args.to in {"Review", "Complete"}:
+        audit_issues = _intent_audit_gate_issues(epic_dir)
+        if audit_issues:
+            raise SystemExit(_format_readiness_block(args.id, audit_issues))
     previous, current = _update_epic_child_status(
         root=cwd,
         epic_tracker_path=epic_tracker_path,
@@ -18858,6 +20169,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     task_status_parser.set_defaults(func=cmd_task_status)
 
+    task_approval_summary_parser = task_sub.add_parser(
+        "approval-summary",
+        help="Render the plain-language Intent synopsis for owner confirmation",
+    )
+    task_approval_summary_parser.add_argument(
+        "--id", required=True, help="Task ID (e.g. TASK-001)"
+    )
+    task_approval_summary_parser.set_defaults(func=cmd_task_approval_summary)
+
     task_approve_requirements_parser = task_sub.add_parser(
         "approve-requirements",
         help="Record owner approval for one task requirements/AC envelope",
@@ -18968,6 +20288,30 @@ def build_parser() -> argparse.ArgumentParser:
     epic_approve_parser.add_argument("--epic-id", required=True, help="Epic ID (e.g. EPIC-001)")
     epic_approve_parser.add_argument("--id", required=True, help="Row ID in epic TRACKER.md")
     epic_approve_parser.set_defaults(func=cmd_epic_approve)
+
+    epic_approval_summary_parser = epic_sub.add_parser(
+        "approval-summary",
+        help="Render the plain-language Intent synopsis for owner confirmation",
+    )
+    epic_approval_summary_parser.add_argument(
+        "--epic-id", required=True, help="Epic ID (e.g. EPIC-001)"
+    )
+    epic_approval_summary_parser.set_defaults(func=cmd_epic_approval_summary)
+
+    epic_intent_audit_parser = epic_sub.add_parser(
+        "intent-audit",
+        help="Inspect sourced intent coverage, drift classifications, and freshness read-only",
+    )
+    epic_intent_audit_parser.add_argument(
+        "--epic-id", required=True, help="Epic ID (e.g. EPIC-001)"
+    )
+    epic_intent_audit_parser.add_argument(
+        "--format",
+        choices=("human", "json"),
+        default="human",
+        help="Output format (default: human)",
+    )
+    epic_intent_audit_parser.set_defaults(func=cmd_epic_intent_audit)
 
     epic_approve_requirements_parser = epic_sub.add_parser(
         "approve-requirements",

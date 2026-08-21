@@ -11,16 +11,16 @@ Use it with GitHub Copilot, Claude Code, OpenAI Codex, or Cursor.
 From the root of an existing Git repository:
 
 ```bash
-uvx --from project-workflow==0.5.1 project init --agent codex
+uvx --from project-workflow==0.6.0 project init --agent codex
 ```
 
 Choose the mode that matches your agent:
 
 ```bash
-uvx --from project-workflow==0.5.1 project init --agent github-copilot
-uvx --from project-workflow==0.5.1 project init --agent claude-code
-uvx --from project-workflow==0.5.1 project init --agent codex
-uvx --from project-workflow==0.5.1 project init --agent cursor
+uvx --from project-workflow==0.6.0 project init --agent github-copilot
+uvx --from project-workflow==0.6.0 project init --agent claude-code
+uvx --from project-workflow==0.6.0 project init --agent codex
+uvx --from project-workflow==0.6.0 project init --agent cursor
 ```
 
 Then tell the agent what you want in ordinary language:
@@ -37,7 +37,8 @@ The initialized agent instructions and skills tell the agent how to create the r
 
 - A repository-native backlog for ideas worth preserving but not yet active.
 - Lightweight Fix records for bounded corrections after work has been delivered.
-- Requirements and implementation records with stable acceptance-criteria IDs.
+- Brief plain-language Intent, stable outcome commitments, and detailed requirements/implementation
+  records that remain subordinate to what the owner actually wants.
 - One visible global tracker for active standalone work and epics, with child trackers inside epics.
 - Explicit owner authority without repeated approval prompts inside an unchanged scope.
 - Evidence and QA gates that make completion mean more than "the code was written."
@@ -83,7 +84,8 @@ The owner provides:
 - boundaries, non-goals, constraints, priority, and relevant examples;
 - the signal that would make the work acceptable;
 - decisions where product authority is required;
-- one explicit approval of the requirements and acceptance-criteria envelope before planning.
+- one explicit confirmation that the plain-language Intent and success meaning are accurate before
+  planning; identifiers and hashes remain internal provenance.
 
 The agent:
 
@@ -96,7 +98,12 @@ The agent:
 - implements, validates, records evidence, and runs QA/code review;
 - returns to the owner when scope, proof obligations, or artifact identity materially changes.
 
-The important boundary is the approved requirements envelope. Approval is recorded once before planning. Work that remains inside that envelope proceeds without approval fatigue. Material drift requires the requirements to be corrected or amended and approved again.
+The important boundary is the approved Intent: a one- or two-sentence statement of what the owner
+actually wants, supported by completion capability, exclusions and the proof journey. The agent
+runs `task approval-summary` or `epic approval-summary` and asks whether that meaning is accurate;
+it does not ask the owner to approve IDs or hashes. Approval is recorded once before planning.
+Work that remains inside that meaning and its detailed envelope proceeds without approval fatigue.
+Material drift requires correction or amendment and renewed confirmation.
 
 ## Choose The Right Route
 
@@ -147,9 +154,12 @@ A Task is the standard route for a new, bounded outcome:
 
 The agent captures `REQUIREMENTS.md` with a user story, scope, non-goals, stable `AC1`, `AC2`, and later acceptance criteria, open questions, decisions, and a validation plan.
 
-When those requirements are correct, the owner approves the envelope:
+The file begins with a one- or two-sentence Intent and stable outcome commitments. When that meaning
+and its supporting detail are correct, the agent renders the owner-facing synopsis and records the
+owner's confirmation:
 
 ```bash
+./.project-workflow/cli/workflow task approval-summary --id TASK-001
 ./.project-workflow/cli/workflow task approve-requirements \
   --id TASK-001 \
   --approved-by "Product Owner" \
@@ -224,12 +234,15 @@ Epics are proposal-first. They add authority and evidence controls because sever
 
 Before decomposition, complete:
 
-- `REQUIREMENTS.md` with stable parent acceptance criteria and any proposed child work;
+- `REQUIREMENTS.md` with a brief Intent, stable outcome commitments, parent acceptance criteria
+  and any proposed child work;
 - `EPIC-CONTRACT.md` with sources of truth, invariants, artifact targets, invalid substitutes, proof owners, and evidence expectations.
 
-Then record the owner's single requirements approval and create the authoritative decomposition:
+Then show the meaning-first synopsis, record the owner's confirmation, and create the authoritative
+decomposition:
 
 ```bash
+./.project-workflow/cli/workflow epic approval-summary --epic-id EPIC-001
 ./.project-workflow/cli/workflow epic approve-requirements \
   --epic-id EPIC-001 \
   --approved-by "Product Owner" \
@@ -244,6 +257,18 @@ Then record the owner's single requirements approval and create the authoritativ
 ./.project-workflow/cli/workflow epic scaffold-child --epic-id EPIC-001 --id TASK-014
 ./.project-workflow/cli/workflow epic ready-child --epic-id EPIC-001 --id TASK-014
 ```
+
+For a full-contract Epic, complete `INTENT-AUDIT.json` after decomposition and child planning, then
+inspect it read-only:
+
+```bash
+./.project-workflow/cli/workflow epic intent-audit --epic-id EPIC-001
+```
+
+The audit maps each OC commitment to parent ACs, child owners, disposition, required outcome proof,
+source/target locations and user-visible consequences. Child readiness, Review and Complete fail
+closed unless the audit is current; material narrowing, proxy substitution, omission or broadening
+must be restored or covered by a current owner-approved capability amendment.
 
 During delivery:
 
@@ -299,7 +324,7 @@ PATH="/opt/homebrew/bin:$PATH" uvx --version
 Run the canonical init command from the repository root:
 
 ```bash
-uvx --from project-workflow==0.5.1 project init
+uvx --from project-workflow==0.6.0 project init
 ```
 
 Without `--agent`, the default mode is `github-copilot`. Pass an explicit mode when the repository uses another agent.
@@ -422,7 +447,7 @@ project-workflow package, so this works even when the repository's local helper 
 yet contain the upgrade command:
 
 ```bash
-uvx --from project-workflow==0.5.1 \
+uvx --from project-workflow==0.6.0 \
   project upgrade --agent codex
 ```
 
@@ -435,7 +460,7 @@ Agents and other non-interactive callers use the same canonical command with `--
 owner has authorized the upgrade:
 
 ```bash
-uvx --from project-workflow==0.5.1 \
+uvx --from project-workflow==0.6.0 \
   project upgrade --agent codex --yes
 ```
 
@@ -448,10 +473,10 @@ Automation can retain an explicitly separated, non-mutating plan and fingerprint
 commands must use the same package source and version:
 
 ```bash
-uvx --from project-workflow==0.5.1 \
+uvx --from project-workflow==0.6.0 \
   project upgrade --agent codex --plan --format json
 
-uvx --from project-workflow==0.5.1 \
+uvx --from project-workflow==0.6.0 \
   project upgrade --agent codex \
   --apply \
   --plan-fingerprint sha256:<REVIEWED_PLAN_FINGERPRINT>
