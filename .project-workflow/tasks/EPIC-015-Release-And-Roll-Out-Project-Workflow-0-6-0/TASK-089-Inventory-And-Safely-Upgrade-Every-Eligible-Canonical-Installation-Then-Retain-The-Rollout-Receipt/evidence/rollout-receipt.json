@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-21",
+  "release": {
+    "version": "0.6.0",
+    "merge_commit": "8f3f5c95973f36e010e7639a5a95909369813ac4",
+    "pull_request": "https://github.com/johndetlefs/project-workflow/pull/19",
+    "tag": "v0.6.0",
+    "release_url": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.6.0",
+    "workflow_run": "https://github.com/johndetlefs/project-workflow/actions/runs/32458912205",
+    "pypi_url": "https://pypi.org/project/project-workflow/0.6.0/",
+    "wheel_sha256": "e459af77a75f6b21ee5361e0c2019b38bc3a007c93bf787e09cb6ae7a27020b1",
+    "sdist_sha256": "fcc9a70bae464f93c1038a5470878acdea424f8101125259eab09d799606986f"
+  },
+  "inventory": {
+    "canonical_installations": 10,
+    "upgraded": 7,
+    "blocked_unchanged": 3,
+    "worktree_manifests_observed": 20,
+    "worktree_disposition": "Not independent canonical installations; no worktree was mutated."
+  },
+  "consumers": [
+    {
+      "root": "/Users/johndetlefs/repos/strategic-advisor",
+      "initial_head": "dda854c",
+      "disposition": "upgraded-public-package",
+      "agent": "codex",
+      "plan_fingerprint": "sha256:1f95c1054760de9737b5b479b3e6fb36e161a77f21f1c34f5d5fac9d702fadf1",
+      "managed_changes": 11,
+      "version": "0.6.0",
+      "noop_targets": 0,
+      "strict_doctor": "pass"
+    },
+    {
+      "root": "/Users/johndetlefs/repos/daily-checklist",
+      "initial_head": "38d440a",
+      "disposition": "upgraded-public-package",
+      "agent": "codex",
+      "plan_fingerprint": "sha256:b432d20942ca4fd12bd94bcee9824882b6c87cde691d1e346fc1dd36c690a9c2",
+      "managed_changes": 11,
+      "version": "0.6.0",
+      "noop_targets": 0,
+      "strict_doctor": "pass"
+    },
+    {
+      "root": "/Users/johndetlefs/repos/tobys-games",
+      "initial_head": "626029c",
+      "disposition": "upgraded-public-package",
+      "agent": "codex",
+      "plan_fingerprint": "sha256:ff3fee9f499e378fdb0bdda76d9d5fd63b931cb7632c08a79c52728340fa0d4c",
+      "managed_changes": 11,
+      "version": "0.6.0",
+      "noop_targets": 0,
+      "strict_doctor": "pass"
+    },
+    {
+      "root": "/Users/johndetlefs/repos/mechanics-playground",
+      "initial_head": "26120cc",
+      "disposition": "upgraded-public-package",
+      "agent": "codex",
+      "plan_fingerprint": "sha256:1e9a459edde8e870a05cb4e7a718f147700be185ac80bba8104bf8e642388703",
+      "managed_changes": 11,
+      "version": "0.6.0",
+      "noop_targets": 0,
+      "strict_doctor": "pass"
+    },
+    {
+      "root": "/Users/johndetlefs/repos/client-management-app",
+      "initial_head": "a4432b9",
+      "disposition": "upgraded-public-package",
+      "agent": "codex",
+      "plan_fingerprint": "sha256:0dd82247bcd019d42a651bb857c048071671ea92d58bb59476bd6de695c9d539",
+      "managed_changes": 11,
+      "version": "0.6.0",
+      "noop_targets": 0,
+      "strict_doctor": "pass"
+    },
+    {
+      "root": "/Users/johndetlefs/repos/dept/health-direct/contraceptives-option-finder",
+      "initial_head": "d077d3b7",
+      "disposition": "upgraded-public-package",
+      "agent": "codex",
+      "plan_fingerprint": "sha256:8bffcbdbfc9dd4d5930a18d5010d9a7637eae65e234a23b9863993dcd4f8e8db",
+      "managed_changes": 11,
+      "version": "0.6.0",
+      "noop_targets": 0,
+      "strict_doctor": "pass"
+    },
+    {
+      "root": "/Users/johndetlefs/repos/project-workflow",
+      "initial_head": "6bf7601",
+      "final_head": "8f3f5c9",
+      "disposition": "fast-forwarded-released-main",
+      "managed_changes": 0,
+      "version": "0.6.0",
+      "worktree": "clean",
+      "strict_doctor": "pass"
+    },
+    {
+      "root": "/Users/johndetlefs/repos/the-moon-is-hollow",
+      "head": "5c698ed",
+      "disposition": "blocked-unchanged-dirty",
+      "dirty_entries": 1,
+      "version": "0.3.0"
+    },
+    {
+      "root": "/Users/johndetlefs/repos/johndetlefs",
+      "head": "d8c2f48",
+      "disposition": "blocked-unchanged-dirty",
+      "dirty_entries": 4,
+      "version": "0.3.0"
+    },
+    {
+      "root": "/Users/johndetlefs/repos/game-foundation",
+      "head": "cadd4f7",
+      "disposition": "blocked-unchanged-dirty",
+      "dirty_entries": 11,
+      "version": "0.5.1"
+    }
+  ]
+}
