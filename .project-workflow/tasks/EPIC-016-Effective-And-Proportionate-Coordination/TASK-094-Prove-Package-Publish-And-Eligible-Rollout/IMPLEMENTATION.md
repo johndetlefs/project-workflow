@@ -56,8 +56,8 @@ that paused projects can use it without confusing local source, publication or c
 
 ## Acceptance Criteria
 
-- [ ] AC1: Exact 0.7.0 candidate passes one complete suite, strict Doctor and package journeys.
-- [ ] AC2: Dependencies retain one QA each and are not re-reviewed.
+- [x] AC1: Exact 0.7.0 candidate passes one complete suite, strict Doctor and package journeys.
+- [x] AC2: Dependencies retain one QA each and are not re-reviewed.
 - [ ] AC3: PR, merge, tag, release and publication share exact identities.
 - [ ] AC4: Public package retrieval and fresh Coordinator journey pass.
 - [ ] AC5: Only eligible clean consumer roots upgrade with no-op and preservation proof.
@@ -92,13 +92,13 @@ identity, verify it publicly, then apply fingerprinted upgrades only after per-r
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | not recorded | not recorded | not recorded | not recorded |
+| . | `codex/effective-proportionate-coordination` at candidate source `80ca56757442984db2fe4e8a6360cea56523bc0b`; PR not yet created | 474/474 complete suite; strict validation; source/release contract; exact wheel/sdist receipt; Codex, Copilot, Claude Code and Cursor fresh/upgrade journeys; legacy preservation/no-op journey | Exact local candidate proven; not yet pushed, merged, tagged or published | `evidence/candidate/`; `../INDEPENDENT-QA.md`; `../../../../evaluations/coordination/results/EPIC-016-ANALYSIS.md` |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |
-| 1 | Freeze Exact 0.7.0 Candidate | Align version/metadata/changelog, verify dependency QA, run focused/full checks once, build and retain exact artifacts. | AC1, AC2 | Inspect candidate receipt, hashes and package journeys. | To Do | TASK-090, TASK-091, TASK-092, TASK-093 | release metadata, package source, tests and candidate evidence | No | bounded-return |
+| 1 | Freeze Exact 0.7.0 Candidate | Align version/metadata/changelog, verify dependency QA, run focused/full checks once, build and retain exact artifacts. | AC1, AC2 | Inspect candidate receipt, hashes and package journeys. | Done | TASK-090, TASK-091, TASK-092, TASK-093 | release metadata, package source, tests and candidate evidence | No | bounded-return |
 | 2 | Integrate Tag And Publish | Commit/push, create and merge reviewed PR, tag exact main commit and publish retained wheel/sdist through trusted infrastructure. | AC3 | Compare PR, merge, tag, release and artifact identities. | To Do | 1 | Git/release metadata and release evidence | No | direct-owner-steering |
 | 3 | Verify Public Release | Retrieve public artifacts, verify hashes/provenance/version/assets and run a fresh Coordinator journey. | AC4 | Install exact public 0.7.0 into a disposable repository. | To Do | 2 | disposable verification artifacts and task evidence | No | bounded-return |
 | 4 | Inventory And Upgrade Eligible Consumers | Refresh inventory, recheck authority/Git/activity, fingerprint plans, upgrade eligible clean roots and prove no-op/preservation. | AC5, AC6 | Inspect every inventory disposition and consumer diff. | To Do | 3 | eligible consumer managed assets plus rollout evidence | No | coordinator |
@@ -106,7 +106,16 @@ identity, verify it publicly, then apply fingerprinted upgrades only after per-r
 
 ## Parent AC Evidence
 
-- AC12, AC13: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC12: TASK-090 through TASK-093 remain Complete with the single retained independent QA in
+  `../INDEPENDENT-QA.md`; no review was reopened. The candidate keeps the repeated behavioural and
+  disposable journey evidence in `../../../../evaluations/coordination/results/EPIC-016-ANALYSIS.md`.
+- AC13: Candidate source `80ca56757442984db2fe4e8a6360cea56523bc0b` passed the 474-test
+  suite and strict validation. `evidence/candidate/release-receipt.json` binds wheel SHA-256
+  `d9c168b53990b6b04f3a2657c52584614be9900dd783e0a539afe3f6f892a961` and sdist SHA-256
+  `d9b7a2ded251d4cf76efe0160dd7120b52fa725fc64ad0c4ab66e3ea9074b768`;
+  `evidence/candidate/package-journeys.json` proves all four generated-host surfaces, exact source
+  parity for 33 wheel resources and 71 sdist sources, the fresh Coordinator outcome journey, and
+  the legacy preservation/no-op upgrade journey.
 
 ## QA & Code Review
 
@@ -131,3 +140,6 @@ identity, verify it publicly, then apply fingerprinted upgrades only after per-r
 - Task: TASK-094
 - Title: Prove Package Publish And Eligible Rollout
 - Created: 2026-08-24
+- Current owner delivery boundary: publish and publicly verify 0.7.0, then stop. Do not install it
+  in any consumer project until the owner separately requests rollout. Rows 4-5 and AC5-AC7 remain
+  pending rather than being misreported as complete.

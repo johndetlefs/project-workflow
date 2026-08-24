@@ -564,6 +564,52 @@
       "source_identity": "sha256:682e1568f70b241a11017ac2bf34890c4f42701f781b7000ce43b1e345978edd",
       "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540",
       "user_consequence": "The package becomes publicly installable while all other project repositories remain unchanged."
+    },
+    {
+      "affected_units": [
+        "TASK-094"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "The exact 0.7.0 source and package candidate passed the required local release proof; the approved no-rollout boundary is unchanged.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:10afd1e475137bde6d1c05246f8a4be5b7f975f11e4b669735a9a69591925257",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:682e1568f70b241a11017ac2bf34890c4f42701f781b7000ce43b1e345978edd",
+      "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540",
+      "user_consequence": "The reviewed branch may proceed to PR, trusted publication and public verification without reopening feature QA or touching consumer repositories."
+    },
+    {
+      "affected_units": [
+        "TASK-094"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "The current intent audit now binds the exact 0.7.0 candidate evidence; publication remains next and consumer rollout remains explicitly deferred.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:905a6337dac80670c4af2b66a409c66f901f5fb0ecc349b7a7ca11d03de35a6c",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:682e1568f70b241a11017ac2bf34890c4f42701f781b7000ce43b1e345978edd",
+      "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540",
+      "user_consequence": "The release can proceed without reopening completed QA or implying any consumer adoption."
     }
   ],
   "decisions": [
@@ -577,20 +623,21 @@
     "context_contract": "declared",
     "telemetry": "unknown"
   },
-  "intent_identity": "sha256:10afd1e475137bde6d1c05246f8a4be5b7f975f11e4b669735a9a69591925257",
+  "intent_identity": "sha256:905a6337dac80670c4af2b66a409c66f901f5fb0ecc349b7a7ca11d03de35a6c",
   "last_boundary": {
     "affected_units": [
       "TASK-094"
     ],
-    "amendment_identity": "OWNER-2026-08-24-RELEASE-NO-ROLLOUT",
+    "amendment_identity": null,
     "boundary": "new-evidence-or-owner-reframe",
-    "capability_change": "Publish and publicly verify Project Workflow 0.7.0 now, but defer every consumer installation until separately requested.",
-    "classification": "approved-change",
-    "decided_by": "John Detlefs and EPIC-016 Coordinator",
+    "capability_change": "The current intent audit now binds the exact 0.7.0 candidate evidence; publication remains next and consumer rollout remains explicitly deferred.",
+    "classification": "inside-envelope",
+    "decided_by": "EPIC-016 Coordinator",
     "decision_date": "2026-08-24",
-    "intent_identity": "sha256:10afd1e475137bde6d1c05246f8a4be5b7f975f11e4b669735a9a69591925257",
+    "intent_identity": "sha256:905a6337dac80670c4af2b66a409c66f901f5fb0ecc349b7a7ca11d03de35a6c",
     "relevant_ocs": [
       "OC1",
+      "OC2",
       "OC3",
       "OC6",
       "OC7"
@@ -598,7 +645,7 @@
     "shared_premises_valid": "yes",
     "source_identity": "sha256:682e1568f70b241a11017ac2bf34890c4f42701f781b7000ce43b1e345978edd",
     "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540",
-    "user_consequence": "The package becomes publicly installable while all other project repositories remain unchanged."
+    "user_consequence": "The release can proceed without reopening completed QA or implying any consumer adoption."
   },
   "loaded_contract": {
     "asset_version": "6",
@@ -607,7 +654,7 @@
     "package_version": "0.7.0",
     "recorded_at": "2026-08-24"
   },
-  "next_action": "Refresh the existing canonical plan and Delegate packet for affected units: TASK-094",
+  "next_action": "Push the candidate, merge the green PR, tag v0.7.0, then verify the public package and stop.",
   "outcome_checkpoint": {
     "checkpoint_unit": "TASK-093",
     "claim_class": "user-facing",

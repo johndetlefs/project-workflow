@@ -1,5 +1,5 @@
 {
-  "artifact_identity": "sha256:4ec6a930015b3be1ace09e2f1a457c90c3402e9ad55af0df82e9d1d5133d1f65",
+  "artifact_identity": "sha256:ee47d75276680861c9028ae00d838fdd30115cc71ffb64b4474c4e65c46245aa",
   "commitments": [
     {
       "amendment": null,
@@ -100,7 +100,7 @@
       "user_visible_consequence": "Every handoff and delivery claim remains subordinate to the exact owner-approved outcome and authority."
     }
   ],
-  "review_source": "Owner-approved Coordinator Core correction and the retained Changes Requested QA disposition reviewed against the Intent, non-goals, Epic contract, five-row decomposition and complete OC-to-AC/child/proof coverage. The affected corrections preserve drift prevention, Clarify, earned execution, early outcome proof and the one-QA rule while binding decisions to current source and requiring preservation-aware behavioral grading. Run 005 closes the current-contract behavioral proof finding; publication and rollout remain separately owned by TASK-094.",
+  "review_source": "Owner-approved Coordinator Core correction, retained Changes Requested QA disposition, and exact 0.7.0 candidate evidence reviewed against the Intent, non-goals, Epic contract, five-row decomposition and complete OC-to-AC/child/proof coverage. The candidate preserves drift prevention, Clarify, earned execution, early outcome proof and the one-QA rule while binding decisions to current source and requiring preservation-aware behavioral grading. Publication remains the next TASK-094 gate; consumer rollout is explicitly deferred by the owner and remains separate.",
   "reviewed_at": "2026-08-24",
   "reviewed_by": "EPIC-016 Coordinator",
   "schema_version": 1,
