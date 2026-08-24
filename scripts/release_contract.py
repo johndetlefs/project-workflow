@@ -62,6 +62,25 @@ def validate_delegate_semantics(assets: dict[str, str]) -> None:
             raise ContractError(f"Delegate semantic asset has blanket fail-fast guidance: {label}")
 
 
+def validate_coordinator_semantics(assets: dict[str, str]) -> None:
+    required = (
+        "owner-facing",
+        "one logical Coordinator",
+        "smallest sufficient",
+        "bounded packets",
+        "Clarify",
+        "drift-detected",
+        "independent QA",
+        "Stop after sufficient proof",
+        "implementation, validation, integration, release, deployment, adoption",
+    )
+    for label, text in assets.items():
+        normalized = " ".join(text.split()).lower()
+        missing = [value for value in required if value.lower() not in normalized]
+        if missing:
+            raise ContractError(f"Coordinator semantic asset is incomplete ({label}): {missing}")
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -137,6 +156,20 @@ def validate_source(*, expected_version: str | None, tag: str | None, clean: boo
         }
     )
 
+    source_coordinator = ROOT / "src/project_workflow/prompts/Coordinator.prompt.md"
+    github_coordinator = ROOT / ".github/prompts/Coordinator.prompt.md"
+    codex_coordinator = (
+        ROOT / "src/project_workflow/codex/skills/project-coordinator/SKILL.md"
+    )
+    if source_coordinator.read_bytes() != github_coordinator.read_bytes():
+        raise ContractError("development Coordinator prompt differs from packaged source")
+    validate_coordinator_semantics(
+        {
+            str(source_coordinator): source_coordinator.read_text(),
+            str(codex_coordinator): codex_coordinator.read_text(),
+        }
+    )
+
     lock_path = ROOT / "uv.lock"
     if not lock_path.is_file():
         raise ContractError("uv.lock is required")
@@ -160,7 +193,9 @@ def _metadata_from_wheel(path: Path) -> dict[str, str]:
             "project_workflow/codex/AGENTS.md",
             "project_workflow/codex/skills/project-task/SKILL.md",
             "project_workflow/codex/skills/project-delegate/SKILL.md",
+            "project_workflow/codex/skills/project-coordinator/SKILL.md",
             "project_workflow/prompts/Delegate.prompt.md",
+            "project_workflow/prompts/Coordinator.prompt.md",
             "project_workflow/cursor/rules/project-workflow.mdc",
         }
         missing = required_package_files - archive_names
@@ -183,6 +218,16 @@ def _metadata_from_wheel(path: Path) -> dict[str, str]:
                 ).decode(),
             }
         )
+        validate_coordinator_semantics(
+            {
+                "wheel prompt": archive.read(
+                    "project_workflow/prompts/Coordinator.prompt.md"
+                ).decode(),
+                "wheel Codex skill": archive.read(
+                    "project_workflow/codex/skills/project-coordinator/SKILL.md"
+                ).decode(),
+            }
+        )
         return dict(Parser().parsestr(archive.read(names[0]).decode()).items())
 
 
@@ -192,6 +237,8 @@ def _metadata_from_sdist(path: Path) -> dict[str, str]:
         required_suffixes = {
             "/src/project_workflow/prompts/Delegate.prompt.md",
             "/src/project_workflow/codex/skills/project-delegate/SKILL.md",
+            "/src/project_workflow/prompts/Coordinator.prompt.md",
+            "/src/project_workflow/codex/skills/project-coordinator/SKILL.md",
             "/src/project_workflow/cursor/rules/project-workflow.mdc",
         }
         missing = [
@@ -200,7 +247,7 @@ def _metadata_from_sdist(path: Path) -> dict[str, str]:
             if not any(name.endswith(suffix) for name in archive_names)
         ]
         if missing:
-            raise ContractError(f"sdist is missing Delegate package data: {missing}")
+            raise ContractError(f"sdist is missing required package data: {missing}")
         members = [
             member
             for member in archive.getmembers()

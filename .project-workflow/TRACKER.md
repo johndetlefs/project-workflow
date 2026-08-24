@@ -36,3 +36,4 @@
 | FIX-008 | Bound Continuation And Validation Scope | Complete | `tasks/FIX-008-Bound-Continuation-And-Validation-Scope/FIX.md` |
 | EPIC-015 | Release And Roll Out Project Workflow 0.6.0 | Complete | `tasks/EPIC-015-Release-And-Roll-Out-Project-Workflow-0-6-0/REQUIREMENTS.md` |
 | FIX-009 | Enforce Proportionate Post-Proof Validation | Complete | `tasks/FIX-009-Enforce-Proportionate-Post-Proof-Validation/FIX.md` |
+| EPIC-016 | Effective And Proportionate Coordination | In Progress | `tasks/EPIC-016-Effective-And-Proportionate-Coordination/REQUIREMENTS.md` |

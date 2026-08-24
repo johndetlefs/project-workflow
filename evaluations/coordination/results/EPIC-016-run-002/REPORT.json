@@ -1,0 +1,880 @@
+{
+  "baseline_commit": "c215b4379c4b38a4efee672c64c2b4b599385d04",
+  "baseline_contract_hash": "sha256:467c0093341f4ae32375d31b3a0e0c27a8041aee1a199636b707372a4b6ee3f6",
+  "baseline_ref": "origin/main",
+  "candidate_commit": "c215b4379c4b38a4efee672c64c2b4b599385d04",
+  "candidate_contract_hash": "sha256:ae0ec55a3b230b03fd559246e3aa48cadb8df5e0d6428b71a203bead14a93d52",
+  "candidate_tracked_diff_hash": "sha256:de704dbad5f6a5f52e6f3ad752cb58e30c1c19859cb3d915c6a72dbee67c2e3d",
+  "claim_boundary": "Sanitized prompt-following evidence for this model, harness, corpus and candidate; not universal reliability, billing, credit, or token-savings proof.",
+  "codex_version": "codex-cli 0.145.0-alpha.30",
+  "corpus": "evaluations/coordination/scenarios.json",
+  "corpus_hash": "sha256:8444d400f3ff8bcebc2ba69b8c35cde4e4d0f631b397e3be5e43933440b58658",
+  "generated_at": "2026-08-24T03:04:17.584936+00:00",
+  "harness_hash": "sha256:126c9736987e8e12c4361c5a42b7db6be2cef1f4c546141ce888872755088518",
+  "model": "gpt-5.4",
+  "runs": [
+    {
+      "artifact": "baseline-trial-1.json",
+      "grade": {
+        "pass": false,
+        "passed": 10,
+        "scenarios": [
+          {
+            "failures": [],
+            "id": "clarify-material-preapproval",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "clarify-clean-bounded",
+            "pass": true
+          },
+          {
+            "failures": [
+              "decision ask-material-question != drift-detected"
+            ],
+            "id": "clarify-task-postplan-proxy",
+            "pass": false
+          },
+          {
+            "failures": [],
+            "id": "clarify-epic-parent-no-implementation",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "clarify-full-contract-child",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "clarify-mid-epic-ambiguity",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "topology-capacity-without-benefit",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "topology-earned-fresh-context",
+            "pass": true
+          },
+          {
+            "failures": [
+              "new_contexts 0 != 1"
+            ],
+            "id": "contract-repository-current-context-stale",
+            "pass": false
+          },
+          {
+            "failures": [],
+            "id": "water-authoring-early-proxy",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "owner-only-gameplay-feel",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "proof-passed-stop",
+            "pass": true
+          }
+        ],
+        "total": 12
+      },
+      "provenance": {
+        "command": [
+          "codex",
+          "exec",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--skip-git-repo-check",
+          "--sandbox",
+          "read-only",
+          "--model",
+          "gpt-5.4",
+          "--output-schema",
+          "evaluations/coordination/output-schema.json",
+          "--output-last-message",
+          "<ephemeral-output-path>",
+          "--json",
+          "<prompt-via-stdin>"
+        ],
+        "condition": "baseline",
+        "event_types": [
+          "item.completed",
+          "thread.started",
+          "turn.completed",
+          "turn.started"
+        ],
+        "model": "gpt-5.4",
+        "prompt_hash": "sha256:f15a15120ada4d1c2e7bd28aa3a6f1105d3f466a6fdc62bb805f2cc3fc961a89",
+        "response_hash": "sha256:763a45a0e4acf6d445137b7000f6b0be63339a54de2aeb159a8a4bbdfc5cbbd8",
+        "trial": 1,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 8576,
+          "input_tokens": 19420,
+          "output_tokens": 1230,
+          "reasoning_output_tokens": 516
+        }
+      },
+      "response": {
+        "results": [
+          {
+            "decision": "ask-material-question",
+            "id": "clarify-material-preapproval",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "Privacy-affecting export scope is unresolved, and Clarify requires asking one blocking question at a time."
+          },
+          {
+            "decision": "continue-inside-envelope",
+            "id": "clarify-clean-bounded",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The approved AC envelope is unambiguous, so the post-plan Clarify pass should continue autonomously."
+          },
+          {
+            "decision": "ask-material-question",
+            "id": "clarify-task-postplan-proxy",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "A read-only preview would materially narrow an approved editable capability, which must return to the owner for re-approval."
+          },
+          {
+            "decision": "continue-inside-envelope",
+            "id": "clarify-epic-parent-no-implementation",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The supplied contract only requires Epic-parent intent audit handling; it does not require a parent IMPLEMENTATION.md in this scenario."
+          },
+          {
+            "decision": "continue-inside-envelope",
+            "id": "clarify-full-contract-child",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The child stays inside its approved charter and the required parent intent audit is already current."
+          },
+          {
+            "decision": "ask-material-question",
+            "id": "clarify-mid-epic-ambiguity",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "Two plausible migration-boundary interpretations affect customer records, so Clarify must raise the blocking ambiguity to the owner."
+          },
+          {
+            "decision": "coordinator-sequential",
+            "id": "topology-capacity-without-benefit",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "Verified capacity alone is not a basis for delegation when the row is tightly coupled and no independent-context benefit is established."
+          },
+          {
+            "decision": "launch-bounded-subagent",
+            "id": "topology-earned-fresh-context",
+            "new_contexts": 1,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The packet is bounded and the recorded isolation benefit justifies one fresh execution context."
+          },
+          {
+            "decision": "handoff-required",
+            "id": "contract-repository-current-context-stale",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The active Coordinator context is proven to have loaded a stale contract, so work should not continue without a refreshed context."
+          },
+          {
+            "decision": "drift-detected",
+            "id": "water-authoring-early-proxy",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "Truthful preview evidence does not satisfy the approved authorability intent, so the implementation has drifted to a proxy outcome."
+          },
+          {
+            "decision": "await-owner-judgment",
+            "id": "owner-only-gameplay-feel",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "The proof contract says final gameplay feel is owner-only, so completion judgment must wait for that owner playtest result."
+          },
+          {
+            "decision": "stop-and-deliver",
+            "id": "proof-passed-stop",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The contract says one independent QA is enough absent a later proof-layer impact, so another broad review should not be opened."
+          }
+        ]
+      }
+    },
+    {
+      "artifact": "baseline-trial-2.json",
+      "grade": {
+        "pass": false,
+        "passed": 11,
+        "scenarios": [
+          {
+            "failures": [],
+            "id": "clarify-material-preapproval",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "clarify-clean-bounded",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "clarify-task-postplan-proxy",
+            "pass": true
+          },
+          {
+            "failures": [
+              "decision handoff-required != continue-inside-envelope"
+            ],
+            "id": "clarify-epic-parent-no-implementation",
+            "pass": false
+          },
+          {
+            "failures": [],
+            "id": "clarify-full-contract-child",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "clarify-mid-epic-ambiguity",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "topology-capacity-without-benefit",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "topology-earned-fresh-context",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "contract-repository-current-context-stale",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "water-authoring-early-proxy",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "owner-only-gameplay-feel",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "proof-passed-stop",
+            "pass": true
+          }
+        ],
+        "total": 12
+      },
+      "provenance": {
+        "command": [
+          "codex",
+          "exec",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--skip-git-repo-check",
+          "--sandbox",
+          "read-only",
+          "--model",
+          "gpt-5.4",
+          "--output-schema",
+          "evaluations/coordination/output-schema.json",
+          "--output-last-message",
+          "<ephemeral-output-path>",
+          "--json",
+          "<prompt-via-stdin>"
+        ],
+        "condition": "baseline",
+        "event_types": [
+          "item.completed",
+          "item.started",
+          "thread.started",
+          "turn.completed",
+          "turn.started"
+        ],
+        "model": "gpt-5.4",
+        "prompt_hash": "sha256:f15a15120ada4d1c2e7bd28aa3a6f1105d3f466a6fdc62bb805f2cc3fc961a89",
+        "response_hash": "sha256:fdf5562e0c08f1eefb972762e978ca8721365fb243b7b2ac8e49efb307c716fc",
+        "trial": 2,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 27904,
+          "input_tokens": 39840,
+          "output_tokens": 2318,
+          "reasoning_output_tokens": 1576
+        }
+      },
+      "response": {
+        "results": [
+          {
+            "decision": "ask-material-question",
+            "id": "clarify-material-preapproval",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "Privacy-impacting scope is undecided, so clarification must ask one blocking question."
+          },
+          {
+            "decision": "continue-inside-envelope",
+            "id": "clarify-clean-bounded",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The change is fully inside the approved AC envelope and introduces no new decision."
+          },
+          {
+            "decision": "drift-detected",
+            "id": "clarify-task-postplan-proxy",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "A read-only preview narrows the approved editable capability, so the changed envelope must return for re-approval."
+          },
+          {
+            "decision": "handoff-required",
+            "id": "clarify-epic-parent-no-implementation",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The required parent IMPLEMENTATION.md/user story is absent, and the contract says to stop and route back to requirements capture."
+          },
+          {
+            "decision": "continue-inside-envelope",
+            "id": "clarify-full-contract-child",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The child exactly preserves assigned intent and the parent intent audit is current."
+          },
+          {
+            "decision": "ask-material-question",
+            "id": "clarify-mid-epic-ambiguity",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "The migration boundary is materially ambiguous for customer records, so one blocking owner question is required."
+          },
+          {
+            "decision": "coordinator-sequential",
+            "id": "topology-capacity-without-benefit",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "Verified capacity alone is insufficient; no independent-context benefit or justified overhead trade-off is recorded."
+          },
+          {
+            "decision": "launch-bounded-subagent",
+            "id": "topology-earned-fresh-context",
+            "new_contexts": 1,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The packet is bounded, isolated, write-safe, and the recorded basis justifies a fresh context."
+          },
+          {
+            "decision": "handoff-required",
+            "id": "contract-repository-current-context-stale",
+            "new_contexts": 1,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The active Coordinator context is tied to an older contract load, so a refreshed execution context is required before proceeding."
+          },
+          {
+            "decision": "drift-detected",
+            "id": "water-authoring-early-proxy",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "Truthful preview evidence does not satisfy the approved authorability intent, so the current work cannot stand as the approved capability."
+          },
+          {
+            "decision": "await-owner-judgment",
+            "id": "owner-only-gameplay-feel",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "The contract makes final gameplay feel owner-only proof, and that owner verdict is still missing."
+          },
+          {
+            "decision": "stop-and-deliver",
+            "id": "proof-passed-stop",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The required validation and single independent QA already passed, and the contract forbids extra open-ended review without a trigger."
+          }
+        ]
+      }
+    },
+    {
+      "artifact": "candidate-trial-1.json",
+      "grade": {
+        "pass": false,
+        "passed": 10,
+        "scenarios": [
+          {
+            "failures": [],
+            "id": "clarify-material-preapproval",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "clarify-clean-bounded",
+            "pass": true
+          },
+          {
+            "failures": [
+              "decision await-owner-judgment != drift-detected"
+            ],
+            "id": "clarify-task-postplan-proxy",
+            "pass": false
+          },
+          {
+            "failures": [],
+            "id": "clarify-epic-parent-no-implementation",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "clarify-full-contract-child",
+            "pass": true
+          },
+          {
+            "failures": [
+              "decision drift-detected != ask-material-question"
+            ],
+            "id": "clarify-mid-epic-ambiguity",
+            "pass": false
+          },
+          {
+            "failures": [],
+            "id": "topology-capacity-without-benefit",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "topology-earned-fresh-context",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "contract-repository-current-context-stale",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "water-authoring-early-proxy",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "owner-only-gameplay-feel",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "proof-passed-stop",
+            "pass": true
+          }
+        ],
+        "total": 12
+      },
+      "provenance": {
+        "command": [
+          "codex",
+          "exec",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--skip-git-repo-check",
+          "--sandbox",
+          "read-only",
+          "--model",
+          "gpt-5.4",
+          "--output-schema",
+          "evaluations/coordination/output-schema.json",
+          "--output-last-message",
+          "<ephemeral-output-path>",
+          "--json",
+          "<prompt-via-stdin>"
+        ],
+        "condition": "candidate",
+        "event_types": [
+          "item.completed",
+          "thread.started",
+          "turn.completed",
+          "turn.started"
+        ],
+        "model": "gpt-5.4",
+        "prompt_hash": "sha256:e856e35ccee7ad48edeb8293165093ac1694b7a26d009253058238777e71c91a",
+        "response_hash": "sha256:29e078c69a522a7337cf5ce7966c676437087fa05cbdde95ba0b432d6c425c32",
+        "trial": 1,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 8576,
+          "input_tokens": 21143,
+          "output_tokens": 1867,
+          "reasoning_output_tokens": 1130
+        }
+      },
+      "response": {
+        "results": [
+          {
+            "decision": "ask-material-question",
+            "id": "clarify-material-preapproval",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "Pre-approval privacy/output ambiguity is material, so Clarify should ask one focused owner question before approval."
+          },
+          {
+            "decision": "continue-inside-envelope",
+            "id": "clarify-clean-bounded",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The approved rename is fully specified and the plan introduces no new decision or drift."
+          },
+          {
+            "decision": "await-owner-judgment",
+            "id": "clarify-task-postplan-proxy",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "A read-only preview is a material proxy for an approved editable outcome, so the changed envelope must return for owner re-approval."
+          },
+          {
+            "decision": "continue-inside-envelope",
+            "id": "clarify-epic-parent-no-implementation",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "Clarify explicitly must not require a parent Epic IMPLEMENTATION.md when substantive Epic authority files are present."
+          },
+          {
+            "decision": "continue-inside-envelope",
+            "id": "clarify-full-contract-child",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The child remains exactly aligned with assigned commitments and the current parent intent audit, so work stays inside the approved charter."
+          },
+          {
+            "decision": "drift-detected",
+            "id": "clarify-mid-epic-ambiguity",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "The migration-boundary ambiguity is material, affects customer records, and current authority cannot classify it safely without one owner decision."
+          },
+          {
+            "decision": "coordinator-sequential",
+            "id": "topology-capacity-without-benefit",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "Verified capacity alone is insufficient; without a recorded independent-context benefit and tradeoff basis, the smallest sufficient surface is the Coordinator."
+          },
+          {
+            "decision": "launch-bounded-subagent",
+            "id": "topology-earned-fresh-context",
+            "new_contexts": 1,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The bounded packet has a recorded isolation benefit, no shared writes, and acceptable overhead, so one fresh execution context is justified."
+          },
+          {
+            "decision": "handoff-required",
+            "id": "contract-repository-current-context-stale",
+            "new_contexts": 1,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "A stale loaded contract requires one fresh-context handoff because repository upgrade alone does not prove the running context refreshed."
+          },
+          {
+            "decision": "drift-detected",
+            "id": "water-authoring-early-proxy",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The earliest normal-user journey disproves the approved authoring claim by showing only a truthful non-editable proxy, so the branch must stop."
+          },
+          {
+            "decision": "await-owner-judgment",
+            "id": "owner-only-gameplay-feel",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "The proof contract reserves final gameplay-feel judgment to the owner, and no owner playtest evidence exists."
+          },
+          {
+            "decision": "stop-and-deliver",
+            "id": "proof-passed-stop",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The required proof is already complete, no named proof layer was invalidated, and the contract forbids an extra open-ended QA pass just for reassurance."
+          }
+        ]
+      }
+    },
+    {
+      "artifact": "candidate-trial-2.json",
+      "grade": {
+        "pass": false,
+        "passed": 11,
+        "scenarios": [
+          {
+            "failures": [],
+            "id": "clarify-material-preapproval",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "clarify-clean-bounded",
+            "pass": true
+          },
+          {
+            "failures": [
+              "decision await-owner-judgment != drift-detected"
+            ],
+            "id": "clarify-task-postplan-proxy",
+            "pass": false
+          },
+          {
+            "failures": [],
+            "id": "clarify-epic-parent-no-implementation",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "clarify-full-contract-child",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "clarify-mid-epic-ambiguity",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "topology-capacity-without-benefit",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "topology-earned-fresh-context",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "contract-repository-current-context-stale",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "water-authoring-early-proxy",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "owner-only-gameplay-feel",
+            "pass": true
+          },
+          {
+            "failures": [],
+            "id": "proof-passed-stop",
+            "pass": true
+          }
+        ],
+        "total": 12
+      },
+      "provenance": {
+        "command": [
+          "codex",
+          "exec",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--skip-git-repo-check",
+          "--sandbox",
+          "read-only",
+          "--model",
+          "gpt-5.4",
+          "--output-schema",
+          "evaluations/coordination/output-schema.json",
+          "--output-last-message",
+          "<ephemeral-output-path>",
+          "--json",
+          "<prompt-via-stdin>"
+        ],
+        "condition": "candidate",
+        "event_types": [
+          "item.completed",
+          "thread.started",
+          "turn.completed",
+          "turn.started"
+        ],
+        "model": "gpt-5.4",
+        "prompt_hash": "sha256:e856e35ccee7ad48edeb8293165093ac1694b7a26d009253058238777e71c91a",
+        "response_hash": "sha256:ffe4321281985dbd64627bdea7791c4f3650e7ccb14fa5fd377cd8dc8817e7f4",
+        "trial": 2,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 1920,
+          "input_tokens": 17716,
+          "output_tokens": 2108,
+          "reasoning_output_tokens": 1480
+        }
+      },
+      "response": {
+        "results": [
+          {
+            "decision": "ask-material-question",
+            "id": "clarify-material-preapproval",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "Pre-approval privacy scope is materially ambiguous and changes visible output."
+          },
+          {
+            "decision": "continue-inside-envelope",
+            "id": "clarify-clean-bounded",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The approved AC-mapped rename is fully inside the confirmed envelope."
+          },
+          {
+            "decision": "await-owner-judgment",
+            "id": "clarify-task-postplan-proxy",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "The plan narrows an editable outcome into a read-only proxy, which needs re-approval."
+          },
+          {
+            "decision": "continue-inside-envelope",
+            "id": "clarify-epic-parent-no-implementation",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "An Epic parent does not require a parent IMPLEMENTATION.md when its authority files are substantive."
+          },
+          {
+            "decision": "continue-inside-envelope",
+            "id": "clarify-full-contract-child",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The child preserves assigned commitments and stays within the approved charter."
+          },
+          {
+            "decision": "ask-material-question",
+            "id": "clarify-mid-epic-ambiguity",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "A material migration-boundary ambiguity affects customer records and current authority cannot classify it."
+          },
+          {
+            "decision": "coordinator-sequential",
+            "id": "topology-capacity-without-benefit",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "Verified capacity alone does not justify adding an execution surface."
+          },
+          {
+            "decision": "launch-bounded-subagent",
+            "id": "topology-earned-fresh-context",
+            "new_contexts": 1,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "A bounded isolated packet has a recorded independent-context benefit that outweighs its overhead."
+          },
+          {
+            "decision": "handoff-required",
+            "id": "contract-repository-current-context-stale",
+            "new_contexts": 1,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "A stale loaded contract requires one fresh-context handoff before proceeding."
+          },
+          {
+            "decision": "drift-detected",
+            "id": "water-authoring-early-proxy",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "Truthful preview evidence does not satisfy the approved authorability outcome."
+          },
+          {
+            "decision": "await-owner-judgment",
+            "id": "owner-only-gameplay-feel",
+            "new_contexts": 0,
+            "owner_question_count": 1,
+            "qa_actions": 0,
+            "reason": "The required owner-only gameplay-feel proof is still missing."
+          },
+          {
+            "decision": "stop-and-deliver",
+            "id": "proof-passed-stop",
+            "new_contexts": 0,
+            "owner_question_count": 0,
+            "qa_actions": 0,
+            "reason": "The approved proof contract is already satisfied and does not authorize another open-ended QA pass."
+          }
+        ]
+      }
+    }
+  ],
+  "schema_version": 1,
+  "summary": {
+    "baseline": {
+      "complete_passes": 0,
+      "passes": [
+        10,
+        11
+      ]
+    },
+    "candidate": {
+      "complete_passes": 0,
+      "passes": [
+        10,
+        11
+      ]
+    }
+  },
+  "trials_per_condition": 2
+}

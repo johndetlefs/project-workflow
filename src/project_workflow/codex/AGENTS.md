@@ -2,6 +2,11 @@
 
 This repository uses project-workflow for spec-driven development. Keep workflow artifacts in `.project-workflow/` as the shared source of truth, and read `.project-workflow/guidance.md` for repo-specific workflow guidance when present.
 
+Use `project-coordinator` as the single owner-facing role from conversational intake through
+delivery. Delegation is one Coordinator action, not a second owner-facing role. The Coordinator is
+the only writer of shared workflow state and chooses the smallest sufficient context, execution,
+and proof surface for a named delivery need.
+
 ## Workflow Order
 
 1. Constitution: use `project-constitution` to establish or update `.project-workflow/CONSTITUTION.md` for product outcomes.
@@ -12,8 +17,10 @@ This repository uses project-workflow for spec-driven development. Keep workflow
 4. Requirements: use `project-requirements` to capture the user story, scope, acceptance criteria,
    open questions, decisions, and validation plan. The owner approves this envelope before planning.
 5. Planner: after approval, use `project-planner` to turn requirements into testable work items.
-6. Clarify: run `project-clarify` after planning to reconcile the plan with requirements, repo
-   constraints, and product outcomes; return to the owner only for material drift.
+6. Clarify: run bounded `project-clarify` after planning/decomposition to reconcile the plan with
+   approved Intent, or for one concrete Coordinator-routed mid-execution ambiguity. It supports
+   Epic parents without a parent `IMPLEMENTATION.md`, is boundary-triggered rather than periodic,
+   and never creates a QA/review loop; return to the owner only for material drift.
 7. Ready: run `task ready` and move new tasks to `Ready`. `Plan Confirmed` remains a legacy status,
    not the default human checkpoint.
 8. Implement: use `project-implement` to make the smallest scoped code change for one work item,
@@ -22,8 +29,9 @@ This repository uses project-workflow for spec-driven development. Keep workflow
    the code before completion.
 10. Retro: use `project-retro` after completion when there is a reusable lesson or follow-up.
 
-For multi-item orchestration, use `project-delegate` after planning. Delegate targets exactly one
-approved Task or Epic and executes only its canonical rows/children. Choose `coordinator`,
+For multi-item orchestration, Coordinator may invoke the `project-delegate` compatibility entry
+after planning. It enters the same one-Coordinator contract, targets exactly one approved Task or
+Epic, and executes only its canonical rows/children. Choose `coordinator`,
 `subagent`, `persistent-task`, or `peer-team` from each unit's approved execution needs, not from
 Task-versus-Epic kind. Blank legacy metadata means bounded coordinator-mediated return;
 `durable-resume`, `direct-owner-steering`, `isolated-worktree`, and `peer:<group-id>` are binding
@@ -41,6 +49,21 @@ retained, or attention-bearing task. Delegate does not replace Implement, indepe
 owner acceptance, or delivery proof. For large bodies of work, use `project-epic` to create
 proposal-first epic trackers and approved child tasks.
 
+For current-contract plans, verified capacity never earns a non-Coordinator surface alone. Require
+`benefit:<slug>`, `overhead:<slug>`, and `tradeoff:<slug>` for the named delivery benefit, expected
+packet/setup/synthesis overhead, and why benefit outweighs overhead. Without all three, keep
+non-binding work Coordinator/sequential or block an unmet binding need.
+
+For material phase, repository, reframe, or physical-context handoffs, use `project coordinate` to
+maintain one work-item-local `COORDINATION.json` containing only logical phase, current Intent and
+source identity, material decisions, context declaration, the five named drift boundaries, one
+earliest checkpoint, and next action (`2` for this Coordinator contract). Repository upgrade does
+not refresh loaded context; the same physical context may continue after explicitly loading and
+declaring the current contract when there is no conflict or isolation need. The canonical plan and
+Delegate remain the sole owners of execution units, dependencies, packets, returns, and worker
+lifecycle. Existing lifecycle transitions fail closed on missing, stale, or drifted boundary
+decisions. These controls never create QA.
+
 Backlog is optional and sits between constitution and tracker state. Keep `.project-workflow/BACKLOG.md` for future intent, rough priority, options, and promotion history. Promoted rows remain in the backlog with `Promoted To` pointing at the created task or epic ID; active execution status belongs only in `.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
 
 Project Workflow is owner-directed and agent-operated. The owner supplies intent, constraints, examples, decisions, and approvals; the agent runs commands, drafts artifacts, asks focused questions, validates readiness, implements, reviews, and records evidence. Do not make manual template completion the normal user path.
@@ -56,13 +79,13 @@ For epic-managed work, preserve parent epic acceptance criteria coverage from th
 When a user asks to initialize project-workflow in a new repository, run the canonical UVX init command from that repository root:
 
 ```bash
-uvx --from project-workflow==0.6.0 project init
+uvx --from project-workflow==0.7.0 project init
 ```
 
 When a user asks to update, refresh, reinstall, align, or upgrade an existing repository, use canonical UVX upgrade instead; do not run init first:
 
 ```bash
-uvx --from project-workflow==0.6.0 project upgrade
+uvx --from project-workflow==0.7.0 project upgrade
 ```
 
 Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github-copilot` for the target mode. Canonical UVX upgrade obtains current software and plans managed assets and repository schema together. Use `--yes` for an authorized non-interactive one-command apply, or `--plan --format json` followed by `--apply --plan-fingerprint <SHA256>` when automation requires separate review.
@@ -79,7 +102,7 @@ Add `--agent codex`, `--agent cursor`, `--agent claude-code`, or `--agent github
 - If the user asks to plan implementation, break requirements into phases, or create testable work items, use `.agents/skills/project-planner/SKILL.md`.
 - If the user asks to resolve ambiguity, reconcile conflicting requirements, or decide between unclear options, use `.agents/skills/project-clarify/SKILL.md`.
 - If the user asks to implement a planned project-workflow item, use `.agents/skills/project-implement/SKILL.md`.
-- If the user asks to coordinate or run multiple planned work items, use `.agents/skills/project-delegate/SKILL.md`.
+- If the user asks Project Workflow to carry an outcome through delivery or coordinate existing work, use `.agents/skills/project-coordinator/SKILL.md`; use `.agents/skills/project-delegate/SKILL.md` only as its compatibility entry for an approved execution graph.
 - If the user asks for QA, code review, verification, release readiness, or completion approval, use `.agents/skills/project-qa-review/SKILL.md`.
 - If the user asks for a retro, retrospective, lessons learned, convention updates, agent updates, prompt updates, or post-completion cleanup, use `.agents/skills/project-retro/SKILL.md`.
 - If a task-specific workflow is requested but the task folder does not exist, run `project-task` first before requirements, planning, clarification, implementation, review, or retro.

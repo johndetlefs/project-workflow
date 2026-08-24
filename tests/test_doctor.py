@@ -420,15 +420,15 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
     assert manifest == workflow_cli.WorkflowManifest(
         manifest_version=1,
         package_version=__version__,
-        asset_version=5,
+        asset_version=6,
         schema_version=1,
         applied_migrations=(),
     )
     assert workflow_cli._serialize_workflow_manifest(manifest) == (
         "{\n"
         '  "manifest_version": 1,\n'
-        '  "package_version": "0.6.0",\n'
-        '  "asset_version": 5,\n'
+        '  "package_version": "0.7.0",\n'
+        '  "asset_version": 6,\n'
         '  "schema_version": 1,\n'
         '  "applied_migrations": []\n'
         "}\n"
@@ -500,7 +500,7 @@ def test_repository_compatibility_classifies_supported_states(tmp_path: Path) ->
     ("update", "reason"),
     [
         ({"manifest_version": 2, "extension": "future"}, "future-manifest-version"),
-        ({"asset_version": 6}, "future-asset-version"),
+        ({"asset_version": 7}, "future-asset-version"),
         ({"schema_version": 2}, "future-schema-version"),
     ],
 )
@@ -2492,6 +2492,66 @@ def test_task_status_blocks_complete_without_qa_evidence(tmp_path: Path) -> None
     assert "Updated TASK-001: Review -> Complete" in completed.stdout
 
 
+def test_task_status_completes_resolved_changes_requested_without_second_qa(
+    tmp_path: Path,
+) -> None:
+    init = run_project(["init"], cwd=tmp_path)
+    assert init.returncode == 0, init.stderr
+    task = run_project(
+        ["task", "init", "--title", "One QA Resolution", "--update-tracker"],
+        cwd=tmp_path,
+    )
+    assert task.returncode == 0, task.stdout + task.stderr
+    task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
+    (task_dir / "REQUIREMENTS.md").write_text(
+        ready_requirements("TASK-001", "One QA Resolution"), encoding="utf-8"
+    )
+    decision = workflow_cli._validation_impact_decision(
+        classification="affected",
+        proof_layers=("qa-review",),
+        validation_verdict="pass",
+    )
+    impact = workflow_cli._validation_impact_section(
+        baseline="Independent QA receipt QA-001",
+        change_summary="Resolved the named finding.",
+        decided_by="Coordinator",
+        decision=decision,
+    )
+    qa = (
+        "## QA & Code Review\n\n"
+        "- Intent QA contract: adversarial\n"
+        "- Verdict: Changes Requested\n"
+        "- Intent adversarial verdict: Fail\n"
+        "- Could every AC pass while the approved user job remains undone: Yes\n"
+        "- Intent audit state: current\n"
+        "- Outcome journey evidence: QA-001 inspected the normal user journey.\n"
+        "- Reviewer independence: QA-001 was independent from implementation.\n"
+        "- Evidence: QA-001 retained the original finding.\n"
+        "- Findings: One blocking finding.\n"
+        "- Findings disposition: Resolved\n"
+        "- Affected validation verdict: Pass\n"
+        "- Could every AC pass after affected validation while the approved user job remains undone: No\n"
+        "- Affected validation evidence: The named regression and outcome journey pass.\n"
+        "- Second QA commissioned: No\n\n"
+    )
+    implementation = ready_implementation().replace(
+        "## QA & Code Review\n\n- Verdict: ____\n- Evidence: ____\n- Findings: ____\n\n",
+        impact + "\n" + qa,
+    )
+    (task_dir / "IMPLEMENTATION.md").write_text(implementation, encoding="utf-8")
+
+    for status in ("Analysing", "Plan Confirmed", "In Progress", "Testing", "Review"):
+        moved = run_project(
+            ["task", "status", "--id", "TASK-001", "--to", status], cwd=tmp_path
+        )
+        assert moved.returncode == 0, moved.stdout + moved.stderr
+    completed = run_project(
+        ["task", "status", "--id", "TASK-001", "--to", "Complete"], cwd=tmp_path
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "Updated TASK-001: Review -> Complete" in completed.stdout
+
+
 def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
     missing_tracker = run_project(
         ["task", "init", "--title", "Missing Tracker", "--update-tracker"],
@@ -2499,7 +2559,7 @@ def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
     )
     assert missing_tracker.returncode != 0
     assert (
-        "uvx --from project-workflow==0.6.0 project init"
+        "uvx --from project-workflow==0.7.0 project init"
         in missing_tracker.stderr
     )
 
@@ -2961,7 +3021,7 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "# Existing Agent Notes" in codex_agents
     assert "<!-- project-workflow:start -->" in codex_agents
     assert (
-        "uvx --from project-workflow==0.6.0 project init"
+        "uvx --from project-workflow==0.7.0 project init"
         in codex_agents
     )
     assert "To initialize a new repository" in codex_agents

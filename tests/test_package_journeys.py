@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import io
 import importlib.util
+import tarfile
 from pathlib import Path
 
 
@@ -80,3 +82,18 @@ def test_generated_asset_parity_includes_exact_ownership_marker_position() -> No
     )
     assert journeys._agent_name("SmokeBomb.prompt.md") == "project-smokebomb"
     assert journeys._agent_name("QAReview.prompt.md") == "project-qa-review"
+
+
+def test_sdist_member_lookup_uses_exact_archive_relative_path(tmp_path: Path) -> None:
+    archive_path = tmp_path / "candidate.tar.gz"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        for name, content in (
+            ("project-workflow-0.7.0/README.md", b"root readme"),
+            ("project-workflow-0.7.0/evaluations/coordination/README.md", b"nested readme"),
+        ):
+            info = tarfile.TarInfo(name)
+            info.size = len(content)
+            archive.addfile(info, io.BytesIO(content))
+
+    with tarfile.open(archive_path, "r:gz") as archive:
+        assert journeys._sdist_member_bytes(archive, "README.md") == b"root readme"

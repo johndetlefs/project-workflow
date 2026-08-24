@@ -10,6 +10,10 @@ This repository uses project-workflow for spec-driven development. Keep workflow
 
 Project Workflow is owner-directed and agent-operated. The owner supplies product context, constraints, examples, decisions, and approvals; the agent runs commands, drafts artifacts, asks targeted questions, validates readiness, implements, reviews, and records evidence.
 
+Coordinator is the single owner-facing role from intake through delivery. Delegation is one
+Coordinator action, not a second role. Keep Coordinator as the only shared-state writer and use the
+smallest sufficient context, execution, and proof surface for a named delivery need.
+
 ## Workflow Order
 
 1. Constitution: establish or update `.project-workflow/CONSTITUTION.md` for product outcomes.
@@ -29,15 +33,20 @@ Project Workflow is owner-directed and agent-operated. The owner supplies produc
    and Complete require a current result; material narrowing, proxy substitution, omission or
    broadening requires restoration or a current owner-approved capability amendment.
 7. Planner: autonomously turn the approved envelope into testable work items.
-8. Clarify: run a post-plan consistency pass; return to the owner only for material drift.
+8. Clarify: run a bounded post-plan/decomposition pass or resolve one concrete Coordinator-routed
+   mid-execution ambiguity. Epic parents do not require `IMPLEMENTATION.md`. Clarify is
+   boundary-triggered, not periodic, and cannot create QA/review loops; return to the owner only for
+   material drift.
 9. Ready: run `task ready` and move new tasks to `Ready`; `Plan Confirmed` is legacy-compatible.
 10. Implement: make the smallest scoped change, validate it, and move it to testing.
 11. QA & Code Review: independently verify acceptance criteria and review code before completion.
 12. Retro: after completion, record reusable lessons or follow-up work when present.
 
-## Delegate Boundary
+## Coordinator And Delegate Boundary
 
-- Delegate coordinates canonical execution units for exactly one approved Task or Epic. Task
+- `project-delegate` is a first-release compatibility entry into the same Coordinator contract. It
+  coordinates canonical execution units for exactly one approved Task or Epic and does not create a
+  second role or writer. Task
   implementation rows and Epic child Tasks are workflow units; Cursor agents, other persistent or
   background tasks, in-session subagents, and peer teams are executor surfaces. Select the lightest
   sufficient surface from approved execution needs, not Task-versus-Epic kind. Blank legacy
@@ -61,6 +70,17 @@ Project Workflow is owner-directed and agent-operated. The owner supplies produc
   scope, approve requirements, add unplanned children, certify Epic closeout, or imply release,
   deployment, adoption, or owner acceptance. Generated parity demonstrates contract alignment, not
   live Cursor or cross-host runtime validation.
+- For current-contract rows, a non-Coordinator surface also needs `benefit:<slug>`,
+  `overhead:<slug>`, and `tradeoff:<slug>`. Verified capacity alone is not a benefit. Missing basis
+  keeps non-binding work Coordinator/sequential or blocks an unmet binding need.
+- Use `coordinate` state for material phase/repository/reframe/context handoffs, current Intent and
+  source identity, material decisions, context declaration, five named drift boundaries, one
+  earliest material normal-user-journey checkpoint, and next action (`2` for this contract).
+  Keep execution units, dependencies, packets, returns, and worker lifecycle in the canonical plan
+  and Delegate only. Repository upgrade does not refresh loaded context; the same physical context
+  may continue after explicitly loading the current contract when there is no conflict or isolation
+  need. Existing lifecycle transitions fail closed on missing, stale, or drifted decisions; none of
+  these controls creates QA.
 
 ## Cursor Usage
 

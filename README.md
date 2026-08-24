@@ -11,16 +11,16 @@ Use it with GitHub Copilot, Claude Code, OpenAI Codex, or Cursor.
 From the root of an existing Git repository:
 
 ```bash
-uvx --from project-workflow==0.6.0 project init --agent codex
+uvx --from project-workflow==0.7.0 project init --agent codex
 ```
 
 Choose the mode that matches your agent:
 
 ```bash
-uvx --from project-workflow==0.6.0 project init --agent github-copilot
-uvx --from project-workflow==0.6.0 project init --agent claude-code
-uvx --from project-workflow==0.6.0 project init --agent codex
-uvx --from project-workflow==0.6.0 project init --agent cursor
+uvx --from project-workflow==0.7.0 project init --agent github-copilot
+uvx --from project-workflow==0.7.0 project init --agent claude-code
+uvx --from project-workflow==0.7.0 project init --agent codex
+uvx --from project-workflow==0.7.0 project init --agent cursor
 ```
 
 Then tell the agent what you want in ordinary language:
@@ -90,10 +90,12 @@ The owner provides:
 The agent:
 
 - inspects the repository and existing workflow state;
+- remains the single owner-facing Coordinator from intake through delivery, while treating
+  delegation as an internal execution choice;
 - recommends Backlog, Fix, Task, or Epic from the actual scope;
 - drafts and maintains the Markdown artifacts;
 - surfaces unresolved product decisions instead of guessing;
-- runs Planner and the post-plan Clarify pass after approval;
+- runs Planner and the bounded post-plan Clarify pass after approval;
 - validates readiness and advances work inside the approved envelope;
 - implements, validates, records evidence, and runs QA/code review;
 - returns to the owner when scope, proof obligations, or artifact identity materially changes.
@@ -169,13 +171,17 @@ owner's confirmation:
 After approval, the agent:
 
 1. runs Planner and maps every implementation row to acceptance criteria;
-2. runs Clarify as a post-plan consistency pass;
+2. runs Clarify as a bounded post-plan consistency pass that supports Tasks, Epic parents, and Epic
+   children without creating another review loop;
 3. resolves implementation details that remain inside the approved envelope;
 4. runs the readiness gate and moves the task to `Ready`;
 5. implements and validates the work;
 6. moves the task through `Testing` and `Review`;
 7. records QA evidence by acceptance-criteria ID;
-8. marks the task `Complete` only after QA passes and the owner explicitly asks for completion;
+8. marks the task `Complete` only after QA has a passing final disposition and the owner explicitly
+   asks for completion. A retained `Changes Requested` verdict can reach that disposition through
+   one exact passing affected-validation record; it is never rewritten or sent through automatic
+   repeat QA;
 9. runs a retro when the work produced reusable lessons or follow-up intent.
 
 ```bash
@@ -324,7 +330,7 @@ PATH="/opt/homebrew/bin:$PATH" uvx --version
 Run the canonical init command from the repository root:
 
 ```bash
-uvx --from project-workflow==0.6.0 project init
+uvx --from project-workflow==0.7.0 project init
 ```
 
 Without `--agent`, the default mode is `github-copilot`. Pass an explicit mode when the repository uses another agent.
@@ -447,7 +453,7 @@ project-workflow package, so this works even when the repository's local helper 
 yet contain the upgrade command:
 
 ```bash
-uvx --from project-workflow==0.6.0 \
+uvx --from project-workflow==0.7.0 \
   project upgrade --agent codex
 ```
 
@@ -460,7 +466,7 @@ Agents and other non-interactive callers use the same canonical command with `--
 owner has authorized the upgrade:
 
 ```bash
-uvx --from project-workflow==0.6.0 \
+uvx --from project-workflow==0.7.0 \
   project upgrade --agent codex --yes
 ```
 
@@ -473,10 +479,10 @@ Automation can retain an explicitly separated, non-mutating plan and fingerprint
 commands must use the same package source and version:
 
 ```bash
-uvx --from project-workflow==0.6.0 \
+uvx --from project-workflow==0.7.0 \
   project upgrade --agent codex --plan --format json
 
-uvx --from project-workflow==0.6.0 \
+uvx --from project-workflow==0.7.0 \
   project upgrade --agent codex \
   --apply \
   --plan-fingerprint sha256:<REVIEWED_PLAN_FINGERPRINT>
@@ -632,7 +638,44 @@ Project-workflow should preserve history:
 
 This history is useful to humans and agents for the same reason: it distinguishes what was originally agreed from what was discovered later.
 
-## Delegate: Graph Execution, Not Scope Creation
+## Coordinator: One Owner-Facing Delivery Role
+
+Coordinator carries a Project Workflow outcome from conversational intake through requirements,
+planning, execution, proof, and authorised delivery. The owner confirms the plain-language meaning
+once; the Coordinator carries the approved envelope and does not require a memorised workflow
+prompt. It remains the sole writer of shared workflow state across physical tasks, compactions, and
+executor returns.
+
+Coordinator uses the smallest sufficient context and execution surface. An added agent, visible
+task, document, review, owner interruption, or context transfer must address a named dependency,
+risk, authority, or evidence need. Executor packets contain the relevant outcome, ACs, source,
+scope, validation, evidence, prohibitions, and return contract—not full task history by default.
+
+Clarify is available before approval, after planning/decomposition, and for a concrete ambiguity at
+a Coordinator-owned execution boundary. It supports Task, Epic-parent, and Epic-child authority,
+reuses answers already given, and returns `inside-envelope`, `drift-detected`, or
+`approved-change` for a routed drift ambiguity. Clarify does not monitor work or create QA/review
+loops. Coordinator stops after sufficient proof and authorised delivery unless later change or
+evidence materially invalidates a named approved outcome or proof obligation.
+
+## Delegate Compatibility: Graph Execution, Not A Second Role
+
+`project-delegate` is retained as a compatibility entry for the first Coordinator release. It
+enters the same one-Coordinator contract for an already-approved graph and becomes removal-eligible
+only after one full minor release and observed migration evidence.
+
+For work that crosses a material phase, repository, reframe, or physical context, `project
+coordinate` maintains one work-item-local `COORDINATION.json`. Its preflight distinguishes the
+package, asset, and coordination-contract version actually loaded by the context from repository
+upgrade state; contract version `2` identifies this Coordinator contract. The file is a compact
+logical handoff: current Intent and source identity, material decisions, context declaration, five
+named boundary decisions, one earliest checkpoint, and one sourced next action. It does not copy
+execution units, dependencies, packets, receipts, or worker lifecycle from the canonical plan and
+Delegate. Missing, stale, or drifted decisions fail closed at existing lifecycle transitions.
+Material product claims can name one earliest normal-user-journey checkpoint before dependent
+fan-out. The same physical context may continue after explicitly loading the current contract when
+there is no conflicting authority or isolation need; before that explicit load, preflight blocks
+continuation as `contract-load-required`. A fresh context must earn its transfer cost.
 
 Delegate coordinates existing approved execution units for exactly one target:
 
@@ -655,6 +698,10 @@ Task-versus-Epic kind does not decide the executor. Units use these execution-ne
 - `direct-owner-steering` requires a child the owner can interact with directly;
 - `isolated-worktree` makes filesystem isolation binding;
 - `peer:<group-id>` requires workers in that group to communicate directly.
+- `benefit:<slug>`, `overhead:<slug>`, and `tradeoff:<slug>` are all required before a
+  current-contract row may use a non-Coordinator surface. They state the delivery benefit, expected
+  packet/setup/synthesis cost, and why the benefit outweighs it. Verified capacity alone is not a
+  benefit; without this basis, non-binding work remains Coordinator/sequential.
 
 The router still enforces parallel safety, write scope, repository scope, dependencies, validation,
 and evidence. It chooses between a `sequential` and `parallel` schedule separately from the surface.
@@ -756,8 +803,9 @@ and Epic closeout for final parent acceptance gates.
 - Let the agent gather repository evidence before asking the owner questions it can answer locally.
 - Keep acceptance-criteria IDs stable from requirements through planning, validation, and QA.
 - Treat `Ready` as a passed gate, not a label applied by optimism.
-- Use Delegate when one approved Task or Epic has canonical execution units with explicit graph and
-  scope metadata; delegated work still passes through implementation, independent QA, and retro.
+- Use Coordinator for the owner-facing delivery journey. Its Delegate compatibility entry may run
+  one approved Task or Epic graph with explicit scope metadata; delegated work still passes through
+  implementation, independent QA, and retro.
 - Commit workflow artifacts with the code they govern so branches and reviews carry their own context.
 - Put durable local conventions in `.project-workflow/guidance.md`.
 - Run `doctor` whenever workflow state feels uncertain.

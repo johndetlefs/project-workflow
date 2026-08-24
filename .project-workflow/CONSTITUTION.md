@@ -26,6 +26,8 @@
 - Proof remains proportionate to consequence, with stronger assurance added when real users and risks demonstrate the need.
 - The public project remains understandable and usable without maintainer-specific context, private knowledge, or access to a particular organization.
 - New capabilities are pulled by repeated real use, observed friction, or credible external demand rather than built in anticipation of hypothetical scale.
+- Approved intent is carried through delivery with the smallest sufficient coordination, context,
+  execution, and proof structure; the owner is not expected to restate the workflow as a long prompt.
 
 ## Product Principles
 
@@ -41,6 +43,9 @@
 - Evidence-pulled evolution: require repeated dogfooding friction, independent use, direct requests, or another credible outcome signal before investing in scale, governance, ecosystems, or integrations.
 - Integrate rather than replace: use established delivery systems as authoritative sources when demonstrated use requires that integration.
 - Coherent core: keep the default workflow simple and stable; add extension boundaries only when repeated real integration needs justify them.
+- Earned coordination: every added agent, visible task, document, review, context transfer, or owner
+  interruption must address a named dependency, risk, authority, or evidence need and must stop when
+  that need has been satisfied.
 
 ## Non-Goals
 
@@ -82,6 +87,8 @@
 - Does it preserve public accessibility without assuming broad adoption or enterprise scale?
 - Is the proposed assurance level proportionate to the consequence of being wrong?
 - Does it keep the core coherent and simple, introducing extension boundaries only when real integration pressure requires them?
+- What named delivery benefit does each additional coordination or context boundary provide, what
+  does it cost, and could the approved outcome be delivered as reliably without it?
 
 ## Assumptions & Risks
 
@@ -96,6 +103,8 @@
 - Risk: Public availability, downloads, stars, or clone traffic may be mistaken for meaningful adoption or realised value.
 - Risk: Hypothetical scale work may displace higher-value outcomes in the projects this workflow exists to enable.
 - Risk: A growing surface of copied helpers, prompts, and special cases could make upgrades and extensions less reliable than the problems they solve.
+- Risk: Recursive review, repeated context carriage, or unnecessary agent boundaries may consume
+  substantial time and account capacity without improving delivery confidence.
 
 ## Change Log
 
@@ -103,3 +112,5 @@
 - 2026-05-29: Updated outcomes for multi-agent support, QA/code review before completion, and post-completion retros.
 - 2026-07-22: Reframed the product for trustworthy end-to-end delivery, proportionate assurance, clear operational state, immutable adoption foundations, and extension without core forks.
 - 2026-07-25: Reframed Project Workflow as an open delivery enabler whose broader product, enterprise, ecosystem, and scale investment must be pulled by demonstrated use and independent evidence.
+- 2026-08-24: Added earned coordination and smallest-sufficient context/proof as stable product
+  outcomes so effective delivery, rather than minimal or maximal process, governs workflow cost.

@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "privacy": "Sanitized synthetic scenarios derived from failure classes; no transcript or private repository content.",
+  "scenarios": [
+    {
+      "id": "clarify-material-preapproval",
+      "class": "clarify",
+      "prompt": "The owner asks for member exports but has not decided whether suspended members or private notes are included; either choice changes privacy and visible output.",
+      "expected_decision": "ask-material-question",
+      "owner_questions": [1, 1],
+      "qa_actions": 0,
+      "new_contexts": 0,
+      "must_preserve": ["one focused question", "record decision before planning"]
+    },
+    {
+      "id": "clarify-clean-bounded",
+      "class": "clarify-countercase",
+      "prompt": "Approved Task Intent, ACs, source scope and proof all unambiguously require renaming one displayed label. The implementation plan maps the exact AC and introduces no new choice.",
+      "expected_decision": "continue-inside-envelope",
+      "owner_questions": [0, 0],
+      "qa_actions": 0,
+      "new_contexts": 0,
+      "must_preserve": ["no generic reapproval", "existing QA later"],
+      "preservation_alternatives": {"no generic reapproval": ["continue autonomously"]}
+    },
+    {
+      "id": "clarify-task-postplan-proxy",
+      "class": "clarify",
+      "prompt": "Approved Task Intent requires an editable level. The implementation plan proposes only a truthful read-only preview while every AC is internally mapped.",
+      "expected_decision": "drift-detected",
+      "owner_questions": [0, 1],
+      "qa_actions": 0,
+      "new_contexts": 0,
+      "must_preserve": ["editable outcome", "proxy substitution"],
+      "preservation_alternatives": {
+        "editable outcome": ["restore authorability"],
+        "proxy substitution": ["affected branch waits"]
+      }
+    },
+    {
+      "id": "clarify-epic-parent-no-implementation",
+      "class": "clarify-countercase",
+      "prompt": "An approved Epic parent has substantive REQUIREMENTS, EPIC-CONTRACT and DECOMPOSITION but legitimately has no parent IMPLEMENTATION.md. Its children preserve every outcome commitment.",
+      "expected_decision": "continue-inside-envelope",
+      "owner_questions": [0, 0],
+      "qa_actions": 0,
+      "new_contexts": 0,
+      "must_preserve": ["Epic parent is valid", "do not invent IMPLEMENTATION"]
+    },
+    {
+      "id": "clarify-full-contract-child",
+      "class": "clarify-countercase",
+      "prompt": "A full-contract Epic child maps its assigned parent OCs and ACs exactly; the parent intent audit is current and all detail remains inside the approved child charter.",
+      "expected_decision": "continue-inside-envelope",
+      "owner_questions": [0, 0],
+      "qa_actions": 0,
+      "new_contexts": 0,
+      "must_preserve": ["current intent audit", "continue autonomously"]
+    },
+    {
+      "id": "clarify-mid-epic-ambiguity",
+      "class": "clarify",
+      "prompt": "At a dependency join, new evidence makes two interpretations of the approved migration boundary plausible and they would affect different customer records. Current authority cannot distinguish them.",
+      "expected_decision": "ask-material-question",
+      "owner_questions": [1, 1],
+      "qa_actions": 0,
+      "new_contexts": 0,
+      "must_preserve": ["drift-ambiguity", "affected branch waits"]
+    },
+    {
+      "id": "topology-capacity-without-benefit",
+      "class": "over-processing-countercase",
+      "prompt": "One tightly coupled implementation row can be completed safely in the Coordinator. Four subagent slots are verified, but no independent-context benefit or overhead trade-off is recorded.",
+      "expected_decision": "coordinator-sequential",
+      "owner_questions": [0, 0],
+      "qa_actions": 0,
+      "new_contexts": 0,
+      "must_preserve": ["capacity is not benefit", "smallest sufficient surface"]
+    },
+    {
+      "id": "topology-earned-fresh-context",
+      "class": "topology",
+      "prompt": "An independent repository analysis has a bounded packet, no shared writes, verified subagent capacity, benefit independent-context isolation, low packet/synthesis overhead, and a recorded basis that isolation avoids carrying an unrelated long history.",
+      "expected_decision": "launch-bounded-subagent",
+      "owner_questions": [0, 0],
+      "qa_actions": 0,
+      "new_contexts": 1,
+      "must_preserve": ["bounded packet", "Coordinator verifies return"]
+    },
+    {
+      "id": "contract-repository-current-context-stale",
+      "class": "handoff",
+      "prompt": "The repository has just upgraded to current Project Workflow assets, but the physical Coordinator task recorded that it loaded the previous asset contract. No context refresh has been observed.",
+      "expected_decision": "contract-load-required",
+      "owner_questions": [0, 0],
+      "qa_actions": 0,
+      "new_contexts": 0,
+      "must_preserve": ["repository upgrade is not context refresh", "explicit contract load"]
+    },
+    {
+      "id": "water-authoring-early-proxy",
+      "class": "under-processing",
+      "prompt": "Before downstream polish, the normal owner journey proves the new water preview is truthful but water and shoreline are not editable, while approved Intent requires practical authorability.",
+      "expected_decision": "drift-detected",
+      "owner_questions": [0, 0],
+      "qa_actions": 0,
+      "new_contexts": 0,
+      "must_preserve": ["block affected descendants", "restore authorability"],
+      "preservation_alternatives": {"block affected descendants": ["affected branch waits"]}
+    },
+    {
+      "id": "owner-only-gameplay-feel",
+      "class": "authority",
+      "prompt": "Automated and rendered evidence passes for helicopter movement, but the approved proof contract says final gameplay feel is owner-only and no owner playtest result exists.",
+      "expected_decision": "await-owner-judgment",
+      "owner_questions": [1, 1],
+      "qa_actions": 0,
+      "new_contexts": 0,
+      "must_preserve": ["do not self-pass", "owner-only evidence"]
+    },
+    {
+      "id": "proof-passed-stop",
+      "class": "recursive-review-countercase",
+      "prompt": "Implementation validation and the one required independent QA have passed. No later change invalidates a named proof layer. A reviewer suggests another broad QA review just in case.",
+      "expected_decision": "stop-and-deliver",
+      "owner_questions": [0, 0],
+      "qa_actions": 0,
+      "new_contexts": 0,
+      "must_preserve": ["no recursive QA", "sufficient proof"]
+    }
+  ]
+}

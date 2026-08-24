@@ -1,141 +1,67 @@
 ---
 name: project.clarify
-description: Ask the minimum set of questions needed to remove ambiguity before planning/implementing.
-argument-hint: topic="..." taskId=TASK-330-Superuser
+description: Resolve one material ambiguity before approval, after planning, or at a Coordinator-owned drift boundary.
+argument-hint: workItemId=TASK-330-or-EPIC-014 mode=pre-approval-or-post-plan-or-drift-ambiguity topic="..."
 agent: agent
 ---
+<!-- project-workflow:generated -->
 
-Use this prompt when requirements, a generated plan, or repo constraints are unclear. It may run
-before owner approval to resolve product questions or immediately after Planner as an autonomous
-consistency pass.
+Use this prompt only in one of three modes:
 
-Reference docs:
+- `pre-approval`: resolve material product or authority questions before requirements approval;
+- `post-plan`: compare a Task plan or Epic decomposition with approved Intent and proof;
+- `drift-ambiguity`: classify one concrete ambiguity routed by the Coordinator.
 
-- Technical constraints/instructions: [../copilot-instructions.md](../copilot-instructions.md)
-- Repo-specific workflow guidance: [../../.project-workflow/guidance.md](../../.project-workflow/guidance.md)
-- Project outcomes: [../../.project-workflow/CONSTITUTION.md](../../.project-workflow/CONSTITUTION.md)
-- User story tracker: [../../.project-workflow/TRACKER.md](../../.project-workflow/TRACKER.md)
-- Canonical task docs:
-  - `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md` (must include `## User Story` at the top)
-  - `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` (source of truth for agreed outcomes/expectations)
+Read repository instructions, `.project-workflow/guidance.md`, the Constitution, and
+`/.project-workflow/tasks/${input:workItemId}/REQUIREMENTS.md`. Treat its substantive `## Intent`
+or `## Intent Spine` and approved requirements as authority. For an Epic parent, also read
+`EPIC-CONTRACT.md` and `DECOMPOSITION.md` when present; parent `IMPLEMENTATION.md` is not required.
+For a Task or Epic child, read its User Story and implementation plan when present.
 
-Inputs:
+Stop for Requirements only when neither substantive Requirements Intent nor a usable User Story
+exists. Reuse relevant owner answers already in conversation or repository evidence; never ask the
+owner to repeat them.
 
-- Task (optional): `${input:taskId:TASK-000-Example}`
-- Topic: `${input:topic:What needs clarifying?}`
+Cross-check only ambiguity that could materially affect outcome, scope, safety, security, billing,
+data correctness, authority, validation, proof, or user-visible behaviour.
 
-Output (Markdown):
+In `pre-approval` mode:
 
-Workflow (must follow):
+1. Write each material question to `REQUIREMENTS.md` before asking, with why it matters and 2-4
+   actionable options.
+2. Ask one unresolved material question at a time unless the owner requests batching.
+3. Record each answer immediately, preserve AC IDs, and align any existing plan. Do not generate a
+   full plan; Planner owns planning.
 
-1. Read context first
+In `post-plan` mode:
 
-- Read the `## User Story` section from `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md`.
-- Read `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` (if it exists) and treat it as the source of truth for what’s already been agreed.
-- Cross-check against repo constraints in `../copilot-instructions.md`, repo-specific workflow guidance in `../../.project-workflow/guidance.md`, and project outcomes in `../../.project-workflow/CONSTITUTION.md`.
+1. Compare the plan or decomposition with Intent, boundaries, ACs, and proof obligations.
+2. Resolve implementation-detail inconsistencies inside the approved envelope autonomously.
+3. Treat a clear narrowing, omission, or proxy substitution against unchanged approved Intent as
+   `drift-detected`; restore the approved capability without asking the owner to repeat it.
+4. Return to the owner only for an unresolved material choice or a genuine proposed change to
+   requirements, ACs, proof, artifact identity, scope, or authority.
+5. When a Task is clean, run `task ready`, move it to `Ready`, and continue when implementation is
+   authorised. For an Epic parent, return clean to the Coordinator; Epic lifecycle commands retain
+   ownership.
 
-Guardrail:
+In `drift-ambiguity` mode, return exactly one classification to the Coordinator:
 
-- If `IMPLEMENTATION.md` does not have a usable `## User Story` yet, STOP and instruct the user to run the `project.requirements` prompt first. Do not invent clarifying questions without a user story anchor.
+- `inside-envelope`: authority clearly covers the work; continue;
+- `drift-detected`: work narrows, broadens, substitutes a proxy, or changes authority/proof;
+- `approved-change`: a current owner-approved amendment covers it.
 
-2. Proactively log questions BEFORE asking the user
+Name the controlling requirement and user-visible consequence. When current authority cannot
+classify a material ambiguity, ask the owner one focused question before returning a classification;
+do not prematurely label it drift or an approved change.
 
-- Identify every ambiguity/conflict that would change scope, safety, security, billing attribution, data correctness, or user-visible behavior.
-- For each ambiguity, write it into `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` as a numbered open question (e.g. `Q1`, `Q2`, …) with 2–4 options labeled `A/B/C/...`.
-- Each question must be explicitly anchored to the current user story and include a short “why it matters”.
+For a full-contract Epic parent or child, run the parent `epic intent-audit` read-only. Treat stale,
+unknown, review-required, or changes-requested as a real coverage gap; AC consistency is not Intent
+fidelity.
 
-3. Work through questions item-by-item until resolved
+Clarify does not monitor boundaries, launch work, run QA, create review loops, or write shared
+tracker/evidence/lifecycle state. It is boundary-triggered, not periodic. The Coordinator owns drift
+detection and state changes.
 
-- Ask the user ONE unresolved question per response (default) so decisions are made sequentially.
-  - If there are many low-risk questions and the user explicitly asks for batching, you may ask up to 2–3 at a time.
-- After the user answers:
-  - Update `REQUIREMENTS.md` immediately: record the decision in a decisions log, mark the question resolved, and remove/strike it from open questions.
-  - Preserve existing acceptance criteria IDs (`AC1`, `AC2`, etc.). Do not renumber ACs unless the user explicitly approves that requirements change.
-  - Keep `IMPLEMENTATION.md` in sync with the confirmed decisions.
-  - Keep the `IMPLEMENTATION.md` task list in sync:
-    - If `IMPLEMENTATION.md` has a `## Tasks` or `## Task List` section, update it to reflect the confirmed decisions and preserve AC-to-task mappings.
-    - If `IMPLEMENTATION.md` does NOT yet have a `## Tasks` section, you MAY add a minimal `## Tasks` section limited to tracking clarification work (e.g., “Resolve Q1…Qn”). Do NOT invent a full implementation plan here — the `project.planner` prompt owns full task planning.
-- Repeat until `REQUIREMENTS.md` has no unresolved open questions (or the user explicitly accepts remaining items as risks and that acceptance is recorded).
-
-## User Story (from IMPLEMENTATION.md)
-
--
-
-## Conflicts / Ambiguities Found
-
-For each conflict/issue:
-
-- Explain what is conflicting and why it matters.
-- Propose 2–4 reasonable options (labeled A/B/C/…); each option should be actionable, realistic for this repo, and include tradeoffs.
-- Ask the user to choose an option (or provide a different preference).
-
-Example format:
-
-### Issue 1: <short title>
-
-- Conflict: <what conflicts with what>
-- Why it matters: <risk / impact>
-- Options:
-  - A: <option> (pros/cons)
-  - B: <option> (pros/cons)
-  - C: <option> (pros/cons)
-- Question: Which option should we take?
-
-## Clarifying Questions
-
-### Product / UX
-
--
-
-### Permissions / Security
-
--
-
-### Data / DB / RLS
-
--
-
-### Migration / Rollout
-
--
-
-### Observability
-
--
-
-## Decisions to Record in REQUIREMENTS.md
-
-Always ensure the questions exist in `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` BEFORE you ask them.
-
-If the user’s answers are present in the conversation context, document the decisions and chosen options immediately in `/.project-workflow/tasks/${input:taskId}/REQUIREMENTS.md` (including rationale/tradeoffs where relevant), and do not ask again.
-
-If the user’s answers are not present yet:
-
-- First, write/update `REQUIREMENTS.md` with the open questions (Q1/Q2/…) and their A/B/C options.
-- Then ask the user the next single unanswered question.
-
-Also keep the implementation tracker up to date:
-
-- After recording each decision in `REQUIREMENTS.md`, update `/.project-workflow/tasks/${input:taskId}/IMPLEMENTATION.md` to keep BOTH:
-  - `## User Story` (and any decision-dependent notes) consistent with `REQUIREMENTS.md`, and
-  - `## Tasks` / `## Task List` consistent with the confirmed decisions, including AC-to-task mappings where a plan already exists.
-- Clarify may update an existing task list (or add a minimal “clarification tracking” task list), but must not generate a full multi-phase implementation plan — Planner owns full task planning.
-
--
-
-## Suggested Defaults (if the user doesn’t care)
-
--
-
-Guardrail: don't start implementation until unresolved questions are cleared (or explicitly accepted as risks) and decisions are recorded in `REQUIREMENTS.md`.
-
-Post-plan clarification guardrail: fix implementation-detail inconsistencies inside the approved
-envelope without another generic approval request. If resolution would change requirements, ACs,
-proof obligations, artifact identity, or scope materially, stop, update the proposed requirements,
-and return the changed envelope to the owner for review/re-approval. When no such drift remains,
-run `task ready`, move the task to `Ready`, and continue autonomously if implementation was
-authorized.
-
-For a full-contract Epic child, also run the parent `epic intent-audit` read-only. Treat stale,
-unknown, review-required or changes-requested state as a real coverage or narrowing gap and name
-the exact user-visible consequence; internally consistent ACs are not a substitute for Intent.
+Return the mode, authority inspected, ambiguity and material consequence, classification or
+decision, files aligned, and whether owner input is genuinely required.
