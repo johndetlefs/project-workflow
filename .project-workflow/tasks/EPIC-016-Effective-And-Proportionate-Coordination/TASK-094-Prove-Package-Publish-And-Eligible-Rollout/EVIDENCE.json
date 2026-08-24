@@ -1,4 +1,24 @@
 {
   "task_id": "TASK-094",
-  "claims": []
+  "claims": [
+    {
+      "id": "TASK-094-AC3-AC4",
+      "recipe": "runtime-target-source",
+      "status": "pass",
+      "commit": "ce255f4c8533ccedc39939f5369f67bcf294face",
+      "timestamp": "2026-08-24T16:26:01+10:00",
+      "parent_ac": "AC13",
+      "claim": "The reviewed 0.7.0 tag built one trusted release bundle that passed the complete suite and exact-wheel journey, was published unchanged to PyPI and GitHub Release, has cryptographically verified provenance, and passed a fresh public Coordinator journey.",
+      "execution_target": "Public PyPI and GitHub Release project-workflow 0.7.0 artifacts in a disposable fresh Codex repository",
+      "source_artifact": "PyPI and GitHub Release wheel sha256:20f259cb8bf58f61c3c72d5cdabfc4c9a96b1ef803b61379ebcbd99629115c26 and sdist sha256:82d0e3ba666881f92e4276ffa1077265ed68d1374f87f0ffb148575f24ed1fe6",
+      "observation_method": "Compared public downloads and release receipt, verified both GitHub artifact attestations with a downloaded Sigstore trusted root, and ran public uvx version, init, Coordinator contract initialization and Doctor in a disposable repository.",
+      "target_used_source_proof": "The verified SLSA statement names source commit ce255f4c8533ccedc39939f5369f67bcf294face, refs/tags/v0.7.0 and .github/workflows/release.yml; the fresh manifest reports package 0.7.0 and asset 6.",
+      "evidence_artifact": "evidence/public/PUBLIC-VERIFICATION.md",
+      "evidence_artifact_hash": "sha256:ceea5ca41732175e256db5febb8522086dfd72a0b68a482561b31042392faf63",
+      "invalid_substitutes": [
+        "Local candidate archive hashes are not claimed as the public artifact identity.",
+        "Public availability is not claimed as consumer adoption."
+      ]
+    }
+  ]
 }

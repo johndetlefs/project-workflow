@@ -1,0 +1,53 @@
+{
+  "certificate": {
+    "buildSignerURI": "https://github.com/johndetlefs/project-workflow/.github/workflows/release.yml@refs/tags/v0.7.0",
+    "githubWorkflowName": "Release",
+    "githubWorkflowRef": "refs/tags/v0.7.0",
+    "githubWorkflowSHA": "ce255f4c8533ccedc39939f5369f67bcf294face",
+    "runnerEnvironment": "github-hosted",
+    "sourceRepositoryDigest": "ce255f4c8533ccedc39939f5369f67bcf294face",
+    "sourceRepositoryRef": "refs/tags/v0.7.0"
+  },
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "subject": [
+    {
+      "digest": {
+        "sha256": "20f259cb8bf58f61c3c72d5cdabfc4c9a96b1ef803b61379ebcbd99629115c26"
+      },
+      "name": "project_workflow-0.7.0-py3-none-any.whl"
+    },
+    {
+      "digest": {
+        "sha256": "82d0e3ba666881f92e4276ffa1077265ed68d1374f87f0ffb148575f24ed1fe6"
+      },
+      "name": "project_workflow-0.7.0.tar.gz"
+    },
+    {
+      "digest": {
+        "sha256": "6047d5da395dfdbba5d2e05ae23c1d4d6e5d23aec0ce58913b832d7e01be7bf0"
+      },
+      "name": "release-receipt.json"
+    },
+    {
+      "digest": {
+        "sha256": "92510f15ef2ce96b2b07dd94537fd456a9ba823059c31d4eb5bf9ffe1201cd95"
+      },
+      "name": "SHA256SUMS"
+    }
+  ],
+  "verifiedTimestamps": [
+    {
+      "timestamp": "2026-08-24T16:14:18+10:00",
+      "type": "Tlog",
+      "uri": "https://rekor.sigstore.dev"
+    }
+  ],
+  "verification": {
+    "command": "gh attestation verify <artifact> -R johndetlefs/project-workflow --bundle <bundle> --custom-trusted-root trusted_root.jsonl --format json",
+    "verified_artifacts": [
+      "project_workflow-0.7.0-py3-none-any.whl",
+      "project_workflow-0.7.0.tar.gz"
+    ],
+    "verified_at": "2026-08-24T16:26:01+10:00"
+  }
+}

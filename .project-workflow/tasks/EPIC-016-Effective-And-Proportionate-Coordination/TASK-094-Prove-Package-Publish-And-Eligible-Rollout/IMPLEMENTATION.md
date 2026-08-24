@@ -58,8 +58,8 @@ that paused projects can use it without confusing local source, publication or c
 
 - [x] AC1: Exact 0.7.0 candidate passes one complete suite, strict Doctor and package journeys.
 - [x] AC2: Dependencies retain one QA each and are not re-reviewed.
-- [ ] AC3: PR, merge, tag, release and publication share exact identities.
-- [ ] AC4: Public package retrieval and fresh Coordinator journey pass.
+- [x] AC3: PR, merge, tag, release and publication share exact identities.
+- [x] AC4: Public package retrieval and fresh Coordinator journey pass.
 - [ ] AC5: Only eligible clean consumer roots upgrade with no-op and preservation proof.
 - [ ] AC6: Blocked/stale-context consumers remain unchanged with exact dispositions.
 - [ ] AC7: Consolidated release/rollout receipt maps every claim to evidence.
@@ -92,15 +92,15 @@ identity, verify it publicly, then apply fingerprinted upgrades only after per-r
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | `codex/effective-proportionate-coordination` at candidate source `80ca56757442984db2fe4e8a6360cea56523bc0b`; PR not yet created | 474/474 complete suite; strict validation; source/release contract; exact wheel/sdist receipt; Codex, Copilot, Claude Code and Cursor fresh/upgrade journeys; legacy preservation/no-op journey | Exact local candidate proven; not yet pushed, merged, tagged or published | `evidence/candidate/`; `../INDEPENDENT-QA.md`; `../../../../evaluations/coordination/results/EPIC-016-ANALYSIS.md` |
+| . | PR #21; feature head `0335e4559088bfa3c8afacfa8c04e21b1fe245a6`; merged/tagged source `ce255f4c8533ccedc39939f5369f67bcf294face` | PR CI passed; trusted release run `32696346077` passed the complete locked suite, receipt verification, exact built-wheel journeys and attestations; public PyPI/GitHub bytes and provenance verified; fresh public Coordinator journey passed | `v0.7.0` is published on PyPI and GitHub Release and ready to install; consumer adoption is deliberately deferred | `evidence/candidate/`; `evidence/public/`; `../INDEPENDENT-QA.md`; `../../../../evaluations/coordination/results/EPIC-016-ANALYSIS.md` |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |
 | 1 | Freeze Exact 0.7.0 Candidate | Align version/metadata/changelog, verify dependency QA, run focused/full checks once, build and retain exact artifacts. | AC1, AC2 | Inspect candidate receipt, hashes and package journeys. | Done | TASK-090, TASK-091, TASK-092, TASK-093 | release metadata, package source, tests and candidate evidence | No | bounded-return |
-| 2 | Integrate Tag And Publish | Commit/push, create and merge reviewed PR, tag exact main commit and publish retained wheel/sdist through trusted infrastructure. | AC3 | Compare PR, merge, tag, release and artifact identities. | To Do | 1 | Git/release metadata and release evidence | No | direct-owner-steering |
-| 3 | Verify Public Release | Retrieve public artifacts, verify hashes/provenance/version/assets and run a fresh Coordinator journey. | AC4 | Install exact public 0.7.0 into a disposable repository. | To Do | 2 | disposable verification artifacts and task evidence | No | bounded-return |
+| 2 | Integrate Tag And Publish | Commit/push, create and merge reviewed PR, tag exact main commit and publish retained wheel/sdist through trusted infrastructure. | AC3 | Compare PR, merge, tag, release and artifact identities. | Done | 1 | Git/release metadata and release evidence | No | direct-owner-steering |
+| 3 | Verify Public Release | Retrieve public artifacts, verify hashes/provenance/version/assets and run a fresh Coordinator journey. | AC4 | Install exact public 0.7.0 into a disposable repository. | Done | 2 | disposable verification artifacts and task evidence | No | bounded-return |
 | 4 | Inventory And Upgrade Eligible Consumers | Refresh inventory, recheck authority/Git/activity, fingerprint plans, upgrade eligible clean roots and prove no-op/preservation. | AC5, AC6 | Inspect every inventory disposition and consumer diff. | To Do | 3 | eligible consumer managed assets plus rollout evidence | No | coordinator |
 | 5 | Consolidate Delivery Receipt | Map every claim to exact code, QA, PR, package, public and per-consumer evidence; run final strict Doctor/diff checks. | AC7 | Review machine-readable and human delivery receipts. | To Do | 1, 2, 3, 4 | release/rollout receipts and Epic evidence | No | bounded-return |
 
@@ -116,6 +116,16 @@ identity, verify it publicly, then apply fingerprinted upgrades only after per-r
   `evidence/candidate/package-journeys.json` proves all four generated-host surfaces, exact source
   parity for 33 wheel resources and 71 sdist sources, the fresh Coordinator outcome journey, and
   the legacy preservation/no-op upgrade journey.
+- AC13 release/publication: PR #21 merged feature head
+  `0335e4559088bfa3c8afacfa8c04e21b1fe245a6` as
+  `ce255f4c8533ccedc39939f5369f67bcf294face`; annotated tag `v0.7.0` peels to that
+  commit. Release run `32696346077` rebuilt once at the reviewed tag, ran the complete locked suite
+  and exact built-wheel journey, then published the same retained bundle to PyPI and GitHub Release.
+  Public wheel SHA-256 `20f259cb8bf58f61c3c72d5cdabfc4c9a96b1ef803b61379ebcbd99629115c26`
+  and sdist SHA-256 `82d0e3ba666881f92e4276ffa1077265ed68d1374f87f0ffb148575f24ed1fe6`
+  match across both channels and have verified SLSA provenance bound to the tag, workflow and merge
+  commit. A fresh public `uvx` journey reported 0.7.0, installed asset version 6, initialized the
+  Coordinator contract and passed Doctor. See `evidence/public/PUBLIC-VERIFICATION.md`.
 
 ## QA & Code Review
 
@@ -143,3 +153,8 @@ identity, verify it publicly, then apply fingerprinted upgrades only after per-r
 - Current owner delivery boundary: publish and publicly verify 0.7.0, then stop. Do not install it
   in any consumer project until the owner separately requests rollout. Rows 4-5 and AC5-AC7 remain
   pending rather than being misreported as complete.
+- Identity clarification: the local candidate distributions remain rehearsal evidence. The exact
+  production distributions were built and validated once by trusted release run `32696346077` at
+  annotated tag `v0.7.0`, then the same workflow bundle was published unchanged to PyPI and GitHub
+  Release. No equivalence claim is made between the local candidate archive bytes and the public
+  archive bytes.
