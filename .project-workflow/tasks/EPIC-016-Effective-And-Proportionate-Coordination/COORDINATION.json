@@ -610,6 +610,29 @@
       "source_identity": "sha256:682e1568f70b241a11017ac2bf34890c4f42701f781b7000ce43b1e345978edd",
       "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540",
       "user_consequence": "The release can proceed without reopening completed QA or implying any consumer adoption."
+    },
+    {
+      "affected_units": [
+        "TASK-094"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Project Workflow 0.7.0 is merged, tagged, published, provenance-verified and proven in a fresh disposable Coordinator journey; the approved no-rollout boundary is unchanged.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:3aa8afb4e0451683cfb9cc1e8732805fdbdd4d8799b4202ffaf6687f2a3fb7ff",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:7b235579f80b5fc46fc53b7c2493ab0b7474b52fbb6c618eca83d0a5e1239403",
+      "source_revision": "git:ce255f4c8533ccedc39939f5369f67bcf294face",
+      "user_consequence": "Other projects can now install the public release when separately authorized, while every consumer repository remains unchanged today."
     }
   ],
   "decisions": [
@@ -623,18 +646,18 @@
     "context_contract": "declared",
     "telemetry": "unknown"
   },
-  "intent_identity": "sha256:905a6337dac80670c4af2b66a409c66f901f5fb0ecc349b7a7ca11d03de35a6c",
+  "intent_identity": "sha256:3aa8afb4e0451683cfb9cc1e8732805fdbdd4d8799b4202ffaf6687f2a3fb7ff",
   "last_boundary": {
     "affected_units": [
       "TASK-094"
     ],
     "amendment_identity": null,
     "boundary": "new-evidence-or-owner-reframe",
-    "capability_change": "The current intent audit now binds the exact 0.7.0 candidate evidence; publication remains next and consumer rollout remains explicitly deferred.",
+    "capability_change": "Project Workflow 0.7.0 is merged, tagged, published, provenance-verified and proven in a fresh disposable Coordinator journey; the approved no-rollout boundary is unchanged.",
     "classification": "inside-envelope",
     "decided_by": "EPIC-016 Coordinator",
     "decision_date": "2026-08-24",
-    "intent_identity": "sha256:905a6337dac80670c4af2b66a409c66f901f5fb0ecc349b7a7ca11d03de35a6c",
+    "intent_identity": "sha256:3aa8afb4e0451683cfb9cc1e8732805fdbdd4d8799b4202ffaf6687f2a3fb7ff",
     "relevant_ocs": [
       "OC1",
       "OC2",
@@ -643,18 +666,18 @@
       "OC7"
     ],
     "shared_premises_valid": "yes",
-    "source_identity": "sha256:682e1568f70b241a11017ac2bf34890c4f42701f781b7000ce43b1e345978edd",
-    "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540",
-    "user_consequence": "The release can proceed without reopening completed QA or implying any consumer adoption."
+    "source_identity": "sha256:7b235579f80b5fc46fc53b7c2493ab0b7474b52fbb6c618eca83d0a5e1239403",
+    "source_revision": "git:ce255f4c8533ccedc39939f5369f67bcf294face",
+    "user_consequence": "Other projects can now install the public release when separately authorized, while every consumer repository remains unchanged today."
   },
   "loaded_contract": {
     "asset_version": "6",
-    "context_id": "task-01a030e2-release-candidate-loaded",
+    "context_id": "task-01a030e2-release-public-verified",
     "contract_version": "2",
     "package_version": "0.7.0",
     "recorded_at": "2026-08-24"
   },
-  "next_action": "Push the candidate, merge the green PR, tag v0.7.0, then verify the public package and stop.",
+  "next_action": "Stop. Await separate owner authority before inventorying or upgrading any consumer repository.",
   "outcome_checkpoint": {
     "checkpoint_unit": "TASK-093",
     "claim_class": "user-facing",
@@ -676,14 +699,14 @@
     "required": true,
     "status": "pass"
   },
-  "phase": "delivery-pending",
+  "phase": "release-complete-rollout-deferred",
   "repositories": {
     ".": {
-      "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540"
+      "source_revision": "git:ce255f4c8533ccedc39939f5369f67bcf294face"
     }
   },
   "schema_version": 2,
-  "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540",
+  "source_revision": "git:ce255f4c8533ccedc39939f5369f67bcf294face",
   "target_id": "EPIC-016",
   "work_item_path": ".project-workflow/tasks/EPIC-016-Effective-And-Proportionate-Coordination"
 }

@@ -1,0 +1,37 @@
+{
+  "boundary_decisions": [],
+  "decisions": [
+    "No consumer repository is modified by this disposable verification."
+  ],
+  "host_facts": {
+    "context_contract": "declared",
+    "telemetry": "unknown"
+  },
+  "intent_identity": "sha256:7e9bacb6f621aee64c09f5ac78b0777daea6622201e247c87b2e85b12bc997e6",
+  "last_boundary": null,
+  "loaded_contract": {
+    "asset_version": "6",
+    "context_id": "public-verification-context",
+    "contract_version": "2",
+    "package_version": "0.7.0",
+    "recorded_at": "2026-08-24"
+  },
+  "next_action": "Verify public Coordinator contract.",
+  "outcome_checkpoint": {
+    "checkpoint_unit": null,
+    "claim_class": "mechanical",
+    "record": null,
+    "required": false,
+    "status": "not-required"
+  },
+  "phase": "intake",
+  "repositories": {
+    ".": {
+      "source_revision": "public-pypi-0.7.0"
+    }
+  },
+  "schema_version": 2,
+  "source_revision": "public-pypi-0.7.0",
+  "target_id": "TASK-001",
+  "work_item_path": ".project-workflow/tasks/TASK-001-Public-Coordinator-Verification"
+}
