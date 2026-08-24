@@ -94,10 +94,14 @@ def _source_package_assets() -> dict[str, Path]:
     return assets
 
 
-def _sdist_member_bytes(archive: tarfile.TarFile, suffix: str) -> bytes:
-    matches = [member for member in archive.getmembers() if member.name.endswith(suffix)]
+def _sdist_member_bytes(archive: tarfile.TarFile, relative: str) -> bytes:
+    matches = []
+    for member in archive.getmembers():
+        _, separator, member_relative = member.name.partition("/")
+        if separator and member_relative == relative:
+            matches.append(member)
     if len(matches) != 1:
-        raise RuntimeError(f"sdist must contain exactly one {suffix}: found {len(matches)}")
+        raise RuntimeError(f"sdist must contain exactly one /{relative}: found {len(matches)}")
     extracted = archive.extractfile(matches[0])
     if extracted is None:
         raise RuntimeError(f"cannot read sdist member: {matches[0].name}")
@@ -164,7 +168,7 @@ def verify_package_source_parity(package_path: Path) -> dict[str, Any]:
             sdist_sources[path.relative_to(ROOT).as_posix()] = path
     with tarfile.open(sdist_path, "r:gz") as archive:
         for relative, source_path in sorted(sdist_sources.items()):
-            if _sdist_member_bytes(archive, f"/{relative}") != source_path.read_bytes():
+            if _sdist_member_bytes(archive, relative) != source_path.read_bytes():
                 raise RuntimeError(f"sdist member differs from current source: {relative}")
 
     return {
