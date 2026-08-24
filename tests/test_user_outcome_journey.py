@@ -292,3 +292,61 @@ def test_intent_adversarial_qa_rejects_green_but_wrong_candidate() -> None:
     issues = workflow_cli._intent_qa_review_issues(green_but_wrong)
     assert any("Intent adversarial verdict: Pass" in issue for issue in issues)
     assert any("Yes or unknown answer requires Changes requested" in issue for issue in issues)
+
+
+def resolved_changes_requested_qa() -> str:
+    decision = workflow_cli._validation_impact_decision(
+        classification="affected",
+        proof_layers=("qa-review",),
+        validation_verdict="pass",
+    )
+    impact = workflow_cli._validation_impact_section(
+        baseline="Independent QA receipt QA-001",
+        change_summary="Resolved the three named blocking findings.",
+        decided_by="Coordinator",
+        decision=decision,
+    )
+    return (
+        impact
+        + "\n## QA & Code Review\n\n"
+        "- Intent QA contract: adversarial\n"
+        "- Verdict: Changes Requested\n"
+        "- Intent adversarial verdict: Fail\n"
+        "- Could every AC pass while the approved user job remains undone: Yes\n"
+        "- Intent audit state: current\n"
+        "- Outcome journey evidence: QA-001 inspected the exact normal journey.\n"
+        "- Reviewer independence: Independent reviewer QA-001 did not implement the change.\n"
+        "- Evidence: QA-001 retained the original blocking findings.\n"
+        "- Findings: Three blocking findings were issued.\n"
+        "- Findings disposition: Resolved\n"
+        "- Affected validation verdict: Pass\n"
+        "- Could every AC pass after affected validation while the approved user job remains undone: No\n"
+        "- Affected validation evidence: Named regressions and the current outcome journey pass.\n"
+        "- Second QA commissioned: No\n"
+    )
+
+
+def test_changes_requested_can_close_through_one_affected_validation_without_second_qa() -> None:
+    implementation = resolved_changes_requested_qa()
+    assert workflow_cli._intent_qa_review_issues(implementation) == []
+    assert workflow_cli._qa_passed(implementation) is True
+
+
+def test_changes_requested_resolution_fails_closed_without_exact_evidence() -> None:
+    implementation = resolved_changes_requested_qa()
+    missing_impact = "## QA & Code Review" + implementation.split(
+        "## QA & Code Review", 1
+    )[1]
+    assert workflow_cli._qa_passed(missing_impact) is False
+
+    second_qa = implementation.replace(
+        "- Second QA commissioned: No", "- Second QA commissioned: Yes"
+    )
+    issues = workflow_cli._intent_qa_review_issues(second_qa)
+    assert "record `Second QA commissioned: No`" in issues
+    assert workflow_cli._qa_passed(second_qa) is False
+
+    pending = implementation.replace(
+        "- Affected validation verdict: Pass", "- Affected validation verdict: Pending"
+    )
+    assert workflow_cli._qa_passed(pending) is False

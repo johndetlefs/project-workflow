@@ -76,6 +76,11 @@ Required workflow:
    - keep tracker status as `Review` or set it to `Blocked` if the issue prevents safe release
    - list findings first, ordered by severity, with file references where possible
    - do not mark anything `Complete`
+   - preserve `Changes Requested` and the original adversarial answers; after the named fixes, use
+     one affected `workflow validation impact` decision including `qa-review`. Completion can use
+     that original verdict only when findings disposition is `Resolved`, affected validation is
+     `Pass`, the user job can no longer remain undone, substantive evidence is recorded, and
+     `Second QA commissioned` is `No`. Do not rewrite the reviewer verdict as Pass.
 11. If review passes:
    - say that QA/code review passed
    - only run the relevant workflow command to mark `Complete` if the user explicitly asked you to complete the task after review

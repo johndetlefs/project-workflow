@@ -163,7 +163,12 @@ def test_packet_is_complete_bounded_and_coordinator_is_single_writer() -> None:
     run = coordinator(plan(unit("A")))
     packet = run.launch("A", handle="bounded-a", coordinator_token=TOKEN).payload()
 
-    assert packet["target"] == {"id": "TASK-001", "kind": "task"}
+    assert packet["target"] == {
+        "id": "TASK-001",
+        "kind": "task",
+        "authority_source": ".project-workflow/tasks/TASK-001/IMPLEMENTATION.md",
+        "authority_hash": "plan-hash",
+    }
     assert packet["unit"] == {"id": "A", "title": "Unit A"}
     assert packet["acceptance_criteria"] == ["AC-A"]
     assert packet["scope"] == {"write_prefixes": ["src/a"], "repositories": ["."]}
@@ -173,6 +178,10 @@ def test_packet_is_complete_bounded_and_coordinator_is_single_writer() -> None:
     }
     assert len(packet["forbidden_actions"]) == 4
     assert len(packet["stop_conditions"]) == 4
+    assert "full conversation history" in packet["invalid_substitutes"][-1]
+    assert packet["return_contract"][-1] == (
+        "dependency result and shared-premise validity"
+    )
 
     with pytest.raises(workflow_cli.TaskOrchestrationError) as caught:
         run.checkpoint("A", coordinator_token="worker-token")

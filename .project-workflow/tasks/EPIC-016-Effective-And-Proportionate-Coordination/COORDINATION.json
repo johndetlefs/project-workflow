@@ -1,0 +1,642 @@
+{
+  "boundary_decisions": [
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093",
+        "TASK-094"
+      ],
+      "amendment_identity": "OWNER-2026-08-24-COORDINATOR-CORE",
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Replace the duplicate coordination execution graph with Coordinator Core: compact logical state, existing Delegate packets/returns, automatic lifecycle gates, and earned context transfer.",
+      "classification": "approved-change",
+      "decided_by": "John Detlefs and EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:4b78c3d566515f562a08cd057594c9a72a748bdb4b1d8e3e7460632f76421a16",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "The owner retains intent and drift protection without paying for a second packet, receipt, dependency, and reconciliation system."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093",
+        "TASK-094"
+      ],
+      "amendment_identity": null,
+      "boundary": "after-plan-or-decomposition",
+      "capability_change": "The approved Coordinator Core correction is fully represented by the existing five-child decomposition; no new child or proof layer is required.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:4b78c3d566515f562a08cd057594c9a72a748bdb4b1d8e3e7460632f76421a16",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "Implementation can continue without expanding the epic or asking the owner to approve workflow mechanics again."
+    },
+    {
+      "affected_units": [
+        "TASK-090"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-unit-start",
+      "capability_change": "Continue the owner-approved Coordinator Core correction within this existing child row.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:4b78c3d566515f562a08cd057594c9a72a748bdb4b1d8e3e7460632f76421a16",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "The child preserves the approved capability without a new task, duplicate execution graph, or owner interruption."
+    },
+    {
+      "affected_units": [
+        "TASK-091"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-unit-start",
+      "capability_change": "Continue the owner-approved Coordinator Core correction within this existing child row.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:4b78c3d566515f562a08cd057594c9a72a748bdb4b1d8e3e7460632f76421a16",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "The child preserves the approved capability without a new task, duplicate execution graph, or owner interruption."
+    },
+    {
+      "affected_units": [
+        "TASK-092"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-unit-start",
+      "capability_change": "Continue the owner-approved Coordinator Core correction within this existing child row.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:4b78c3d566515f562a08cd057594c9a72a748bdb4b1d8e3e7460632f76421a16",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "The child preserves the approved capability without a new task, duplicate execution graph, or owner interruption."
+    },
+    {
+      "affected_units": [
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-unit-start",
+      "capability_change": "Continue the owner-approved Coordinator Core correction within this existing child row.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:4b78c3d566515f562a08cd057594c9a72a748bdb4b1d8e3e7460632f76421a16",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "The child preserves the approved capability without a new task, duplicate execution graph, or owner interruption."
+    },
+    {
+      "affected_units": [
+        "TASK-094"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-unit-start",
+      "capability_change": "Continue the owner-approved Coordinator Core correction within this existing child row.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:4b78c3d566515f562a08cd057594c9a72a748bdb4b1d8e3e7460632f76421a16",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "The child preserves the approved capability without a new task, duplicate execution graph, or owner interruption."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-090 through TASK-093 return the approved Coordinator Core implementation and evidence without a second execution graph or recursive reviewer.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:4b78c3d566515f562a08cd057594c9a72a748bdb4b1d8e3e7460632f76421a16",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "The corrected candidate is ready for its one independent QA gate; release work remains separate."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-090 through TASK-093 retain the owner-approved Coordinator Core outcome, proof boundaries, and one-QA rule after implementation validation.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:4b78c3d566515f562a08cd057594c9a72a748bdb4b1d8e3e7460632f76421a16",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "One consolidated independent QA may now challenge the actual candidate without reopening planning or creating pre-QA reviewers."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Full-suite and fresh-context journey evidence completed the existing proof obligations without changing the approved capability or scope.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:e28f4493f33e210c14baf7cb86ecb0c0c0b403b9be86a507e6897f46cb7b550a",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "Authority may refresh without owner interruption; the one independent QA gate remains next."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-090 through TASK-093 retain the owner-approved Coordinator Core outcome, proof boundaries, and one-QA rule after implementation validation.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:e28f4493f33e210c14baf7cb86ecb0c0c0b403b9be86a507e6897f46cb7b550a",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "One consolidated independent QA may challenge the actual candidate without reopening planning or creating pre-QA reviewers."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Correct the circular inside-envelope evidence-refresh transition exposed by lifecycle dogfood; no approved capability or scope changed.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:e28f4493f33e210c14baf7cb86ecb0c0c0b403b9be86a507e6897f46cb7b550a",
+      "relevant_ocs": [
+        "OC2",
+        "OC4"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "Current evidence can refresh authority and enter the existing QA gate without owner repetition or an approved-change fiction."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-090 through TASK-093 retain the owner-approved Coordinator Core outcome, proof boundaries, and one-QA rule after the narrow lifecycle correction.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:e28f4493f33e210c14baf7cb86ecb0c0c0b403b9be86a507e6897f46cb7b550a",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_revision": "c215b4379c4b38a4efee672c64c2b4b599385d04+coordinator-core-candidate",
+      "user_consequence": "One consolidated independent QA may challenge the actual candidate without reopening planning or creating pre-QA reviewers."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Independent QA exposed stale source binding, a preservation-blind grader, and stale behavioral evidence; the first two are corrected while the current-contract model proof is explicitly blocked.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:deb1b2379dfb4a43253330577c7245d908baaabb403caf8f6f5fac7305ec4aec",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:4482b6c45ddf4cb39d74487ae88d0a3defff0a6b574032f02f4738ce40196f91",
+      "source_revision": "worktree-sha256:90afc13d1cc8f6cf09be3a833ca69a3c282023f3bd8eaa46b80d7747fdbfd37b",
+      "user_consequence": "The owner receives an honest non-release-ready boundary instead of a false pass or another review loop."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "No approved capability is narrowed; the QA blockers and unresolved behavioral proof are recorded against the exact current source.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:deb1b2379dfb4a43253330577c7245d908baaabb403caf8f6f5fac7305ec4aec",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:4482b6c45ddf4cb39d74487ae88d0a3defff0a6b574032f02f4738ce40196f91",
+      "source_revision": "worktree-sha256:90afc13d1cc8f6cf09be3a833ca69a3c282023f3bd8eaa46b80d7747fdbfd37b",
+      "user_consequence": "TASK-090 through TASK-093 remain in Review and cannot be represented as release-ready."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Run 005 resolves the stale-contract routing failure and evaluates the current preservation-aware contract twice; all 12 next-action decisions are correct in both trials.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:af7dc8f07e6abdbeea2f0de96b968a8a85ab8cab3d25c8b6255cca71058cf7a0",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:35131853edbc2d9ab3aeb4b3f1e6a227b30b3b118cac37017b36ddceb6203dd0",
+      "source_revision": "worktree-sha256:fe4842378a51a1d9370508ff631cc30f28f8c0252c379602719937f7f53feb89",
+      "user_consequence": "The candidate preserves the owner outcome without adding another QA or tuning away visible model variance."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "All three issued QA findings have affected validation against the exact current source; residual model explanation variance remains explicit and action-safe.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:af7dc8f07e6abdbeea2f0de96b968a8a85ab8cab3d25c8b6255cca71058cf7a0",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:35131853edbc2d9ab3aeb4b3f1e6a227b30b3b118cac37017b36ddceb6203dd0",
+      "source_revision": "worktree-sha256:fe4842378a51a1d9370508ff631cc30f28f8c0252c379602719937f7f53feb89",
+      "user_consequence": "TASK-090 through TASK-093 may proceed to their existing delivery boundary without another review cycle."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Final dogfood proved and corrected the literal-Pass completion contradiction; resolved Changes Requested now closes through one affected validation without second QA.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:fd2628b21cac519d4a647b14ca6151978b1a71875078d1b7762e4f41af03836d",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:f55115fd847c6bb995fb58952a4efab5c996c98cfa66befaa9fa2299f98278c3",
+      "source_revision": "worktree-sha256:6aa60932f2a83ba4b1bb9e853c2d3d237856cd37eb3a0b12066c53506569db76",
+      "user_consequence": "The workflow can finish a corrected task honestly instead of rewriting reviewer history or looping review."
+    },
+    {
+      "affected_units": [
+        "TASK-090",
+        "TASK-091",
+        "TASK-092",
+        "TASK-093"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "The original QA verdicts remain intact, every named finding is resolved, and the exact one-QA completion path passes lifecycle regression.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:fd2628b21cac519d4a647b14ca6151978b1a71875078d1b7762e4f41af03836d",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:f55115fd847c6bb995fb58952a4efab5c996c98cfa66befaa9fa2299f98278c3",
+      "source_revision": "worktree-sha256:6aa60932f2a83ba4b1bb9e853c2d3d237856cd37eb3a0b12066c53506569db76",
+      "user_consequence": "TASK-090 through TASK-093 have a machine-recognized passing final QA disposition without recursive review."
+    },
+    {
+      "affected_units": [
+        "TASK-090"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-090 evidence now names AC1, AC2, and AC3 explicitly rather than using a parser-ambiguous range.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:10afd1e475137bde6d1c05246f8a4be5b7f975f11e4b669735a9a69591925257",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:31338c5bd8bc3fdb2ffb2385979051f725688e42429c60dcbe1454a06c3e230b",
+      "source_revision": "worktree-sha256:f328c337ae1add01ebf0add7d803eb6a1debebd80a6718f1a22c4858213dae3c",
+      "user_consequence": "The completion gate can credit the already-proven Coordinator capability without changing scope or proof."
+    },
+    {
+      "affected_units": [
+        "TASK-090"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-090 proof is unchanged and now explicitly maps AC2 for the deterministic completion gate.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:10afd1e475137bde6d1c05246f8a4be5b7f975f11e4b669735a9a69591925257",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:31338c5bd8bc3fdb2ffb2385979051f725688e42429c60dcbe1454a06c3e230b",
+      "source_revision": "worktree-sha256:f328c337ae1add01ebf0add7d803eb6a1debebd80a6718f1a22c4858213dae3c",
+      "user_consequence": "The final feature child can complete without reopening QA."
+    },
+    {
+      "affected_units": [
+        "TASK-094"
+      ],
+      "amendment_identity": "OWNER-2026-08-24-RELEASE-NO-ROLLOUT",
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Publish and publicly verify Project Workflow 0.7.0 now, but defer every consumer installation until separately requested.",
+      "classification": "approved-change",
+      "decided_by": "John Detlefs and EPIC-016 Coordinator",
+      "decision_date": "2026-08-24",
+      "intent_identity": "sha256:10afd1e475137bde6d1c05246f8a4be5b7f975f11e4b669735a9a69591925257",
+      "relevant_ocs": [
+        "OC1",
+        "OC3",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:682e1568f70b241a11017ac2bf34890c4f42701f781b7000ce43b1e345978edd",
+      "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540",
+      "user_consequence": "The package becomes publicly installable while all other project repositories remain unchanged."
+    }
+  ],
+  "decisions": [
+    "Coordinator is the sole owner-facing role; Delegate remains the sole approved execution graph and compatibility entry for the first Coordinator minor release.",
+    "Clarify is boundary-triggered and supports pre-approval, post-plan, and drift-ambiguity modes.",
+    "COORDINATION.json records logical authority and decisions only; it does not duplicate units, dependencies, packets, returns, evidence, or worker lifecycle.",
+    "A current physical context may continue after explicitly loading the current contract when no conflict or isolation need exists; a fresh context must earn its transfer cost.",
+    "Existing lifecycle transitions fail closed on missing, stale, or drifted boundary decisions and on a required failed checkpoint."
+  ],
+  "host_facts": {
+    "context_contract": "declared",
+    "telemetry": "unknown"
+  },
+  "intent_identity": "sha256:10afd1e475137bde6d1c05246f8a4be5b7f975f11e4b669735a9a69591925257",
+  "last_boundary": {
+    "affected_units": [
+      "TASK-094"
+    ],
+    "amendment_identity": "OWNER-2026-08-24-RELEASE-NO-ROLLOUT",
+    "boundary": "new-evidence-or-owner-reframe",
+    "capability_change": "Publish and publicly verify Project Workflow 0.7.0 now, but defer every consumer installation until separately requested.",
+    "classification": "approved-change",
+    "decided_by": "John Detlefs and EPIC-016 Coordinator",
+    "decision_date": "2026-08-24",
+    "intent_identity": "sha256:10afd1e475137bde6d1c05246f8a4be5b7f975f11e4b669735a9a69591925257",
+    "relevant_ocs": [
+      "OC1",
+      "OC3",
+      "OC6",
+      "OC7"
+    ],
+    "shared_premises_valid": "yes",
+    "source_identity": "sha256:682e1568f70b241a11017ac2bf34890c4f42701f781b7000ce43b1e345978edd",
+    "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540",
+    "user_consequence": "The package becomes publicly installable while all other project repositories remain unchanged."
+  },
+  "loaded_contract": {
+    "asset_version": "6",
+    "context_id": "task-01a030e2-release-candidate-loaded",
+    "contract_version": "2",
+    "package_version": "0.7.0",
+    "recorded_at": "2026-08-24"
+  },
+  "next_action": "Refresh the existing canonical plan and Delegate packet for affected units: TASK-094",
+  "outcome_checkpoint": {
+    "checkpoint_unit": "TASK-093",
+    "claim_class": "user-facing",
+    "record": {
+      "actor": "Owner-directed Project Workflow Coordinator",
+      "claim_class": "user-facing",
+      "material_operations": "Apply Coordinator Core correction; enforce source-bound lifecycle decisions; retain Clarify, earned execution, early outcome proof, one QA, and stop rules; run current behavioral evidence and one bounded fresh-context handoff.",
+      "normal_entry_point": "Conversational consequential-feature request",
+      "observations": "467 full-suite tests pass; corrected candidate behavioral trials score 12/12 and 11/12; fresh-context receipt is exact with zero owner questions, zero added contexts, and zero QA, while host counters disprove inherently cheap context rotation.",
+      "owner_judgment": "not-required",
+      "recorded_at": "2026-08-24",
+      "recorded_by": "EPIC-016 Coordinator",
+      "resulting_state_or_artifact": "One owner-facing Coordinator with compact logical state, existing Delegate execution authority, automatic drift gates, and earned context transfer.",
+      "source_environment": "Current EPIC-016 worktree, retained gpt-5.4 behavioral evaluation, and disposable contract-version-2 fresh context.",
+      "starting_state": "The first green candidate duplicated Delegate execution state and relied on remembered coordination commands.",
+      "unit_id": "TASK-093",
+      "verdict": "pass"
+    },
+    "required": true,
+    "status": "pass"
+  },
+  "phase": "delivery-pending",
+  "repositories": {
+    ".": {
+      "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540"
+    }
+  },
+  "schema_version": 2,
+  "source_revision": "worktree-sha256:17f2b6b2c77d82251d9a0d82aa313658a35538d83e957edf3b2ab14a1fff2540",
+  "target_id": "EPIC-016",
+  "work_item_path": ".project-workflow/tasks/EPIC-016-Effective-And-Proportionate-Coordination"
+}

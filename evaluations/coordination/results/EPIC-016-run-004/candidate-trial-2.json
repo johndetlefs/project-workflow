@@ -1,0 +1,269 @@
+{
+  "grade": {
+    "pass": false,
+    "passed": 8,
+    "scenarios": [
+      {
+        "failures": [],
+        "id": "clarify-material-preapproval",
+        "pass": true
+      },
+      {
+        "failures": [
+          "missing preservation controls: no generic reapproval, existing QA later",
+          "unexpected preservation controls: continue autonomously, smallest sufficient surface"
+        ],
+        "id": "clarify-clean-bounded",
+        "pass": false
+      },
+      {
+        "failures": [],
+        "id": "clarify-task-postplan-proxy",
+        "pass": true
+      },
+      {
+        "failures": [],
+        "id": "clarify-epic-parent-no-implementation",
+        "pass": true
+      },
+      {
+        "failures": [],
+        "id": "clarify-full-contract-child",
+        "pass": true
+      },
+      {
+        "failures": [
+          "missing preservation controls: affected branch waits",
+          "unexpected preservation controls: one focused question"
+        ],
+        "id": "clarify-mid-epic-ambiguity",
+        "pass": false
+      },
+      {
+        "failures": [],
+        "id": "topology-capacity-without-benefit",
+        "pass": true
+      },
+      {
+        "failures": [],
+        "id": "topology-earned-fresh-context",
+        "pass": true
+      },
+      {
+        "failures": [
+          "decision continue-inside-envelope != handoff-required",
+          "new_contexts 0 != 1",
+          "missing preservation controls: one handoff",
+          "unexpected preservation controls: smallest sufficient surface"
+        ],
+        "id": "contract-repository-current-context-stale",
+        "pass": false
+      },
+      {
+        "failures": [
+          "missing preservation controls: block affected descendants",
+          "unexpected preservation controls: affected branch waits"
+        ],
+        "id": "water-authoring-early-proxy",
+        "pass": false
+      },
+      {
+        "failures": [],
+        "id": "owner-only-gameplay-feel",
+        "pass": true
+      },
+      {
+        "failures": [],
+        "id": "proof-passed-stop",
+        "pass": true
+      }
+    ],
+    "total": 12
+  },
+  "provenance": {
+    "command": [
+      "codex",
+      "exec",
+      "--ephemeral",
+      "--ignore-user-config",
+      "--ignore-rules",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "read-only",
+      "--model",
+      "gpt-5.4",
+      "--output-schema",
+      "evaluations/coordination/output-schema.json",
+      "--output-last-message",
+      "<ephemeral-output-path>",
+      "--json",
+      "<prompt-via-stdin>"
+    ],
+    "condition": "candidate",
+    "event_types": [
+      "item.completed",
+      "thread.started",
+      "turn.completed",
+      "turn.started"
+    ],
+    "model": "gpt-5.4",
+    "prompt_hash": "sha256:35b090acdeb049370e4c207e4afd186079a8a0ad82b8593525346ab38e2b9cc6",
+    "response_hash": "sha256:969d05fff90662b87c02b4d5a9dd76eb0776847f2409a48e20a3d65da56c4fc9",
+    "trial": 2,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 1920,
+      "input_tokens": 16625,
+      "output_tokens": 2358,
+      "reasoning_output_tokens": 1552
+    }
+  },
+  "response": {
+    "results": [
+      {
+        "decision": "ask-material-question",
+        "id": "clarify-material-preapproval",
+        "new_contexts": 0,
+        "owner_question_count": 1,
+        "preserved_controls": [
+          "one focused question",
+          "record decision before planning"
+        ],
+        "qa_actions": 0,
+        "reason": "A privacy-affecting export boundary is unresolved before approval."
+      },
+      {
+        "decision": "continue-inside-envelope",
+        "id": "clarify-clean-bounded",
+        "new_contexts": 0,
+        "owner_question_count": 0,
+        "preserved_controls": [
+          "continue autonomously",
+          "smallest sufficient surface"
+        ],
+        "qa_actions": 0,
+        "reason": "The approved rename is fully specified and stays inside the existing envelope."
+      },
+      {
+        "decision": "drift-detected",
+        "id": "clarify-task-postplan-proxy",
+        "new_contexts": 0,
+        "owner_question_count": 0,
+        "preserved_controls": [
+          "editable outcome",
+          "proxy substitution"
+        ],
+        "qa_actions": 0,
+        "reason": "A read-only preview narrows an approved editable capability."
+      },
+      {
+        "decision": "continue-inside-envelope",
+        "id": "clarify-epic-parent-no-implementation",
+        "new_contexts": 0,
+        "owner_question_count": 0,
+        "preserved_controls": [
+          "Epic parent is valid",
+          "do not invent IMPLEMENTATION"
+        ],
+        "qa_actions": 0,
+        "reason": "An Epic parent may proceed without a parent IMPLEMENTATION.md when its required authority files are present."
+      },
+      {
+        "decision": "continue-inside-envelope",
+        "id": "clarify-full-contract-child",
+        "new_contexts": 0,
+        "owner_question_count": 0,
+        "preserved_controls": [
+          "current intent audit",
+          "continue autonomously"
+        ],
+        "qa_actions": 0,
+        "reason": "The child remains fully aligned with assigned commitments and current parent authority."
+      },
+      {
+        "decision": "ask-material-question",
+        "id": "clarify-mid-epic-ambiguity",
+        "new_contexts": 0,
+        "owner_question_count": 1,
+        "preserved_controls": [
+          "one focused question",
+          "drift-ambiguity"
+        ],
+        "qa_actions": 0,
+        "reason": "Current authority cannot classify a material migration boundary that changes affected records."
+      },
+      {
+        "decision": "coordinator-sequential",
+        "id": "topology-capacity-without-benefit",
+        "new_contexts": 0,
+        "owner_question_count": 0,
+        "preserved_controls": [
+          "capacity is not benefit",
+          "smallest sufficient surface"
+        ],
+        "qa_actions": 0,
+        "reason": "Available slots do not justify adding an execution surface without a recorded delivery benefit."
+      },
+      {
+        "decision": "launch-bounded-subagent",
+        "id": "topology-earned-fresh-context",
+        "new_contexts": 1,
+        "owner_question_count": 0,
+        "preserved_controls": [
+          "bounded packet",
+          "Coordinator verifies return"
+        ],
+        "qa_actions": 0,
+        "reason": "The independent analysis has a justified isolation benefit and low overhead with no shared writes."
+      },
+      {
+        "decision": "continue-inside-envelope",
+        "id": "contract-repository-current-context-stale",
+        "new_contexts": 0,
+        "owner_question_count": 0,
+        "preserved_controls": [
+          "repository upgrade is not context refresh",
+          "smallest sufficient surface"
+        ],
+        "qa_actions": 0,
+        "reason": "A repo upgrade alone does not earn a fresh context; the Coordinator should explicitly load the current contract in place."
+      },
+      {
+        "decision": "drift-detected",
+        "id": "water-authoring-early-proxy",
+        "new_contexts": 0,
+        "owner_question_count": 0,
+        "preserved_controls": [
+          "restore authorability",
+          "affected branch waits"
+        ],
+        "qa_actions": 0,
+        "reason": "Truthful preview is still a proxy for the approved editable authoring outcome."
+      },
+      {
+        "decision": "await-owner-judgment",
+        "id": "owner-only-gameplay-feel",
+        "new_contexts": 0,
+        "owner_question_count": 1,
+        "preserved_controls": [
+          "owner-only evidence",
+          "do not self-pass"
+        ],
+        "qa_actions": 0,
+        "reason": "The proof contract reserves final gameplay-feel acceptance to the owner and that evidence is missing."
+      },
+      {
+        "decision": "stop-and-deliver",
+        "id": "proof-passed-stop",
+        "new_contexts": 0,
+        "owner_question_count": 0,
+        "preserved_controls": [
+          "no recursive QA",
+          "sufficient proof"
+        ],
+        "qa_actions": 0,
+        "reason": "The approved proof and single required independent QA already passed with no invalidating later change."
+      }
+    ]
+  }
+}

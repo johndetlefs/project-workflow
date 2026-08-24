@@ -56,6 +56,19 @@ def source_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(delegate_contract)
+    coordinator_contract = (
+        "One owner-facing role preserves one logical Coordinator and chooses the smallest sufficient "
+        "surface. Give bounded packets, use Clarify at drift-detected boundaries, preserve independent "
+        "QA, and Stop after sufficient proof. Keep implementation, validation, integration, release, "
+        "deployment, adoption distinct.\n"
+    )
+    for path in (
+        tmp_path / "src/project_workflow/prompts/Coordinator.prompt.md",
+        tmp_path / ".github/prompts/Coordinator.prompt.md",
+        tmp_path / "src/project_workflow/codex/skills/project-coordinator/SKILL.md",
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(coordinator_contract)
     (tmp_path / "uv.lock").write_text("version = 1\n")
     monkeypatch.setattr(release_contract, "ROOT", tmp_path)
     monkeypatch.setattr(release_contract, "VERSION_PATH", version_path)
@@ -85,14 +98,24 @@ def artifact_fixture(tmp_path: Path, version: str = "0.2.0") -> Path:
             "project_workflow/codex/AGENTS.md",
             "project_workflow/codex/skills/project-task/SKILL.md",
             "project_workflow/codex/skills/project-delegate/SKILL.md",
+            "project_workflow/codex/skills/project-coordinator/SKILL.md",
             "project_workflow/prompts/Delegate.prompt.md",
+            "project_workflow/prompts/Coordinator.prompt.md",
             "project_workflow/cursor/rules/project-workflow.mdc",
         ):
             content = (
                 "Task or Epic verified unsupported unknown available child coordinator "
                 "descendants unrelated independent QA\n"
                 if name.endswith(("Delegate.prompt.md", "project-delegate/SKILL.md"))
-                else "fixture\n"
+                else (
+                    "One owner-facing role preserves one logical Coordinator and chooses the "
+                    "smallest sufficient surface. Give bounded packets, use Clarify at "
+                    "drift-detected boundaries, preserve independent QA, and Stop after sufficient "
+                    "proof. Keep implementation, validation, integration, release, deployment, "
+                    "adoption distinct.\n"
+                    if name.endswith(("Coordinator.prompt.md", "project-coordinator/SKILL.md"))
+                    else "fixture\n"
+                )
             )
             archive.writestr(name, content)
     sdist = dist / f"project_workflow-{version}.tar.gz"
@@ -104,6 +127,8 @@ def artifact_fixture(tmp_path: Path, version: str = "0.2.0") -> Path:
         for relative in (
             "src/project_workflow/prompts/Delegate.prompt.md",
             "src/project_workflow/codex/skills/project-delegate/SKILL.md",
+            "src/project_workflow/prompts/Coordinator.prompt.md",
+            "src/project_workflow/codex/skills/project-coordinator/SKILL.md",
             "src/project_workflow/cursor/rules/project-workflow.mdc",
         ):
             asset = b"fixture\n"

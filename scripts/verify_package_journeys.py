@@ -156,6 +156,9 @@ def verify_package_source_parity(package_path: Path) -> dict[str, Any]:
     for path in sorted((ROOT / "evaluations/intent_integrity").rglob("*")):
         if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
             sdist_sources[path.relative_to(ROOT).as_posix()] = path
+    for path in sorted((ROOT / "evaluations/coordination").rglob("*")):
+        if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
+            sdist_sources[path.relative_to(ROOT).as_posix()] = path
     for path in sorted((ROOT / "tests").rglob("*")):
         if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
             sdist_sources[path.relative_to(ROOT).as_posix()] = path
@@ -358,6 +361,34 @@ def verify_delegate_asset(path: Path, agent: str) -> None:
         raise RuntimeError(f"Delegate asset is incomplete for {agent}: {missing}")
     if agent in {"claude-code", "cursor"} and "${input:" in text:
         raise RuntimeError(f"Copilot placeholder leaked into {agent} Delegate asset")
+
+
+def verify_coordinator_asset(path: Path, agent: str) -> None:
+    if agent == "codex":
+        coordinator = path / ".agents/skills/project-coordinator/SKILL.md"
+    elif agent == "github-copilot":
+        coordinator = path / ".github/prompts/Coordinator.prompt.md"
+    elif agent == "claude-code":
+        coordinator = path / ".claude/agents/project-coordinator.md"
+    else:
+        coordinator = path / ".cursor/agents/project-coordinator.md"
+    text = coordinator.read_text()
+    required = (
+        "owner-facing",
+        "one logical Coordinator",
+        "smallest sufficient",
+        "bounded packets",
+        "Clarify",
+        "drift-detected",
+        "independent QA",
+        "Stop after sufficient proof",
+    )
+    normalized = " ".join(text.split()).lower()
+    missing = [item for item in required if item.lower() not in normalized]
+    if missing:
+        raise RuntimeError(f"Coordinator asset is incomplete for {agent}: {missing}")
+    if agent in {"claude-code", "cursor"} and "${input:" in text:
+        raise RuntimeError(f"Copilot placeholder leaked into {agent} Coordinator asset")
 
 
 def verify_intent_assets(path: Path, agent: str) -> str:
@@ -1072,6 +1103,7 @@ def main() -> int:
             init_output = run(command + ["init", "--agent", agent], fresh, env)
             verify_manifest(fresh, args.version)
             verify_delegate_asset(fresh, agent)
+            verify_coordinator_asset(fresh, agent)
             intent_helper_sha256 = verify_intent_assets(fresh, agent)
             generated_parity = verify_generated_asset_parity(
                 fresh, agent, wheel_resources
@@ -1088,6 +1120,7 @@ def main() -> int:
             )
             verify_manifest(fresh, args.version)
             verify_delegate_asset(fresh, agent)
+            verify_coordinator_asset(fresh, agent)
             fresh_evidence[agent] = {
                 "init": init_output.strip().splitlines()[-1],
                 "doctor": doctor_output.strip().splitlines()[-1],

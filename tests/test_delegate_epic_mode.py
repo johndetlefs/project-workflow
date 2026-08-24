@@ -377,6 +377,8 @@ def test_packet_is_complete_and_capacity_bounds_two_independent_intents(tmp_path
     }
     assert len(packet["forbidden_actions"]) == 4
     assert len(packet["stop_conditions"]) == 4
+    assert "full conversation history" in packet["invalid_substitutes"][-1]
+    assert "authority source and hash actually used" in packet["return_contract"]
     assert "handle" not in json.dumps(payload).lower()
 
 

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["results"],
+  "properties": {
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "decision", "owner_question_count", "qa_actions", "new_contexts", "preserved_controls", "reason"],
+        "properties": {
+          "id": {"type": "string"},
+          "decision": {
+            "enum": [
+              "ask-material-question",
+              "continue-inside-envelope",
+              "drift-detected",
+              "coordinator-sequential",
+              "launch-bounded-subagent",
+              "contract-load-required",
+              "handoff-required",
+              "await-owner-judgment",
+              "stop-and-deliver"
+            ]
+          },
+          "owner_question_count": {"type": "integer", "minimum": 0, "maximum": 3},
+          "qa_actions": {"type": "integer", "minimum": 0, "maximum": 3},
+          "new_contexts": {"type": "integer", "minimum": 0, "maximum": 3},
+          "preserved_controls": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "enum": [
+                "one focused question",
+                "record decision before planning",
+                "no generic reapproval",
+                "existing QA later",
+                "editable outcome",
+                "proxy substitution",
+                "Epic parent is valid",
+                "do not invent IMPLEMENTATION",
+                "current intent audit",
+                "continue autonomously",
+                "drift-ambiguity",
+                "affected branch waits",
+                "capacity is not benefit",
+                "smallest sufficient surface",
+                "bounded packet",
+                "Coordinator verifies return",
+                "repository upgrade is not context refresh",
+                "explicit contract load",
+                "one handoff",
+                "block affected descendants",
+                "restore authorability",
+                "do not self-pass",
+                "owner-only evidence",
+                "no recursive QA",
+                "sufficient proof"
+              ]
+            }
+          },
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

@@ -8,6 +8,11 @@ agent: agent
 
 Use this prompt to coordinate existing approved execution units for exactly one Task or Epic.
 
+Compatibility entry: `project.coordinator` is the owner-facing role. Invoking Delegate enters that
+same one-Coordinator contract and preserves one shared-state writer; it does not create a second
+role. Retain this entry for the first Coordinator release and consider removal only after one full
+minor release and observed migration evidence.
+
 Read `/.project-workflow/guidance.md`, the target requirements, and its canonical implementation or decomposition plan before changing workflow state. Delegate executes approved authority; it does not create scope, approve requirements, invent Task rows or Epic children, or batch unrelated standalone Tasks.
 
 Inputs:
@@ -21,6 +26,10 @@ Inputs:
 
 - Derive each unit's execution needs from approved metadata. The supported tokens are `bounded-return` (and the blank legacy default), `durable-resume`, `direct-owner-steering`, `isolated-worktree`, and `peer:<group-id>`. Also respect `Parallel Safe`, write scope, and repository scope.
 - Select the lightest sufficient surface from `coordinator`, `subagent`, `persistent-task`, and `peer-team`. Task-versus-Epic kind does not determine the surface. Ordinary dependency graphs stay coordinator-mediated; `peer-team` is eligible only for an explicit `peer:<group-id>` need.
+- For current-contract plans, verified capacity alone never earns a non-Coordinator surface. Require
+  `benefit:<slug>`, `overhead:<slug>`, and `tradeoff:<slug>` for its named delivery benefit,
+  setup/synthesis overhead, and why benefit outweighs overhead. Missing basis defaults non-binding
+  work to Coordinator/sequential and blocks a binding surface need.
 - Resolve every relevant capability as `verified`, `unsupported`, or `unknown`, with dated current-runtime observation provenance (`YYYY-MM-DD`). Distinguish `subagent`, `subagent-isolated-worktree`, `persistent-task`, persistent `isolated-worktree`, `persistent-task-owner-steering`, `task-monitoring`, `task-reconciliation`, `peer-team`, `peer-messaging`, `task-retirement`, `task-retirement-reconciliation`, and available child capacity.
 - Only capability observed as `verified` in the current runtime authorises its native execution path. Installed text, generated parity, repository tests, fixtures, or another session do not prove general or cross-host support.
 - Native persistent-task creation also requires explicit authority applicable to the current request. Task or Epic approval alone is not creation authority.

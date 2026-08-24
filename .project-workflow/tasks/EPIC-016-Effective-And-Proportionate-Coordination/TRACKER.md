@@ -1,0 +1,9 @@
+# Stories
+
+| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |
+|---|---|---|---|---|---|---|---|
+| TASK-090 | Define Coordinator Intent And Clarify Contract | Complete | Task | AC1, AC2, AC3, AC15 | tasks/EPIC-016-Effective-And-Proportionate-Coordination/TASK-090-Define-Coordinator-Intent-And-Clarify-Contract/IMPLEMENTATION.md |  | Covers AC1, AC2, AC3, AC15; Prefix TASK: default prefix; no guidance match; Decomposition plan: Proposed Child Work |
+| TASK-091 | Build Durable Coordination Handoff And Drift Controls | Complete | Task | AC4, AC5, AC7, AC10, AC14 | tasks/EPIC-016-Effective-And-Proportionate-Coordination/TASK-091-Build-Durable-Coordination-Handoff-And-Drift-Controls/IMPLEMENTATION.md |  | Covers AC4, AC5, AC7, AC10, AC14; Prefix TASK: default prefix; no guidance match; Decomposition plan: Proposed Child Work |
+| TASK-092 | Route Proportionate Execution And Early Outcome Proof | Complete | Task | AC6, AC8, AC9, AC14 | tasks/EPIC-016-Effective-And-Proportionate-Coordination/TASK-092-Route-Proportionate-Execution-And-Early-Outcome-Proof/IMPLEMENTATION.md |  | Covers AC6, AC8, AC9, AC14; Prefix TASK: default prefix; no guidance match; Decomposition plan: Proposed Child Work |
+| TASK-093 | Create Coordination Behavioural Evaluations | Complete | Task | AC11, AC12, AC14, AC15 | tasks/EPIC-016-Effective-And-Proportionate-Coordination/TASK-093-Create-Coordination-Behavioural-Evaluations/IMPLEMENTATION.md |  | Covers AC11, AC12, AC14, AC15; Prefix TASK: default prefix; no guidance match; Decomposition plan: Proposed Child Work |
+| TASK-094 | Prove Package Publish And Eligible Rollout | In Progress | Task | AC12, AC13 | tasks/EPIC-016-Effective-And-Proportionate-Coordination/TASK-094-Prove-Package-Publish-And-Eligible-Rollout/IMPLEMENTATION.md |  | Covers AC12, AC13; Prefix TASK: default prefix; no guidance match; Decomposition plan: Proposed Child Work |
