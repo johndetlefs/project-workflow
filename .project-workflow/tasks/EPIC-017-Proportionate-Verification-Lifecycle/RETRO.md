@@ -14,11 +14,11 @@
 
 ## Follow-up Tasks
 
-- None within the approved implementation scope. Any push, merge, release, installation, adoption, or live behavioural certification requires separate owner authority and evidence at that higher proof layer.
+- Strategic Advisor EPIC-007 owns consumer-specific reconciliation and adoption against the released Project Workflow 0.8.0 contract. It remains independent and is not a closure dependency for this generic product Epic.
 
 ## Deferrals
 
-- No parent acceptance criterion was deferred. External delivery actions were deliberately not performed because this task authorised local implementation, validation, QA, audit, and commit only.
+- No parent acceptance criterion was deferred. Separate owner authority was subsequently granted for delivery: PR #23 merged, `v0.8.0` was published to PyPI and GitHub, and the public package journey passed.
 
 ## Missed In-Scope Work
 
