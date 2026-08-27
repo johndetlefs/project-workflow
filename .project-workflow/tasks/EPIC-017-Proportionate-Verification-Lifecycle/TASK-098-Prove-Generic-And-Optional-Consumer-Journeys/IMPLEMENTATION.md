@@ -79,7 +79,7 @@ undercooked proof, or consumer coupling.
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | `codex/epic-017-proportionate-verification` from `e1f68633` | 63 affected focused and 492 full tests pass; generated CLI SHA parity; Doctor pass | Local implementation/QA/closeout only; no push/merge/release authorized | Complete fake-adapter sequence and `evidence/optional-consumer-dogfood.json` |
+| . | PR `#23`; merge/tag `c8bbc04b18c31fccecebf6d9d6a20083be6448f7` | 63 affected focused and 492 full tests pass; generated CLI SHA parity; Doctor pass; release workflow `33035726863` pass | Merged to `main`; `v0.8.0` published to PyPI and GitHub | Release receipt and public wheel/sdist digests match; fresh public `uvx` install, init, Doctor, and status pass with asset version 7; complete fake-adapter sequence and `evidence/optional-consumer-dogfood.json` |
 | `/Users/johndetlefs/repos/strategic-advisor` | `codex/proportionate-verification-runner` at `82b44a0aabe81662917c44b8e99d3a2a6fd021c4`, from `6d65830f` | 17 focused runner tests, 188 full tests and seven validation scopes pass | Local commit only; no push/merge/release/install authorized | Standalone/request-bound receipt; pre-existing TASK-030 Doctor boundary retained |
 
 ## Task List
@@ -126,9 +126,9 @@ undercooked proof, or consumer coupling.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: Freeze the candidate after the affected/full boundary, retain one independent QA verdict, invalidate only the proof layers named by a finding, and reuse unchanged release evidence instead of restarting the campaign.
+- Conventions or agent assets updated: Project Workflow 0.8.0 publishes the generic staged verification contract, currentness-aware receipts, bounded QA remediation, and optional adapter/runner interfaces through managed asset version 7.
+- Follow-up tasks: Strategic Advisor EPIC-007 owns consumer-specific reconciliation and adoption; that work is not evidence required to close this generic product Epic.
 
 ## Notes
 

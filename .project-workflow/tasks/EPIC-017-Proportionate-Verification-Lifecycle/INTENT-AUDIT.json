@@ -1,5 +1,5 @@
 {
-  "artifact_identity": "sha256:9a4a8d0ce0fa9bfb6d0712a8678d051b0707879bc11a3283dacd5ec98e499cab",
+  "artifact_identity": "sha256:d0e1f58a874c33b70e5616e483d33c328293b7b158fc09cfbe8a853f87898f2a",
   "commitments": [
     {
       "amendment": null,
@@ -100,7 +100,7 @@
       "user_visible_consequence": "Every verification and delivery claim remains subordinate to the exact approved outcome, candidate and authority."
     }
   ],
-  "review_source": "Current Coordinator review of the owner-approved proportionate-verification direction, explicit no-coupling condition, Project Workflow 0.7.0 foundation, four-child decomposition, implemented evidence updates, and complete OC-to-AC/child/proof coverage. The reference consumer remains optional and standalone; Project Workflow product behavior remains generic.",
+    "review_source": "Current Coordinator review of the owner-approved proportionate-verification direction, explicit no-coupling condition, four-child decomposition, merged Project Workflow 0.8.0 delivery evidence, and complete OC-to-AC/child/proof coverage. The reference consumer remains optional and standalone; Project Workflow product behavior remains generic.",
   "reviewed_at": "2026-08-27",
   "reviewed_by": "EPIC-017 Coordinator",
   "schema_version": 1,
