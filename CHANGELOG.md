@@ -4,6 +4,38 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## 0.8.0 - 2026-08-27
+
+### Added
+
+- Added an optional, durable verification campaign inside the existing Coordinator lifecycle,
+  binding exact candidate, source, proof contract, claims, scope, ordered stages, limits, and
+  input-current typed receipts before materially expensive verification begins.
+- Added generic manual and command/JSON verifier adapters with capability negotiation, exact
+  request/receipt identity binding, evaluator-only zero-target regrade, and consumer-independent
+  operation.
+- Added deterministic operational states for implementation, verification, QA, delivery readiness,
+  and blocked work, plus sanitized end-to-end invocation-count dogfood and adversarial countercases.
+
+### Changed
+
+- Changed material verification to progress from cheap canary/affected proof to full certification,
+  while unknown material impact fails safely toward broader proof and cheap work retains the normal
+  lifecycle without extra ceremony.
+- Changed verification continuation so certification stops on the first product failure, diagnostics
+  require a separately named bounded decision, and only one infrastructure retry can be retained.
+- Changed resolved independent QA handling so the original verdict is preserved and one named
+  affected validation disposition closes the finding without another QA invocation.
+
+### Fixed
+
+- Fixed expensive first-green release campaigns being able to continue into full verification after
+  an earlier blocking stage failed or declared limits were exhausted.
+- Fixed omitted, stale, redefined, rehashed, malformed, and over-limit campaign evidence appearing
+  current enough to advance Review or Complete.
+- Fixed evaluator-only changes rerunning target work, and fixed verifier/adaptor failures escaping
+  retained bounded attempt accounting.
+
 ## 0.7.0 - 2026-08-24
 
 ### Added

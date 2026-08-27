@@ -33,16 +33,16 @@ jobs:
       - name: Require immutable tag on reviewed main history
         run: |
           test "${{ github.event.before }}" = "0000000000000000000000000000000000000000"
-          test "$GITHUB_REF_NAME" = "v0.7.0"
+          test "$GITHUB_REF_NAME" = "v0.8.0"
           git fetch origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           test -z "$(git status --porcelain)"
           python scripts/release_contract.py check-source \
-            --version 0.7.0 \
+            --version 0.8.0 \
             --tag "$GITHUB_REF_NAME" \
             --clean
           uv lock --check
-          python scripts/release_contract.py check-public-availability --version 0.7.0
+          python scripts/release_contract.py check-public-availability --version 0.8.0
       - name: Run complete locked repository validation
         run: |
           uv sync --locked --extra dev --python 3.10
@@ -52,7 +52,7 @@ jobs:
       - name: Inspect distributions and create release receipt
         run: |
           uv run --locked python scripts/release_contract.py build-receipt \
-            --version 0.7.0 \
+            --version 0.8.0 \
             --tag "$GITHUB_REF_NAME" \
             --commit "$GITHUB_SHA" \
             --repository "$GITHUB_REPOSITORY" \
@@ -68,7 +68,7 @@ jobs:
           wheel="$(find "$PWD/dist" -maxdepth 1 -name '*.whl' -print -quit)"
           uv run --locked python scripts/verify_package_journeys.py \
             --from "$wheel" \
-            --version 0.7.0 \
+            --version 0.8.0 \
             --output release/package-journeys.json
       - name: Attest exact release files
         uses: actions/attest@36051bcae73b7c2a8a6945a48cbf80953c6baa35 # v4
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/project-workflow/0.7.0/
+      url: https://pypi.org/project/project-workflow/0.8.0/
     permissions:
       id-token: write
     steps:

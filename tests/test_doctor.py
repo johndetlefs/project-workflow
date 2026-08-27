@@ -420,15 +420,15 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
     assert manifest == workflow_cli.WorkflowManifest(
         manifest_version=1,
         package_version=__version__,
-        asset_version=6,
+        asset_version=7,
         schema_version=1,
         applied_migrations=(),
     )
     assert workflow_cli._serialize_workflow_manifest(manifest) == (
         "{\n"
         '  "manifest_version": 1,\n'
-        '  "package_version": "0.7.0",\n'
-        '  "asset_version": 6,\n'
+        '  "package_version": "0.8.0",\n'
+        '  "asset_version": 7,\n'
         '  "schema_version": 1,\n'
         '  "applied_migrations": []\n'
         "}\n"
@@ -500,7 +500,7 @@ def test_repository_compatibility_classifies_supported_states(tmp_path: Path) ->
     ("update", "reason"),
     [
         ({"manifest_version": 2, "extension": "future"}, "future-manifest-version"),
-        ({"asset_version": 7}, "future-asset-version"),
+        ({"asset_version": 8}, "future-asset-version"),
         ({"schema_version": 2}, "future-schema-version"),
     ],
 )
@@ -2559,7 +2559,7 @@ def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
     )
     assert missing_tracker.returncode != 0
     assert (
-        "uvx --from project-workflow==0.7.0 project init"
+        "uvx --from project-workflow==0.8.0 project init"
         in missing_tracker.stderr
     )
 
@@ -3021,7 +3021,7 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "# Existing Agent Notes" in codex_agents
     assert "<!-- project-workflow:start -->" in codex_agents
     assert (
-        "uvx --from project-workflow==0.7.0 project init"
+        "uvx --from project-workflow==0.8.0 project init"
         in codex_agents
     )
     assert "To initialize a new repository" in codex_agents

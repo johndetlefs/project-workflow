@@ -7,14 +7,11 @@ from pathlib import Path
 
 from project_workflow import cli as workflow_cli
 
-
 PROJECT = [sys.executable, "-m", "project_workflow.cli"]
 
 
 def run_project(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [*PROJECT, *args], cwd=root, check=False, capture_output=True, text=True
-    )
+    return subprocess.run([*PROJECT, *args], cwd=root, check=False, capture_output=True, text=True)
 
 
 def fixture_repo(tmp_path: Path) -> Path:
@@ -59,6 +56,8 @@ def coordinate_init(root: Path) -> subprocess.CompletedProcess[str]:
         "context-1",
         "--next-action",
         "Run the existing lifecycle gate.",
+        "--material-verification",
+        "no",
     )
 
 
@@ -120,12 +119,15 @@ def test_required_boundary_is_fail_closed_and_source_bound(tmp_path: Path) -> No
         "Start unit-a through Delegate.",
     )
     assert recorded.returncode == 0, recorded.stdout + recorded.stderr
-    assert workflow_cli._coordination_boundary_gate_issues(
-        tmp_path,
-        "TASK-001",
-        boundary="before-unit-start",
-        subject_id="unit-a",
-    ) == []
+    assert (
+        workflow_cli._coordination_boundary_gate_issues(
+            tmp_path,
+            "TASK-001",
+            boundary="before-unit-start",
+            subject_id="unit-a",
+        )
+        == []
+    )
 
     advanced = run_project(
         tmp_path,

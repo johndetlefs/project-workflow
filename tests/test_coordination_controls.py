@@ -9,14 +9,11 @@ import pytest
 
 from project_workflow import cli as workflow_cli
 
-
 PROJECT = [sys.executable, "-m", "project_workflow.cli"]
 
 
 def run_project(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [*PROJECT, *args], cwd=root, check=False, capture_output=True, text=True
-    )
+    return subprocess.run([*PROJECT, *args], cwd=root, check=False, capture_output=True, text=True)
 
 
 def fixture_repo(tmp_path: Path, *, task_id: str = "TASK-001") -> Path:
@@ -78,6 +75,8 @@ def coordinate_init(
         claim_class,
         "--material-user-facing",
         material,
+        "--material-verification",
+        "no",
     ]
     if checkpoint_unit:
         args.extend(("--checkpoint-unit", checkpoint_unit))
@@ -144,9 +143,7 @@ def test_current_stale_unknown_and_explicit_contract_load_preflight(tmp_path: Pa
     state["loaded_contract"]["asset_version"] = "4"
     state["loaded_contract"]["contract_version"] = "0"
     state_path.write_text(json.dumps(state))
-    stale = run_project(
-        tmp_path, "coordinate", "preflight", "--id", "TASK-001", "--format", "json"
-    )
+    stale = run_project(tmp_path, "coordinate", "preflight", "--id", "TASK-001", "--format", "json")
     stale_payload = json.loads(stale.stdout)
     assert stale_payload["contract_state"] == "stale"
     assert stale_payload["next_action"] == "contract-load-required"
@@ -154,7 +151,8 @@ def test_current_stale_unknown_and_explicit_contract_load_preflight(tmp_path: Pa
 
 
 def test_existing_task_lifecycle_enforces_source_bound_decisions_automatically(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fixture_repo(tmp_path)
     assert coordinate_init(tmp_path).returncode == 0
@@ -182,12 +180,15 @@ def test_existing_task_lifecycle_enforces_source_bound_decisions_automatically(
         update()
     assert "unit-return-or-dependency-join" in str(missing_return.value)
 
-    assert record_boundary(
-        tmp_path,
-        "unit-return-or-dependency-join",
-        "inside-envelope",
-        affected="TASK-001",
-    ).returncode == 0
+    assert (
+        record_boundary(
+            tmp_path,
+            "unit-return-or-dependency-join",
+            "inside-envelope",
+            affected="TASK-001",
+        ).returncode
+        == 0
+    )
     advanced = run_project(
         tmp_path,
         "coordinate",
@@ -205,17 +206,21 @@ def test_existing_task_lifecycle_enforces_source_bound_decisions_automatically(
     with pytest.raises(SystemExit) as stale_source:
         update()
     assert "stale source-bound" in str(stale_source.value)
-    assert record_boundary(
-        tmp_path,
-        "unit-return-or-dependency-join",
-        "inside-envelope",
-        affected="TASK-001",
-    ).returncode == 0
+    assert (
+        record_boundary(
+            tmp_path,
+            "unit-return-or-dependency-join",
+            "inside-envelope",
+            affected="TASK-001",
+        ).returncode
+        == 0
+    )
     assert update() == ("In Progress", "Testing")
 
 
 def test_epic_child_lifecycle_rejects_stale_source_bound_decision(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     initialized = run_project(tmp_path, "init", "--agent", "codex")
     assert initialized.returncode == 0, initialized.stdout + initialized.stderr
@@ -256,6 +261,8 @@ def test_epic_child_lifecycle_rejects_stale_source_bound_decision(
         "context-1",
         "--next-action",
         "Verify the child return.",
+        "--material-verification",
+        "no",
     )
     assert coordinated.returncode == 0, coordinated.stdout + coordinated.stderr
 
@@ -323,9 +330,7 @@ def test_epic_child_lifecycle_rejects_stale_source_bound_decision(
 
 
 @pytest.mark.parametrize("boundary", workflow_cli.COORDINATION_BOUNDARIES)
-def test_water_style_drift_blocks_at_each_source_bound_gate(
-    tmp_path: Path, boundary: str
-) -> None:
+def test_water_style_drift_blocks_at_each_source_bound_gate(tmp_path: Path, boundary: str) -> None:
     fixture_repo(tmp_path)
     assert coordinate_init(tmp_path).returncode == 0
     drift = record_boundary(tmp_path, boundary, "drift-detected")
@@ -338,9 +343,7 @@ def test_water_style_drift_blocks_at_each_source_bound_gate(
         subject_id="water-canary",
     )
     assert issues and "blocked by recorded drift" in issues[0]
-    status = run_project(
-        tmp_path, "coordinate", "status", "--id", "TASK-001", "--format", "json"
-    )
+    status = run_project(tmp_path, "coordinate", "status", "--id", "TASK-001", "--format", "json")
     payload = json.loads(status.stdout)
     assert payload["last_boundary"]["classification"] == "drift-detected"
     assert payload["last_boundary"]["intent_identity"].startswith("sha256:")
@@ -361,9 +364,12 @@ def test_early_outcome_checkpoint_gates_existing_lifecycle_and_owner_judgment(
     assert workflow_cli._coordination_checkpoint_gate_issues(
         tmp_path, "TASK-001", subject_id="polish"
     ) == ["early outcome checkpoint water-canary must pass before starting polish"]
-    assert workflow_cli._coordination_checkpoint_gate_issues(
-        tmp_path, "TASK-001", subject_id="water-canary"
-    ) == []
+    assert (
+        workflow_cli._coordination_checkpoint_gate_issues(
+            tmp_path, "TASK-001", subject_id="water-canary"
+        )
+        == []
+    )
 
     checkpoint_args = (
         "coordinate",
@@ -428,11 +434,15 @@ def test_phase_handoff_preserves_decisions_and_approved_change_refreshes_authori
         "context-1",
         "--next-action",
         "Run existing planning gates",
+        "--material-verification",
+        "no",
     )
     assert initialized.returncode == 0, initialized.stdout + initialized.stderr
 
     requirements = task_dir / "REQUIREMENTS.md"
-    requirements.write_text(requirements.read_text() + "\n## Decision\n\nUse consumer source two.\n")
+    requirements.write_text(
+        requirements.read_text() + "\n## Decision\n\nUse consumer source two.\n"
+    )
     amended = record_boundary(
         tmp_path,
         "new-evidence-or-owner-reframe",
@@ -478,9 +488,7 @@ def test_inside_envelope_evidence_refresh_advances_authority_without_circular_pr
         + "\n## Evidence Update\n\nFocused validation completed without changing Intent.\n"
     )
 
-    stale = run_project(
-        tmp_path, "coordinate", "preflight", "--id", "TASK-001", "--format", "json"
-    )
+    stale = run_project(tmp_path, "coordinate", "preflight", "--id", "TASK-001", "--format", "json")
     assert json.loads(stale.stdout)["contract_state"] == "stale"
 
     refreshed = record_boundary(
@@ -501,12 +509,15 @@ def test_inside_envelope_evidence_refresh_advances_authority_without_circular_pr
 
 def test_project_status_prioritizes_pending_outcome_checkpoint(tmp_path: Path) -> None:
     fixture_repo(tmp_path)
-    assert coordinate_init(
-        tmp_path,
-        claim_class="authoring",
-        material="yes",
-        checkpoint_unit="water-canary",
-    ).returncode == 0
+    assert (
+        coordinate_init(
+            tmp_path,
+            claim_class="authoring",
+            material="yes",
+            checkpoint_unit="water-canary",
+        ).returncode
+        == 0
+    )
     status = run_project(tmp_path, "status", "--id", "TASK-001", "--format", "json")
     assert status.returncode == 0, status.stdout + status.stderr
     payload = json.loads(status.stdout)
