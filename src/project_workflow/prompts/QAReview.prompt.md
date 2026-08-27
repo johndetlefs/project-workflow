@@ -36,7 +36,7 @@ Defaults and inference:
 Required workflow:
 
 1. Read `REQUIREMENTS.md`, `IMPLEMENTATION.md`, and the tracker row for the task.
-2. Confirm implementation has reached `Testing`. If it has not, stop and direct the user to run `project.implement` first.
+2. Confirm implementation has reached `Testing`. If it has not, stop and direct the user to run `project.implement` first. When a material verification campaign exists, require its derived state to be `qa-required` (or already `delivery-ready`). A `verification-required` or `blocked` state returns to the Coordinator; QA does not launch, broaden, or restart the campaign.
 3. Run the relevant workflow status command to move the row to `Review` before starting QA/code review:
    - standalone task: `./.project-workflow/cli/workflow task status --id ${input:taskId} --to Review`
    - epic child: `./.project-workflow/cli/workflow epic status --epic-id <EPIC_ID> --id ${input:taskId} --to Review`
@@ -114,6 +114,10 @@ Guardrails:
 - Run independent QA once when the approved work item requires it. Findings may trigger affected
   validation, but never a fresh open-ended review. Another reviewer invocation requires a new
   material change, an explicit high-consequence requirement, or direct owner authorization.
+- QA may perform a planned narrow check for its verdict but cannot schedule materially expensive
+  verification. Missing campaign proof returns to the Coordinator, and corrections close through
+  one affected validation disposition while retaining the original verdict and commissioning no
+  second QA.
 - For delegated work, independently inspect coordinator-verified worker identity, exact source/worktree,
   allowed diff, validations, evidence, capability/capacity provenance, descendant blocking, privacy,
   and single-writer behavior. Delegate's aggregate report and worker assertions are not QA evidence by

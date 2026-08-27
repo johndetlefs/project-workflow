@@ -677,6 +677,24 @@ fan-out. The same physical context may continue after explicitly loading the cur
 there is no conflicting authority or isolation need; before that explicit load, preflight blocks
 continuation as `contract-load-required`. A fresh context must earn its transfer cost.
 
+Materially expensive verification is an optional campaign inside that same coordination state,
+not another lifecycle or review scheduler. `coordinate init` durably classifies verification as
+required or not required; required work also binds exact claims, stages, and scope so omission or
+redefinition cannot bypass Review/Complete. `coordinate verification-preflight` reads that durable
+classification and projects
+`implementation-required`, `verification-required`, `qa-required`, `delivery-ready`, or `blocked`
+without executing anything. A required campaign binds an exact candidate to claims, canonical
+cheap-to-expensive stages, affected scope, finite limits, and input-bound typed receipts. Use a
+declared manual command or a framework-neutral command/JSON adapter; every command receipt must
+echo the exact request/candidate/source/proof/stage identity before it is retained. Project
+Workflow does not require or identify a verifier. Certification fails fast on a product/assertion failure, while
+diagnostic continuation requires a named selected decision and finite boundary. Limits pause or
+block missing proof rather than waiving it. Candidate changes refresh affected proof,
+evaluator-only changes regrade retained output with zero target calls, infrastructure gets one
+bounded retry, and unknown material impact requires full proof. A current passing campaign proceeds
+to the one existing independent QA gate and unchanged green proof is reused for delivery. Cheap
+bounded work explicitly requiring no material campaign keeps the ordinary lifecycle unchanged.
+
 Delegate coordinates existing approved execution units for exactly one target:
 
 - for a Task, the units are implementation-plan rows and Implement performs each bounded unit;

@@ -81,6 +81,15 @@ smallest sufficient context, execution, and proof surface for a named delivery n
   may continue after explicitly loading the current contract when there is no conflict or isolation
   need. Existing lifecycle transitions fail closed on missing, stale, or drifted decisions; none of
   these controls creates QA.
+- At `coordinate init`, durably classify material verification as required or not required and bind
+  required claims, stages, and scope. Before materially expensive proof, use
+  `coordinate verification-preflight`, then attach the matching exact-candidate campaign to the
+  existing state. Missing required state blocks Review and Complete. Execute cheap-to-expensive stages, certification
+  fail-fast, separately bounded diagnostics, finite non-waiving limits, input-bound typed receipts,
+  and optional manual or generic command/JSON adapters. Reuse current proof; evaluator-only changes
+  regrade retained output with zero target calls, infrastructure gets one bounded retry, and unknown
+  impact requires full proof. Cheap work needs no campaign, and the derived state is not another
+  lifecycle or QA scheduler.
 
 ## Cursor Usage
 

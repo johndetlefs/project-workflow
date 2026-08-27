@@ -119,6 +119,11 @@ Continuation and validation sufficiency:
   of the named invalidated proof, and `ambiguous` asks the owner one concise question.
 - A passed affected validation ends continuation work for that change identity. Validation impact
   never creates, broadens, or reopens independent QA.
+- If the Coordinator declares materially expensive verification, finish implementation before any
+  verifier call and execute only the current campaign stage from cheapest to most expensive. A
+  blocking certification failure forbids later stages and returns to implementation; further
+  investigation requires a separately bounded diagnostic campaign. Limits never waive missing
+  proof, and unchanged current receipts are reused.
 
 E2E exception:
 

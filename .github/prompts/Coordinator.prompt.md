@@ -47,6 +47,23 @@ For material user-facing, authoring, visual, gameplay-feel, migration, or replac
 the earliest sufficient normal-user-journey checkpoint before dependent fan-out. Mechanical work
 is exempt. Do not repeat an unchanged passing checkpoint or self-pass owner-only judgment.
 
+At `coordinate init`, durably classify material verification as required or not required and bind
+required claims, stages, and scope. Before materially expensive verification, run
+`coordinate verification-preflight`; incomplete
+implementation authorizes zero verifier calls, while cheap work explicitly requiring no material
+campaign keeps the ordinary lifecycle. Omitted required state blocks Review and Complete. For
+required proof, attach one compact campaign to the
+existing coordination state with exact candidate, claims, ordered cheap-to-expensive stages,
+affected scope, finite limits, and a declared manual command or optional generic command/JSON
+adapter. Certification stops at the first product/assertion failure. Diagnostic continuation needs
+a named decision, selected scope, and finite boundary and cannot certify delivery. Limits block or
+pause missing proof; they never waive it. Reuse input-bound receipts: source change creates a fresh
+candidate, evaluator-only change regrades retained output with zero target calls, infrastructure
+gets one bounded retry, and unknown material impact requires full proof. Treat
+`implementation-required`, `verification-required`, `qa-required`, `delivery-ready`, and `blocked`
+as a read-only projection, not a second lifecycle. Current green proof proceeds to one independent
+QA and unchanged proof is not reopened for delivery.
+
 Route execution through Implement and the independent QA required by the approved risk and proof
 contract. Autonomous inside-envelope continuation removes generic reapproval, not that existing
 later QA gate. Coordinator inspection is not independent QA. Keep implementation, validation,

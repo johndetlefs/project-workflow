@@ -1,0 +1,83 @@
+{
+  "assertions": {
+    "complete_sequence": true,
+    "corrected_candidate_bound": true,
+    "failed_canary_blocked_full": true,
+    "no_runtime_dependency": true,
+    "regrade_zero_target_calls": true,
+    "unchanged_delivery_zero_invocations": true
+  },
+  "events": [
+    {
+      "event": "incomplete-preflight",
+      "mutated": false,
+      "operational_state": "implementation-required",
+      "verifier_invocations": 0
+    },
+    {
+      "candidate_identity": "candidate-failing",
+      "event": "failed-canary",
+      "later_stage_invocations": 0,
+      "operational_state": "blocked",
+      "outcome": "product-failure",
+      "stage": "canary",
+      "target_calls": 2
+    },
+    {
+      "candidate_identity": "candidate-corrected",
+      "event": "corrected-canary",
+      "outcome": "pass",
+      "stage": "canary",
+      "target_calls": 2
+    },
+    {
+      "candidate_identity": "candidate-corrected",
+      "event": "corrected-full",
+      "operational_state": "qa-required",
+      "outcome": "pass",
+      "receipt_identity": "sha256:f56e34e6de8f30ca95d80f0ea600ce5ed76cd66dab66b08ed123b1df1c3cc0cf",
+      "request_identity": "sha256:b28c298cf66f3a729f20f3d2d360a9d07cbcb414b1fb63f0974397edf1ac5275",
+      "stage": "full",
+      "target_calls": 2
+    },
+    {
+      "candidate_identity": "candidate-corrected",
+      "event": "evaluator-only-regrade",
+      "outcome": "pass",
+      "regrade": true,
+      "stage": "full",
+      "target_calls": 0
+    },
+    {
+      "additional_verifier_invocations": 0,
+      "event": "one-qa",
+      "qa_verdict": "pass",
+      "second_qa_commissioned": false
+    },
+    {
+      "event": "unchanged-delivery",
+      "mutated": false,
+      "operational_state": "delivery-ready",
+      "verifier_invocations": 0
+    }
+  ],
+  "proof_boundary": "Synthetic fake-model adapter conformance and orchestration sequence only; not Strategic Advisor behavioural certification, release, install, adoption, or effectiveness.",
+  "sanitized": true,
+  "schema_version": 2,
+  "standalone_verifier": {
+    "capabilities": [
+      "request-binding",
+      "selection",
+      "fail-fast",
+      "limits",
+      "typed-outcomes",
+      "checkpoint-resume",
+      "input-bound-receipts",
+      "transcript-regrade"
+    ],
+    "runtime_dependency_required": false,
+    "selected_scope": [
+      "DRIFT-011"
+    ]
+  }
+}

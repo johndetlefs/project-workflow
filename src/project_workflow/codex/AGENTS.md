@@ -64,6 +64,18 @@ Delegate remain the sole owners of execution units, dependencies, packets, retur
 lifecycle. Existing lifecycle transitions fail closed on missing, stale, or drifted boundary
 decisions. These controls never create QA.
 
+At `coordinate init`, durably classify material verification as required or not required and bind
+required claims, stages, and scope. For materially expensive proof, run
+`coordinate verification-preflight` before invoking a verifier and attach the matching
+exact-candidate campaign to the existing coordination state. Missing required state blocks Review
+and Complete. Execute canonical
+cheap-to-expensive stages; certification stops on the first product/assertion failure, diagnostic
+continuation needs a named bounded decision, and finite limits never waive missing proof. Reuse
+input-bound typed receipts, including zero-target-call evaluator regrade and one bounded
+infrastructure retry. Adapters are optional and framework-neutral; cheap work needs no campaign.
+The implementation/verification/QA/delivery/blocked result is a read-only projection, not another
+lifecycle or review scheduler.
+
 Backlog is optional and sits between constitution and tracker state. Keep `.project-workflow/BACKLOG.md` for future intent, rough priority, options, and promotion history. Promoted rows remain in the backlog with `Promoted To` pointing at the created task or epic ID; active execution status belongs only in `.project-workflow/TRACKER.md`, epic trackers, and task/epic docs.
 
 Project Workflow is owner-directed and agent-operated. The owner supplies intent, constraints, examples, decisions, and approvals; the agent runs commands, drafts artifacts, asks focused questions, validates readiness, implements, reviews, and records evidence. Do not make manual template completion the normal user path.
