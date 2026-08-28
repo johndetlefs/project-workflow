@@ -1,0 +1,122 @@
+{
+  "artifact_identity": "sha256:88f35d711adfdcb93760e49a2195bf2a19dbfddadffc2c082fbb34a37c2ec9bf",
+  "commitments": [
+    {
+      "amendment": null,
+      "child_owners": [],
+      "classification": "unknown",
+      "disposition": "active",
+      "id": "OC1",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [],
+      "required_outcome_proof": "",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc1"
+      ],
+      "target_locations": [],
+      "user_visible_consequence": "____"
+    },
+    {
+      "amendment": null,
+      "child_owners": [],
+      "classification": "unknown",
+      "disposition": "active",
+      "id": "OC2",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [],
+      "required_outcome_proof": "",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc2"
+      ],
+      "target_locations": [],
+      "user_visible_consequence": "____"
+    },
+    {
+      "amendment": null,
+      "child_owners": [],
+      "classification": "unknown",
+      "disposition": "active",
+      "id": "OC3",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [],
+      "required_outcome_proof": "",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc3"
+      ],
+      "target_locations": [],
+      "user_visible_consequence": "____"
+    },
+    {
+      "amendment": null,
+      "child_owners": [],
+      "classification": "unknown",
+      "disposition": "active",
+      "id": "OC4",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [],
+      "required_outcome_proof": "",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc4"
+      ],
+      "target_locations": [],
+      "user_visible_consequence": "____"
+    },
+    {
+      "amendment": null,
+      "child_owners": [],
+      "classification": "unknown",
+      "disposition": "active",
+      "id": "OC5",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": [],
+      "required_outcome_proof": "",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc5"
+      ],
+      "target_locations": [],
+      "user_visible_consequence": "____"
+    },
+    {
+      "amendment": null,
+      "child_owners": [],
+      "classification": "unknown",
+      "disposition": "active",
+      "id": "OC6",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": [],
+      "required_outcome_proof": "",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc6"
+      ],
+      "target_locations": [],
+      "user_visible_consequence": "____"
+    },
+    {
+      "amendment": null,
+      "child_owners": [],
+      "classification": "unknown",
+      "disposition": "active",
+      "id": "OC7",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": [],
+      "required_outcome_proof": "",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc7"
+      ],
+      "target_locations": [],
+      "user_visible_consequence": "____"
+    }
+  ],
+  "review_source": "",
+  "reviewed_at": "",
+  "reviewed_by": "",
+  "schema_version": 1,
+  "verdict": "review-required"
+}
