@@ -102,7 +102,7 @@ owning another workflow or pretending its native units are Codex units.
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | `codex/cross-host-execution-control` from `c1426f2c` | 31 focused and 548 full-suite tests pass; wheel/sdist build and required-member/mode/source inspection pass; fresh managed CLI loads standalone; runtime inventory proves Claude unavailable | Local working-tree candidate and retained package proof only; no real Claude canary, push, merge, publication, installation or adoption | `tests/test_claude_adapter.py`; `tests/test_execution_control_contract.py`; `EVIDENCE.json`; `evidence/task102-validation.json`; `evidence/package-manifest.json`; `evidence/runtime-capability.json`; `evidence/independent-qa.txt` |
+| . | PR `#25`; merge `0f02f42b`; tag `v0.9.0` | 31 focused and 548 full-suite tests pass; release workflow, wheel/sdist inspection, package journeys, and universal installation/no-op verification pass; runtime inventory still proves Claude unavailable | v0.9.0 is merged, published to PyPI/GitHub, and installed across 30 physical roots / 44 integrations. This delivery does not provide the missing real Claude canary or runtime-support certification. | `tests/test_claude_adapter.py`; `tests/test_execution_control_contract.py`; `EVIDENCE.json`; `evidence/task102-validation.json`; `evidence/package-manifest.json`; `evidence/runtime-capability.json`; `evidence/independent-qa.txt`; parent `evidence/v0.9.0-adoption.json` |
 
 ## Task List
 
@@ -137,8 +137,9 @@ owning another workflow or pretending its native units are Codex units.
   affected remediation proof; the real-runtime blocker remains open without recursive QA.
 - AC12: Disabled, untrusted, tampered, unavailable, stale-version, missing-flag/authentication and
   missing-hook fixtures report non-support without read-only model or executable calls.
-- AC13: Retained package assets and executable mode pass; installation/activation and full
-  fresh/upgrade/no-op/disable journeys remain TASK-103.
+- AC13: Retained package assets, executable mode, package fresh/upgrade/no-op/disable journeys, and
+  universal managed installation now pass. Real Claude activation and cross-host equivalence remain
+  TASK-103 and are blocked by the unavailable authenticated runtime.
 
 ## Validation Impact
 

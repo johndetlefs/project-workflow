@@ -748,6 +748,29 @@
       "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
       "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
       "user_consequence": "Proceed with exact-candidate release verification and rollout; retain TASK-102/TASK-103 and the real Claude canary as open proof."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "None; the v0.9.0 release and universal adoption ledger records delivery already authorized by AMD-001 and preserves every outstanding Claude and cross-host proof obligation.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:8d2e25ba43177981d521a310c2785f89c04429607bb8ead14789af7f57eb7704",
+      "relevant_ocs": [
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Treat v0.9.0 as merged, public, and installed everywhere while TASK-102 remains Blocked, TASK-103 remains Approved, and Claude runtime support remains uncertified."
     }
   ],
   "decisions": [
@@ -759,7 +782,7 @@
     "context_contract": "declared",
     "telemetry": "unknown"
   },
-  "intent_identity": "sha256:0c5a7926896b5f31ef384a85be21df2923ed305189f7da9c392f1713bf7cc142",
+  "intent_identity": "sha256:8d2e25ba43177981d521a310c2785f89c04429607bb8ead14789af7f57eb7704",
   "last_boundary": {
     "affected_units": [
       "TASK-102",
@@ -767,24 +790,21 @@
     ],
     "amendment_identity": null,
     "boundary": "new-evidence-or-owner-reframe",
-    "capability_change": "The current approval envelope and intent audit now record the owner-approved v0.9.0 delivery sequence without changing any Epic capability or proof obligation.",
+    "capability_change": "None; the v0.9.0 release and universal adoption ledger records delivery already authorized by AMD-001 and preserves every outstanding Claude and cross-host proof obligation.",
     "classification": "inside-envelope",
     "decided_by": "EPIC-018 Coordinator",
     "decision_date": "2026-08-29",
-    "intent_identity": "sha256:0c5a7926896b5f31ef384a85be21df2923ed305189f7da9c392f1713bf7cc142",
+    "intent_identity": "sha256:8d2e25ba43177981d521a310c2785f89c04429607bb8ead14789af7f57eb7704",
     "relevant_ocs": [
-      "OC1",
       "OC2",
       "OC3",
       "OC4",
-      "OC5",
-      "OC6",
       "OC7"
     ],
     "shared_premises_valid": "yes",
     "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
     "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
-    "user_consequence": "Proceed with exact-candidate release verification and rollout; retain TASK-102/TASK-103 and the real Claude canary as open proof."
+    "user_consequence": "Treat v0.9.0 as merged, public, and installed everywhere while TASK-102 remains Blocked, TASK-103 remains Approved, and Claude runtime support remains uncertified."
   },
   "loaded_contract": {
     "asset_version": "8",
@@ -793,7 +813,7 @@
     "package_version": "0.9.0",
     "recorded_at": "2026-08-29"
   },
-  "next_action": "Validate one exact v0.9.0 candidate, publish it, and upgrade every accessible installation; preserve the open Claude canary and existing one-QA campaign.",
+  "next_action": "Integrate the exact v0.9.0 release/adoption evidence; retain TASK-102 Blocked, TASK-103 Approved, and EPIC-018 In Progress.",
   "outcome_checkpoint": {
     "checkpoint_unit": null,
     "claim_class": "mechanical",
@@ -804,11 +824,11 @@
   "phase": "implementation",
   "repositories": {
     "project-workflow": {
-      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0"
+      "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182"
     }
   },
   "schema_version": 2,
-  "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+  "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
   "target_id": "EPIC-018",
   "verification_campaign": null,
   "verification_requirement": {

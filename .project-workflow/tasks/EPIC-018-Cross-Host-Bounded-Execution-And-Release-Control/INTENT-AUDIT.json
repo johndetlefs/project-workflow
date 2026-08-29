@@ -1,5 +1,5 @@
 {
-  "artifact_identity": "sha256:33716ae9e921aae824bbdb91a9b50e8e07b4ce73659097dc43cd2467a413df63",
+  "artifact_identity": "sha256:5daca5180d9f062b67f9cf1cf465597796cfcf2cca37b9913e5f21137cf5f0f7",
   "commitments": [
     {
       "amendment": null,
@@ -100,7 +100,7 @@
       "user_visible_consequence": "Every host-support and delivery claim remains subordinate to current source, exact evidence and the separately authorized merge, release, installation, adoption and owner-acceptance boundaries."
     }
   ],
-  "review_source": "EPIC-018 Coordinator review of John Detlefs's 2026-08-28 meaning approval and 2026-08-29 delivery-sequence amendment, the exact current requirements and Epic contract, five-row decomposition, complete OC-to-AC/child/proof coverage, completed TASK-099 through TASK-101 evidence, and TASK-102's preserved independent QA plus affected remediation. The amendment authorizes v0.9.0 merge, publication, and universal installation before the real Claude canary but does not narrow or waive any OC or parent AC: the packaged Claude adapter remains fail-closed and explicitly not runtime-certified, TASK-102 and TASK-103 stay open, no second broad QA is commissioned, and EPIC-018 cannot close until the real cross-host evidence is completed or separately deferred by the owner.",
+  "review_source": "EPIC-018 Coordinator review of John Detlefs's 2026-08-28 meaning approval and 2026-08-29 delivery-sequence amendment, the exact current requirements and Epic contract, five-row decomposition, complete OC-to-AC/child/proof coverage, completed TASK-099 through TASK-101 evidence, TASK-102's preserved independent QA plus affected remediation, and the exact v0.9.0 release/adoption ledger. The amendment authorized v0.9.0 merge, publication, and universal installation before the real Claude canary without narrowing or waiving any OC or parent AC: the packaged Claude adapter remains fail-closed and explicitly not runtime-certified, TASK-102 remains Blocked, TASK-103 remains Approved, no second broad QA was commissioned, and EPIC-018 cannot close until the real cross-host evidence is completed or separately deferred by the owner.",
   "reviewed_at": "2026-08-29",
   "reviewed_by": "EPIC-018 Coordinator",
   "schema_version": 1,
