@@ -1,0 +1,965 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-29",
+  "epic_id": "EPIC-018",
+  "release": {
+    "version": "0.9.0",
+    "merge_commit": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
+    "tag": "v0.9.0",
+    "pull_request": "https://github.com/johndetlefs/project-workflow/pull/25",
+    "workflow_run": "https://github.com/johndetlefs/project-workflow/actions/runs/33225374671",
+    "github_release": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.9.0",
+    "pypi": "https://pypi.org/project/project-workflow/0.9.0/",
+    "wheel_sha256": "9e30c52fb70c8d5e86e173a2e5da6566a7f68f2a450718d6c28f25996bb0d82b",
+    "sdist_sha256": "e426baf1e90c7d8b46158a4492e86663d40fa9a2f21f815527dc07eaa3200829"
+  },
+  "release_proof": {
+    "repository_tests": "548 passed",
+    "package_journeys": "fresh init, upgrade, Doctor, parity, legacy upgrade, and no-op passed for Claude Code, Codex, Cursor, and GitHub Copilot",
+    "source_doctor_strict": "pass with 69 accepted warnings hidden and no visible issues",
+    "release_workflow": "success"
+  },
+  "adoption": {
+    "physical_roots": 30,
+    "consumer_roots_exact_plan_verified": 29,
+    "source_root_current": 1,
+    "installed_agent_integrations": 44,
+    "consumer_integrations_exact_plan_and_no_op_verified": 42,
+    "source_integrations_current": 2,
+    "initial_dirty_roots": [
+      {
+        "root": "/Users/johndetlefs/.codex/worktrees/254d/mechanics-playground",
+        "dirty_path_count": 31
+      },
+      {
+        "root": "/Users/johndetlefs/.codex/worktrees/4468/game-foundation",
+        "dirty_path_count": 10
+      },
+      {
+        "root": "/Users/johndetlefs/.codex/worktrees/4ab1c97c-4151-4449-8320-27dcf430305b/toby",
+        "dirty_path_count": 1
+      },
+      {
+        "root": "/Users/johndetlefs/repos/client-management-app",
+        "dirty_path_count": 11
+      },
+      {
+        "root": "/Users/johndetlefs/repos/daily-checklist",
+        "dirty_path_count": 11
+      },
+      {
+        "root": "/Users/johndetlefs/repos/dept/health-direct/contraceptives-option-finder",
+        "dirty_path_count": 11
+      },
+      {
+        "root": "/Users/johndetlefs/repos/johndetlefs",
+        "dirty_path_count": 22
+      },
+      {
+        "root": "/Users/johndetlefs/repos/shopify-monitor",
+        "dirty_path_count": 4
+      },
+      {
+        "root": "/Users/johndetlefs/repos/the-moon-is-hollow",
+        "dirty_path_count": 1
+      },
+      {
+        "root": "/Users/johndetlefs/repos/tobys-games",
+        "dirty_path_count": 11
+      }
+    ],
+    "dirty_strategy": "A disposable copy of each real Git index preserved skip-worktree metadata; only pre-existing visible dirty tracked paths were marked assume-unchanged in that disposable index and pre-existing untracked paths were hidden from the clean check. The real index was never changed. Exact plan fingerprints, target hashes, post-apply no-op plans, manifests, and pre-existing non-target content fingerprints were verified.",
+    "consumer_commits_created": false,
+    "consumer_branches_changed": false,
+    "consumer_stashes_created": false,
+    "consumer_changes_discarded": false
+  },
+  "collision_disposition": {
+    "verified_prior_generated_assets_replaced": [
+      {
+        "roots": [
+          "/Users/johndetlefs/repos/client-management-app",
+          "/Users/johndetlefs/repos/daily-checklist",
+          "/Users/johndetlefs/repos/dept/health-direct/contraceptives-option-finder",
+          "/Users/johndetlefs/repos/tobys-games"
+        ],
+        "version": "0.6.0",
+        "proof": "workflow.py matched the public v0.6.0 resource; affected skill files matched after removing only the generated marker; manifest was package 0.6.0, asset 5, schema 1"
+      },
+      {
+        "roots": [
+          "/Users/johndetlefs/repos/johndetlefs"
+        ],
+        "version": "0.7.0",
+        "proof": "workflow.py matched the public v0.7.0 resource; affected skill files matched after removing only the generated marker; manifest was package 0.7.0, asset 6, schema 1"
+      }
+    ],
+    "copilot_prompts_resolved": {
+      "roots": [
+        "/Users/johndetlefs/.codex/worktrees/depaudit/daily-checklist",
+        "/Users/johndetlefs/repos/client-management-app",
+        "/Users/johndetlefs/repos/daily-checklist",
+        "/Users/johndetlefs/repos/shopify-clients/avoca-interiors",
+        "/Users/johndetlefs/repos/shopify-monitor",
+        "/Users/johndetlefs/repos/shopify-theme"
+      ],
+      "counts_by_root": {
+        "/Users/johndetlefs/.codex/worktrees/depaudit/daily-checklist": 8,
+        "/Users/johndetlefs/repos/client-management-app": 8,
+        "/Users/johndetlefs/repos/daily-checklist": 8,
+        "/Users/johndetlefs/repos/shopify-clients/avoca-interiors": 8,
+        "/Users/johndetlefs/repos/shopify-monitor": 6,
+        "/Users/johndetlefs/repos/shopify-theme": 8
+      },
+      "prior_proof": "Every active prompt was an exact canonical Project Workflow Git-history blob at either its generated .github/prompts path or, after removing only the generated marker, its source prompt path.",
+      "replacement_proof": "All 46 .new candidates matched the public v0.9.0 package resources modulo only the generated marker; atomic replacement was followed by exact-plan/no-op verification for every affected Codex or GitHub Copilot integration."
+    },
+    "legacy_cli_assets_resolved": {
+      "roots": [
+        "/Users/johndetlefs/repos/shopify-clients/avoca-interiors",
+        "/Users/johndetlefs/repos/shopify-monitor",
+        "/Users/johndetlefs/repos/shopify-theme"
+      ],
+      "files_per_root": [
+        ".project-workflow/cli/workflow",
+        ".project-workflow/cli/workflow.py"
+      ],
+      "prior_proof": "Each active launcher or CLI was an exact canonical Project Workflow Git-history blob after removing only its generated marker.",
+      "replacement_proof": "All six .new candidates matched the public v0.9.0 launcher or CLI resource modulo only the generated marker; atomic replacement was followed by exact-plan/no-op verification."
+    },
+    "final_managed_new_file_count": 0,
+    "unresolved_owner_collision_outputs": []
+  },
+  "roots": [
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/090a/contraceptives-option-finder",
+      "modes": [
+        "codex",
+        "claude-code"
+      ],
+      "head": "58ae7bd4258e4e3f44f81be50c9d190cb2f9d50a",
+      "branch": "",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        },
+        {
+          "mode": "claude-code",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/14dd/contraceptives-option-finder",
+      "modes": [
+        "codex",
+        "claude-code"
+      ],
+      "head": "d077d3b73a2e02a96d0d9b841768bbaa68906602",
+      "branch": "",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        },
+        {
+          "mode": "claude-code",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/22af/contraceptives-option-finder",
+      "modes": [
+        "codex",
+        "claude-code"
+      ],
+      "head": "1201b95748f3b076b59995af287d2f779997054d",
+      "branch": "feature/CDST-456-qualtrics-intercept",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        },
+        {
+          "mode": "claude-code",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/254d/mechanics-playground",
+      "modes": [
+        "codex"
+      ],
+      "head": "996617392016fff35130cf23b72127806af93cc5",
+      "branch": "codex/EPIC-013-water-shoreline-authoring",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/3815/strategic-advisor",
+      "modes": [
+        "codex"
+      ],
+      "head": "6d65830fa6d6fcc919957594c9ff1f2d763aab96",
+      "branch": "",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": []
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/38457de6-7aa2-45d5-94ff-9242884129fc/toby",
+      "modes": [
+        "codex"
+      ],
+      "head": "9295294d20b6ad3dcb87a266cdcc102a815b0e69",
+      "branch": "codex/GAME-047-lunar-level-workshop",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/4468/game-foundation",
+      "modes": [
+        "codex"
+      ],
+      "head": "fb41c594e169d5a8d2af1d50759b6633b6971d63",
+      "branch": "codex/EPIC-007-authoring-product-reset",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": []
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/4ab1c97c-4151-4449-8320-27dcf430305b/toby",
+      "modes": [
+        "codex"
+      ],
+      "head": "635495386b0bb6820f3fc4e58225bfd236dc3afd",
+      "branch": "",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/8585/contraceptives-option-finder",
+      "modes": [
+        "codex",
+        "claude-code"
+      ],
+      "head": "a0be07a9f2306ccc4c31cfb21153c2a16fe32cda",
+      "branch": "",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        },
+        {
+          "mode": "claude-code",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/a41f/contraceptives-option-finder",
+      "modes": [
+        "codex",
+        "claude-code"
+      ],
+      "head": "b7d989e9a41a77cfa07cc507a9ad763ffcebb118",
+      "branch": "fix/FIX-OL3XY-refresh-canonical-submission-content",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        },
+        {
+          "mode": "claude-code",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/ab9d/strategic-advisor",
+      "modes": [
+        "codex"
+      ],
+      "head": "88697cabf9567f784d6b4f4aa571f13cfaf486e2",
+      "branch": "codex/strategic-alignment-goal-review",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": []
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/da2b/contraceptives-option-finder",
+      "modes": [
+        "codex",
+        "claude-code"
+      ],
+      "head": "fb772f432dd4f765696b0339eda7cfa0de455fe2",
+      "branch": "fix/CDST-347-accessibility-review",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        },
+        {
+          "mode": "claude-code",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/depaudit/daily-checklist",
+      "modes": [
+        "codex",
+        "github-copilot"
+      ],
+      "head": "dad1ab32b35d52d8067bca58294e620003d22991",
+      "branch": "",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        },
+        {
+          "mode": "github-copilot",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/dfc4411c-ed87-43c3-a660-f8cc1f64a7ea/toby",
+      "modes": [
+        "codex"
+      ],
+      "head": "4fd2dd36012473f0c32a747337c10affca977bb8",
+      "branch": "codex/EPIC-006-lunar-landing-terrain-mastery",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/.codex/worktrees/ff4e/contraceptives-option-finder",
+      "modes": [
+        "codex",
+        "claude-code"
+      ],
+      "head": "17dbe66a9152b9bf999aa0d832b151a71070407f",
+      "branch": "chore/CDA-A0BJK-reconcile-legacy-workflow-state",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        },
+        {
+          "mode": "claude-code",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/client-management-app",
+      "modes": [
+        "codex",
+        "github-copilot"
+      ],
+      "head": "a4432b9f51537f641d57993a2c5114db61692c84",
+      "branch": "main",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "applied",
+          "no_op_verified": true
+        },
+        {
+          "mode": "github-copilot",
+          "apply_status": "applied",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/daily-checklist",
+      "modes": [
+        "codex",
+        "github-copilot"
+      ],
+      "head": "38d440a85c05477da4c190ff488f990a9e241a90",
+      "branch": "main",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "applied",
+          "no_op_verified": true
+        },
+        {
+          "mode": "github-copilot",
+          "apply_status": "applied",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/dept/health-direct/contraceptives-option-finder",
+      "modes": [
+        "codex",
+        "claude-code"
+      ],
+      "head": "d077d3b73a2e02a96d0d9b841768bbaa68906602",
+      "branch": "main",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "applied",
+          "no_op_verified": true
+        },
+        {
+          "mode": "claude-code",
+          "apply_status": "applied",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/dept/health-direct/gpt-app-main",
+      "modes": [
+        "codex",
+        "claude-code"
+      ],
+      "head": "9b2beb1b3c0a9a7995e1746ce4929d8e31fe9b7e",
+      "branch": "main",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        },
+        {
+          "mode": "claude-code",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/dept/health-direct/gpt-app",
+      "modes": [
+        "codex",
+        "claude-code"
+      ],
+      "head": "396a5cc18126dca10dce778adfad2b0482db7ea1",
+      "branch": "archive/service-finder-google-maps-integration-2026-07-20",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        },
+        {
+          "mode": "claude-code",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/game-foundation",
+      "modes": [
+        "codex"
+      ],
+      "head": "a6542339c87a37df3fc9ae3601844490e5ada7e4",
+      "branch": "codex/GF-045-consumer-authoring-extension",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": []
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/johndetlefs",
+      "modes": [
+        "codex"
+      ],
+      "head": "d8c2f48d73f72fca8e64369477d3f6f073482390",
+      "branch": "main",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "applied",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/mechanics-playground",
+      "modes": [
+        "codex"
+      ],
+      "head": "c552a6ce4765f57ac5c454b166ddc9c5d81014e4",
+      "branch": "main",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/shopify-clients/avoca-interiors",
+      "modes": [
+        "github-copilot"
+      ],
+      "head": "60108decf2c01ae4a955512c068c27a9921fec8c",
+      "branch": "main",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "github-copilot",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/shopify-monitor",
+      "modes": [
+        "github-copilot"
+      ],
+      "head": "1783ad0f14b7699a60ca43b04bb3674427935c28",
+      "branch": "main",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "github-copilot",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/shopify-theme",
+      "modes": [
+        "github-copilot"
+      ],
+      "head": "731042f1d4100524dece15c584ab149b8a60ef3b",
+      "branch": "main",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": [
+          "PW-0001-legacy-manifest"
+        ]
+      },
+      "integrations": [
+        {
+          "mode": "github-copilot",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/strategic-advisor",
+      "modes": [
+        "codex"
+      ],
+      "head": "a456589ee3a5631ee246a491225dca0c7deea17e",
+      "branch": "main",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": []
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/the-moon-is-hollow",
+      "modes": [
+        "codex"
+      ],
+      "head": "5c698edcbeeb04763b776307ebad272aec3d2536",
+      "branch": "codex/EPIC-001-product-foundation",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": []
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "noop",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/tobys-games",
+      "modes": [
+        "codex"
+      ],
+      "head": "626029ca8f9595377a322092a3608d0481389011",
+      "branch": "main",
+      "status": "verified",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": []
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "applied",
+          "no_op_verified": true
+        }
+      ]
+    },
+    {
+      "root": "/Users/johndetlefs/repos/project-workflow",
+      "modes": [
+        "codex",
+        "github-copilot"
+      ],
+      "head": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
+      "branch": "main",
+      "status": "source-current",
+      "final_manifest": {
+        "manifest_version": 1,
+        "package_version": "0.9.0",
+        "asset_version": 8,
+        "schema_version": 1,
+        "applied_migrations": []
+      },
+      "integrations": [
+        {
+          "mode": "codex",
+          "apply_status": "source-authoring-current",
+          "no_op_verified": null
+        },
+        {
+          "mode": "github-copilot",
+          "apply_status": "source-authoring-current",
+          "no_op_verified": null
+        }
+      ]
+    }
+  ],
+  "claude_runtime_boundary": {
+    "real_authenticated_claude_canary_run": false,
+    "task_102_state": "blocked on real Claude executable and authentication",
+    "task_103_state": "Approved",
+    "epic_state": "In Progress",
+    "claim": "v0.9.0 includes the packaged fail-closed Claude adapter and install assets, but Claude runtime support is not certified and AC10 plus Claude-dependent AC11, AC13, and AC15 remain unsatisfied."
+  },
+  "recursive_qa_boundary": {
+    "second_broad_qa_commissioned": false,
+    "release_preflight_result": "project release fail-closed with execution-control-not-configured and zero model invocations because EPIC-018 is not delivery-ready while the real Claude proof remains open",
+    "delivery_authority": "Owner-authorized delivery-sequence amendment allowed merge, publication, and adoption without waiving Epic proof."
+  }
+}
