@@ -5,8 +5,8 @@
 
 | Parent AC | Summary | Child Coverage | Evidence State | Deferral State | Status |
 | --- | --- | --- | --- | --- | --- |
-| AC1 | Every current release identity surface consistently names 0.9.1, generated mirrors are | TASK-109 (In Progress) | None | None | Mapped - evidence pending |
-| AC2 | One exact candidate commit, wheel, and sdist pass locked Ruff/format/mypy, documentation and | TASK-109 (In Progress) | None | None | Mapped - evidence pending |
+| AC1 | Every current release identity surface consistently names 0.9.1, generated mirrors are | TASK-109 (Complete) | TASK-109: parent AC evidence recorded; TASK-109: QA pass | None | Satisfied |
+| AC2 | One exact candidate commit, wheel, and sdist pass locked Ruff/format/mypy, documentation and | TASK-109 (Complete) | TASK-109: parent AC evidence recorded; TASK-109: QA pass | None | Satisfied |
 | AC3 | A reviewed PR with required checks merges the candidate into current `main`; annotated tag | TASK-110 (In Progress) | None | None | Mapped - evidence pending |
 | AC4 | Independent public retrieval proves PyPI and GitHub artifacts, hashes, attestations, version | TASK-111 (In Progress) | None | None | Mapped - evidence pending |
 | AC5 | Every current project inventory entry has a disposition, and every canonical Project | TASK-112 (In Progress) | None | None | Mapped - evidence pending |

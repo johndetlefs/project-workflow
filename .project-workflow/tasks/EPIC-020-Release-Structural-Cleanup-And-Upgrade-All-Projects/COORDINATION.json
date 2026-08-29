@@ -2,18 +2,15 @@
   "boundary_decisions": [
     {
       "affected_units": [
-        "TASK-109",
-        "TASK-110",
-        "TASK-111",
-        "TASK-112"
+        "TASK-109"
       ],
       "amendment_identity": null,
-      "boundary": "after-plan-or-decomposition",
-      "capability_change": "Four child plans preserve candidate, publication, public verification, and complete-estate rollout without scope change",
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-109 adversarial QA passed and retained candidate proof is current under the loaded contract.",
       "classification": "inside-envelope",
-      "decided_by": "Coordinator",
+      "decided_by": "Codex Coordinator",
       "decision_date": "2026-08-29",
-      "intent_identity": "sha256:42084484f6751cf5a500f3d7e679f9653676b8da0f3cfdfd9ab2a24317ca0396",
+      "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
       "relevant_ocs": [
         "OC1",
         "OC2",
@@ -24,9 +21,9 @@
         "OC7"
       ],
       "shared_premises_valid": "yes",
-      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
-      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
-      "user_consequence": "Proceed through TASK-109 exact-candidate preparation"
+      "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+      "source_revision": "3289ff9cfbe5f7c7f85fe9e2a9fe242c46c076e3",
+      "user_consequence": "TASK-109 may complete; release and rollout remain pending in TASK-110 through TASK-112."
     }
   ],
   "decisions": [
@@ -38,21 +35,18 @@
     "context_contract": "declared",
     "telemetry": "unknown"
   },
-  "intent_identity": "sha256:42084484f6751cf5a500f3d7e679f9653676b8da0f3cfdfd9ab2a24317ca0396",
+  "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
   "last_boundary": {
     "affected_units": [
-      "TASK-109",
-      "TASK-110",
-      "TASK-111",
-      "TASK-112"
+      "TASK-109"
     ],
     "amendment_identity": null,
-    "boundary": "after-plan-or-decomposition",
-    "capability_change": "Four child plans preserve candidate, publication, public verification, and complete-estate rollout without scope change",
+    "boundary": "before-review-or-complete",
+    "capability_change": "TASK-109 adversarial QA passed and retained candidate proof is current under the loaded contract.",
     "classification": "inside-envelope",
-    "decided_by": "Coordinator",
+    "decided_by": "Codex Coordinator",
     "decision_date": "2026-08-29",
-    "intent_identity": "sha256:42084484f6751cf5a500f3d7e679f9653676b8da0f3cfdfd9ab2a24317ca0396",
+    "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
     "relevant_ocs": [
       "OC1",
       "OC2",
@@ -63,18 +57,18 @@
       "OC7"
     ],
     "shared_premises_valid": "yes",
-    "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
-    "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
-    "user_consequence": "Proceed through TASK-109 exact-candidate preparation"
+    "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+    "source_revision": "3289ff9cfbe5f7c7f85fe9e2a9fe242c46c076e3",
+    "user_consequence": "TASK-109 may complete; release and rollout remain pending in TASK-110 through TASK-112."
   },
   "loaded_contract": {
     "asset_version": "8",
-    "context_id": "01a04afb-4efa-7502-932b-d1d03bae35e8-pw091",
+    "context_id": "codex-task-01a04afb-4efa-7502-932b-d1d03bae35e8",
     "contract_version": "2",
     "package_version": "0.9.1",
     "recorded_at": "2026-08-29"
   },
-  "next_action": "Validate and commit exact TASK-109 source",
+  "next_action": "Complete TASK-109 and begin TASK-110.",
   "outcome_checkpoint": {
     "checkpoint_unit": "TASK-111",
     "claim_class": "migration",
@@ -82,26 +76,146 @@
     "required": true,
     "status": "pending"
   },
-  "phase": "candidate-preparation",
+  "phase": "candidate-verification",
   "repositories": {
     ".": {
-      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242"
+      "source_revision": "3289ff9cfbe5f7c7f85fe9e2a9fe242c46c076e3"
     }
   },
   "schema_version": 2,
-  "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+  "source_revision": "3289ff9cfbe5f7c7f85fe9e2a9fe242c46c076e3",
   "target_id": "EPIC-020",
-  "verification_campaign": null,
+  "verification_campaign": {
+    "adapter": {
+      "capabilities": [],
+      "command": null,
+      "kind": "manual",
+      "manual_command": "Regrade retained TASK-109 candidate outputs after QA-only workflow evidence changes"
+    },
+    "affected_scope": [
+      "."
+    ],
+    "candidate_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2",
+    "claims": [
+      "0.9.1 exact candidate integrity"
+    ],
+    "current_stage": null,
+    "diagnostic_decision": null,
+    "impact": "known",
+    "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+    "limits": {
+      "max_elapsed_seconds": 900,
+      "max_failures": 1,
+      "max_target_calls": 10
+    },
+    "mode": "certification",
+    "next_action": "Proceed to the one existing independent QA gate.",
+    "outcome": "pass",
+    "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
+    "receipt_ledger_identity": "sha256:a9b1e99090f5e21d72a2dde61802df5daf426bd810a2f4f36eff8f501a01a76d",
+    "receipts": [
+      {
+        "artifact": ".project-workflow/tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/TASK-109-Prepare-And-Prove-The-Exact-Project-Workflow-0-9-1-Candidate/evidence/candidate/validation-summary.json",
+        "candidate_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2",
+        "elapsed_seconds": 1,
+        "evaluator_identity": "project-workflow-0.9.1-static-contract-v1",
+        "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
+        "receipt_identity": "sha256:403c962b0926afb586fab01dc5a5062d70668bd77da7a9c012b54d85e6818f5f",
+        "recorded_at": "2026-08-29",
+        "regrade": false,
+        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "scope": [
+          "."
+        ],
+        "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+        "stage": "deterministic",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2"
+      },
+      {
+        "artifact": ".project-workflow/tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/TASK-109-Prepare-And-Prove-The-Exact-Project-Workflow-0-9-1-Candidate/evidence/candidate/package-journeys.json",
+        "candidate_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2",
+        "elapsed_seconds": 1,
+        "evaluator_identity": "verify-package-journeys-v1",
+        "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
+        "receipt_identity": "sha256:6ff6776c743c9db45f72c5e002a8b313f8e0bd30a97edccd7dfb28d1f1f53c17",
+        "recorded_at": "2026-08-29",
+        "regrade": false,
+        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "scope": [
+          "."
+        ],
+        "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+        "stage": "canary",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2"
+      },
+      {
+        "artifact": ".project-workflow/tasks/EPIC-019-Structural-Coherence-And-Maintainability/TASK-108-Unify-Documentation-Prove-Fitness-And-Dispose-Debris/evidence/qa-review.md",
+        "candidate_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2",
+        "elapsed_seconds": 1,
+        "evaluator_identity": "epic-019-qa-impact-v1",
+        "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
+        "receipt_identity": "sha256:ef722d7262c85960c38a1f4667791d082c57e870d4325b6419941d26f7a601ce",
+        "recorded_at": "2026-08-29",
+        "regrade": false,
+        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "scope": [
+          "."
+        ],
+        "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+        "stage": "affected",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2"
+      },
+      {
+        "artifact": ".project-workflow/tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/TASK-109-Prepare-And-Prove-The-Exact-Project-Workflow-0-9-1-Candidate/evidence/candidate/validation-summary.json",
+        "candidate_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2",
+        "elapsed_seconds": 1,
+        "evaluator_identity": "project-workflow-0.9.1-full-suite-v1",
+        "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
+        "receipt_identity": "sha256:3bdabe150591edca52f69e453946d37a7cddc9964264505f293ec39326ee77f3",
+        "recorded_at": "2026-08-29",
+        "regrade": false,
+        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "scope": [
+          "."
+        ],
+        "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+        "stage": "full",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2"
+      }
+    ],
+    "schema_version": 1,
+    "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+    "stages": [
+      "deterministic",
+      "canary",
+      "affected",
+      "full"
+    ]
+  },
   "verification_requirement": {
     "affected_scope": [
       "."
     ],
     "claims": [
-      "release identity",
-      "public artifact integrity",
-      "consumer upgrade preservation"
+      "0.9.1 exact candidate integrity"
     ],
-    "proof_contract_identity": "sha256:f7bed0224f4727794f0913335e4de3cf97596da9a6e8425a76ec19446f198956",
+    "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
     "required": true,
     "stages": [
       "deterministic",

@@ -1,0 +1,33 @@
+{
+  "contract": "project-workflow-0.9.1-local-candidate-v1",
+  "captured_at": "2026-08-29T17:20:00+10:00",
+  "source_commit": "3289ff9cfbe5f7c7f85fe9e2a9fe242c46c076e3",
+  "version": "0.9.1",
+  "results": {
+    "uv_lock": "pass",
+    "documentation_contract": "pass: 12 current documents",
+    "runtime_bundle": "pass: deterministic and current",
+    "ruff_check": "pass",
+    "ruff_format": "pass: 65 files",
+    "mypy": "pass: zero issues in 15 source files",
+    "pytest": "pass: 561 tests in 85.57 seconds",
+    "strict_doctor": "pass: no visible issues; 69 accepted historical warnings hidden",
+    "release_source_contract": "pass: clean 0.9.1 source and v0.9.1 tag identity",
+    "build_receipt": "pass",
+    "package_journeys": "pass: four agent modes, fresh/current/legacy/no-op, Doctor, intent lifecycle, and dependency-free helper"
+  },
+  "artifacts": {
+    "wheel": {
+      "filename": "project_workflow-0.9.1-py3-none-any.whl",
+      "sha256": "a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2"
+    },
+    "sdist": {
+      "filename": "project_workflow-0.9.1.tar.gz",
+      "sha256": "e19caa282816e79629a710c219bca9d48e950f7080590eead5f68367a7f133cc"
+    },
+    "release_receipt_sha256": "dd28cb5bf6ef9a3d2fb9097178ec24f14fc159679be773d700f1333b93c65949",
+    "package_journeys_sha256": "420c33ef2e6002a42f038c91d789d7bc9d32400a2d3ef502a4f15a2cc0669177",
+    "retained_epic_019_qa_sha256": "838eb069e88a7d9940e0203d701afdb0507a5f8937d8f76ee8b8d6aff39735a1"
+  },
+  "delivery_boundary": "local committed candidate only; not pushed, merged, tagged, published, publicly verified, rolled out, owner-accepted, or Claude-runtime certified"
+}
