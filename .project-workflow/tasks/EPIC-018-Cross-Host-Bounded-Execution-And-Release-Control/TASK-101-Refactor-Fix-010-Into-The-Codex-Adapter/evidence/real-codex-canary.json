@@ -1,0 +1,116 @@
+{
+  "schema_version": 2,
+  "task_id": "TASK-101",
+  "recorded_at": "2026-08-28T14:12:00+10:00",
+  "execution_surface": "PYTHONPATH=/private/tmp/pw-cross-host.TywgOX/src ./.project-workflow/cli/workflow execute --id TASK-001 --format json",
+  "execution_environment": "Fresh disposable clean Git repository; canonical CLI launched outside the enclosing diagnostic sandbox while the adapter retained its isolated network-disabled workspace permission profile",
+  "host": {
+    "name": "codex",
+    "version": "codex-cli 0.145.0-alpha.30",
+    "executable": "/Users/johndetlefs/.local/bin/codex",
+    "executable_identity": "sha256:ccf63c3a58cef44281da4a54a3ec65c6a612e579991d6c9e754613f2fbc3299d"
+  },
+  "candidate_source": {
+    "implementation_base": "c1426f2c64864eb14eb682731829de7c236bc8c0+working-tree-candidate",
+    "adapter_identity": "sha256:8c4afa179e329b1b1fcda85f10b950458f6ba7b80e0af2283447f316f47e3647",
+    "cli_identity": "sha256:f1e35ee00e3c00aa6e974254241f707507fda3f09e20b774f02cd7016dadc43b",
+    "canary_source_revision": "dc53d17471f5064dfee3ddbef220839579dae1dc"
+  },
+  "sealed_control": {
+    "configuration_identity": "sha256:33c47383ddfa51e8e481428e0ee1c0f82334dc7e619dca64d51ba46dfdb6c35e",
+    "sealed_identity": "sha256:0c241a1755c255facd3a9826d3de0262de1cbd60f88de991e27f558271030ebf",
+    "workspace_root": "/private/tmp/pw-task101-canary13",
+    "allowed_write_paths": [
+      "src/canary.txt"
+    ],
+    "required_changed_paths": [
+      "src/canary.txt"
+    ],
+    "allowed_tools": [
+      "apply_patch"
+    ],
+    "network_enabled": false,
+    "retained_input": "evidence/canary-runtime/canary-coordination.json"
+  },
+  "runtime_result": {
+    "terminal_status": "completed",
+    "terminal_reason": "Codex turn completed inside sealed authority.",
+    "hook_active": true,
+    "thread_id": "01a04690-c3dc-7d70-8fda-8d3d1a322036",
+    "turn_id": "01a04690-c40d-7881-918c-3e8fdf77686f",
+    "final_source_revision": "dc53d17471f5064dfee3ddbef220839579dae1dc",
+    "final_changed_paths": [
+      "src/canary.txt"
+    ],
+    "native_metrics": {
+      "agent-budget": 28382,
+      "changed-paths": 1,
+      "elapsed-seconds": 7,
+      "identical-retries": 0,
+      "test-invocations": 0,
+      "tool-calls": 1,
+      "turns": 1,
+      "worker-launches": 0,
+      "write-scope": 0
+    },
+    "evidence_identity": "sha256:aa4148ea395a5bcc71daa5dfeddc8c7a1fb0962a9e511f99e92b55ae21acfd63"
+  },
+  "hook_events": [
+    {
+      "sequence": 1,
+      "event_name": "SessionStart",
+      "cwd": "/private/tmp/pw-task101-canary13",
+      "tool_name": "",
+      "input_identity": "",
+      "decision": "active"
+    },
+    {
+      "sequence": 2,
+      "event_name": "PreToolUse",
+      "cwd": "/private/tmp/pw-task101-canary13",
+      "tool_name": "apply_patch",
+      "input_identity": "sha256:6959c781ba4e76773d8e7f488e14b29304e5bed97c3f491359f2314ea33a0a45",
+      "decision": "allowed"
+    },
+    {
+      "sequence": 3,
+      "event_name": "PostToolUse",
+      "cwd": "/private/tmp/pw-task101-canary13",
+      "tool_name": "apply_patch",
+      "input_identity": "sha256:6959c781ba4e76773d8e7f488e14b29304e5bed97c3f491359f2314ea33a0a45",
+      "decision": "observed"
+    }
+  ],
+  "protocol_event_methods": [
+    "initialize",
+    "initialized",
+    "thread/start",
+    "thread/started",
+    "hooks/list",
+    "turn/start",
+    "turn/started",
+    "hook/started",
+    "hook/completed",
+    "turn/diff/updated",
+    "thread/tokenUsage/updated",
+    "turn/completed"
+  ],
+  "core_receipt": {
+    "outcome": "pass",
+    "receipt_identity": "sha256:c45a4166093ebf640a2400ebc9cb417f7732721f0cbd03e4e20000deb587112a",
+    "persisted_receipt_count": 1,
+    "retained_with_control": "evidence/canary-runtime/canary-coordination.json",
+    "retained_artifact_hash": "sha256:208cc8e2381ca891fd362bf7b3fbaba1f4c267630b797ddaa696e922aa53aa5a"
+  },
+  "outcome_artifact": {
+    "path": "src/canary.txt",
+    "size_bytes": 21,
+    "identity": "sha256:da1267b113bebe36521cc61ac8881515ef1271bee03cb491b07b953813dc9b61",
+    "expected_text": "codex-adapter-canary\n",
+    "retained_artifact": "evidence/canary-runtime/canary.txt"
+  },
+  "proof_boundaries": {
+    "proved": "The exact installed Codex binary and remediated working-tree adapter completed one hook-active, source-stable, workspace-root-bound, path-bounded material App Server turn through the public Project Workflow execute surface and the core persisted one input-bound passing receipt.",
+    "not_proved": "Aggregate subordinate activity, a real interrupt, QA remediation, release behavior, publication, merge, package installation, consumer adoption, Claude Code equivalence, recurrence prevention across both hosts, effectiveness, or owner acceptance; those broader Epic claims remain assigned to TASK-103."
+  }
+}

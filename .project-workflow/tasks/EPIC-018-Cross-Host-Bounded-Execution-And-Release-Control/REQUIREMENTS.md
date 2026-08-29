@@ -4,8 +4,8 @@
 
 - Task: EPIC-018
 - Title: Cross-Host Bounded Execution And Release Control
-- Last updated: 2026-08-28
-- Proposal state: Ready for owner meaning approval
+- Last updated: 2026-08-29
+- Proposal state: Implementation substantially complete; v0.9.0 delivery authorized with real Claude Code runtime proof pending
 - Intent contract: full
 
 ## Intent
@@ -52,18 +52,38 @@ on read-only or cheap work.
   bd78627b47c90c492cbf844231c92e4843786f94; current Codex App Server documentation; and current
   Claude Code hooks and CLI documentation.
 
+## Owner-Authorized Release Decision — 2026-08-29
+
+- The owner explicitly authorizes committing, pushing, merging, tagging, publishing, and upgrading
+  every accessible Project Workflow installation to v0.9.0, including repositories with dirty
+  working trees, provided unrelated work is preserved.
+- Delivery may proceed before the real authenticated Claude Code canary. This changes delivery
+  sequencing only: it does not satisfy, waive, or narrow AC10, the Claude-dependent portion of
+  AC11/AC13/AC15, or the Epic's final cross-host conformance claim.
+- The v0.9.0 package may ship the Claude Code adapter and managed assets, but release notes,
+  status, Doctor, and adoption reporting must describe that adapter as packaged and fail-closed,
+  not runtime-certified or proven supported, until the real canary passes.
+- TASK-102 and TASK-103 remain open at their truthful proof boundary after publication and
+  adoption. EPIC-018 must not close until the outstanding real-host evidence is completed or the
+  owner separately approves an explicit parent-AC deferral.
+- The preserved independent QA verdict and its affected remediation evidence remain the one broad
+  QA campaign. Release and rollout reuse that proof and run exact-candidate/package/adoption checks;
+  they do not commission recursive broad QA.
+- Source: this Codex owner thread, 2026-08-29: "Release it ... update it in every single project,
+  even with dirty trees ... with the understanding that we haven't yet done tests in Claude."
+
 ## Owner Approval
 
-- Intent reviewed and accurately reflected: No
-- Requirements reviewed by owner: No
-- Acceptance criteria reviewed by owner: No
-- Approved for decomposition: No
+- Intent reviewed and accurately reflected: Yes
+- Requirements reviewed by owner: Yes
+- Acceptance criteria reviewed by owner: Yes
+- Approved for decomposition: Yes
 - Approved for implementation: No
-- Approved scope envelope: No
-- Approved by: Not approved
-- Approval date: Not approved
-- Approval note / source: Not approved
-- Approved artifact identity: Not approved
+- Approved scope envelope: Yes
+- Approved by: John Detlefs
+- Approval date: 2026-08-29
+- Approval note / source: Owner instruction in this task on 2026-08-29: release v0.9.0 and update every project, including dirty trees, while retaining the outstanding real Claude test and avoiding recursive QA.
+- Approved artifact identity: sha256:770cf0843fc8f4c3c6f3b8a67324463fd9eea0928c97bee908c605d5341b9531
 
 ## Goal
 

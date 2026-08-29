@@ -1,0 +1,45 @@
+Verdict: Changes Requested
+
+Intent adversarial verdict: Fail
+
+Could every AC pass while the approved user job remains undone? Yes — the current static checks and self-reported canary can all appear green while a mismatched hook workspace or unprobed runtime leaves material execution unenforced.
+
+Findings
+
+High
+
+- The real-canary and package claims are not independently reproducible from retained evidence. [EVIDENCE.json](/private/tmp/pw-cross-host.TywgOX/.project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/TASK-101-Refactor-Fix-010-Into-The-Codex-Adapter/EVIDENCE.json:11) records assertions and hashes, but the underlying sealed control, core receipt, raw App Server/hook events, canary diff/bytes, wheel, and sdist are absent. [task101-validation.json](/private/tmp/pw-cross-host.TywgOX/.project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/TASK-101-Refactor-Fix-010-Into-The-Codex-Adapter/evidence/task101-validation.json:31) supplies wheel/sdist hashes without artifact paths or retained files. Required correction: retain sanitized raw runtime inputs/outputs and exact wheel/sdist under task evidence; bind each with recomputable hashes and verify the package contents from those retained artifacts.
+
+- Hook path enforcement trusts the host-provided `event_cwd`, rather than a sealed workspace root. [codex_adapter.py](/private/tmp/pw-cross-host.TywgOX/src/project_workflow/codex_adapter.py:612) and [codex_adapter.py](/private/tmp/pw-cross-host.TywgOX/src/project_workflow/codex_adapter.py:622) pass that arbitrary root into pre/post checks. An event from another workspace can make an otherwise permitted relative path resolve there, while closeout only inspects the intended root. Required correction: seal the canonical workspace root in execution control, require each hook event’s resolved cwd to equal it, and always run path/Git checks against that sealed root; add an external-workspace regression.
+
+- Capability preflight can advertise a material route as ready without proving the binding App Server, hook, or interrupt controls. `inspect_codex_capability` only checks executable bytes/trust ([codex_adapter.py](/private/tmp/pw-cross-host.TywgOX/src/project_workflow/codex_adapter.py:122)), while `probe_codex_capability` infers hooks and interruption from `--help` text ([codex_adapter.py](/private/tmp/pw-cross-host.TywgOX/src/project_workflow/codex_adapter.py:162)). The projection then emits `preflight-ready` ([cli.py](/private/tmp/pw-cross-host.TywgOX/src/project_workflow/cli.py:16563), [cli.py](/private/tmp/pw-cross-host.TywgOX/src/project_workflow/cli.py:16664)). Required correction: either perform a no-model protocol/hook capability probe before declaring ready, or report only `inspectable` until the exact supported runtime controls are observed; add stale/unsupported-hook and missing-interrupt tests.
+
+Medium
+
+- Adapter state cleanup is not exception-safe. The temporary directory is created before several failure points ([codex_adapter.py](/private/tmp/pw-cross-host.TywgOX/src/project_workflow/codex_adapter.py:816)), but removal occurs only on the normal return path ([codex_adapter.py](/private/tmp/pw-cross-host.TywgOX/src/project_workflow/codex_adapter.py:1079)). Failed process launch, initialization, timeout, or closeout can leak sealed control/state files. Required correction: wrap the complete post-creation lifecycle in `try/finally`, stop any child process, and remove the state directory; test each early-failure path.
+
+- The parent-AC9 claim is materially broader than the retained canary. The canary records one successful `apply_patch`, zero tests, zero workers, and no interrupt ([real-codex-canary.json](/private/tmp/pw-cross-host.TywgOX/.project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/TASK-101-Refactor-Fix-010-Into-The-Codex-Adapter/evidence/real-codex-canary.json:33)); it cannot demonstrate the required AC3–AC8 journey, aggregate subordinate activity, interruption, or release behavior. Required correction: keep TASK-101’s claim narrow and leave parent AC9 pending TASK-103, or retain a bounded real journey that exercises those required properties.
+
+Low
+
+- None.
+
+Evidence inspected
+
+- `AGENTS.md`, repository workflow guidance, EPIC-018 requirements/contract/intent audit, TASK-101 requirements/implementation/evidence/FIX-010 disposition, acceptance map, trackers, and all TASK-101 evidence artifacts.
+- Current local branch `codex/cross-host-execution-control` at `c1426f2`, one commit ahead of local `origin/main`, with the relevant implementation uncommitted.
+- `src/project_workflow/codex_adapter.py`, all three CLI copies: byte-identical at `8e070014…b947`; current adapter hash matches the recorded `0decdc…61dd`; canary JSON hash matches its recorded `c27d…fcb5`.
+- FIX-010’s actual 19-file change set matches the disposition map; current source/package metadata has no active Strategic Advisor dependency, `project-enforce` entry point, `80,000` rule, or legacy plugin name.
+- Plugin/package source assets and relevant tests. Doctor reported no visible current issues; 69 historical findings are accepted.
+- Focused pytest was attempted but could not start because this read-only sandbox has no writable temporary directory. No model, network, material-host execution, mutation, or remote refresh was performed.
+
+Proof boundaries
+
+- Child AC1–AC7 are not independently passable: AC1/AC3/AC4 fail on capability/path enforcement; AC2/AC5/AC7 lack retained runtime/package proof; AC6’s prototype-disposition scan is source-supported but not package-artifact-supported.
+- Parent AC3, AC4, AC8, AC9, AC12, AC13, and AC14 remain Epic-level evidence pending. In particular, AC9 and AC13 require broader real-host/package journeys assigned partly to TASK-103; this review does not infer them from package presence or a completed turn.
+- The intent audit is currently marked `pass`, but that is coordinator-authored state, not independent proof.
+
+Reviewer independence statement
+
+I performed this as an independent, read-only review: no TASK-101 files, workflow state, evidence, package artifacts, host configuration, or external systems were changed; recorded tests and canary claims were not accepted without inspectable supporting artifacts.
+

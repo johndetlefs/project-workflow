@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-101",
+  "recorded_at": "2026-08-28T14:17:00+10:00",
+  "candidate": "c1426f2c64864eb14eb682731829de7c236bc8c0+working-tree-candidate",
+  "source_identities": {
+    "codex_adapter": "sha256:8c4afa179e329b1b1fcda85f10b950458f6ba7b80e0af2283447f316f47e3647",
+    "managed_cli": "sha256:a7603cf42cb550dd35a45e3d6036a1cca5b1bb30c08d73d45d9d0b5a639eeb5e",
+    "canary_managed_cli_before_evaluator_only_change": "sha256:f1e35ee00e3c00aa6e974254241f707507fda3f09e20b774f02cd7016dadc43b"
+  },
+  "deterministic_validation": {
+    "focused": "40 passed in 5.75s",
+    "affected": "321 passed in 68.54s",
+    "affected_files": [
+      "tests/test_codex_adapter.py",
+      "tests/test_execution_control_contract.py",
+      "tests/test_qa_release_control.py",
+      "tests/test_coordination_controls.py",
+      "tests/test_coordination_subtraction.py",
+      "tests/test_verification_campaign.py",
+      "tests/test_operational_status.py",
+      "tests/test_operational_status_actions.py",
+      "tests/test_operational_status_classification.py",
+      "tests/test_operational_status_cli.py",
+      "tests/test_operational_status_inspection.py",
+      "tests/test_doctor.py",
+      "tests/test_package_journeys.py"
+    ],
+    "ruff": "pass",
+    "managed_cli_copies": "byte-identical"
+  },
+  "package_validation": {
+    "plugin_validator": "pass",
+    "wheel": "sha256:3f3167a5cd11b60d565e6f42932997d06093e10278a5ee8cc1553ee38955a9e8",
+    "sdist": "sha256:789e98d041eb7cb38871a36e160f2e46a131cc05dfa64ee7a08ed073efd7d12e",
+    "retained_manifest": "evidence/package-manifest.json",
+    "plugin_assets": [
+      "project_workflow/codex_plugin/project-workflow-execution-control/.codex-plugin/plugin.json",
+      "project_workflow/codex_plugin/project-workflow-execution-control/README.md",
+      "project_workflow/codex_plugin/project-workflow-execution-control/scripts/project-workflow-codex-hook"
+    ],
+    "hook_mode": "0755",
+    "retired_surface_scan": "pass"
+  },
+  "prototype_disposition": {
+    "artifact": "FIX-010-DISPOSITION.md",
+    "files_covered": 19,
+    "public_project_enforce": "retired",
+    "fixed_80000_token_rule": "retired",
+    "standalone_release_truth": "retired"
+  },
+  "runtime_evidence": "evidence/real-codex-canary.json",
+  "evaluator_only_regrade": "The only post-canary production change was structured-evidence grading in the managed CLI; it does not affect execute, adapter or canary output, so the retained runtime result was regraded with zero additional target calls.",
+  "qa_remediation": {
+    "retained_findings": "evidence/independent-qa.txt",
+    "initial_verdict": "Changes Requested",
+    "bounded_remediation": [
+      "sealed and enforced the resolved workspace root for every binding hook event",
+      "changed Codex status from preflight-ready to inspectable until exact runtime dispatch verifies hooks and interruption",
+      "made every post-mkdtemp lifecycle path exception-safe",
+      "retained exact package archives, canary control/receipt/output bytes, hook events and sanitized protocol events",
+      "narrowed the real canary claim and left aggregate, interrupt and release proof to TASK-103"
+    ],
+    "affected_proof": "40 focused and 321 affected tests pass; fresh retained wheel/sdist validate; remediated exact installed-Codex canary passes",
+    "regraded_verdict": "Pass",
+    "second_broad_qa": "not run"
+  },
+  "proof_boundaries": {
+    "proved": "Current source behavior, retained exact package contents, precise inspectable/unsupported states and one real installed-Codex workspace-root-bound adapter canary.",
+    "not_proved": "Aggregate subordinate activity, real interruption, QA/release behavior, merge, publication, installation, consumer adoption, Claude equivalence, cross-host recurrence prevention, effectiveness or owner acceptance."
+  }
+}

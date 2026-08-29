@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-102",
+  "recorded_at": "2026-08-28T15:28:51+10:00",
+  "source": {
+    "proposal_head": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+    "candidate": "working-tree implementation",
+    "claude_adapter_sha256": "513aa6c4c6aab902b37434a4c4454bc4e27e52e420d871bb7d9bd958b2c7df51",
+    "managed_cli_sha256": "583fdc8bc1f0a4cb24b598ee418a2c47981843e57aba54e672eefa7b9a91aa21",
+    "managed_cli_copies_identical": true
+  },
+  "validation": [
+    {
+      "command": ".venv/bin/pytest -q tests/test_claude_adapter.py tests/test_execution_control_contract.py",
+      "result": "pass",
+      "tests": 31,
+      "duration_seconds": 6.63
+    },
+    {
+      "command": ".venv/bin/python -m pytest -q",
+      "result": "pass",
+      "tests": 548,
+      "duration_seconds": 110.35
+    },
+    {
+      "command": ".venv/bin/python -m build --outdir /private/tmp/pw-task102-rebuild.HZNg0P",
+      "result": "pass",
+      "artifacts": 2
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass"
+    }
+  ],
+  "covered_behaviors": [
+    "read-only inspection without configured executable execution",
+    "disabled, unavailable, untrusted, incompatible and inspectable capability states",
+    "exact supported-version floor and authentication probe without a model call or help-text oracle",
+    "model-free SessionStart preflight plus native dontAsk path/exact-command permission sealing",
+    "sealed workspace, tool, command, test, retry, write and sticky terminal enforcement",
+    "stream initialization and result parsing with distinct USD-micro, turn and elapsed units",
+    "process-group termination, bounded stream retention and terminal-output drain",
+    "missing hook activation remains non-passing even when the stream reports success",
+    "wrong required output identity and missing validator proof remain non-passing",
+    "public project execute routing and one input-bound core-owned receipt for success or preflight failure",
+    "fresh managed CLI loads local adapters without repository virtual-environment imports",
+    "package plugin members and executable hook mode"
+  ],
+  "proof_boundary": "Automated tests prove source behavior against deterministic and mocked host fixtures. They do not prove that a current authenticated Claude Code runtime loaded the plugin or ran a real canary."
+}

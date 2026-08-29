@@ -1,122 +1,108 @@
 {
-  "artifact_identity": "sha256:88f35d711adfdcb93760e49a2195bf2a19dbfddadffc2c082fbb34a37c2ec9bf",
+  "artifact_identity": "sha256:33716ae9e921aae824bbdb91a9b50e8e07b4ce73659097dc43cd2467a413df63",
   "commitments": [
     {
       "amendment": null,
-      "child_owners": [],
-      "classification": "unknown",
+      "child_owners": ["TASK-099", "TASK-100", "TASK-103"],
+      "classification": "preserved",
       "disposition": "active",
       "id": "OC1",
       "lost_capability": "",
       "material": true,
-      "parent_acs": [],
-      "required_outcome_proof": "",
-      "source_locations": [
-        "REQUIREMENTS.md#intent-spine-oc1"
-      ],
-      "target_locations": [],
-      "user_visible_consequence": "____"
+      "parent_acs": ["AC2", "AC3", "AC4", "AC5", "AC6", "AC7", "AC8", "AC9", "AC10", "AC15"],
+      "required_outcome_proof": "Exercise one material work item through a finite host-enforced envelope, one QA findings/remediation campaign, exact release-candidate promotion and one terminal release attempt, with routine in-scope failures resolved without owner supervision.",
+      "source_locations": ["REQUIREMENTS.md#intent-spine-oc1", "REQUIREMENTS.md#candidate-and-campaign-definitions"],
+      "target_locations": ["DECOMPOSITION.md", "ACCEPTANCE-MAP.md", "EPIC-CONTRACT.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/REQUIREMENTS.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/IMPLEMENTATION.md"],
+      "user_visible_consequence": "The owner can start approved material work and receive either a sufficiently proven fixed candidate or one precise blocker without supervising an open-ended implementation, QA or release loop."
     },
     {
       "amendment": null,
-      "child_owners": [],
-      "classification": "unknown",
+      "child_owners": ["TASK-099", "TASK-100", "TASK-101", "TASK-102", "TASK-103"],
+      "classification": "preserved",
       "disposition": "active",
       "id": "OC2",
       "lost_capability": "",
       "material": true,
-      "parent_acs": [],
-      "required_outcome_proof": "",
-      "source_locations": [
-        "REQUIREMENTS.md#intent-spine-oc2"
-      ],
-      "target_locations": [],
-      "user_visible_consequence": "____"
+      "parent_acs": ["AC1", "AC2", "AC3", "AC4", "AC5", "AC6", "AC7", "AC8", "AC9", "AC10", "AC11", "AC12", "AC13", "AC14", "AC15", "AC16"],
+      "required_outcome_proof": "Trace every named core, routing, limit, QA, candidate, release, receipt, capability, adapter, packaging, status and Doctor capability to a child implementation and to focused, adversarial, package and real-host evidence.",
+      "source_locations": ["REQUIREMENTS.md#intent-spine-oc2", "EPIC-CONTRACT.md#artifact-targets"],
+      "target_locations": ["DECOMPOSITION.md", "ACCEPTANCE-MAP.md", "EPIC-CONTRACT.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/REQUIREMENTS.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/IMPLEMENTATION.md"],
+      "user_visible_consequence": "Execution control, QA remediation, candidate promotion, fixed release and truthful host support operate as one Project Workflow capability rather than disconnected prompts or host-specific products."
     },
     {
       "amendment": null,
-      "child_owners": [],
-      "classification": "unknown",
+      "child_owners": ["TASK-100", "TASK-101", "TASK-102", "TASK-103"],
+      "classification": "preserved",
       "disposition": "active",
       "id": "OC3",
       "lost_capability": "",
       "material": true,
-      "parent_acs": [],
-      "required_outcome_proof": "",
-      "source_locations": [
-        "REQUIREMENTS.md#intent-spine-oc3"
-      ],
-      "target_locations": [],
-      "user_visible_consequence": "____"
+      "parent_acs": ["AC3", "AC4", "AC5", "AC6", "AC7", "AC8", "AC9", "AC10", "AC11", "AC12", "AC13", "AC14", "AC15"],
+      "required_outcome_proof": "Run equivalent real Codex and Claude Code journeys showing direct read-only diagnosis, denied material bypass, focused implementation checks, one QA findings set, bounded corrections with affected proof, recursive-QA denial, one frozen release candidate, one terminal release attempt and typed receipts.",
+      "source_locations": ["REQUIREMENTS.md#intent-spine-oc3", "REQUIREMENTS.md#validation-plan"],
+      "target_locations": ["DECOMPOSITION.md", "ACCEPTANCE-MAP.md", "EPIC-CONTRACT.md"],
+      "user_visible_consequence": "Supported material work follows the same bounded decisions on Codex and Claude Code while read-only work stays direct and cheap."
     },
     {
       "amendment": null,
-      "child_owners": [],
-      "classification": "unknown",
+      "child_owners": ["TASK-099", "TASK-100", "TASK-101", "TASK-102", "TASK-103"],
+      "classification": "preserved",
       "disposition": "active",
       "id": "OC4",
       "lost_capability": "",
       "material": true,
-      "parent_acs": [],
-      "required_outcome_proof": "",
-      "source_locations": [
-        "REQUIREMENTS.md#intent-spine-oc4"
-      ],
-      "target_locations": [],
-      "user_visible_consequence": "____"
+      "parent_acs": ["AC2", "AC3", "AC4", "AC5", "AC6", "AC7", "AC8", "AC9", "AC10", "AC11", "AC12", "AC13", "AC14", "AC15"],
+      "required_outcome_proof": "Inject raw-host bypass, arbitrary caps, pre-promotion candidate churn, repeated broad QA, proof-waiving limits, source-repairing release and static or mocked host-support claims; prove each is rejected at the owning boundary.",
+      "source_locations": ["REQUIREMENTS.md#intent-spine-oc4", "EPIC-CONTRACT.md#invalid-substitutes"],
+      "target_locations": ["DECOMPOSITION.md", "ACCEPTANCE-MAP.md", "EPIC-CONTRACT.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/REQUIREMENTS.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/IMPLEMENTATION.md"],
+      "user_visible_consequence": "Green-looking guidance, tests or package assets cannot conceal bypassable control, recursive work, waived proof, mutable release or fake cross-host support."
     },
     {
       "amendment": null,
-      "child_owners": [],
-      "classification": "unknown",
+      "child_owners": ["TASK-099", "TASK-100", "TASK-101", "TASK-102", "TASK-103"],
+      "classification": "preserved",
       "disposition": "active",
       "id": "OC5",
       "lost_capability": "",
       "material": false,
-      "parent_acs": [],
-      "required_outcome_proof": "",
-      "source_locations": [
-        "REQUIREMENTS.md#intent-spine-oc5"
-      ],
-      "target_locations": [],
-      "user_visible_consequence": "____"
+      "parent_acs": ["AC2", "AC3", "AC4", "AC5", "AC6", "AC7", "AC8", "AC9", "AC10", "AC11", "AC12", "AC13", "AC14", "AC15", "AC16"],
+      "required_outcome_proof": "Run cheap and read-only counter-fixtures, required-proof and exhausted-limit failures, routine in-scope remediation, unsupported-host cases and delivery-boundary checks alongside the material success journeys.",
+      "source_locations": ["REQUIREMENTS.md#intent-spine-oc5", "REQUIREMENTS.md#non-goals"],
+      "target_locations": ["DECOMPOSITION.md", "ACCEPTANCE-MAP.md", "EPIC-CONTRACT.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/REQUIREMENTS.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/IMPLEMENTATION.md"],
+      "user_visible_consequence": "Bounded execution does not add model ceremony to cheap work, weaken required proof, offload routine corrections, duplicate workflow state or overclaim unsupported hosts."
     },
     {
       "amendment": null,
-      "child_owners": [],
-      "classification": "unknown",
+      "child_owners": ["TASK-099", "TASK-100", "TASK-101", "TASK-102"],
+      "classification": "preserved",
       "disposition": "active",
       "id": "OC6",
       "lost_capability": "",
       "material": false,
-      "parent_acs": [],
-      "required_outcome_proof": "",
-      "source_locations": [
-        "REQUIREMENTS.md#intent-spine-oc6"
-      ],
-      "target_locations": [],
-      "user_visible_consequence": "____"
+      "parent_acs": ["AC3", "AC4", "AC5", "AC6", "AC7", "AC8", "AC9", "AC10", "AC11", "AC12", "AC13"],
+      "required_outcome_proof": "Verify host-specific units remain typed, routing and receipt checks add no model call, exact host/version/configuration capability is negotiated, and exhausted or unsupported binding controls fail closed with missing proof visible.",
+      "source_locations": ["REQUIREMENTS.md#intent-spine-oc6", "REQUIREMENTS.md#decisions-resolved"],
+      "target_locations": ["DECOMPOSITION.md", "ACCEPTANCE-MAP.md", "EPIC-CONTRACT.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/REQUIREMENTS.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/IMPLEMENTATION.md"],
+      "user_visible_consequence": "Changing or incomplete host capabilities cannot be normalized, guessed or converted into false containment or completion."
     },
     {
       "amendment": null,
-      "child_owners": [],
-      "classification": "unknown",
+      "child_owners": ["TASK-099", "TASK-101", "TASK-103"],
+      "classification": "preserved",
       "disposition": "active",
       "id": "OC7",
       "lost_capability": "",
       "material": false,
-      "parent_acs": [],
-      "required_outcome_proof": "",
-      "source_locations": [
-        "REQUIREMENTS.md#intent-spine-oc7"
-      ],
-      "target_locations": [],
-      "user_visible_consequence": "____"
+      "parent_acs": ["AC1", "AC9", "AC10", "AC11", "AC12", "AC13", "AC14", "AC15", "AC16"],
+      "required_outcome_proof": "Retain exact owner approval and source identity, official host-contract evidence, a complete FIX-010 disposition, real supported-host receipts, package artifacts and an explicit local-only delivery ledger separating implementation from merge, publication, installation, adoption and owner acceptance.",
+      "source_locations": ["REQUIREMENTS.md#intent-spine-oc7", "REQUIREMENTS.md#owner-approval", "EPIC-CONTRACT.md#sources-of-truth"],
+      "target_locations": ["DECOMPOSITION.md", "ACCEPTANCE-MAP.md", "EPIC-CONTRACT.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/REQUIREMENTS.md", "TASK-099-Define-Host-Neutral-Execution-And-Candidate-Contract/IMPLEMENTATION.md"],
+      "user_visible_consequence": "Every host-support and delivery claim remains subordinate to current source, exact evidence and the separately authorized merge, release, installation, adoption and owner-acceptance boundaries."
     }
   ],
-  "review_source": "",
-  "reviewed_at": "",
-  "reviewed_by": "",
+  "review_source": "EPIC-018 Coordinator review of John Detlefs's 2026-08-28 meaning approval and 2026-08-29 delivery-sequence amendment, the exact current requirements and Epic contract, five-row decomposition, complete OC-to-AC/child/proof coverage, completed TASK-099 through TASK-101 evidence, and TASK-102's preserved independent QA plus affected remediation. The amendment authorizes v0.9.0 merge, publication, and universal installation before the real Claude canary but does not narrow or waive any OC or parent AC: the packaged Claude adapter remains fail-closed and explicitly not runtime-certified, TASK-102 and TASK-103 stay open, no second broad QA is commissioned, and EPIC-018 cannot close until the real cross-host evidence is completed or separately deferred by the owner.",
+  "reviewed_at": "2026-08-29",
+  "reviewed_by": "EPIC-018 Coordinator",
   "schema_version": 1,
-  "verdict": "review-required"
+  "verdict": "pass"
 }
