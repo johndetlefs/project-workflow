@@ -1,4 +1,22 @@
 {
   "task_id": "TASK-110",
-  "claims": []
+  "claims": [
+    {
+      "id": "CLM-110-AC3",
+      "parent_ac": "AC3",
+      "claim": "The protected v0.9.1 release path published one reviewed-main bundle through successful PyPI trusted-publishing and GitHub Release jobs after exact build validation and artifact attestation.",
+      "recipe": "external-contract-alignment",
+      "status": "pass",
+      "commit": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "timestamp": "2026-08-29T17:04:30+10:00",
+      "contract_artifact": "PR #27, annotated v0.9.1, protected GitHub Actions release.yml, GitHub pypi environment approval, PyPI trusted publisher, and GitHub Release v0.9.1",
+      "implementation_artifact": "Release run 33239801282 at cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "comparison_method": "Inspected PR head/check/merge state, fetched main ancestry, verified the annotated tag peel, approved the protected pypi environment only after the attested build passed, and inspected every release job plus published asset digests.",
+      "evidence_artifact": "evidence/release-integration.json",
+      "evidence_artifact_hash": "sha256:9a2e9a5576402504f9b3ea7503b69b0cd35083cd82b615e5ca86ec762ab62ad7",
+      "invalid_substitutes": [
+        "Workflow success is not offered as independent public retrieval or consumer adoption proof."
+      ]
+    }
+  ]
 }

@@ -1,4 +1,60 @@
 {
   "task_id": "TASK-112",
-  "claims": []
+  "claims": [
+    {
+      "id": "CLM-112-AC5-AC7",
+      "recipe": "user-outcome-journey",
+      "status": "pass",
+      "commit": "cdd98f4f6642a940aba5c20961b965af6a05acb1+rollout-evidence",
+      "timestamp": "2026-08-29T17:20:00+10:00",
+      "parent_ac": "AC5, AC7",
+      "claim": "Every current Codex project entry and every discovered Project Workflow manifest root has one exact safe disposition, with no unsafe root represented as upgraded.",
+      "claim_scope": "Complete current Project Workflow installation inventory and safe rollout disposition",
+      "journey_scope": "Codex project metadata through manifest-root reconciliation, safe eligibility, validated current result, and explicit blockers",
+      "actor": "Project Workflow owner requesting all projects on the latest safe release",
+      "normal_entry_point": "Current Codex project list and canonical local repository roots",
+      "starting_state": "Twenty Codex project entries and fifteen local manifest roots at mixed repository state, predominantly package version 0.9.0",
+      "material_operations": [
+        "List all Codex projects and scan all manifests under the canonical repositories directory.",
+        "Deduplicate roots and inspect agent mode, branch, source identity, upstream divergence, worktrees, cleanliness, and installed version.",
+        "Use public 0.9.1 only where the root is clean and canonical; leave every failing root unchanged.",
+        "Recheck final manifests, status digests, helper version, no-op plan, and Doctor evidence."
+      ],
+      "resulting_state_or_artifact": "One machine-readable receipt covering all 20 project entries and all 15 manifests: Project Workflow is clean and current on 0.9.1; fourteen dirty or ambiguous installations remain unchanged on 0.9.0 with exact blockers.",
+      "outcome_observations": [
+        "The saved-project inventory and filesystem manifest inventory were both required for complete coverage.",
+        "No consumer commit, push, merge, release, deployment, or forced dirty upgrade occurred.",
+        "A blocked disposition is not described as adoption."
+      ],
+      "source_artifact": "Public project-workflow==0.9.1 wheel sha256:cdc483ea89547071052aa7c723e444ed410c536d33743f475d4f34176bba7ce5",
+      "source_revision": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "artifact_identity": "rollout-receipt-sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d",
+      "environment": "Local Codex project estate and canonical repositories under /Users/johndetlefs/repos",
+      "invalid_substitute_policy": ["partial-inventory", "dirty-upgrade", "unreviewed-plan", "workflow-success", "consumer-delivery"],
+      "invalid_substitutes": [],
+      "owner_acceptance_required": false,
+      "owner_acceptance_status": "not-required",
+      "evidence_artifact": "evidence/rollout/rollout-receipt.json",
+      "evidence_artifact_hash": "sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d"
+    },
+    {
+      "id": "CLM-112-AC6",
+      "recipe": "runtime-target-source",
+      "status": "pass",
+      "commit": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "timestamp": "2026-08-29T17:20:00+10:00",
+      "parent_ac": "AC6",
+      "claim": "The only clean canonical root is current on the verified public 0.9.1 contract and every ineligible root remained unchanged.",
+      "execution_target": "/Users/johndetlefs/repos/project-workflow plus read-only checks of fourteen blocked roots",
+      "source_artifact": "Public project-workflow==0.9.1 and released main merge cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "observation_method": "Fast-forwarded the clean source root to reviewed main, ran the public 0.9.1 plan, helper version, strict Doctor, and clean-status checks, then repeated the status digest and manifest version for every blocked root.",
+      "target_used_source_proof": "The public plan fingerprint sha256:c58551f1e7b5f20803d47eb3593896b6e28a309b6d0839a65c8ab70afe6e6c5b reported versions-current with zero steps; the helper reports project 0.9.1; strict Doctor passed; HEAD equals origin/main; all fourteen blocked roots retain their original 0.9.0 manifests, HEADs, and status SHA-256 values.",
+      "evidence_artifact": "evidence/rollout/rollout-receipt.json",
+      "evidence_artifact_hash": "sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d",
+      "invalid_substitutes": [
+        "No dirty root was upgraded merely because its changed paths appeared workflow-related.",
+        "No existing task was represented as having refreshed its loaded context."
+      ]
+    }
+  ]
 }

@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-112",
+  "generated_at": "2026-08-29T17:20:00+10:00",
+  "release": {
+    "package": "project-workflow==0.9.1",
+    "tag": "v0.9.1",
+    "commit": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+    "wheel_sha256": "cdc483ea89547071052aa7c723e444ed410c536d33743f475d4f34176bba7ce5",
+    "public_verification": "../TASK-111-Verify-The-Public-Project-Workflow-0-9-1-Release/evidence/public/public-verification.json"
+  },
+  "inventory": {
+    "codex_project_entries": 20,
+    "local_project_entries": 18,
+    "cloud_project_entries": 2,
+    "saved_local_projects_with_installation": 12,
+    "saved_local_projects_without_installation": 6,
+    "discovered_manifest_roots": 15,
+    "additional_manifest_roots_not_saved_as_projects": 3,
+    "eligible_roots": 1,
+    "validated_current_roots": 1,
+    "blocked_roots": 14,
+    "sources": [
+      "Codex list_projects schema version 2",
+      "Filesystem manifest scan under /Users/johndetlefs/repos",
+      "Per-root Git, manifest, agent-mode, upstream, worktree, and status inspection"
+    ]
+  },
+  "projects": [
+    {"label":"performance-by-design","kind":"local","path":"/Users/johndetlefs/repos/dept/pbd","disposition":"no-installation"},
+    {"label":"contraceptives-option-finder","kind":"local","path":"/Users/johndetlefs/repos/dept/health-direct/contraceptives-option-finder","disposition":"manifest-root-blocked"},
+    {"label":"Mechanics Playground","kind":"local","path":"/Users/johndetlefs/repos/mechanics-playground","disposition":"manifest-root-blocked"},
+    {"label":"Game Foundation","kind":"local","path":"/Users/johndetlefs/repos/game-foundation","disposition":"manifest-root-blocked"},
+    {"label":"johndetlefs","kind":"local","path":"/Users/johndetlefs/repos/johndetlefs","disposition":"manifest-root-blocked"},
+    {"label":"Toby's Games","kind":"local","path":"/Users/johndetlefs/repos/tobys-games","disposition":"manifest-root-blocked"},
+    {"label":"The Moon Is Hollow","kind":"local","path":"/Users/johndetlefs/repos/the-moon-is-hollow","disposition":"manifest-root-blocked"},
+    {"label":"strategy-workspace","kind":"local","path":"/Users/johndetlefs/repos/strategy-workspace","disposition":"no-installation"},
+    {"label":"strategic-advisor","kind":"local","path":"/Users/johndetlefs/repos/strategic-advisor","disposition":"manifest-root-blocked"},
+    {"label":"daily-checklist","kind":"local","path":"/Users/johndetlefs/repos/daily-checklist","disposition":"manifest-root-blocked"},
+    {"label":"project-workflow","kind":"local","path":"/Users/johndetlefs/repos/project-workflow","disposition":"validated-current-0.9.1"},
+    {"label":"client-management-app","kind":"local","path":"/Users/johndetlefs/repos/client-management-app","disposition":"manifest-root-blocked"},
+    {"label":"shopify-monitor","kind":"local","path":"/Users/johndetlefs/repos/shopify-monitor","disposition":"manifest-root-blocked"},
+    {"label":"videos","kind":"local","path":"/Users/johndetlefs/repos/videos","disposition":"no-installation"},
+    {"label":"shopify","kind":"local","path":"/Users/johndetlefs/repos/shopify","disposition":"no-installation"},
+    {"label":"alessa-vino","kind":"local","path":"/Users/johndetlefs/repos/shopify-clients/alessa-vino","disposition":"no-installation"},
+    {"label":"gpt-app","kind":"local","path":"/Users/johndetlefs/repos/dept/health-direct/gpt-app","disposition":"manifest-root-blocked"},
+    {"label":"games","kind":"local-non-git","path":"/Users/johndetlefs/repos/games","disposition":"no-installation"},
+    {"label":"Breath of the wild","kind":"chatgpt-cloud","path":null,"disposition":"not-a-local-repository"},
+    {"label":"Writing a Book","kind":"chatgpt-cloud","path":null,"disposition":"not-a-local-repository"}
+  ],
+  "manifest_roots": [
+    {
+      "path": "/Users/johndetlefs/repos/project-workflow",
+      "saved_project": true,
+      "canonical": true,
+      "agent": "codex",
+      "origin": "git@github.com:johndetlefs/project-workflow.git",
+      "preflight": {"branch":"main","head":"86ca8859eb5e331db2505c2ae7230e2bc0030242","upstream":"origin/main","ahead":0,"behind":3,"worktrees":4,"dirty_count":0,"status_sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","package_version":"0.9.0","asset_version":8,"schema_version":1},
+      "eligibility": "eligible-clean-canonical",
+      "action": "fast-forwarded clean main to the reviewed release merge; public 0.9.1 upgrade plan then reported versions-current with zero steps",
+      "public_plan_fingerprint": "sha256:c58551f1e7b5f20803d47eb3593896b6e28a309b6d0839a65c8ab70afe6e6c5b",
+      "apply_required": false,
+      "result": {"disposition":"validated-current","head":"cdd98f4f6642a940aba5c20961b965af6a05acb1","upstream":"origin/main","package_version":"0.9.1","asset_version":8,"schema_version":1,"helper_version":"project 0.9.1","doctor":"pass-strict-with-69-accepted-historical-warnings-hidden","dirty_count":0,"status_sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
+    },
+    {
+      "path":"/Users/johndetlefs/repos/client-management-app","saved_project":true,"canonical":true,"agent":"codex","origin":"git@github.com:johndetlefs/client-management-app.git","branch":"main","head":"a4432b9f51537f641d57993a2c5114db61692c84","upstream":"origin/main","ahead":3,"behind":0,"worktrees":1,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":31,"status_sha256":"968665451c36c7ca7ad1e2570c063e9e6caaefae23e4ac02d471d51f75d737c5","disposition":"blocked-dirty-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/daily-checklist","saved_project":true,"canonical":true,"agent":"codex","origin":"git@github.com:johndetlefs/dailychecklist-v3.git","branch":"main","head":"38d440a85c05477da4c190ff488f990a9e241a90","upstream":"origin/main","ahead":3,"behind":0,"worktrees":8,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":31,"status_sha256":"968665451c36c7ca7ad1e2570c063e9e6caaefae23e4ac02d471d51f75d737c5","disposition":"blocked-dirty-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/dept/health-direct/contraceptives-option-finder","saved_project":true,"canonical":true,"agent":"codex","origin":"git@github.com:healthdirectaustralia/cda-cdst.git","branch":"main","head":"d077d3b73a2e02a96d0d9b841768bbaa68906602","upstream":"origin/main","ahead":0,"behind":82,"worktrees":12,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":26,"status_sha256":"eec67eb741cf05de7b0d1bb8f52431a847564025de8eb880e9327571626d7e91","disposition":"blocked-dirty-and-stale-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/dept/health-direct/gpt-app-main","saved_project":false,"canonical":false,"agent":"codex","origin":"git@github.com:dept/au-healthdirect-chatgpt.git","branch":"main","head":"9b2beb1b3c0a9a7995e1746ce4929d8e31fe9b7e","upstream":"origin/main","ahead":0,"behind":249,"worktrees":2,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":32,"status_sha256":"9322d52774d470c4086f4dc029391acb05fa760eb7e6dee97dbedb45b882ba1a","disposition":"blocked-dirty-stale-and-duplicate-authority-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/dept/health-direct/gpt-app","saved_project":true,"canonical":false,"agent":"codex","origin":"git@github.com:dept/au-healthdirect-chatgpt.git","branch":"archive/service-finder-google-maps-integration-2026-07-20","head":"396a5cc18126dca10dce778adfad2b0482db7ea1","upstream":null,"worktrees":2,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":34,"status_sha256":"39af5b7fa11189cac6ab2459c6e15e3dc71bee98a373d1f04a10dbd3c1b87209","disposition":"blocked-dirty-noncanonical-branch-and-duplicate-authority-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/game-foundation","saved_project":true,"canonical":true,"agent":"codex","origin":"git@github.com:johndetlefs/game-foundation.git","branch":"codex/GF-045-consumer-authoring-extension","head":"a6542339c87a37df3fc9ae3601844490e5ada7e4","upstream":null,"worktrees":5,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":9,"status_sha256":"9968a552343601b856dba3baae9b8f078e32c66bbd0b4f6bebd24b5625fc6566","disposition":"blocked-dirty-active-branch-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/johndetlefs","saved_project":true,"canonical":true,"agent":"codex","origin":"git@github.com:johndetlefs/johndetlefs-codex.git","branch":"main","head":"d8c2f48d73f72fca8e64369477d3f6f073482390","upstream":"origin/main","ahead":7,"behind":0,"worktrees":2,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":25,"status_sha256":"62316854b06fe1bc719d8a3ee20a0b7a59dd7f72904babbd89c8b1ec5293bc15","disposition":"blocked-dirty-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/mechanics-playground","saved_project":true,"canonical":true,"agent":"codex","origin":"git@github.com:johndetlefs/mechanics-playground.git","branch":"main","head":"c552a6ce4765f57ac5c454b166ddc9c5d81014e4","upstream":"origin/main","ahead":4,"behind":0,"worktrees":7,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":9,"status_sha256":"9968a552343601b856dba3baae9b8f078e32c66bbd0b4f6bebd24b5625fc6566","disposition":"blocked-dirty-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/shopify-clients/avoca-interiors","saved_project":false,"canonical":false,"agent":"github-copilot","origin":"git@github.com:johndetlefs/avoca-interiors.git","branch":"main","head":"60108decf2c01ae4a955512c068c27a9921fec8c","upstream":"origin/main","ahead":0,"behind":0,"worktrees":1,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":25,"status_sha256":"1ea77831a3ec96091f1544929539a2ef52e99239cb0a4d6a4388786e0d7aeecf","disposition":"blocked-dirty-unregistered-root-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/shopify-monitor","saved_project":true,"canonical":true,"agent":"github-copilot","origin":"git@github.com:johndetlefs/shopify-monitor.git","branch":"main","head":"1783ad0f14b7699a60ca43b04bb3674427935c28","upstream":"origin/main","ahead":0,"behind":0,"worktrees":1,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":30,"status_sha256":"1ce63a9ae0f50b2cf52269d0c585f20362b9f937509897305a33e6db362d9eb9","disposition":"blocked-dirty-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/shopify-theme","saved_project":false,"canonical":false,"agent":"github-copilot","origin":"git@github.com:johndetlefs/shopify-theme.git","branch":"main","head":"731042f1d4100524dece15c584ab149b8a60ef3b","upstream":"origin/main","ahead":0,"behind":0,"worktrees":1,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":25,"status_sha256":"1ea77831a3ec96091f1544929539a2ef52e99239cb0a4d6a4388786e0d7aeecf","disposition":"blocked-dirty-unregistered-root-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/strategic-advisor","saved_project":true,"canonical":true,"agent":"codex","origin":"git@github.com:johndetlefs/strategic-advisor.git","branch":"main","head":"a456589ee3a5631ee246a491225dca0c7deea17e","upstream":"origin/main","ahead":0,"behind":0,"worktrees":6,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":6,"status_sha256":"0729a5d16fe13b870ed849c6ad11a3fa689b102c8dd3405d1691cb45527d914f","disposition":"blocked-dirty-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/the-moon-is-hollow","saved_project":true,"canonical":true,"agent":"codex","origin":"git@github.com:johndetlefs/the-moon-is-hollow.git","branch":"codex/EPIC-001-product-foundation","head":"5c698edcbeeb04763b776307ebad272aec3d2536","upstream":null,"worktrees":1,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":18,"status_sha256":"47dd1fb74124213d5584a0234838b6e24d1d7c4a9b574357b78b868cc1efa50d","disposition":"blocked-dirty-active-branch-unchanged"
+    },
+    {
+      "path":"/Users/johndetlefs/repos/tobys-games","saved_project":true,"canonical":true,"agent":"codex","origin":"git@github.com:johndetlefs/tobys-games-universe.git","branch":"main","head":"626029ca8f9595377a322092a3608d0481389011","upstream":"origin/main","ahead":3,"behind":0,"worktrees":1,"package_version":"0.9.0","asset_version":8,"schema_version":1,"dirty_count":16,"status_sha256":"c862fb1370e8b3837f4cd979bbb25e6b8337d4daec163c911c211799f68f7a3a","disposition":"blocked-dirty-unchanged"
+    }
+  ],
+  "safety": {
+    "blocked_roots_rechecked_unchanged": true,
+    "consumer_commits": 0,
+    "consumer_pushes": 0,
+    "consumer_merges": 0,
+    "consumer_releases": 0,
+    "consumer_deployments": 0,
+    "forced_dirty_upgrades": 0,
+    "physical_context_refresh_claimed": false
+  },
+  "verdict": "complete-inventory-safe-partial-adoption",
+  "remaining_boundary": "Fourteen dirty or otherwise ambiguous installations remain on 0.9.0 and require repository-specific reconciliation before a safe 0.9.1 upgrade."
+}

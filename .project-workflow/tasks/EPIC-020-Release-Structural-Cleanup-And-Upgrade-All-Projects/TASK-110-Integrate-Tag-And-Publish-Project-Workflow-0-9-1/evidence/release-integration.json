@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-110",
+  "version": "0.9.1",
+  "source_commit": "3289ff9cfbe5f7c7f85fe9e2a9fe242c46c076e3",
+  "evidence_commit": "bb2784dd7571327aa4fa98cf467a2589a5405a50",
+  "pull_request": {
+    "number": 27,
+    "url": "https://github.com/johndetlefs/project-workflow/pull/27",
+    "head": "bb2784dd7571327aa4fa98cf467a2589a5405a50",
+    "ci_run_id": 33239700180,
+    "ci_conclusion": "success",
+    "merge_commit": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+    "merged_at": "2026-08-29T06:59:44Z"
+  },
+  "tag": {
+    "name": "v0.9.1",
+    "kind": "annotated",
+    "peeled_commit": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+    "remote_created_once": true
+  },
+  "release_workflow": {
+    "run_id": 33239801282,
+    "url": "https://github.com/johndetlefs/project-workflow/actions/runs/33239801282",
+    "head_sha": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+    "conclusion": "success",
+    "build_job": "success",
+    "trusted_pypi_job": "success",
+    "github_release_job": "success"
+  },
+  "github_release": {
+    "url": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.9.1",
+    "published_at": "2026-08-29T07:04:29Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": {
+      "project_workflow-0.9.1-py3-none-any.whl": "sha256:cdc483ea89547071052aa7c723e444ed410c536d33743f475d4f34176bba7ce5",
+      "project_workflow-0.9.1.tar.gz": "sha256:d809a9a5eb0f19e3f98ef350cd6154dd38dee200c190a34824b7630afc822705",
+      "SHA256SUMS": "sha256:8f89b4e1662c13a713616680678a01c2d278bb880b7049c57fbc9eacceb22fc6",
+      "release-receipt.json": "sha256:28d6c5ab3cd75e1ac6e9fbe35a093e118864e948f4cb9ce8a9b3135eb03c9a13",
+      "package-journeys.json": "sha256:3b8f5ccc232216a456e3d8ddbdbe24c7140da82558a769ea9d9aae4f0630e23b"
+    }
+  },
+  "delivery_boundary": "Published by protected GitHub Actions only; public retrieval and consumer adoption are not claimed."
+}
