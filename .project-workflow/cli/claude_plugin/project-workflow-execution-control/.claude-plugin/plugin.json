@@ -1,0 +1,5 @@
+{
+  "name": "project-workflow-execution-control",
+  "description": "Subordinate blocking hooks for one sealed Project Workflow Claude Code dispatch",
+  "version": "1.0.0"
+}

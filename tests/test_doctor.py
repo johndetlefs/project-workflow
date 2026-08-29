@@ -420,22 +420,23 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
     assert manifest == workflow_cli.WorkflowManifest(
         manifest_version=1,
         package_version=__version__,
-        asset_version=7,
+        asset_version=8,
         schema_version=1,
         applied_migrations=(),
     )
     assert workflow_cli._serialize_workflow_manifest(manifest) == (
         "{\n"
         '  "manifest_version": 1,\n'
-        '  "package_version": "0.8.0",\n'
-        '  "asset_version": 7,\n'
+        '  "package_version": "0.9.0",\n'
+        '  "asset_version": 8,\n'
         '  "schema_version": 1,\n'
         '  "applied_migrations": []\n'
         "}\n"
     )
-    assert workflow_cli._parse_workflow_manifest(
-        workflow_cli._workflow_manifest_payload(manifest)
-    ) == manifest
+    assert (
+        workflow_cli._parse_workflow_manifest(workflow_cli._workflow_manifest_payload(manifest))
+        == manifest
+    )
 
 
 def test_repository_compatibility_classifies_supported_states(tmp_path: Path) -> None:
@@ -500,7 +501,7 @@ def test_repository_compatibility_classifies_supported_states(tmp_path: Path) ->
     ("update", "reason"),
     [
         ({"manifest_version": 2, "extension": "future"}, "future-manifest-version"),
-        ({"asset_version": 8}, "future-asset-version"),
+        ({"asset_version": 9}, "future-asset-version"),
         ({"schema_version": 2}, "future-schema-version"),
     ],
 )
@@ -603,9 +604,7 @@ def test_manifest_inspection_and_writing_preserve_non_target_files(tmp_path: Pat
 def test_compatibility_policy_retains_legacy_and_current_schema() -> None:
     assert workflow_cli.SUPPORTED_SCHEMA_VERSIONS == (0, 1)
     assert workflow_cli.CURRENT_SCHEMA_VERSION in workflow_cli.SUPPORTED_SCHEMA_VERSIONS
-    policy = " ".join(
-        (REPO_ROOT / "COMPATIBILITY.md").read_text(encoding="utf-8").split()
-    )
+    policy = " ".join((REPO_ROOT / "COMPATIBILITY.md").read_text(encoding="utf-8").split())
     assert "recognized pre-versioned repository shape" in policy
     assert "breaking release" in policy
     assert (
@@ -674,9 +673,7 @@ def test_project_init_creates_and_preserves_current_manifest(tmp_path: Path) -> 
     first = run_project(["init"], cwd=tmp_path)
     assert first.returncode == 0, first.stdout + first.stderr
     manifest_path = tmp_path / ".project-workflow" / workflow_cli.WORKFLOW_MANIFEST_FILENAME
-    expected = workflow_cli._serialize_workflow_manifest(
-        workflow_cli._current_workflow_manifest()
-    )
+    expected = workflow_cli._serialize_workflow_manifest(workflow_cli._current_workflow_manifest())
     assert manifest_path.read_text(encoding="utf-8") == expected
     assert "Repository state before init: not-initialized" in first.stdout
     assert "Repository state after init: current" in first.stdout
@@ -748,15 +745,19 @@ def test_project_init_does_not_rewrite_invalid_or_future_manifest(
     workflow_dir = tmp_path / ".project-workflow"
     workflow_dir.mkdir()
     manifest_path = workflow_dir / workflow_cli.WORKFLOW_MANIFEST_FILENAME
-    content = b"{not-json}\n" if state == "invalid" else json.dumps(
-        {
-            "manifest_version": 2,
-            "package_version": "9.0.0",
-            "asset_version": 9,
-            "schema_version": 9,
-            "applied_migrations": [],
-        }
-    ).encode("utf-8")
+    content = (
+        b"{not-json}\n"
+        if state == "invalid"
+        else json.dumps(
+            {
+                "manifest_version": 2,
+                "package_version": "9.0.0",
+                "asset_version": 9,
+                "schema_version": 9,
+                "applied_migrations": [],
+            }
+        ).encode("utf-8")
+    )
     manifest_path.write_bytes(content)
 
     result = run_project(["init"], cwd=tmp_path)
@@ -947,7 +948,9 @@ def test_doctor_json_includes_accepted_findings_when_human_hides_them(tmp_path: 
         encoding="utf-8",
     )
 
-    warning = next(issue for issue in workflow_cli.run_doctor(tmp_path) if issue.severity == "warning")
+    warning = next(
+        issue for issue in workflow_cli.run_doctor(tmp_path) if issue.severity == "warning"
+    )
     fingerprint = workflow_cli._doctor_issue_fingerprint(warning, tmp_path)
     add_accepted_doctor_warnings(
         tmp_path,
@@ -1030,11 +1033,19 @@ def test_upgrade_plan_orders_synthetic_migrations_and_hashes_targets(tmp_path: P
             ("normalize-tracker-header", "write-version-manifest"),
         ),
     )
-    before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    before = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
 
     plan = workflow_cli._build_upgrade_plan(tmp_path, migrations=migrations)
 
-    after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    after = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
     assert after == before
     assert [step["migration_id"] for step in plan["steps"]] == ["MIG-0001-manifest"]
     assert plan["target_files"] == [
@@ -1141,9 +1152,17 @@ def test_upgrade_plan_preserves_owner_decisions_without_mutation(tmp_path: Path)
             ("write-version-manifest",),
         ),
     )
-    before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    before = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
     plan = workflow_cli._build_upgrade_plan(tmp_path, migrations=migrations)
-    after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    after = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
 
     assert after == before
     assert plan["owner_decisions"]
@@ -1170,12 +1189,22 @@ def test_upgrade_command_plans_registered_legacy_without_mutation(tmp_path: Path
     workflow_dir = tmp_path / ".project-workflow"
     workflow_dir.mkdir()
     (workflow_dir / "TRACKER.md").write_text("# Legacy tracker\n", encoding="utf-8")
-    before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    before = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
 
-    result = run_project(["upgrade", "--agent", "codex", "--plan", "--format", "json"], cwd=tmp_path)
+    result = run_project(
+        ["upgrade", "--agent", "codex", "--plan", "--format", "json"], cwd=tmp_path
+    )
     human = run_project(["upgrade", "--agent", "codex", "--plan"], cwd=tmp_path)
 
-    after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    after = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
     assert result.returncode == 0
     assert human.returncode == 0
     assert after == before
@@ -1281,9 +1310,7 @@ def test_upgrade_plan_blocks_non_file_targets(tmp_path: Path) -> None:
 
     plan = workflow_cli._build_upgrade_plan(tmp_path, migrations=migrations)
 
-    assert "PW_UPGRADE_REGISTRY_INVALID_TARGET" in {
-        blocker["code"] for blocker in plan["blockers"]
-    }
+    assert "PW_UPGRADE_REGISTRY_INVALID_TARGET" in {blocker["code"] for blocker in plan["blockers"]}
     assert not any(
         precondition["artifact"] == ".project-workflow/not-a-file"
         and precondition["kind"] == "file-hash"
@@ -1433,9 +1460,7 @@ def test_upgrade_apply_cli_requires_fingerprint_and_noops_current_repo(tmp_path:
     assert plan_result.returncode == 0, plan_result.stdout + plan_result.stderr
     fingerprint = json.loads(plan_result.stdout)["plan_fingerprint"]
 
-    missing = run_project(
-        ["upgrade", "--agent", "github-copilot", "--apply"], cwd=tmp_path
-    )
+    missing = run_project(["upgrade", "--agent", "github-copilot", "--apply"], cwd=tmp_path)
     assert missing.returncode == 1
     assert "--apply requires --plan-fingerprint" in missing.stderr
 
@@ -1474,7 +1499,11 @@ def test_upgrade_apply_failure_restores_all_targets(
         migrations=migrations,
         handlers=handlers,
     )
-    before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file() and ".git" not in path.parts}
+    before = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
 
     result = workflow_cli._apply_upgrade_plan(
         tmp_path,
@@ -1484,7 +1513,11 @@ def test_upgrade_apply_failure_restores_all_targets(
         fail_after_replacements=fail_after,
     )
 
-    after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file() and ".git" not in path.parts}
+    after = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
     assert result["status"] == "failed"
     assert result["failure"]["code"] == "PW_UPGRADE_APPLY_REPLACEMENT_FAILED"
     assert after == before
@@ -1656,9 +1689,7 @@ def test_production_legacy_fixture_plan_apply_preservation_and_noop(tmp_path: Pa
     assert result["post_upgrade"]["repository_state"] == "current"
     assert result["post_upgrade"]["owner_finding_count"] == len(owner_findings_before)
     manifest = workflow_cli._parse_workflow_manifest(
-        json.loads(
-            (tmp_path / ".project-workflow" / "manifest.json").read_text(encoding="utf-8")
-        )
+        json.loads((tmp_path / ".project-workflow" / "manifest.json").read_text(encoding="utf-8"))
     )
     assert manifest.applied_migrations == (workflow_cli.LEGACY_MANIFEST_MIGRATION_ID,)
     for relative_path, content in before_plan.items():
@@ -1787,8 +1818,7 @@ def test_doctor_passes_for_clean_initialized_repo(tmp_path: Path) -> None:
     assert (tmp_path / ".project-workflow" / "config.json").exists()
     backlog_text = (tmp_path / ".project-workflow" / "BACKLOG.md").read_text(encoding="utf-8")
     assert (
-        "| ID | Title | Type | Priority | Status | Outcome | Promoted To | Notes |"
-        in backlog_text
+        "| ID | Title | Type | Priority | Status | Outcome | Promoted To | Notes |" in backlog_text
     )
     assert "`Task Candidate`" in backlog_text
     assert "`Accepted` means worth keeping or preparing" in backlog_text
@@ -2000,7 +2030,7 @@ def test_unique_id_generation_for_task_epic_backlog_and_promotion(tmp_path: Path
 
 
 def test_unique_id_allocator_retries_local_collisions(monkeypatch) -> None:
-    choices = iter("ABCDE" "FGHIJ")
+    choices = iter("ABCDEFGHIJ")
     monkeypatch.setattr(workflow_cli.secrets, "choice", lambda _alphabet: next(choices))
 
     allocated = workflow_cli._next_unique_id_from_used(
@@ -2091,7 +2121,10 @@ def test_backlog_promote_to_task_preserves_source_and_row(tmp_path: Path) -> Non
     assert "- Outcome: A user can export ideas." in requirements_text
 
     tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(encoding="utf-8")
-    assert "| TASK-001 | Export Ideas | To Do | `tasks/TASK-001-Export-Ideas/IMPLEMENTATION.md` |" in tracker_text
+    assert (
+        "| TASK-001 | Export Ideas | To Do | `tasks/TASK-001-Export-Ideas/IMPLEMENTATION.md` |"
+        in tracker_text
+    )
     validate = run_project(["backlog", "validate"], cwd=tmp_path)
     assert validate.returncode == 0, validate.stdout + validate.stderr
 
@@ -2326,7 +2359,9 @@ def test_configured_task_prefixes_work_for_packaged_and_local_workflow(tmp_path:
     custom_config = (tmp_path / ".project-workflow" / "config.json").read_text(encoding="utf-8")
     refresh = run_project(["init"], cwd=tmp_path)
     assert refresh.returncode == 0, refresh.stdout + refresh.stderr
-    assert (tmp_path / ".project-workflow" / "config.json").read_text(encoding="utf-8") == custom_config
+    assert (tmp_path / ".project-workflow" / "config.json").read_text(
+        encoding="utf-8"
+    ) == custom_config
 
     packaged_task = run_project(
         ["task", "init", "--prefix", "WF", "--title", "Workflow Status", "--update-tracker"],
@@ -2340,9 +2375,7 @@ def test_configured_task_prefixes_work_for_packaged_and_local_workflow(tmp_path:
         ready_requirements("WF-001", "Workflow Status"),
         encoding="utf-8",
     )
-    (workflow_task_dir / "IMPLEMENTATION.md").write_text(
-        ready_implementation(), encoding="utf-8"
-    )
+    (workflow_task_dir / "IMPLEMENTATION.md").write_text(ready_implementation(), encoding="utf-8")
 
     status = run_project(
         ["task", "status", "--id", "WF-001-Workflow-Status", "--to", "Analysing"],
@@ -2373,8 +2406,14 @@ def test_configured_task_prefixes_work_for_packaged_and_local_workflow(tmp_path:
     assert "Assigned ID: MCP-001" in local_task.stdout
 
     tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(encoding="utf-8")
-    assert "| WF-001 | Workflow Status | Analysing | `tasks/WF-001-Workflow-Status/IMPLEMENTATION.md` |" in tracker_text
-    assert "| MCP-001 | Tool Contract | To Do | `tasks/MCP-001-Tool-Contract/IMPLEMENTATION.md` |" in tracker_text
+    assert (
+        "| WF-001 | Workflow Status | Analysing | `tasks/WF-001-Workflow-Status/IMPLEMENTATION.md` |"
+        in tracker_text
+    )
+    assert (
+        "| MCP-001 | Tool Contract | To Do | `tasks/MCP-001-Tool-Contract/IMPLEMENTATION.md` |"
+        in tracker_text
+    )
 
 
 def test_task_status_force_cannot_bypass_incomplete_rows(tmp_path: Path) -> None:
@@ -2471,7 +2510,9 @@ def test_task_status_blocks_complete_without_qa_evidence(tmp_path: Path) -> None
         cwd=tmp_path,
     )
     assert blocked.returncode != 0
-    assert "cannot move to Complete without non-placeholder QA/code-review evidence" in blocked.stderr
+    assert (
+        "cannot move to Complete without non-placeholder QA/code-review evidence" in blocked.stderr
+    )
 
     task_dir = next((tmp_path / ".project-workflow" / "tasks").glob("TASK-001-*"))
     implementation_path = task_dir / "IMPLEMENTATION.md"
@@ -2541,9 +2582,7 @@ def test_task_status_completes_resolved_changes_requested_without_second_qa(
     (task_dir / "IMPLEMENTATION.md").write_text(implementation, encoding="utf-8")
 
     for status in ("Analysing", "Plan Confirmed", "In Progress", "Testing", "Review"):
-        moved = run_project(
-            ["task", "status", "--id", "TASK-001", "--to", status], cwd=tmp_path
-        )
+        moved = run_project(["task", "status", "--id", "TASK-001", "--to", status], cwd=tmp_path)
         assert moved.returncode == 0, moved.stdout + moved.stderr
     completed = run_project(
         ["task", "status", "--id", "TASK-001", "--to", "Complete"], cwd=tmp_path
@@ -2558,10 +2597,7 @@ def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
         cwd=tmp_path,
     )
     assert missing_tracker.returncode != 0
-    assert (
-        "uvx --from project-workflow==0.8.0 project init"
-        in missing_tracker.stderr
-    )
+    assert "uvx --from project-workflow==0.9.0 project init" in missing_tracker.stderr
 
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
@@ -2613,9 +2649,7 @@ def test_fix_lifecycle_uses_shared_tracker_and_single_document(tmp_path: Path) -
     assert sorted(path.name for path in fix_dir.iterdir()) == ["FIX.md"]
     assert not (tmp_path / ".project-workflow" / "fixes").exists()
     assert not (tmp_path / ".project-workflow" / "FIXES.md").exists()
-    tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(
-        encoding="utf-8"
-    )
+    tracker_text = (tmp_path / ".project-workflow" / "TRACKER.md").read_text(encoding="utf-8")
     assert "| FIX-001 | Export Regression | To Do |" in tracker_text
 
     invalid_text = workflow_cli._replace_fix_field(
@@ -2640,9 +2674,7 @@ def test_fix_lifecycle_uses_shared_tracker_and_single_document(tmp_path: Path) -
     assert "To Do -> Ready" in triaged.stdout
 
     for status in ("In Progress", "Testing", "Review"):
-        moved = run_project(
-            ["fix", "status", "--id", "FIX-001", "--to", status], cwd=tmp_path
-        )
+        moved = run_project(["fix", "status", "--id", "FIX-001", "--to", status], cwd=tmp_path)
         assert moved.returncode == 0, moved.stdout + moved.stderr
 
     direct_complete = run_project(
@@ -2690,9 +2722,9 @@ def test_fix_init_preserves_supported_classification_taxonomy(tmp_path: Path) ->
             cwd=tmp_path,
         )
         assert created.returncode == 0, created.stdout + created.stderr
-        fix_path = next(
-            (tmp_path / ".project-workflow" / "tasks").glob(f"FIX-{index:03d}-*")
-        ) / "FIX.md"
+        fix_path = (
+            next((tmp_path / ".project-workflow" / "tasks").glob(f"FIX-{index:03d}-*")) / "FIX.md"
+        )
         assert f"- Type: {classification}" in fix_path.read_text(encoding="utf-8")
         assert "- Mode: Normal" in fix_path.read_text(encoding="utf-8")
 
@@ -2712,9 +2744,7 @@ def test_fix_link_does_not_mutate_completed_task_history(tmp_path: Path) -> None
     )
     implementation_path.write_text(ready_implementation(qa=True), encoding="utf-8")
     for status in ("Analysing", "Ready", "In Progress", "Testing", "Review", "Complete"):
-        moved = run_project(
-            ["task", "status", "--id", "TASK-001", "--to", status], cwd=tmp_path
-        )
+        moved = run_project(["task", "status", "--id", "TASK-001", "--to", status], cwd=tmp_path)
         assert moved.returncode == 0, moved.stdout + moved.stderr
     requirements_before = requirements_path.read_bytes()
     implementation_before = implementation_path.read_bytes()
@@ -2728,11 +2758,7 @@ def test_fix_link_does_not_mutate_completed_task_history(tmp_path: Path) -> None
     created = run_project(["fix", "init", "--title", "Delivered Export Regression"], cwd=tmp_path)
     assert created.returncode == 0, created.stdout + created.stderr
     fix_path = (
-        tmp_path
-        / ".project-workflow"
-        / "tasks"
-        / "FIX-001-Delivered-Export-Regression"
-        / "FIX.md"
+        tmp_path / ".project-workflow" / "tasks" / "FIX-001-Delivered-Export-Regression" / "FIX.md"
     )
     fix_text = ready_fix_text(fix_path)
     fix_text = workflow_cli._replace_fix_field(
@@ -2804,13 +2830,12 @@ def test_fix_related_work_ignores_external_urls_and_checks_configured_ids(
     fix_match = re.search(r"Assigned ID: (FIX-[0-9A-Z]{5})", created.stdout)
     assert fix_match, created.stdout
     fix_id = fix_match.group(1)
-    fix_path = next(
-        (tmp_path / ".project-workflow" / "tasks").glob(f"{fix_id}-Related-Link-Parsing")
-    ) / "FIX.md"
-
-    missing_id = next(
-        candidate for candidate in ("WF-ZZZZZ", "WF-YYYYY") if candidate != task_id
+    fix_path = (
+        next((tmp_path / ".project-workflow" / "tasks").glob(f"{fix_id}-Related-Link-Parsing"))
+        / "FIX.md"
     )
+
+    missing_id = next(candidate for candidate in ("WF-ZZZZZ", "WF-YYYYY") if candidate != task_id)
     fix_text = workflow_cli._replace_fix_field(
         fix_path.read_text(encoding="utf-8"),
         "Related Work",
@@ -2841,7 +2866,10 @@ def test_fix_related_work_ignores_external_urls_and_checks_configured_ids(
     )
     missing = run_project(["doctor", "--strict"], cwd=tmp_path)
     assert missing.returncode != 0
-    assert f"related work reference '{missing_id}' is not in the local global tracker" in missing.stdout
+    assert (
+        f"related work reference '{missing_id}' is not in the local global tracker"
+        in missing.stdout
+    )
     assert "PROJECT-WORKFLOW" not in missing.stdout
 
 
@@ -2854,21 +2882,13 @@ def test_fix_hotfix_bypass_and_promotion(tmp_path: Path) -> None:
         cwd=tmp_path,
     )
     assert created.returncode == 0, created.stdout + created.stderr
-    fix_path = (
-        tmp_path
-        / ".project-workflow"
-        / "tasks"
-        / "FIX-001-Production-Incident"
-        / "FIX.md"
-    )
+    fix_path = tmp_path / ".project-workflow" / "tasks" / "FIX-001-Production-Incident" / "FIX.md"
     bypass_blocked = run_project(
         ["fix", "status", "--id", "FIX-001", "--to", "In Progress"], cwd=tmp_path
     )
     assert bypass_blocked.returncode != 0
     fix_path.write_text(ready_fix_text(fix_path, hotfix=True), encoding="utf-8")
-    bypass = run_project(
-        ["fix", "status", "--id", "FIX-001", "--to", "In Progress"], cwd=tmp_path
-    )
+    bypass = run_project(["fix", "status", "--id", "FIX-001", "--to", "In Progress"], cwd=tmp_path)
     assert bypass.returncode == 0, bypass.stdout + bypass.stderr
 
     second = run_project(["fix", "init", "--title", "Expanded Outcome"], cwd=tmp_path)
@@ -2891,19 +2911,11 @@ def test_fix_hotfix_bypass_and_promotion(tmp_path: Path) -> None:
     assert promoted.returncode == 0, promoted.stdout + promoted.stderr
     assert "Promoted FIX-002 to task TASK-001" in promoted.stdout
     promoted_requirements = (
-        tmp_path
-        / ".project-workflow"
-        / "tasks"
-        / "TASK-001-Expanded-Outcome"
-        / "REQUIREMENTS.md"
+        tmp_path / ".project-workflow" / "tasks" / "TASK-001-Expanded-Outcome" / "REQUIREMENTS.md"
     ).read_text(encoding="utf-8")
     assert "- Promoted from Fix: FIX-002" in promoted_requirements
     promoted_fix = (
-        tmp_path
-        / ".project-workflow"
-        / "tasks"
-        / "FIX-002-Expanded-Outcome"
-        / "FIX.md"
+        tmp_path / ".project-workflow" / "tasks" / "FIX-002-Expanded-Outcome" / "FIX.md"
     ).read_text(encoding="utf-8")
     assert "- Status: N/A" in promoted_fix
     assert "- Disposition: Promoted" in promoted_fix
@@ -2958,13 +2970,7 @@ def test_fix_workspace_metadata_and_non_delivery_disposition(tmp_path: Path) -> 
 
     created = run_project(["fix", "init", "--title", "Workspace Regression"], cwd=tmp_path)
     assert created.returncode == 0, created.stdout + created.stderr
-    fix_path = (
-        tmp_path
-        / ".project-workflow"
-        / "tasks"
-        / "FIX-001-Workspace-Regression"
-        / "FIX.md"
-    )
+    fix_path = tmp_path / ".project-workflow" / "tasks" / "FIX-001-Workspace-Regression" / "FIX.md"
     text = ready_fix_text(fix_path)
     text = workflow_cli._replace_fix_field(text, "Fix Plan", "Primary repo", "api")
     text = workflow_cli._replace_fix_field(text, "Fix Plan", "Repos touched", "api, web")
@@ -3002,9 +3008,11 @@ def test_fix_workspace_metadata_and_non_delivery_disposition(tmp_path: Path) -> 
             cwd=tmp_path,
         )
         assert closed.returncode == 0, closed.stdout + closed.stderr
-        terminal_text = next(
-            (tmp_path / ".project-workflow" / "tasks").glob(f"FIX-{index:03d}-*")
-        ).joinpath("FIX.md").read_text(encoding="utf-8")
+        terminal_text = (
+            next((tmp_path / ".project-workflow" / "tasks").glob(f"FIX-{index:03d}-*"))
+            .joinpath("FIX.md")
+            .read_text(encoding="utf-8")
+        )
         assert "- Status: N/A" in terminal_text
         assert f"- Disposition: {disposition}" in terminal_text
 
@@ -3020,10 +3028,7 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     codex_agents = (codex_root / "AGENTS.md").read_text(encoding="utf-8")
     assert "# Existing Agent Notes" in codex_agents
     assert "<!-- project-workflow:start -->" in codex_agents
-    assert (
-        "uvx --from project-workflow==0.8.0 project init"
-        in codex_agents
-    )
+    assert "uvx --from project-workflow==0.9.0 project init" in codex_agents
     assert "To initialize a new repository" in codex_agents
     assert "project upgrade" in codex_agents
     assert "Do not run init first" in codex_agents
@@ -3054,9 +3059,9 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "task ready" in implement_skill
     assert "task approve-requirements" in implement_skill
     assert "approved envelope" in implement_skill
-    qa_skill = (
-        codex_root / ".agents" / "skills" / "project-qa-review" / "SKILL.md"
-    ).read_text(encoding="utf-8")
+    qa_skill = (codex_root / ".agents" / "skills" / "project-qa-review" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
     assert "Do not ask the user to manually test behavior" in qa_skill
     assert "separate verified evidence from deferred setup" in qa_skill
     assert "EVIDENCE.json" in qa_skill
@@ -3064,9 +3069,9 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert ".project-workflow/guidance.md" in (
         codex_root / ".agents" / "skills" / "project-implement" / "SKILL.md"
     ).read_text(encoding="utf-8")
-    backlog_skill = (
-        codex_root / ".agents" / "skills" / "project-backlog" / "SKILL.md"
-    ).read_text(encoding="utf-8")
+    backlog_skill = (codex_root / ".agents" / "skills" / "project-backlog" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
     assert "Promoted rows stay in the backlog" in backlog_skill
     assert "Existing roadmap/backlog documents" in backlog_skill
     requirements_skill = (
@@ -3080,9 +3085,9 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     cursor_root.mkdir()
     cursor_init = run_project(["init", "--agent", "cursor"], cwd=cursor_root)
     assert cursor_init.returncode == 0, cursor_init.stderr
-    cursor_rules = (
-        cursor_root / ".cursor" / "rules" / "project-workflow.mdc"
-    ).read_text(encoding="utf-8")
+    cursor_rules = (cursor_root / ".cursor" / "rules" / "project-workflow.mdc").read_text(
+        encoding="utf-8"
+    )
     assert "workflow doctor" in cursor_rules
     assert "task status" in cursor_rules
     assert "owner-directed and agent-operated" in cursor_rules
@@ -3098,9 +3103,7 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     assert "EVIDENCE.json" in cursor_rules
     assert "one lightweight Fix" in cursor_rules
     assert (cursor_root / ".cursor" / "agents" / "project-fix.md").exists()
-    assert (
-        cursor_root / ".cursor" / "agents" / "project-backlog.md"
-    ).exists()
+    assert (cursor_root / ".cursor" / "agents" / "project-backlog.md").exists()
     assert "workflow doctor" in (
         cursor_root / ".cursor" / "agents" / "project-implement.md"
     ).read_text(encoding="utf-8")
@@ -3109,13 +3112,11 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     claude_root.mkdir()
     claude_init = run_project(["init", "--agent", "claude-code"], cwd=claude_root)
     assert claude_init.returncode == 0, claude_init.stderr
-    assert (
-        claude_root / ".claude" / "agents" / "project-backlog.md"
-    ).exists()
+    assert (claude_root / ".claude" / "agents" / "project-backlog.md").exists()
     assert (claude_root / ".claude" / "agents" / "project-fix.md").exists()
-    claude_implement = (
-        claude_root / ".claude" / "agents" / "project-implement.md"
-    ).read_text(encoding="utf-8")
+    claude_implement = (claude_root / ".claude" / "agents" / "project-implement.md").read_text(
+        encoding="utf-8"
+    )
     assert "task approve-requirements" in claude_implement
     assert "approved envelope" in claude_implement
     assert "EVIDENCE.json" in claude_implement
@@ -3156,9 +3157,7 @@ def test_upgrade_refreshes_marked_generated_files_and_managed_blocks(tmp_path: P
     )
     commit_git_fixture(tmp_path, "legacy generated assets")
 
-    refreshed = run_project(
-        ["upgrade", "--agent", "github-copilot", "--yes"], cwd=tmp_path
-    )
+    refreshed = run_project(["upgrade", "--agent", "github-copilot", "--yes"], cwd=tmp_path)
     assert refreshed.returncode == 0, refreshed.stdout + refreshed.stderr
 
     help_result = subprocess.run(
@@ -3339,8 +3338,7 @@ def test_init_does_not_treat_inline_marker_mentions_as_managed_blocks(tmp_path: 
 
     instructions_text = instructions.read_text(encoding="utf-8")
     assert (
-        "Document the `<!-- project-workflow:start -->` / "
-        "`<!-- project-workflow:end -->` markers"
+        "Document the `<!-- project-workflow:start -->` / `<!-- project-workflow:end -->` markers"
     ) in instructions_text
     assert instructions_text.count("<!-- project-workflow:start -->") == 2
     assert instructions_text.count("<!-- project-workflow:end -->") == 2
@@ -3410,10 +3408,7 @@ def test_doctor_detects_installed_codex_delegate_skill_drift(tmp_path: Path) -> 
     init = run_project(["init", "--agent", "codex"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
 
-    packaged_skill = (
-        tmp_path
-        / "src/project_workflow/codex/skills/project-delegate/SKILL.md"
-    )
+    packaged_skill = tmp_path / "src/project_workflow/codex/skills/project-delegate/SKILL.md"
     packaged_skill.parent.mkdir(parents=True)
     shutil.copy2(
         REPO_ROOT / "src/project_workflow/codex/skills/project-delegate/SKILL.md",
@@ -3575,8 +3570,7 @@ def test_doctor_separates_legacy_warnings_from_current_warnings(tmp_path: Path) 
     legacy_dir.mkdir()
     legacy_impl = legacy_dir / "IMPLEMENTATION.md"
     legacy_impl.write_text(
-        "## User Story\n\n"
-        "As a maintainer, I have historical workflow state.\n\n",
+        "## User Story\n\nAs a maintainer, I have historical workflow state.\n\n",
         encoding="utf-8",
     )
 
@@ -3612,7 +3606,9 @@ def test_doctor_warns_for_unconfigured_task_prefixes(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     tracker_text = tracker_path.read_text(encoding="utf-8")
-    tracker_text += "| WF-003 | Workflow Task | To Do | `tasks/WF-003-Workflow-Task/IMPLEMENTATION.md` |\n"
+    tracker_text += (
+        "| WF-003 | Workflow Task | To Do | `tasks/WF-003-Workflow-Task/IMPLEMENTATION.md` |\n"
+    )
     tracker_path.write_text(tracker_text, encoding="utf-8")
 
     doctor = run_project(["doctor"], cwd=tmp_path)
@@ -3720,7 +3716,9 @@ def test_epic_decompose_preserves_source_ac_ids_in_notes(tmp_path: Path) -> None
 
     epic_dir = next((tmp_path / ".project-workflow" / "tasks").glob("EPIC-001-*"))
     initialized_tracker = (epic_dir / "TRACKER.md").read_text(encoding="utf-8")
-    assert "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |" in initialized_tracker
+    assert (
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |" in initialized_tracker
+    )
     assert (epic_dir / "EPIC-CONTRACT.md").exists()
     initialized_map = (epic_dir / "ACCEPTANCE-MAP.md").read_text(encoding="utf-8")
     assert "| AC1 | ____ | None | None | None | Unmapped |" in initialized_map
@@ -3755,11 +3753,23 @@ def test_epic_decompose_preserves_source_ac_ids_in_notes(tmp_path: Path) -> None
     assert "Covers AC2; Prefix TASK:" in epic_tracker
     assert "Generated from REQUIREMENTS.md" in epic_tracker
     decomposition_plan = (epic_dir / "DECOMPOSITION.md").read_text(encoding="utf-8")
-    assert "| TASK-001 | First epic outcome is delivered | AC1 | Generated from REQUIREMENTS.md |" in decomposition_plan
-    assert "| TASK-002 | Second epic outcome is delivered | AC2 | Generated from REQUIREMENTS.md |" in decomposition_plan
+    assert (
+        "| TASK-001 | First epic outcome is delivered | AC1 | Generated from REQUIREMENTS.md |"
+        in decomposition_plan
+    )
+    assert (
+        "| TASK-002 | Second epic outcome is delivered | AC2 | Generated from REQUIREMENTS.md |"
+        in decomposition_plan
+    )
     acceptance_map = (epic_dir / "ACCEPTANCE-MAP.md").read_text(encoding="utf-8")
-    assert "| AC1 | First epic outcome is delivered. | TASK-001 (Proposed) | None | None | Mapped - evidence pending |" in acceptance_map
-    assert "| AC2 | Second epic outcome is delivered. | TASK-002 (Proposed) | None | None | Mapped - evidence pending |" in acceptance_map
+    assert (
+        "| AC1 | First epic outcome is delivered. | TASK-001 (Proposed) | None | None | Mapped - evidence pending |"
+        in acceptance_map
+    )
+    assert (
+        "| AC2 | Second epic outcome is delivered. | TASK-002 (Proposed) | None | None | Mapped - evidence pending |"
+        in acceptance_map
+    )
 
 
 def test_epic_decompose_requires_ready_epic_contract(tmp_path: Path) -> None:
@@ -3823,8 +3833,7 @@ def test_epic_decompose_prefers_owner_proposed_child_work_plan(tmp_path: Path) -
         workflow_cli.OWNER_APPROVAL_HEADING,
     )
     requirements_text = (
-        requirements_text
-        + "\n## Proposed Child Work\n\n"
+        requirements_text + "\n## Proposed Child Work\n\n"
         "| Proposed Child | Parent ACs | Purpose |\n"
         "| --- | --- | --- |\n"
         "| Owner Named Child | AC1 | Use the owner-reviewed child title. |\n"
@@ -3929,9 +3938,7 @@ def test_epic_amend_authorizes_child_outside_decomposition_plan(tmp_path: Path) 
         cwd=tmp_path,
     )
     assert amend.returncode == 0, amend.stdout + amend.stderr
-    amendments_text = (epic_dir / workflow_cli.EPIC_AMENDMENTS_FILENAME).read_text(
-        encoding="utf-8"
-    )
+    amendments_text = (epic_dir / workflow_cli.EPIC_AMENDMENTS_FILENAME).read_text(encoding="utf-8")
     assert "| TASK-002 | Reactive Fix | AC1 | Test Owner |" in amendments_text
     tracker_text = (epic_dir / "TRACKER.md").read_text(encoding="utf-8")
     assert "| TASK-002 | Reactive Fix | Proposed | Task | AC1 |" in tracker_text
@@ -4011,8 +4018,14 @@ def test_epic_decompose_uses_configured_mixed_prefixes_and_prefix_override(
     assert decompose.returncode == 0, decompose.stdout + decompose.stderr
 
     epic_tracker = (epic_dir / "TRACKER.md").read_text(encoding="utf-8")
-    assert "| MCP-001 | MCP server payload contract is delivered | Proposed | Task | AC1 |" in epic_tracker
-    assert "| UI-001 | Frontend UI route interaction is delivered | Proposed | Task | AC2 |" in epic_tracker
+    assert (
+        "| MCP-001 | MCP server payload contract is delivered | Proposed | Task | AC1 |"
+        in epic_tracker
+    )
+    assert (
+        "| UI-001 | Frontend UI route interaction is delivered | Proposed | Task | AC2 |"
+        in epic_tracker
+    )
     assert "Prefix MCP: " in epic_tracker
     assert "Prefix UI: " in epic_tracker
 
@@ -4043,8 +4056,13 @@ def test_epic_decompose_uses_configured_mixed_prefixes_and_prefix_override(
     )
     assert forced.returncode == 0, forced.stdout + forced.stderr
     forced_tracker = (second_epic_dir / "TRACKER.md").read_text(encoding="utf-8")
-    assert "| MCP-002 | Frontend UI fixture is delivered | Proposed | Task | AC1 |" in forced_tracker
-    assert "| MCP-003 | Workflow prompt fixture is delivered | Proposed | Task | AC2 |" in forced_tracker
+    assert (
+        "| MCP-002 | Frontend UI fixture is delivered | Proposed | Task | AC1 |" in forced_tracker
+    )
+    assert (
+        "| MCP-003 | Workflow prompt fixture is delivered | Proposed | Task | AC2 |"
+        in forced_tracker
+    )
     assert "Prefix MCP: forced by --prefix" in forced_tracker
 
 
@@ -4100,18 +4118,22 @@ def test_epic_child_scaffold_carries_parent_ac_sections(tmp_path: Path) -> None:
     write_epic_contract(epic_dir, title="Parent Evidence", ac_ids=["AC1", "AC3"])
     contract_path = epic_dir / workflow_cli.EPIC_CONTRACT_FILENAME
     contract_text = contract_path.read_text(encoding="utf-8")
-    contract_text = contract_text.replace(
-        "- Tracker rows without matching contract and decomposition authority.\n",
-        "- Tracker rows without matching contract and decomposition authority or a passing build;\n"
-        "  public package provenance must identify the exact source commit.\n",
-    ).replace(
-        "- Parent AC IDs remain stable across child work.\n",
-        "- Parent AC IDs remain stable across child work in `REQUIREMENTS.md`\n"
-        "  and `IMPLEMENTATION.md` child charters.\n",
-    ).replace(
-        "- Workflow markdown artifacts in this epic folder.\n",
-        "- Workflow markdown artifacts in this epic folder, including exact-draft play\n"
-        "  and ordinary public-source play.\n",
+    contract_text = (
+        contract_text.replace(
+            "- Tracker rows without matching contract and decomposition authority.\n",
+            "- Tracker rows without matching contract and decomposition authority or a passing build;\n"
+            "  public package provenance must identify the exact source commit.\n",
+        )
+        .replace(
+            "- Parent AC IDs remain stable across child work.\n",
+            "- Parent AC IDs remain stable across child work in `REQUIREMENTS.md`\n"
+            "  and `IMPLEMENTATION.md` child charters.\n",
+        )
+        .replace(
+            "- Workflow markdown artifacts in this epic folder.\n",
+            "- Workflow markdown artifacts in this epic folder, including exact-draft play\n"
+            "  and ordinary public-source play.\n",
+        )
     )
     contract_path.write_text(contract_text, encoding="utf-8")
     (epic_dir / "TRACKER.md").write_text(
@@ -4158,8 +4180,13 @@ def test_epic_child_scaffold_carries_parent_ac_sections(tmp_path: Path) -> None:
             "- Workflow markdown artifacts in this epic folder, including exact-draft play "
             "and ordinary public-source play."
         ) in child_text
-        assert "- Parent AC IDs remain stable across child work in `REQUIREMENTS.md`\n" not in child_text
-    evidence = json.loads((child_dir / workflow_cli.STRUCTURED_EVIDENCE_FILENAME).read_text(encoding="utf-8"))
+        assert (
+            "- Parent AC IDs remain stable across child work in `REQUIREMENTS.md`\n"
+            not in child_text
+        )
+    evidence = json.loads(
+        (child_dir / workflow_cli.STRUCTURED_EVIDENCE_FILENAME).read_text(encoding="utf-8")
+    )
     assert evidence["claims"] == []
 
     standalone = run_project(
@@ -4246,8 +4273,7 @@ def test_active_epic_child_rejects_legacy_truncated_contract_charter(tmp_path: P
 
     child_dir = epic_dir / "TASK-001-Wrapped-Child"
     full_bullet = (
-        "Parent AC IDs remain stable across the parent contract "
-        "and every active child charter."
+        "Parent AC IDs remain stable across the parent contract and every active child charter."
     )
     legacy_fragment = "Parent AC IDs remain stable across the parent contract"
     charter = workflow_cli._format_child_charter_from_contract(
@@ -4361,7 +4387,10 @@ def test_epic_child_scaffold_preserves_configured_task_prefix(tmp_path: Path) ->
 
     assert "- Task: UI-008" in requirements_text
     assert "- Task: UI-008" in implementation_text
-    assert "| UI-008 | Widget Interaction | In Progress | Task | AC1 | tasks/EPIC-001-Custom-Prefix-Child/UI-008-Widget-Interaction/IMPLEMENTATION.md |" in tracker_text
+    assert (
+        "| UI-008 | Widget Interaction | In Progress | Task | AC1 | tasks/EPIC-001-Custom-Prefix-Child/UI-008-Widget-Interaction/IMPLEMENTATION.md |"
+        in tracker_text
+    )
 
 
 def test_doctor_accepts_legacy_epic_tracker_schema(tmp_path: Path) -> None:
@@ -4439,7 +4468,10 @@ def test_epic_audit_and_closeout_complete_only_when_gates_pass(tmp_path: Path) -
     assert "| AC1 | First parent outcome is delivered. | TASK-001 (Complete) |" in audit_text
     assert "TASK-001: parent AC evidence recorded; TASK-001: QA pass" in audit_text
     map_text = (epic_dir / "ACCEPTANCE-MAP.md").read_text(encoding="utf-8")
-    assert "| AC1 | First parent outcome is delivered. | TASK-001 (Complete) | TASK-001: parent AC evidence recorded; TASK-001: QA pass | None | Satisfied |" in map_text
+    assert (
+        "| AC1 | First parent outcome is delivered. | TASK-001 (Complete) | TASK-001: parent AC evidence recorded; TASK-001: QA pass | None | Satisfied |"
+        in map_text
+    )
 
     validate_only = run_project(["epic", "closeout", "--epic-id", "EPIC-001"], cwd=tmp_path)
     assert validate_only.returncode == 0, validate_only.stdout + validate_only.stderr
@@ -4460,7 +4492,10 @@ def test_epic_audit_and_closeout_complete_only_when_gates_pass(tmp_path: Path) -
 
     doctor = run_project(["doctor", "--strict"], cwd=tmp_path)
     assert doctor.returncode == 0, doctor.stdout + doctor.stderr
-    assert "EPIC-001 is Complete but lacks non-placeholder QA/code-review evidence" not in doctor.stdout
+    assert (
+        "EPIC-001 is Complete but lacks non-placeholder QA/code-review evidence"
+        not in doctor.stdout
+    )
 
 
 def test_epic_audit_rejects_parent_evidence_from_unassigned_proof_owner(
@@ -4579,16 +4614,16 @@ def test_multi_parent_ac_structured_evidence_requires_one_claim_per_ac(
     requirements_path = child_dir / "REQUIREMENTS.md"
     implementation_path = child_dir / "IMPLEMENTATION.md"
     requirements_path.write_text(
-            ready_requirements(
-                "TASK-001",
-                "Multi AC",
-                [
-                    "- AC1: Delivered UI matches the reference visual exactly.",
-                    "- AC2: Delivered UI matches the second reference visual exactly.",
-                ],
-            ),
-            encoding="utf-8",
-        )
+        ready_requirements(
+            "TASK-001",
+            "Multi AC",
+            [
+                "- AC1: Delivered UI matches the reference visual exactly.",
+                "- AC2: Delivered UI matches the second reference visual exactly.",
+            ],
+        ),
+        encoding="utf-8",
+    )
     implementation_path.write_text(
         "## User Story\n\n"
         "As a maintainer, I want visual/reference fidelity proof, so that drift is caught.\n\n"
@@ -4640,7 +4675,10 @@ def test_multi_parent_ac_structured_evidence_requires_one_claim_per_ac(
         implementation_path=implementation_path,
         parent_ac_ids={"AC1", "AC2"},
     )
-    assert "structured evidence: missing passing claim records for parent ACs: AC1, AC2" in comma_issues
+    assert (
+        "structured evidence: missing passing claim records for parent ACs: AC1, AC2"
+        in comma_issues
+    )
 
     (child_dir / workflow_cli.STRUCTURED_EVIDENCE_FILENAME).write_text(
         json.dumps(
@@ -4719,6 +4757,27 @@ def test_invalid_substitute_structured_evidence_blocks_doctor_and_audit(
     assert "uses invalid substitute for `visual-reference-fidelity`: unit test" in audit.stdout
     audit_text = (epic_dir / "ACCEPTANCE-AUDIT.md").read_text(encoding="utf-8")
     assert "| Gap |" in audit_text
+
+    evidence_path = child_dir / workflow_cli.STRUCTURED_EVIDENCE_FILENAME
+    evidence_payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+    historical = evidence_payload["claims"][0]
+    historical["id"] = "CLM-HISTORICAL-INVALID"
+    historical["status"] = "fail"
+    replacement = {
+        **historical,
+        "id": "CLM-VALID-REPLACEMENT",
+        "status": "pass",
+        "invalid_substitutes": [],
+    }
+    evidence_payload["claims"] = [historical, replacement]
+    evidence_path.write_text(json.dumps(evidence_payload, indent=2) + "\n", encoding="utf-8")
+
+    remediated_issues = workflow_cli._structured_evidence_issues(
+        requirements_path=child_dir / "REQUIREMENTS.md",
+        implementation_path=child_dir / "IMPLEMENTATION.md",
+        parent_ac_ids={"AC1"},
+    )
+    assert remediated_issues == []
 
 
 def test_valid_structured_visual_evidence_satisfies_epic_audit(
@@ -4857,8 +4916,7 @@ def test_runtime_target_source_prose_contradiction_blocks_doctor(tmp_path: Path)
         encoding="utf-8",
     )
     impl_text = (
-        ready_implementation("AC1", qa=True)
-        + "\n## Runtime Proof Notes\n\n"
+        ready_implementation("AC1", qa=True) + "\n## Runtime Proof Notes\n\n"
         "- Execution target: release/deployed\n"
         "- Source artifact: release bundle\n"
     )
@@ -4925,7 +4983,10 @@ def test_epic_closeout_blocks_missing_parent_ac_evidence(tmp_path: Path) -> None
     assert "Epic closeout summary:" in blocked.stdout
     assert "- Parent ACs: 1 total, 0 pass, 0 deferred, 1 gap" in blocked.stdout
     assert "- Missing parent evidence: AC1: TASK-001 lacks parent AC evidence" in blocked.stdout
-    assert "- Epic retro: epic retro section 'Lessons' is missing or still placeholder" in blocked.stdout
+    assert (
+        "- Epic retro: epic retro section 'Lessons' is missing or still placeholder"
+        in blocked.stdout
+    )
     assert "- Next action: resolve the listed gaps or record approved deferrals" in blocked.stdout
     assert "Epic closeout blocked by acceptance gaps" in blocked.stdout
     assert "AC1: TASK-001 lacks parent AC evidence" in blocked.stdout
@@ -4964,7 +5025,10 @@ def test_epic_closeout_accepts_approved_deferral_with_follow_up(tmp_path: Path) 
     assert closeout.returncode == 0, closeout.stdout + closeout.stderr
     audit_text = (epic_dir / "ACCEPTANCE-AUDIT.md").read_text(encoding="utf-8")
     assert "Deferred from MVP" in audit_text
-    assert "| AC1 | Deferred parent outcome is explicitly tracked. | None | None | Approved:" in audit_text
+    assert (
+        "| AC1 | Deferred parent outcome is explicitly tracked. | None | None | Approved:"
+        in audit_text
+    )
     assert "| Deferred |" in audit_text
 
 
@@ -5988,9 +6052,7 @@ def test_smoke_bomb_preserves_short_user_agent_content_and_blocks(tmp_path: Path
     }
     agents_action = next(action for action in plan["actions"] if action["path"] == "AGENTS.md")
     assert agents_action["after_sha256"] == workflow_cli._smoke_bomb_hash(
-        workflow_cli._smoke_bomb_remove_managed_block(
-            short_user_content + managed
-        ).encode("utf-8")
+        workflow_cli._smoke_bomb_remove_managed_block(short_user_content + managed).encode("utf-8")
     )
 
 

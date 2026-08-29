@@ -11,16 +11,16 @@ Use it with GitHub Copilot, Claude Code, OpenAI Codex, or Cursor.
 From the root of an existing Git repository:
 
 ```bash
-uvx --from project-workflow==0.8.0 project init --agent codex
+uvx --from project-workflow==0.9.0 project init --agent codex
 ```
 
 Choose the mode that matches your agent:
 
 ```bash
-uvx --from project-workflow==0.8.0 project init --agent github-copilot
-uvx --from project-workflow==0.8.0 project init --agent claude-code
-uvx --from project-workflow==0.8.0 project init --agent codex
-uvx --from project-workflow==0.8.0 project init --agent cursor
+uvx --from project-workflow==0.9.0 project init --agent github-copilot
+uvx --from project-workflow==0.9.0 project init --agent claude-code
+uvx --from project-workflow==0.9.0 project init --agent codex
+uvx --from project-workflow==0.9.0 project init --agent cursor
 ```
 
 Then tell the agent what you want in ordinary language:
@@ -330,7 +330,7 @@ PATH="/opt/homebrew/bin:$PATH" uvx --version
 Run the canonical init command from the repository root:
 
 ```bash
-uvx --from project-workflow==0.8.0 project init
+uvx --from project-workflow==0.9.0 project init
 ```
 
 Without `--agent`, the default mode is `github-copilot`. Pass an explicit mode when the repository uses another agent.
@@ -453,7 +453,7 @@ project-workflow package, so this works even when the repository's local helper 
 yet contain the upgrade command:
 
 ```bash
-uvx --from project-workflow==0.8.0 \
+uvx --from project-workflow==0.9.0 \
   project upgrade --agent codex
 ```
 
@@ -466,7 +466,7 @@ Agents and other non-interactive callers use the same canonical command with `--
 owner has authorized the upgrade:
 
 ```bash
-uvx --from project-workflow==0.8.0 \
+uvx --from project-workflow==0.9.0 \
   project upgrade --agent codex --yes
 ```
 
@@ -479,10 +479,10 @@ Automation can retain an explicitly separated, non-mutating plan and fingerprint
 commands must use the same package source and version:
 
 ```bash
-uvx --from project-workflow==0.8.0 \
+uvx --from project-workflow==0.9.0 \
   project upgrade --agent codex --plan --format json
 
-uvx --from project-workflow==0.8.0 \
+uvx --from project-workflow==0.9.0 \
   project upgrade --agent codex \
   --apply \
   --plan-fingerprint sha256:<REVIEWED_PLAN_FINGERPRINT>
@@ -694,6 +694,61 @@ evaluator-only changes regrade retained output with zero target calls, infrastru
 bounded retry, and unknown material impact requires full proof. A current passing campaign proceeds
 to the one existing independent QA gate and unchanged green proof is reused for delivery. Cheap
 bounded work explicitly requiring no material campaign keeps the ordinary lifecycle unchanged.
+
+The host-neutral execution-control contract extends that same coordination state with sealed work
+and source identity, allowed write paths and operations, proof obligations, typed finite limits,
+named progress, distinct working/verification/release candidates, exact host capability, and
+input-bound receipts. `project execute --id WORK-ID` and `project release --id WORK-ID` inspect the
+current workflow authority rather than accepting reconstructed envelope flags. Direct read-only
+and cheap deterministic operations need no envelope or model call; material preflight fails closed
+when coordination, source, sealed authority, binding capability, or candidate proof is missing.
+One source-bound QA campaign retains exactly one broad verdict and its named material findings.
+Only findings sealed into the execution authority and write scope may continue; changed source or
+evidence plus affected proof closes them without another broad QA. Candidate promotion derives
+from the existing current implementation, verification, QA, and affected-proof projection.
+`project release` remains read-only when no fixed-release plan exists; with one exact promoted
+candidate and predeclared plan, it verifies a clean source and content-addressed artifacts, runs
+argv operations without a shell, permits only one unchanged-input infrastructure retry, and emits
+one terminal receipt with zero repair, QA, or replacement-candidate authority. `project execute`
+still requires an eligible host adapter to dispatch material work. Schema presence, fake-adapter
+conformance, or package installation alone is not a Codex or Claude Code support claim, and local
+fixed-release execution is not publication, merge, installation, rollout, or owner acceptance.
+
+The packaged Codex adapter is subordinate to that host-neutral control. A sealed Codex capability
+names the exact executable digest and version, local trust, model, prompt, allowed tools and command
+patterns, test patterns, and required changed paths. Read-only status and Doctor inspect those
+settings without executing the configured binary; material preflight then probes the exact binary,
+starts one ephemeral App Server thread with an isolated network-disabled workspace permission
+profile, activates exact SessionStart/PreToolUse/PostToolUse commands through the thread-scoped
+trust override, and supervises native token and elapsed events through interruption. Hook state
+atomically reserves tool, test, retry, worker, changed-path, and write-scope authority. Completion
+is non-passing when hooks do not activate, a tool or path is outside the seal, required changes are
+missing, source or scope drifts, or App Server does not acknowledge the bounded terminal state. The
+core alone translates the adapter result into the input-bound receipt in `COORDINATION.json`.
+Package-owned plugin assets are retained for discovery and distribution, but their presence is not
+installation, activation, runtime support, or adoption proof.
+
+The packaged Claude Code adapter is subordinate to the same core control and preserves Claude's
+native units rather than translating them into Codex tokens. A sealed capability names the exact
+`claude` executable digest and version, local trust, model, prompt, allowed and disallowed tools,
+exact command/test authority, required paths, output identities or validators, USD-micro budget,
+turns, and elapsed limit. Read-only status checks the sealed executable without running it. Exact
+dispatch separately probes current CLI and authentication support, runs a model-free package-owned
+SessionStart activation preflight, then starts non-interactive print mode with streamed JSON, an
+isolated config, no session persistence, `dontAsk` plus native path/exact-command permissions,
+explicit tool/budget/turn limits, and a finite process-tree timeout. SessionStart supplies context
+but cannot block; PreToolUse can prevent a pending tool; PostToolUse and PostToolUseFailure detect
+after execution; PostToolBatch blocks the next model call; Stop is an observation boundary. The
+supervisor interrupts on sticky hook/controller failure, while native permissions remain the
+fail-closed boundary if a command hook itself fails or times out. A green stream is non-passing when
+initialization or hook activation is absent, managed policy blocks the plugin, scope or source
+drifts, required output identity or validator proof is missing, or a native limit terminates the
+run. Core persists exactly one typed terminal receipt even when dispatch preflight fails. Managed
+CLI installations carry the adapter and plugin assets, so consumer execution does not depend on the
+repository virtual environment. Automated fixtures and package members prove implementation and
+distribution; only an authenticated, hook-active real Claude Code canary proves current runtime
+support, while merge, publication, installation, adoption, effectiveness, and owner acceptance
+remain separate gates.
 
 Delegate coordinates existing approved execution units for exactly one target:
 

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-102",
+  "observed_at": "2026-08-28T14:48:22+10:00",
+  "host": "claude-code",
+  "state": "unsupported",
+  "classification": "unavailable",
+  "checks": [
+    {"surface": "PATH command lookup", "result": "claude not found"},
+    {"surface": "/Users/johndetlefs/.local/bin/claude", "result": "absent"},
+    {"surface": "/opt/homebrew/bin/claude", "result": "absent"},
+    {"surface": "/usr/local/bin/claude", "result": "absent"},
+    {"surface": "/Users/johndetlefs/.claude/local/claude", "result": "absent"},
+    {"surface": "global npm packages and active Node bin", "result": "no Claude Code installation"},
+    {"surface": "/Applications/Claude.app and /Applications/Claude Code.app", "result": "absent"},
+    {"surface": "Homebrew formula inventory", "result": "no Claude or Anthropic formula"},
+    {"surface": "ANTHROPIC_API_KEY", "result": "unset"},
+    {"surface": "CLAUDE_CODE_OAUTH_TOKEN", "result": "unset"}
+  ],
+  "canary": {
+    "attempted": false,
+    "reason": "No exact local Claude Code executable exists to hash, version-probe, authenticate or dispatch. Installing or authenticating an external runtime is outside the authorized implementation envelope.",
+    "required_to_clear": "A separately authorized exact Claude Code installation and authentication whose managed policy permits the package hook, followed by the canonical clean disposable project execute canary."
+  },
+  "consequence": "TASK-102 source, deterministic integration and package proof can pass, but child AC6 and parent AC10 remain blocked. Project Workflow must not advertise Claude Code as runtime-supported from this environment."
+}

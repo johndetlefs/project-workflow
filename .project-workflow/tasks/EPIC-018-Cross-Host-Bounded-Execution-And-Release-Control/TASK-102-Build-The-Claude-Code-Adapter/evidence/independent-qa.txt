@@ -1,0 +1,191 @@
+# Verdict
+
+**Changes requested.** TASK-102 cannot complete under the `project-qa-review` contract.
+
+**Intent adversarial verdict:** Fail. The implementation does not yet prove Claude Code as a truthful, fail-closed subordinate execution host.
+
+**Could every AC pass while the approved user job remains undone:** **Yes.** Mocked streams, direct function tests, package-member checks, and prose-based status parsing can appear green while the public managed CLI cannot load the adapter, hooks can fail open, child processes can survive timeout, required output can be semantically wrong, and no real Claude journey exists.
+
+## Findings
+
+### Blocker — Required Claude runtime proof is absent
+
+Child AC6 remains unchecked, its structured claim is `fail`, and parent AC10 explicitly requires a real supported Claude Code canary. No executable or authentication was available, and no canary was attempted. This alone mandates `Changes requested`.
+
+Evidence: [TASK-102 IMPLEMENTATION.md](</private/tmp/pw-cross-host.TywgOX/.project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/TASK-102-Build-The-Claude-Code-Adapter/IMPLEMENTATION.md:82>), [runtime-capability.json](</private/tmp/pw-cross-host.TywgOX/.project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/TASK-102-Build-The-Claude-Code-Adapter/evidence/runtime-capability.json:20>), [EVIDENCE.json](</private/tmp/pw-cross-host.TywgOX/.project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/TASK-102-Build-The-Claude-Code-Adapter/EVIDENCE.json:60>), [parent requirements](</private/tmp/pw-cross-host.TywgOX/.project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/REQUIREMENTS.md:281>).
+
+Required correction: under separate installation/authentication authority, run the exact retained package through the public managed `project execute` path in a clean disposable repository. Retain actual plugin activation, scoped output, source stability, native budget/turn/tool/elapsed data, failure countercases, and exactly one core receipt. Preserve this verdict and close it only through the contract’s one affected-validation disposition.
+
+### Critical — Hook activation and failure handling are not fail-closed
+
+The prompt is supplied when the Claude process starts, before SessionStart activation has been observed. It runs under `bypassPermissions`. Consequently, Claude may execute tools before the supervisor knows whether the policy hook works.
+
+The plugin’s command hooks have five-second timeouts. Current Claude documentation says command-hook startup failures and timeouts are non-blocking, including for PreToolUse. SessionStart cannot block at all, and PostToolUse occurs after the tool has executed. The implementation detects missing SessionStart only during closeout, after mutations may already have occurred. [Claude’s hooks reference](https://code.claude.com/docs/en/hooks) documents these native boundaries.
+
+The plugin also omits PostToolUseFailure and PostToolBatch, so a failing Bash command that partially mutates state is not checked immediately, and the agentic loop is not synchronously stopped before another model call.
+
+Evidence: [claude_adapter.py](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/claude_adapter.py:809>), [hooks.json](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/claude_plugin/project-workflow-execution-control/hooks/hooks.json:1>), [hook exception handling](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/claude_adapter.py:654>), [missing-hook test](</private/tmp/pw-cross-host.TywgOX/tests/test_claude_adapter.py:324>).
+
+Required correction:
+
+- Do not submit the material prompt until stream initialization and the package-owned SessionStart handshake are positively observed.
+- Use native permission/sandbox controls that still deny unapproved tools, commands, and paths if a command hook is missing, crashes, or times out; do not make `bypassPermissions` the sole fallback.
+- Make hook launcher failures exit with native blocking semantics.
+- Cover PostToolUseFailure and a synchronous terminal boundary such as PostToolBatch where applicable.
+- Add native countercases for missing handler, wrong interpreter, crash, timeout, lock contention, parallel hooks, managed-policy exclusion, and partial command mutation.
+
+Affected proof: child AC2, AC3, AC5; parent AC3, AC4, AC10, AC12.
+
+### High — The managed CLI and packaged hook do not reliably load the adapter
+
+All three managed CLI copies are byte-identical, but they import `project_workflow.claude_adapter` dynamically. The managed launcher executes its standalone `workflow.py` with `python3`; a normal consumer installation does not thereby install `project_workflow` into that interpreter.
+
+The packaged hook has the same defect: it runs `python3 -m project_workflow.claude_adapter`. Direct inspection on this host proved `/opt/homebrew/bin/python3` raises `ModuleNotFoundError`, while only the repository `.venv` imports the package. Existing tests import the source package inside that virtual environment and never exercise the managed launcher-to-hook interpreter chain.
+
+Evidence: [managed workflow launcher](</private/tmp/pw-cross-host.TywgOX/.project-workflow/cli/workflow:1>), [managed CLI import](</private/tmp/pw-cross-host.TywgOX/.project-workflow/cli/workflow.py:16740>), [packaged hook](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/claude_plugin/project-workflow-execution-control/scripts/project-workflow-claude-hook:1>), [mocked core-receipt test](</private/tmp/pw-cross-host.TywgOX/tests/test_execution_control_contract.py:608>).
+
+Required correction: make the managed CLI and hook use an exact package-capable interpreter, or ship a self-contained managed adapter beside `workflow.py`. Prove fresh init, canonical upgrade, no-op, disable/uninstall, and retained-wheel execution without relying on the repository virtual environment.
+
+Affected proof: child AC4, AC5, AC7; parent AC10, AC13.
+
+### High — Timeout does not terminate the execution tree
+
+`_StreamProcess` terminates or kills only the direct Claude process. It does not create or terminate a process group. Hook handlers, Bash tools, tests, background commands, or subprocesses can therefore survive the elapsed-time boundary and continue operating.
+
+The daemon reader threads are neither joined nor synchronously drained. Once the direct process exits, the receive loop can observe `poll() != None` before its reader has queued the final result. Stderr and protocol-event collections are also unbounded.
+
+Evidence: [_StreamProcess creation](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/claude_adapter.py:669>), [stop implementation](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/claude_adapter.py:723>), [stream loop](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/claude_adapter.py:847>).
+
+Required correction: create an isolated process group/session, terminate and reap the full tree, join/drain readers before classifying exit, bound retained output, and add real subprocess tests covering buffered terminal output, child survival, SIGTERM escalation, timeout, and cleanup.
+
+Affected proof: child AC3; parent AC4 and AC10.
+
+### High — Status and Doctor conceal the required-proof blocker
+
+The current strict status output reported:
+
+- health `pass`;
+- zero visible or blocking findings;
+- parent acceptance `pass`;
+- structured evidence `not-required`;
+- outcome proof `not-required`;
+- no blockers.
+
+That contradicts the unchecked child AC6, blocked parent AC10, and failing runtime-target-source claim.
+
+The cause is visible in the implementation:
+
+- parent evidence passes from merely finding an AC identifier in prose; “Blocked” is not treated as failure;
+- proof recipes are inferred from selected prose and ignore the existing failing `EVIDENCE.json` claim;
+- Doctor consequently reports no issue.
+
+Evidence: [parent evidence parser](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/cli.py:6613>), [structured-evidence projection](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/cli.py:6655>), [TASK-102 EVIDENCE.json](</private/tmp/pw-cross-host.TywgOX/.project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/TASK-102-Build-The-Claude-Code-Adapter/EVIDENCE.json:53>).
+
+Required correction: treat `blocked`, `fail`, missing real-runtime evidence, and unchecked owned criteria as non-passing. Existing structured-evidence records must participate even if the prose trigger heuristic misses them. Status and Doctor must surface AC6/AC10 as the primary external-capability blocker. Add regression coverage using TASK-102’s exact state.
+
+Affected proof: child AC5 and AC7; parent AC10, AC12, AC13.
+
+### High — Adapter failures do not produce the required core terminal receipt
+
+When probing, plugin preparation, process startup, or early adapter execution raises `ClaudeAdapterError`, `cmd_execute` converts it directly to `SystemExit`. No core receipt is persisted. The only receipt test mocks a successful adapter return.
+
+That contradicts the completion capability’s requirement for one typed core-owned terminal receipt and leaves exact dispatch failures as transient console text.
+
+Evidence: [cmd_execute exception path](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/cli.py:16750>), [receipt persistence](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/cli.py:16766>), [success-only receipt test](</private/tmp/pw-cross-host.TywgOX/tests/test_execution_control_contract.py:608>).
+
+Required correction: core must persist exactly one input-bound blocked or infrastructure-failure receipt for every commenced dispatch, including capability drift, authentication failure, missing plugin, Popen failure, malformed stream, and timeout.
+
+Affected proof: child AC4; parent AC4 and AC10.
+
+### High — A wrong result can be recorded as completed
+
+Closeout checks Git revision, changed path names, scope, and required-path presence. It does not validate required content, required commands, proof obligations, or a semantic output contract. A Claude result can therefore change the expected file to the wrong content and receive a passing core receipt.
+
+Evidence: [closeout logic](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/claude_adapter.py:931>), [receipt outcome mapping](</private/tmp/pw-cross-host.TywgOX/src/project_workflow/cli.py:16758>), [TASK-102 successful-but-wrong definition](</private/tmp/pw-cross-host.TywgOX/.project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/TASK-102-Build-The-Claude-Code-Adapter/REQUIREMENTS.md:21>).
+
+Required correction: seal inspectable output obligations—such as exact artifact identities, required validators, or typed operation receipts—and refuse `completed` unless those obligations are satisfied. Add wrong-content, skipped-validator, and misleading-success countercases.
+
+Affected proof: child AC4 and AC6; parent AC4, AC10, AC11.
+
+### Medium — Capability probing is not a truthful current-contract test
+
+The probe requires every flag to appear in `claude --help`, but the current CLI documentation explicitly says help does not list every flag. This can misclassify a supported installation as incompatible. Conversely, substring presence does not prove behavioral support.
+
+The current native budget contract says full background-subagent cap enforcement requires Claude Code 2.1.217 or later, yet the adapter accepts any exact version string whose help contains the expected tokens. [Claude CLI reference](https://code.claude.com/docs/en/cli-reference).
+
+Required correction: maintain a supported-version/capability matrix and verify binding behavior through non-model probes or the mandatory canary. Probe authentication under the same isolated configuration used for dispatch, and classify managed-policy restrictions separately from generic incompatibility.
+
+Affected proof: child AC1 and AC5; parent AC12.
+
+### Medium — Documentation overstates native hook behavior
+
+README describes SessionStart, PreToolUse, PostToolUse, and Stop as “blocking.” Native Claude semantics only permit PreToolUse to deny a pending tool; PostToolUse happens after execution, SessionStart has no decision control, and blocking Stop means forcing Claude to continue rather than terminating it.
+
+Evidence: [README.md](</private/tmp/pw-cross-host.TywgOX/README.md:731>), [official-contract record](</private/tmp/pw-cross-host.TywgOX/.project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/TASK-102-Build-The-Claude-Code-Adapter/evidence/official-claude-contract.md:14>), [Claude hooks reference](https://code.claude.com/docs/en/hooks).
+
+Required correction: describe each hook’s actual native authority and distinguish prevention, post-execution detection, supervisor interruption, and closeout rejection.
+
+Affected proof: child AC7; parent AC10, AC12, AC16.
+
+## Acceptance-criterion proof map
+
+### TASK-102 child ACs
+
+| AC | Actual proof | Adversarial disposition |
+| --- | --- | --- |
+| AC1 | Inspection/probe source and mocked version/help/auth tests | Changes requested: no live exact-runtime proof; help/version classification is insufficient |
+| AC2 | Direct controller tests and packaged hook JSON | Fail: missing-hook, timeout, interpreter, partial-failure, and pre-prompt activation paths can fail open |
+| AC3 | Mocked stream verifies constructed flags and result parsing | Fail: no process-tree containment, output-drain proof, real stream, or native limit journey |
+| AC4 | Source-level mocked `project execute` success test | Fail: managed CLI import chain is unproven/broken; exceptions persist no receipt; wrong content can pass |
+| AC5 | Package-member checks and inspectable projection fixtures | Fail: current Status/Doctor conceal the runtime blocker and native activation is unproven |
+| AC6 | Explicit failing runtime-target-source record | Blocked: required real canary absent |
+| AC7 | README, changelog, package manifest and explicit delivery boundaries | Changes requested: proof-layer boundaries are mostly preserved, but hook authority and status are overstated |
+
+### EPIC-018 parent ACs
+
+| Parent AC | TASK-102 contribution / actual proof | State |
+| --- | --- | --- |
+| AC1 | Owned by TASK-099; acceptance map still says evidence pending | Outside this child; not proven here |
+| AC2 | Owned by TASK-099; acceptance map still says evidence pending | Outside this child; not proven here |
+| AC3 | Mocked/direct Claude routing and hook fixtures | Not met by TASK-102 because hook failure can permit material activity |
+| AC4 | Limit/controller fixtures and mocked receipt | Not met because containment, timeout, semantic output and failure receipts are incomplete |
+| AC5 | Owned by TASK-099/TASK-100/TASK-103 | Outside this child; evidence pending |
+| AC6 | Owned by TASK-100/TASK-103 | Outside this child; evidence pending |
+| AC7 | Owned by TASK-099/TASK-100 | Outside this child; evidence pending |
+| AC8 | Adapter source contains no candidate-promotion, QA or release entrypoint | TASK-102 containment contribution passes at source level; full parent AC remains pending |
+| AC9 | Owned by TASK-101/TASK-103 | Outside this child; evidence pending |
+| AC10 | Failing runtime claim; no canary | Blocked |
+| AC11 | Mocked Claude-side receipt semantics only | Pending TASK-103 and real dual-host evidence |
+| AC12 | Deterministic unavailable/untrusted fixtures | Not met: capability classification and Status/Doctor are not fully truthful |
+| AC13 | Retained wheel/sdist members and executable mode verified | Partial only; no fresh/upgrade/no-op/disable or activated managed-CLI journey |
+| AC14 | Owned by TASK-101/TASK-103 | Outside this child; evidence pending |
+| AC15 | Owned by TASK-100/TASK-103 | Outside this child; evidence pending |
+| AC16 | Documentation preserves local/package/delivery boundaries | Partial documentation evidence only; closeout proof belongs to TASK-103 |
+
+The parent acceptance map itself records every parent AC as “Mapped - evidence pending.” [ACCEPTANCE-MAP.md](</private/tmp/pw-cross-host.TywgOX/.project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/ACCEPTANCE-MAP.md:6>).
+
+## Evidence inspected
+
+- AGENTS.md, repository guidance, global and Epic trackers.
+- Parent requirements, Epic contract, current Intent audit, decomposition and acceptance map.
+- TASK-102 requirements, implementation, structured evidence, validation record, package manifest, runtime inventory, and official-contract record.
+- Current Git state and diff: branch `codex/cross-host-execution-control` at `c1426f2`, local `origin/main` at `e795602`; dirty working candidate; `git diff --check` passed.
+- Complete `claude_adapter.py`, all three managed CLI copies, Claude plugin assets, README, CHANGELOG and `pyproject.toml`.
+- Relevant Claude, core-receipt, execution-control and Doctor tests.
+- Retained wheel and sdist: recorded hashes matched; adapter and hook bytes matched current source; required wheel hook mode is `0755`.
+- Managed CLI copies are byte-identical at `53a161…`.
+- Read-only workflow inspection: Intent audit current/pass; strict status and Doctor produced the contradictory results described above.
+- Current official Claude CLI, hooks, plugin and headless documentation.
+
+## Proof boundaries
+
+- The retained record says 26 focused and 543 repository tests passed, but this reviewer could not rerun them: the enforced read-only sandbox provides no writable temporary directory. No source defect is inferred from that environment failure.
+- Package inspection proves archive contents and modes only.
+- No Claude executable, authentication, model request, hook-active dispatch, real canary, installation journey, or runtime support was proven.
+- No push, merge, publication, external installation, adoption, effectiveness, or owner acceptance was inspected or inferred.
+- Remote freshness was not fetched because this review was strictly read-only; Git comparisons use the existing local `origin/main`.
+- No files, workflow state, package, host configuration, or external system were modified.
+
+## Reviewer independence
+
+This was one independent adversarial review. I did not implement TASK-102, invoke another model, invoke Claude Code, commission another reviewer, or modify any reviewed artifact. The verdict is based on direct source, artifact, Git, workflow, command-output, and official-contract inspection.

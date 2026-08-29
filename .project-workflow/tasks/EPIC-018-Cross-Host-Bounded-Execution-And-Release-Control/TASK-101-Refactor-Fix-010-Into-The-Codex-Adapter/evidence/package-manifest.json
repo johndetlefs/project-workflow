@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-101",
+  "built_at": "2026-08-28T14:25:00+10:00",
+  "authoritative_artifact_set": "package-authoritative",
+  "artifacts": [
+    {
+      "path": "evidence/package-authoritative/project_workflow-0.8.0-py3-none-any.whl",
+      "size_bytes": 506739,
+      "identity": "sha256:3f3167a5cd11b60d565e6f42932997d06093e10278a5ee8cc1553ee38955a9e8",
+      "archive_validation": "unzip -t passed",
+      "candidate_state": "authoritative after final evidence-validator affected proof"
+    },
+    {
+      "path": "evidence/package-authoritative/project_workflow-0.8.0.tar.gz",
+      "size_bytes": 691309,
+      "identity": "sha256:789e98d041eb7cb38871a36e160f2e46a131cc05dfa64ee7a08ed073efd7d12e",
+      "archive_validation": "tar -tzf passed",
+      "candidate_state": "authoritative after final evidence-validator affected proof"
+    },
+    {
+      "path": "evidence/package-final/project_workflow-0.8.0-py3-none-any.whl",
+      "size_bytes": 506692,
+      "identity": "sha256:d3070d40a6a7d83b029dee3d2b27d564fd8d86b0689b7c20090bb68d9bc6b4c5",
+      "archive_validation": "unzip -t passed",
+      "candidate_state": "retained pre-evidence-validator build"
+    },
+    {
+      "path": "evidence/package-final/project_workflow-0.8.0.tar.gz",
+      "size_bytes": 691035,
+      "identity": "sha256:e25b78e2f0c811b0fedc390c73a82fa6c3800520c7a583a050f41a8b6a2b9f30",
+      "archive_validation": "tar -tzf passed",
+      "candidate_state": "retained pre-evidence-validator build"
+    },
+    {
+      "path": "evidence/package/project_workflow-0.8.0-py3-none-any.whl",
+      "size_bytes": 506692,
+      "identity": "sha256:78af8cdae8e4b1e3ee1bf0bc8fbd98c531f0e0539b3c58f51147a74d4a1cc354",
+      "archive_validation": "unzip -t passed",
+      "candidate_state": "retained pre-final affected-proof build"
+    },
+    {
+      "path": "evidence/package/project_workflow-0.8.0.tar.gz",
+      "size_bytes": 690774,
+      "identity": "sha256:984ebbb4f0dee2a1fb42593994fd1a9068e402554c53f1734114b2741be9436c",
+      "archive_validation": "tar -tzf passed",
+      "candidate_state": "retained pre-final affected-proof build"
+    }
+  ],
+  "required_wheel_members": [
+    {
+      "path": "project_workflow/codex_adapter.py",
+      "size_bytes": 50081,
+      "mode": "0644"
+    },
+    {
+      "path": "project_workflow/codex_plugin/project-workflow-execution-control/README.md",
+      "size_bytes": 1209,
+      "mode": "0644"
+    },
+    {
+      "path": "project_workflow/codex_plugin/project-workflow-execution-control/.codex-plugin/plugin.json",
+      "size_bytes": 784,
+      "mode": "0644"
+    },
+    {
+      "path": "project_workflow/codex_plugin/project-workflow-execution-control/scripts/project-workflow-codex-hook",
+      "size_bytes": 62,
+      "mode": "0755"
+    }
+  ],
+  "proof_boundary": "These retained archives prove candidate package contents and modes only. They do not prove publication, installation, activation, upgrade, consumer adoption, or release."
+}

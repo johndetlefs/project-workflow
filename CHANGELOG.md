@@ -4,6 +4,51 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## 0.9.0 - 2026-08-29
+
+### Added
+
+- Added the host-neutral sealed execution, progress, candidate, capability, typed-limit, and
+  input-bound receipt contract on the existing Coordinator state, with different host-native units
+  preserved rather than normalized.
+- Added model-free `project execute --id` and `project release --id` preflight plus matching
+  coordination status and Doctor projection; material work fails closed until current sealed
+  authority and every binding host control are verified.
+- Added one source-bound QA findings campaign with sealed-scope remediation, changed-input progress,
+  affected-proof closure, and exact one-broad-QA accounting.
+- Added authoritative single-candidate promotion and a terminal fixed-release executor with clean
+  source/artifact checks, argv-only operations, exact invocation receipts, and one unchanged-input
+  infrastructure retry.
+- Added the subordinate Codex App Server adapter with exact executable/configuration negotiation,
+  isolated synchronous hooks, atomic native limit reservation, required-change and source/scope
+  closeout, package-owned plugin assets, and core-owned typed receipts.
+- Added the subordinate Claude Code print-mode adapter with exact executable/version/authentication
+  negotiation, model-free hook activation preflight, fail-closed native `dontAsk` permissions,
+  streamed initialization/result supervision, process-tree termination, exact output/validator
+  obligations, native USD-micro/turn/elapsed limits, self-contained managed assets, and core-owned
+  typed terminal receipts for both successful and failed dispatches.
+
+### Changed
+
+- Kept working revisions, verification candidates, and release candidates distinct so ordinary
+  implementation failures do not create rejected release-candidate churn and promotion requires
+  implementation, verification, QA, and affected-proof obligations to pass.
+- Kept fixed release free of source repair, QA, product-failure retry, and replacement-candidate
+  authority; external push, merge, publication, installation, and rollout remain separate gates.
+- Refactored the useful FIX-010 state, hook, App Server, and adversarial-test mechanisms behind
+  `project execute`; retired its public enforcement command, repository-static activation, fixed
+  token budget, and independent release truth.
+- Made Status and Doctor treat explicit failing structured evidence and blocked parent-AC evidence
+  as non-passing instead of allowing prose references or absent trigger heuristics to conceal them.
+
+### Known proof boundary
+
+- The Claude Code adapter and its managed assets are included and fail closed when their exact
+  runtime, authentication, hook activation, native permission, or required-output contract is not
+  verified. v0.9.0 has deterministic, package, and affected-remediation evidence for that adapter,
+  but it has not yet completed the required real authenticated Claude Code canary; the release does
+  not claim current Claude runtime certification or completed cross-host conformance.
+
 ## 0.8.0 - 2026-08-27
 
 ### Added

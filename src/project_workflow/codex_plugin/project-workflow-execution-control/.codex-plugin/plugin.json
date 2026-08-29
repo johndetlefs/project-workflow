@@ -1,0 +1,19 @@
+{
+  "name": "project-workflow-execution-control",
+  "version": "0.1.0",
+  "description": "Subordinate Codex assets for Project Workflow controlled execution",
+  "author": {
+    "name": "Project Workflow maintainers"
+  },
+  "interface": {
+    "displayName": "Project Workflow Execution Control",
+    "shortDescription": "Subordinate hooks for sealed Project Workflow execution.",
+    "longDescription": "Provides the packaged hook handler used only by the supervised project execute path. It does not create workflow, candidate, QA, or release authority.",
+    "developerName": "Project Workflow maintainers",
+    "category": "Productivity",
+    "capabilities": ["Local", "Write"],
+    "defaultPrompt": [
+      "Show the current Project Workflow execution-control status."
+    ]
+  }
+}

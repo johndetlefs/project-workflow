@@ -1,0 +1,837 @@
+{
+  "boundary_decisions": [
+    {
+      "affected_units": [
+        "TASK-099",
+        "TASK-100",
+        "TASK-101",
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "after-plan-or-decomposition",
+      "capability_change": "None; the five-child plan preserves every approved capability and exclusion",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:b2efaeaadc5eae2009b20e355064f25420eb675d44edee900131cc505782a80b",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Proceed with the dependency root without owner interruption"
+    },
+    {
+      "affected_units": [
+        "TASK-099"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-unit-start",
+      "capability_change": "None; TASK-099 implements the approved host-neutral core and does not claim adapter or release completion",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:b2efaeaadc5eae2009b20e355064f25420eb675d44edee900131cc505782a80b",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "TASK-099 may implement its seven child ACs; dependent children remain blocked"
+    },
+    {
+      "affected_units": [
+        "TASK-099"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "None; TASK-099 concrete requirements and plan preserve the approved parent capability and exclusions",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:b2efaeaadc5eae2009b20e355064f25420eb675d44edee900131cc505782a80b",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Refresh the loaded contract against the current child plan without owner interruption"
+    },
+    {
+      "affected_units": [
+        "TASK-099"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-unit-start",
+      "capability_change": "None; TASK-099 implements only the approved host-neutral core",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:b2efaeaadc5eae2009b20e355064f25420eb675d44edee900131cc505782a80b",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "TASK-099 may implement its seven child ACs; TASK-100 through TASK-103 remain dependency-blocked"
+    },
+    {
+      "affected_units": [
+        "TASK-099"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "None; TASK-099 now has exact generic-contract implementation and focused evidence without claiming later adapter or release outcomes",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:127dd7e8a7858660f1cc08506655bdb32114c15057b9f44c05de220d2c814f65",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Refresh the current physical-context contract and move TASK-099 to Testing"
+    },
+    {
+      "affected_units": [
+        "TASK-099",
+        "TASK-100"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "None; TASK-099 return contains only its approved generic contract and proof",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:127dd7e8a7858660f1cc08506655bdb32114c15057b9f44c05de220d2c814f65",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Accept TASK-099 into Testing; do not satisfy TASK-100 dependency until independent QA and completion"
+    },
+    {
+      "affected_units": [
+        "TASK-099",
+        "TASK-100"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "None; TASK-099 remains generic preflight with fake-adapter proof and no later host or release claim",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:127dd7e8a7858660f1cc08506655bdb32114c15057b9f44c05de220d2c814f65",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Independent QA may review TASK-099; completion and TASK-100 dependency remain blocked pending verdict"
+    },
+    {
+      "affected_units": [
+        "TASK-099"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-099 independent QA findings were remediated without changing the approved host-neutral core boundary or later child ownership.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:ec862220700082b0e45ac5e137cb7677ba7f891ea3511199fad4b6dd19aa1ef0",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "The core now derives release readiness from existing verification and QA authority, accounts consumed limits, seals finding authority, binds receipts to exact inputs, and aligns status/Doctor next action."
+    },
+    {
+      "affected_units": [
+        "TASK-099",
+        "TASK-100"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-099 retained its approved host-neutral preflight boundary and closed the preserved independent QA findings through one affected-validation disposition.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:ec862220700082b0e45ac5e137cb7677ba7f891ea3511199fad4b6dd19aa1ef0",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "TASK-099 is ready to complete; TASK-100 may begin under the approved decomposition dependency."
+    },
+    {
+      "affected_units": [
+        "TASK-100"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-unit-start",
+      "capability_change": "TASK-100 implements the approved single QA/remediation campaign and fixed-candidate release controller without host mechanics or external delivery.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:9244cbc4ad312f831cfc4eddf481e6d88452063de1fa121418c219ae5779c2e8",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Routine named findings can close through affected proof, then one exact candidate may enter one terminal local release attempt."
+    },
+    {
+      "affected_units": [
+        "TASK-100"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-100 returned one-QA remediation, authoritative candidate promotion, and terminal fixed-release behavior with focused and affected proof.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:9244cbc4ad312f831cfc4eddf481e6d88452063de1fa121418c219ae5779c2e8",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "The implementation is ready for its single independent adversarial QA gate; host mechanics remain later children."
+    },
+    {
+      "affected_units": [
+        "TASK-100"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-100 implementation and affected evidence are now reflected in the current Intent audit without changing approved child ownership or delivery boundaries.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:e291693c1440674c50e7e2ee49985fcffd9eaff0a7df82d5c4057eff43998e22",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "The current context may load the refreshed contract and advance TASK-100 to its single QA gate."
+    },
+    {
+      "affected_units": [
+        "TASK-100"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-100 current implementation returns one-QA remediation, authoritative promotion, and terminal fixed release with affected proof.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:e291693c1440674c50e7e2ee49985fcffd9eaff0a7df82d5c4057eff43998e22",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "TASK-100 may enter Testing and its single independent QA gate; dependent host-adapter work remains blocked until completion."
+    },
+    {
+      "affected_units": [
+        "TASK-100"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-100 testing retained the approved one-QA/fixed-release boundary and its focused and affected evidence is current.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:e291693c1440674c50e7e2ee49985fcffd9eaff0a7df82d5c4057eff43998e22",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "One independent adversarial QA may review the exact TASK-100 candidate; no second QA or external release is authorized."
+    },
+    {
+      "affected_units": [
+        "TASK-100",
+        "TASK-101",
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-100 now provides receipt-bound QA remediation, proof-derived candidate promotion, and crash-safe fixed release after resolving its independent QA findings.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:b5d7bb2cad718cd21ca5145520759904b858c8a8f38a68b36732ea58a9c05e79",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC4",
+        "OC5"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "The approved bounded execution meaning is preserved; Codex and Claude host adapters and cross-host proof remain open child work."
+    },
+    {
+      "affected_units": [
+        "TASK-100"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-100 affected validation and retained independent QA disposition are current.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:b5d7bb2cad718cd21ca5145520759904b858c8a8f38a68b36732ea58a9c05e79",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC4",
+        "OC5"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "TASK-100 can complete without narrowing host-adapter or cross-host proof obligations."
+    },
+    {
+      "affected_units": [
+        "TASK-101"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-101 implements the approved subordinate Codex adapter without changing the Epic capability envelope.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:76c02f47f09a546a4e9d3924c877e51f98709fbc1c827ee8831d4341db34aaa8",
+      "relevant_ocs": [
+        "OC2",
+        "OC4",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Codex material execution now has current runtime and package proof; Claude equivalence and external delivery remain pending."
+    },
+    {
+      "affected_units": [
+        "TASK-101"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-101 returned the approved subordinate Codex adapter, package assets and bounded runtime evidence.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:76c02f47f09a546a4e9d3924c877e51f98709fbc1c827ee8831d4341db34aaa8",
+      "relevant_ocs": [
+        "OC2",
+        "OC4",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "The Codex child can proceed to its existing independent QA gate without changing later Claude or delivery obligations."
+    },
+    {
+      "affected_units": [
+        "TASK-101"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-101 affected validation, package inspection and real Codex canary satisfy the approved child proof scope.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:76c02f47f09a546a4e9d3924c877e51f98709fbc1c827ee8831d4341db34aaa8",
+      "relevant_ocs": [
+        "OC2",
+        "OC4",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Independent QA can review the exact current child candidate; cross-host equivalence and delivery remain unclaimed."
+    },
+    {
+      "affected_units": [
+        "TASK-101",
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-101 retained its independent findings, fixed the workspace and capability overclaims, and refreshed package/runtime evidence without changing the approved Epic capability envelope.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:902a56ad7fe8570ac68fd22f6d64c52ef02c3cfe43364fad80348b79e1198af3",
+      "relevant_ocs": [
+        "OC2",
+        "OC4",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "TASK-101 can complete after affected proof; Claude and cross-host delivery obligations remain pending."
+    },
+    {
+      "affected_units": [
+        "TASK-101",
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-101 preserves the approved subordinate Codex boundary after one retained independent QA remediation and current affected proof.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:902a56ad7fe8570ac68fd22f6d64c52ef02c3cfe43364fad80348b79e1198af3",
+      "relevant_ocs": [
+        "OC2",
+        "OC4",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "TASK-101 may enter Review and Complete; TASK-102 and TASK-103 remain responsible for Claude and cross-host proof."
+    },
+    {
+      "affected_units": [
+        "TASK-101"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-101 final QA fields now use the canonical exact verdict values; the retained findings and proof are unchanged.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:1287ad2641105e15b74e83a551160d406e53a6cef9a68769a2e7633dc316cee3",
+      "relevant_ocs": [
+        "OC2",
+        "OC4",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "The child lifecycle parser can consume the already-proven QA result without changing scope."
+    },
+    {
+      "affected_units": [
+        "TASK-101",
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-101 current exact verdict, retained findings and affected proof preserve the approved subordinate Codex adapter boundary.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:1287ad2641105e15b74e83a551160d406e53a6cef9a68769a2e7633dc316cee3",
+      "relevant_ocs": [
+        "OC2",
+        "OC4",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "TASK-101 may complete; Claude and cross-host outcomes remain open."
+    },
+    {
+      "affected_units": [
+        "TASK-101",
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-101 completed the approved Codex adapter and cleared TASK-102 dependency without claiming Claude or cross-host completion.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:1287ad2641105e15b74e83a551160d406e53a6cef9a68769a2e7633dc316cee3",
+      "relevant_ocs": [
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "TASK-102 may scaffold and implement the approved Claude Code adapter."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-unit-start",
+      "capability_change": "TASK-102 implements only the approved subordinate Claude Code adapter using current native mechanisms and typed units.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:1287ad2641105e15b74e83a551160d406e53a6cef9a68769a2e7633dc316cee3",
+      "relevant_ocs": [
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Implement current Claude capability, hooks, limits, packaging and receipt behavior; cross-host delivery remains TASK-103."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-102 returned the approved Claude adapter source, deterministic integration and retained package proof while preserving the mandatory real-canary blocker because no exact runtime or authentication is available.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:e25c47834215527f94b40539618478a14a8572801327d8b7dd3b6843cc9b3914",
+      "relevant_ocs": [
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "TASK-102 may enter Testing and independent QA; parent AC10, real cross-host equivalence and delivery remain visibly blocked rather than inferred."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-102 implemented the approved Claude adapter and preserved the explicit real-runtime blocker; no parent capability, child ownership or delivery boundary changed.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:e25c47834215527f94b40539618478a14a8572801327d8b7dd3b6843cc9b3914",
+      "relevant_ocs": [
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Refresh the loaded contract and advance only to the existing Testing and independent QA gate; keep parent AC10 visibly blocked."
+    },
+    {
+      "affected_units": [
+        "TASK-102"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-102 testing preserves the approved Claude adapter boundary and explicitly retains the unavailable-runtime failure instead of claiming AC6 or parent AC10.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:e25c47834215527f94b40539618478a14a8572801327d8b7dd3b6843cc9b3914",
+      "relevant_ocs": [
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "One independent adversarial QA may review the exact source/package candidate and precise runtime blocker; no second QA or external installation is authorized."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Independent QA defects were remediated and affected proof is current; the approved Claude adapter boundary is unchanged, and the mandatory real authenticated Claude Code canary remains unproven.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-28",
+      "intent_identity": "sha256:9d7902fd0c4d27f8e2a93e3ad484816042810c9a96b43bd9826e7e8f6ad42f58",
+      "relevant_ocs": [
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Accept the remediated deterministic and package evidence, preserve the one independent QA report, and block TASK-102 before completion until the exact real Claude Code canary passes."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": "sha256:2a6d00a8c029e6a041d9168ad75377e2e9f4d7ab882690e452ef8cd525f81f64",
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Owner authorizes v0.9.0 merge, publication, and universal installation before the real authenticated Claude Code canary; proof obligations and the cross-host completion claim remain unchanged and open.",
+      "classification": "approved-change",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:3ead5d3215916ccc363763b9b7f416f608d7b4b7d7a808c6957cacec8c7f193e",
+      "relevant_ocs": [
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Deliver the packaged fail-closed capability now without claiming Claude runtime certification, without closing TASK-102/TASK-103/EPIC-018, and without commissioning a second broad QA."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "The current approval envelope and intent audit now record the owner-approved v0.9.0 delivery sequence without changing any Epic capability or proof obligation.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:0c5a7926896b5f31ef384a85be21df2923ed305189f7da9c392f1713bf7cc142",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+      "user_consequence": "Proceed with exact-candidate release verification and rollout; retain TASK-102/TASK-103 and the real Claude canary as open proof."
+    }
+  ],
+  "decisions": [
+    "Owner meaning approval recorded from this Codex thread on 2026-08-28",
+    "Five-child decomposition classified inside-envelope",
+    "Execution remains Coordinator-sequential until a verified binding need justifies another surface"
+  ],
+  "host_facts": {
+    "context_contract": "declared",
+    "telemetry": "unknown"
+  },
+  "intent_identity": "sha256:0c5a7926896b5f31ef384a85be21df2923ed305189f7da9c392f1713bf7cc142",
+  "last_boundary": {
+    "affected_units": [
+      "TASK-102",
+      "TASK-103"
+    ],
+    "amendment_identity": null,
+    "boundary": "new-evidence-or-owner-reframe",
+    "capability_change": "The current approval envelope and intent audit now record the owner-approved v0.9.0 delivery sequence without changing any Epic capability or proof obligation.",
+    "classification": "inside-envelope",
+    "decided_by": "EPIC-018 Coordinator",
+    "decision_date": "2026-08-29",
+    "intent_identity": "sha256:0c5a7926896b5f31ef384a85be21df2923ed305189f7da9c392f1713bf7cc142",
+    "relevant_ocs": [
+      "OC1",
+      "OC2",
+      "OC3",
+      "OC4",
+      "OC5",
+      "OC6",
+      "OC7"
+    ],
+    "shared_premises_valid": "yes",
+    "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
+    "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+    "user_consequence": "Proceed with exact-candidate release verification and rollout; retain TASK-102/TASK-103 and the real Claude canary as open proof."
+  },
+  "loaded_contract": {
+    "asset_version": "8",
+    "context_id": "codex-owner-release-thread-epic-018-v0.9.0-rollout",
+    "contract_version": "2",
+    "package_version": "0.9.0",
+    "recorded_at": "2026-08-29"
+  },
+  "next_action": "Validate one exact v0.9.0 candidate, publish it, and upgrade every accessible installation; preserve the open Claude canary and existing one-QA campaign.",
+  "outcome_checkpoint": {
+    "checkpoint_unit": null,
+    "claim_class": "mechanical",
+    "record": null,
+    "required": false,
+    "status": "not-required"
+  },
+  "phase": "implementation",
+  "repositories": {
+    "project-workflow": {
+      "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0"
+    }
+  },
+  "schema_version": 2,
+  "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
+  "target_id": "EPIC-018",
+  "verification_campaign": null,
+  "verification_requirement": {
+    "affected_scope": [
+      "Project Workflow source",
+      "Codex canary repository",
+      "Claude Code canary repository",
+      "retained package artifacts"
+    ],
+    "claims": [
+      "bounded execution and QA remediation",
+      "fixed candidate release",
+      "truthful Codex and Claude Code enforcement",
+      "package activation and cross-host recurrence control"
+    ],
+    "proof_contract_identity": "sha256:f308d1272d71390771589199ffd46a578cef75ae05952f664c90eba9d88168f4",
+    "required": true,
+    "stages": [
+      "deterministic",
+      "canary",
+      "affected",
+      "full"
+    ]
+  },
+  "work_item_path": ".project-workflow/tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control"
+}

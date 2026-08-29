@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-102",
+  "built_at": "2026-08-28T15:28:51+10:00",
+  "authoritative_artifact_set": "package-authoritative",
+  "source_identities": {
+    "claude_adapter": "sha256:513aa6c4c6aab902b37434a4c4454bc4e27e52e420d871bb7d9bd958b2c7df51",
+    "managed_cli": "sha256:583fdc8bc1f0a4cb24b598ee418a2c47981843e57aba54e672eefa7b9a91aa21",
+    "managed_codex_adapter": "sha256:8c4afa179e329b1b1fcda85f10b950458f6ba7b80e0af2283447f316f47e3647",
+    "plugin_manifest": "sha256:1aa9f5015dc816ce26f77ec86bf7dbdaf528f99348b6c613a913a4b03a83a255",
+    "hooks": "sha256:7ff882bdb7011f374d154ffbad9724a3d253fefde71fc0e56b30b4843d2d17ad",
+    "hook_handler": "sha256:89c9af2ceca6c3ac0c163b5f575c2337c3bb1146b4d02a8594f9595ecb722c20"
+  },
+  "artifacts": [
+    {
+      "path": "evidence/package-authoritative/project_workflow-0.8.0-py3-none-any.whl",
+      "size_bytes": 524399,
+      "identity": "sha256:be1beec0fdf600495535ee8ab5b02394b62a33738060c95899ddc287aff5f7b8",
+      "archive_validation": "wheel built successfully; adapter/managed-source bytes and required members/modes inspected"
+    },
+    {
+      "path": "evidence/package-authoritative/project_workflow-0.8.0.tar.gz",
+      "size_bytes": 713255,
+      "identity": "sha256:d7346036f181d010163dc01ec6f192b952e23138fa4ef1ac45cb6169dc47cd05",
+      "archive_validation": "sdist built successfully and required members inspected"
+    }
+  ],
+  "required_wheel_members": [
+    {
+      "path": "project_workflow/claude_adapter.py",
+      "size_bytes": 54047,
+      "mode": "0644"
+    },
+    {
+      "path": "project_workflow/templates/workflow.py",
+      "size_bytes": 1031822,
+      "mode": "0644"
+    },
+    {
+      "path": "project_workflow/codex_adapter.py",
+      "size_bytes": 50081,
+      "mode": "0644"
+    },
+    {
+      "path": "project_workflow/claude_plugin/project-workflow-execution-control/.claude-plugin/plugin.json",
+      "size_bytes": 173,
+      "mode": "0644"
+    },
+    {
+      "path": "project_workflow/claude_plugin/project-workflow-execution-control/hooks/hooks.json",
+      "size_bytes": 1696,
+      "mode": "0644"
+    },
+    {
+      "path": "project_workflow/claude_plugin/project-workflow-execution-control/scripts/project-workflow-claude-hook",
+      "size_bytes": 430,
+      "mode": "0755"
+    }
+  ],
+  "managed_install_validation": "Fresh-init and standalone managed-CLI tests prove package modules and plugin assets are copied locally and load without the repository virtual environment.",
+  "proof_boundary": "These retained archives and deterministic install tests prove candidate package contents, modes, and self-contained managed asset generation only. They do not prove publication, real Claude activation, authenticated runtime support, adoption, or release."
+}

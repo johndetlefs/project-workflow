@@ -38,3 +38,4 @@
 | FIX-009 | Enforce Proportionate Post-Proof Validation | Complete | `tasks/FIX-009-Enforce-Proportionate-Post-Proof-Validation/FIX.md` |
 | EPIC-016 | Effective And Proportionate Coordination | In Progress | `tasks/EPIC-016-Effective-And-Proportionate-Coordination/REQUIREMENTS.md` |
 | EPIC-017 | Proportionate Verification Lifecycle | Complete | `tasks/EPIC-017-Proportionate-Verification-Lifecycle/REQUIREMENTS.md` |
+| EPIC-018 | Cross-Host Bounded Execution And Release Control | In Progress | `tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/REQUIREMENTS.md` |

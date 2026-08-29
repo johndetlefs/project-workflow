@@ -54,6 +54,13 @@ project_workflow = [
     "prompts/*.md",
     "codex/AGENTS.md",
     "codex/skills/*/SKILL.md",
+    "codex_plugin/*/.codex-plugin/*",
+    "codex_plugin/*/scripts/*",
+    "codex_plugin/*/*.md",
+    "claude_plugin/*/.claude-plugin/*",
+    "claude_plugin/*/hooks/*",
+    "claude_plugin/*/scripts/*",
+    "claude_plugin/*/*.md",
     "cursor/rules/*.mdc",
 ]
 
