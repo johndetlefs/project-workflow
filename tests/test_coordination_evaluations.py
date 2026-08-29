@@ -4,7 +4,6 @@ import importlib.util
 import json
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
     "coordination_eval", ROOT / "scripts/run_coordination_evaluations.py"
@@ -15,9 +14,7 @@ SPEC.loader.exec_module(evaluation)
 
 
 def test_sanitized_corpus_covers_under_and_over_processing_countercases() -> None:
-    corpus = json.loads(
-        (ROOT / "evaluations/coordination/scenarios.json").read_text()
-    )
+    corpus = json.loads((ROOT / "evaluations/coordination/scenarios.json").read_text())
     scenarios = corpus["scenarios"]
     assert len(scenarios) >= 9
     classes = {scenario["class"] for scenario in scenarios}
@@ -37,9 +34,7 @@ def test_sanitized_corpus_covers_under_and_over_processing_countercases() -> Non
 
 
 def test_grader_rejects_underprocessing_and_overprocessing() -> None:
-    corpus = json.loads(
-        (ROOT / "evaluations/coordination/scenarios.json").read_text()
-    )
+    corpus = json.loads((ROOT / "evaluations/coordination/scenarios.json").read_text())
     correct = {
         "results": [
             {
@@ -63,18 +58,14 @@ def test_grader_rejects_underprocessing_and_overprocessing() -> None:
     wrong["results"][-1]["qa_actions"] = 1
     failed = evaluation.grade(corpus, wrong)
     assert failed["pass"] is False
-    failures = {
-        result["id"]: result["failures"] for result in failed["scenarios"]
-    }
+    failures = {result["id"]: result["failures"] for result in failed["scenarios"]}
     assert failures["clarify-material-preapproval"]
     assert failures["clarify-clean-bounded"]
     assert failures["proof-passed-stop"]
 
 
 def test_grader_rejects_missing_or_invented_preservation_controls() -> None:
-    corpus = json.loads(
-        (ROOT / "evaluations/coordination/scenarios.json").read_text()
-    )
+    corpus = json.loads((ROOT / "evaluations/coordination/scenarios.json").read_text())
     response = {
         "results": [
             {
@@ -113,9 +104,7 @@ def test_grader_rejects_missing_or_invented_preservation_controls() -> None:
 
 
 def test_grader_accepts_only_declared_non_leaking_preservation_alternatives() -> None:
-    corpus = json.loads(
-        (ROOT / "evaluations/coordination/scenarios.json").read_text()
-    )
+    corpus = json.loads((ROOT / "evaluations/coordination/scenarios.json").read_text())
     response = {
         "results": [
             {
@@ -130,9 +119,7 @@ def test_grader_accepts_only_declared_non_leaking_preservation_alternatives() ->
             for scenario in corpus["scenarios"]
         ]
     }
-    clean = next(
-        item for item in response["results"] if item["id"] == "clarify-clean-bounded"
-    )
+    clean = next(item for item in response["results"] if item["id"] == "clarify-clean-bounded")
     clean["preserved_controls"] = ["continue autonomously", "existing QA later"]
     assert evaluation.grade(corpus, response)["pass"] is True
 
@@ -145,9 +132,7 @@ def test_grader_accepts_only_declared_non_leaking_preservation_alternatives() ->
 
 
 def test_model_prompt_excludes_grader_answer_key() -> None:
-    corpus = json.loads(
-        (ROOT / "evaluations/coordination/scenarios.json").read_text()
-    )
+    corpus = json.loads((ROOT / "evaluations/coordination/scenarios.json").read_text())
     prompt = evaluation.build_prompt("candidate", "CONTRACT SENTINEL", corpus)
     assert "CONTRACT SENTINEL" in prompt
     assert "expected_decision" not in prompt

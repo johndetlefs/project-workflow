@@ -12,9 +12,7 @@ from project_workflow import cli as workflow_cli
 def make_journey_task(
     tmp_path: Path, task_dir: Path | None = None
 ) -> tuple[Path, Path, Path, dict[str, object]]:
-    task_dir = task_dir or (
-        tmp_path / ".project-workflow" / "tasks" / "TASK-001-Outcome-Journey"
-    )
+    task_dir = task_dir or (tmp_path / ".project-workflow" / "tasks" / "TASK-001-Outcome-Journey")
     evidence_dir = task_dir / "evidence"
     evidence_dir.mkdir(parents=True)
     requirements_path = task_dir / "REQUIREMENTS.md"
@@ -67,9 +65,7 @@ def make_journey_task(
             + workflow_cli._sha256_file(implementation_path).removeprefix("sha256:")
         ),
         "environment": "Rendered production-like browser fixture",
-        "invalid_substitute_policy": sorted(
-            workflow_cli.USER_OUTCOME_INVALID_SUBSTITUTE_POLICY
-        ),
+        "invalid_substitute_policy": sorted(workflow_cli.USER_OUTCOME_INVALID_SUBSTITUTE_POLICY),
         "invalid_substitutes": [],
         "owner_acceptance_required": False,
         "owner_acceptance_status": "not-required",
@@ -92,10 +88,13 @@ def write_record(task_dir: Path, record: dict[str, object]) -> None:
 
 def test_user_outcome_journey_validates_claim_matched_normal_path(tmp_path: Path) -> None:
     requirements_path, implementation_path, _artifact_path, _record = make_journey_task(tmp_path)
-    assert workflow_cli._structured_evidence_issues(
-        requirements_path=requirements_path,
-        implementation_path=implementation_path,
-    ) == []
+    assert (
+        workflow_cli._structured_evidence_issues(
+            requirements_path=requirements_path,
+            implementation_path=implementation_path,
+        )
+        == []
+    )
 
 
 def test_user_outcome_journey_preserves_source_identity_from_recorded_ancestor(
@@ -123,10 +122,13 @@ def test_user_outcome_journey_preserves_source_identity_from_recorded_ancestor(
     subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
     subprocess.run(["git", "commit", "-qm", "advance implementation"], cwd=tmp_path, check=True)
 
-    assert workflow_cli._structured_evidence_issues(
-        requirements_path=requirements_path,
-        implementation_path=implementation_path,
-    ) == []
+    assert (
+        workflow_cli._structured_evidence_issues(
+            requirements_path=requirements_path,
+            implementation_path=implementation_path,
+        )
+        == []
+    )
 
 
 def test_user_outcome_journey_can_bind_a_retained_wheel_member(tmp_path: Path) -> None:
@@ -147,10 +149,13 @@ def test_user_outcome_journey_can_bind_a_retained_wheel_member(tmp_path: Path) -
         encoding="utf-8",
     )
 
-    assert workflow_cli._structured_evidence_issues(
-        requirements_path=requirements_path,
-        implementation_path=implementation_path,
-    ) == []
+    assert (
+        workflow_cli._structured_evidence_issues(
+            requirements_path=requirements_path,
+            implementation_path=implementation_path,
+        )
+        == []
+    )
 
 
 def test_user_outcome_journey_rejects_proxy_scope_and_invalid_substitute(
@@ -177,9 +182,7 @@ def test_outcome_proof_and_owner_acceptance_are_separate_states(tmp_path: Path) 
     record["owner_acceptance_status"] = "pending"
     write_record(implementation_path.parent, record)
 
-    source = workflow_cli.OperationalStatusSource(
-        "global-tracker", ".project-workflow/TRACKER.md"
-    )
+    source = workflow_cli.OperationalStatusSource("global-tracker", ".project-workflow/TRACKER.md")
     item = workflow_cli.OperationalStatusWorkItem(
         "TASK-001",
         "Outcome Journey",
@@ -231,9 +234,7 @@ def test_epic_status_aggregates_completed_child_qa_and_outcome_evidence(
         "tasks/EPIC-001-Aggregation/TASK-001-Outcome-Journey/IMPLEMENTATION.md | | |\n",
         encoding="utf-8",
     )
-    source = workflow_cli.OperationalStatusSource(
-        "global-tracker", ".project-workflow/TRACKER.md"
-    )
+    source = workflow_cli.OperationalStatusSource("global-tracker", ".project-workflow/TRACKER.md")
     item = workflow_cli.OperationalStatusWorkItem(
         "EPIC-001",
         "Aggregation",
@@ -307,8 +308,7 @@ def resolved_changes_requested_qa() -> str:
         decision=decision,
     )
     return (
-        impact
-        + "\n## QA & Code Review\n\n"
+        impact + "\n## QA & Code Review\n\n"
         "- Intent QA contract: adversarial\n"
         "- Verdict: Changes Requested\n"
         "- Intent adversarial verdict: Fail\n"
@@ -334,9 +334,7 @@ def test_changes_requested_can_close_through_one_affected_validation_without_sec
 
 def test_changes_requested_resolution_fails_closed_without_exact_evidence() -> None:
     implementation = resolved_changes_requested_qa()
-    missing_impact = "## QA & Code Review" + implementation.split(
-        "## QA & Code Review", 1
-    )[1]
+    missing_impact = "## QA & Code Review" + implementation.split("## QA & Code Review", 1)[1]
     assert workflow_cli._qa_passed(missing_impact) is False
 
     second_qa = implementation.replace(

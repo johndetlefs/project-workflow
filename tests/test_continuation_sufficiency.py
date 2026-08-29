@@ -9,7 +9,6 @@ import pytest
 
 from project_workflow import cli as workflow_cli
 
-
 ROOT = Path(__file__).parents[1]
 PROJECT_CMD = [sys.executable, "-m", "project_workflow.cli"]
 POLICY_MARKERS = (
@@ -161,8 +160,12 @@ def test_validation_impact_command_records_one_compact_existing_document_section
     assert fix_doc.read_text(encoding="utf-8").count("## Validation Impact") == 1
 
 
-def _impact_item(tmp_path: Path, decision: dict[str, object]) -> workflow_cli.OperationalStatusWorkItem:
-    implementation_path = tmp_path / ".project-workflow" / "tasks" / "TASK-001-Stop" / "IMPLEMENTATION.md"
+def _impact_item(
+    tmp_path: Path, decision: dict[str, object]
+) -> workflow_cli.OperationalStatusWorkItem:
+    implementation_path = (
+        tmp_path / ".project-workflow" / "tasks" / "TASK-001-Stop" / "IMPLEMENTATION.md"
+    )
     implementation_path.parent.mkdir(parents=True, exist_ok=True)
     implementation_path.write_text(
         workflow_cli._validation_impact_section(
@@ -216,9 +219,12 @@ def test_unaffected_change_advances_and_ambiguous_change_asks_owner(tmp_path: Pa
         proof_layers=(),
         validation_verdict="not-required",
     )
-    assert workflow_cli._operational_validation_impact_action(
-        tmp_path, _impact_item(tmp_path, unaffected), 0
-    ) is None
+    assert (
+        workflow_cli._operational_validation_impact_action(
+            tmp_path, _impact_item(tmp_path, unaffected), 0
+        )
+        is None
+    )
 
     ambiguous = workflow_cli._validation_impact_decision(
         classification="ambiguous",

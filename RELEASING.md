@@ -1,88 +1,102 @@
-# Releasing project-workflow
+# Releasing Project Workflow
 
-This runbook governs public releases. The current release is `0.6.0`; all commands and identities
-below are intentionally immutable.
+This runbook governs public releases. It is version-neutral: the editable version authority is
+`src/project_workflow/_version.py`, and every candidate, tag, workflow pin, artifact, receipt, and
+public verification must resolve to that same version.
 
-## Authority and release states
+## Release States And Authority
 
-- The source version in `src/project_workflow/_version.py` is the editable authority. Package
-  metadata reads it dynamically. Dependency-free generated workflow helpers mirror it and are
-  checked byte-for-byte.
-- A **candidate** is a reviewed `main` commit for which locked tests, source-contract checks,
-  artifact inspection, and disposable package journeys pass. It is not public.
-- A **published release** exists only after the tag workflow publishes through the protected
-  GitHub `pypi` environment, PyPI accepts the exact wheel and sdist via OIDC, and GitHub Releases
-  exposes those same bytes with the receipt and digests.
-- The repository owner controls branch review, immutable tag creation, the GitHub environment,
-  and the matching PyPI trusted-publisher registration. No PyPI API token belongs in GitHub.
+- A local build is a build, not a release candidate.
+- A candidate is a reviewed commit on `main` whose locked checks, source contract, distribution
+  inspection, and disposable package journeys pass against one source identity.
+- A published release exists only after the protected tag workflow publishes the exact wheel and
+  sdist through the GitHub `pypi` environment and exposes the same files and receipts on GitHub.
+- The repository owner controls merge, tag creation, environment approval, and the matching PyPI
+  trusted-publisher registration. No PyPI API token belongs in GitHub.
 
-## Candidate validation
+## Prepare The Versioned Source
 
-From a clean clone of the reviewed commit, with Homebrew available on macOS:
+Choose the intended semantic version as `X.Y.Z`, then update and review all version-owned surfaces:
+
+1. `src/project_workflow/_version.py`.
+2. `CURRENT_PACKAGE_VERSION` in `src/project_workflow/contracts.py`, followed by runtime generation.
+3. `.project-workflow/manifest.json` and the new `CHANGELOG.md` heading.
+4. Exact-version installation examples and the tag/version pins in `.github/workflows/ci.yml` and
+   `.github/workflows/release.yml`.
+5. Any version-specific compatibility baseline explicitly changed by the release.
+
+The release source contract fails when these identities disagree.
+
+## Validate One Candidate
+
+From a clean worktree at the reviewed commit, set `VERSION` and `TAG` to the intended values:
 
 ```bash
 export PATH="/opt/homebrew/bin:$PATH"
+export VERSION="X.Y.Z"
+export TAG="v$VERSION"
 uv sync --locked --extra dev --python 3.10
 uv lock --check
+uv run --locked ruff check src/project_workflow/*.py scripts tests
+uv run --locked ruff format --check src/project_workflow/*.py scripts tests
+uv run --locked mypy src/project_workflow/*.py
 uv run --locked pytest -q
-python scripts/release_contract.py check-source --version 0.6.0 --tag v0.6.0 --clean
+uv run --locked python scripts/build_runtime_bundle.py --check
+uv run --locked python scripts/release_contract.py check-source \
+  --version "$VERSION" --tag "$TAG" --clean
 uv run --locked python -m build --no-isolation
 ```
 
-The release workflow repeats the full locked validation and builds exactly once. It then inspects
-the archives, creates `release-receipt.json` and `SHA256SUMS`, runs the wheel through fresh-init,
-current-upgrade, and legacy-upgrade journeys, attests the files, and uploads one workflow bundle.
-Inspect workflow annotations as part of closeout. Treat action-runtime deprecation warnings as
-future-pipeline maintenance: update to the current reviewed SHA pin and revalidate the workflow,
-but never move or rebuild an already published tag to silence a later tooling warning.
+Build exactly once. Inspect that wheel and sdist, create the release receipt and `SHA256SUMS`, then
+exercise the exact wheel through fresh-init, current-upgrade, legacy-upgrade, no-op, Doctor, and
+representative lifecycle journeys. Do not rebuild between review, attestation, and publication.
 
-## One-time trusted-publisher setup
+## Trusted Publisher Setup
 
-1. In GitHub, create an environment named `pypi`. Keep deployment authority owner-controlled;
-   configure a required reviewer where the repository plan supports it.
-2. In PyPI, create a pending trusted publisher for project name `project-workflow`, owner
-   `johndetlefs`, repository `project-workflow`, workflow `release.yml`, and environment `pypi`.
-3. Do not create a PyPI API token or repository publication secret.
+One time only:
 
-The exact repository, workflow, and environment values are part of the OIDC identity. A mismatch
-fails publication rather than falling back to another credential.
+1. Create a protected GitHub environment named `pypi`.
+2. In PyPI, register the `project-workflow` trusted publisher for owner `johndetlefs`, repository
+   `project-workflow`, workflow `release.yml`, and environment `pypi`.
+3. Keep the repository, workflow, environment, and OIDC subject exact. A mismatch must fail closed.
 
 ## Publish
 
 After the candidate is merged and its required `main` CI run passes:
 
 ```bash
-git tag --annotate v0.6.0 --message "project-workflow 0.6.0"
-git push origin v0.6.0
+git tag --annotate "$TAG" --message "project-workflow $VERSION"
+git push origin "$TAG"
 ```
 
-The workflow rejects any other tag identity, commits outside `main`, dirty source state, lock
-drift, failed tests, archive mismatch, or digest change. Approve the `pypi` environment deployment
-only after its build and attestation job passes.
+The release workflow requires a new immutable tag on reviewed `main` history, a clean source
+contract, a locked environment, passing static/tests/package journeys, and public version
+availability. Approve the protected `pypi` deployment only after the build, inspection, and
+attestation job passes.
 
-## Independent public verification
+## Verify The Public Release Independently
 
-Download the GitHub Release bundle and the PyPI files independently. Verify `SHA256SUMS`, then
-compare filenames, sizes, and SHA-256 values with `release-receipt.json`. Run:
+Download the GitHub Release bundle and PyPI distributions independently. Compare filenames, sizes,
+SHA-256 values, the release receipt, and `SHA256SUMS`, then run:
 
 ```bash
-uvx --from project-workflow==0.6.0 project --version
-python scripts/verify_package_journeys.py --from project-workflow==0.6.0 --version 0.6.0
-gh attestation verify project_workflow-0.6.0-py3-none-any.whl --repo johndetlefs/project-workflow
+uvx --from "project-workflow==$VERSION" project --version
+python scripts/verify_package_journeys.py \
+  --from "project-workflow==$VERSION" --version "$VERSION"
+gh attestation verify "project_workflow-$VERSION-py3-none-any.whl" \
+  --repo johndetlefs/project-workflow
 ```
 
-Record the public PyPI page, GitHub Release, tag commit, successful workflow run, attestation,
-receipt, digests, and disposable journey output in the task-local evidence file.
+Record the PyPI page, GitHub Release, tag commit, workflow run, attestation, receipt, digests, and
+journey output in the release work item's evidence.
 
-## Abort and recovery
+## Abort And Recovery
 
-- Before a tag is pushed, fix the candidate normally and rerun CI.
-- If the tag workflow fails before either registry accepts an artifact, delete the failed remote
-  tag only after confirming no public artifact or release exists; correct the source and create a
-  new tag from the corrected reviewed commit.
-- Never move or reuse a public tag or version. PyPI files are immutable and versions cannot be
-  overwritten. If PyPI accepts `0.6.0` but a later step fails, preserve `v0.6.0`, repair the GitHub
-  Release from the retained workflow bundle when identity is unchanged, or make the next source
-  correction as `0.5.2`.
-- A yanked PyPI release remains part of history; yanking is an owner decision for harmful releases,
-  not a mechanism for replacing files.
+- Before pushing a tag, fix the candidate normally and rerun the entire candidate path.
+- If the tag workflow fails before any registry accepts an artifact, first prove no public artifact
+  or release exists. Only then may the owner delete the failed remote tag and create a corrected one.
+- Never move or reuse a public tag or version. If publication partially succeeds, retain the public
+  identity, repair only from the retained exact bundle where valid, or issue a new version.
+- Yanking is an owner decision for a harmful release, not a way to overwrite files.
+
+Release, publication, rollout, adoption, and owner acceptance remain distinct proof gates.

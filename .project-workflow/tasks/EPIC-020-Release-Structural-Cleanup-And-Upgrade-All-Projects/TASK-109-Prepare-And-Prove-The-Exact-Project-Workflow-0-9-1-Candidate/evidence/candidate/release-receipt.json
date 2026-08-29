@@ -1,0 +1,33 @@
+{
+  "artifacts": [
+    {
+      "filename": "project_workflow-0.9.1-py3-none-any.whl",
+      "kind": "wheel",
+      "sha256": "a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2",
+      "size": 526595
+    },
+    {
+      "filename": "project_workflow-0.9.1.tar.gz",
+      "kind": "sdist",
+      "sha256": "e19caa282816e79629a710c219bca9d48e950f7080590eead5f68367a7f133cc",
+      "size": 691774
+    }
+  ],
+  "asset_version": 8,
+  "changelog_heading": "## 0.9.1 - 2026-08-29",
+  "commands": {
+    "init": "uvx --from project-workflow==0.9.1 project init",
+    "upgrade": "uvx --from project-workflow==0.9.1 project upgrade"
+  },
+  "commit": "3289ff9cfbe5f7c7f85fe9e2a9fe242c46c076e3",
+  "project": "project-workflow",
+  "repository": "johndetlefs/project-workflow",
+  "repository_schema_version": 1,
+  "schema_version": 1,
+  "tag": "v0.9.1",
+  "version": "0.9.1",
+  "workflow": {
+    "run_id": "local-task109",
+    "run_url": "local://EPIC-020/TASK-109"
+  }
+}

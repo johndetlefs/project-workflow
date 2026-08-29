@@ -23,9 +23,16 @@ jobs:
       - name: Validate locked candidate source
         run: |
           uv lock --check
-          python scripts/release_contract.py check-source --version 0.9.0
+          python scripts/release_contract.py check-source --version 0.9.1
       - name: Install locked development environment
         run: uv sync --locked --extra dev --python 3.10
+      - name: Run canonical static quality gates
+        run: |
+          uv run --locked python scripts/check_documentation.py
+          uv run --locked python scripts/build_runtime_bundle.py --check
+          uv run --locked ruff check src/project_workflow/*.py scripts tests
+          uv run --locked ruff format --check src/project_workflow/*.py scripts tests
+          uv run --locked mypy src/project_workflow/*.py
       - name: Run complete repository validation
         run: uv run --locked pytest -q
       - name: Build distributions once
@@ -33,8 +40,8 @@ jobs:
       - name: Inspect distributions and create candidate receipt
         run: |
           uv run --locked python scripts/release_contract.py build-receipt \
-            --version 0.9.0 \
-            --tag v0.9.0 \
+            --version 0.9.1 \
+            --tag v0.9.1 \
             --commit "$GITHUB_SHA" \
             --repository "$GITHUB_REPOSITORY" \
             --run-id "$GITHUB_RUN_ID" \
@@ -49,5 +56,5 @@ jobs:
           wheel="$(find "$PWD/dist" -maxdepth 1 -name '*.whl' -print -quit)"
           uv run --locked python scripts/verify_package_journeys.py \
             --from "$wheel" \
-            --version 0.9.0 \
+            --version 0.9.1 \
             --output release/package-journeys.json

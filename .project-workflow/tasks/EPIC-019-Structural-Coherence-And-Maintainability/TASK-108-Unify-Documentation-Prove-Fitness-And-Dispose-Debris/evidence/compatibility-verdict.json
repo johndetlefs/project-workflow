@@ -1,0 +1,15 @@
+{
+  "contract": "project-workflow-v0.9.0-compatibility-verdict-v1",
+  "baseline": "../TASK-104-Establish-Canonical-Architecture-And-Bundle-Contract/evidence/v0.9.0-compatibility-baseline.json",
+  "candidate": "candidate-compatibility.json",
+  "verdict": "pass",
+  "command_surface_changed": false,
+  "schema_or_version_changed": false,
+  "generated_path_removed_or_renamed": false,
+  "expected_structural_deltas": [
+    "source CLI hash changed because the monolith became the thin compatibility facade",
+    "generated runtime hash changed deterministically from canonical module inputs",
+    ".project-workflow/cli/adapter_common.py was added as the generated shared adapter foundation"
+  ],
+  "unapproved_behavioral_deltas": []
+}

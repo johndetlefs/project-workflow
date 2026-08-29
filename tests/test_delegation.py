@@ -11,7 +11,6 @@ import pytest
 
 from project_workflow import cli as workflow_cli
 
-
 PROJECT_CMD = [sys.executable, "-m", "project_workflow.cli"]
 
 
@@ -45,9 +44,7 @@ def unit(
         canonical_state=state,
         source_order=order,
         source_path=".project-workflow/tasks/plan.md",
-        execution_needs=workflow_cli._delegation_execution_needs(
-            needs, unit_id=unit_id
-        ),
+        execution_needs=workflow_cli._delegation_execution_needs(needs, unit_id=unit_id),
     )
 
 
@@ -143,13 +140,17 @@ def test_task_table_parser_preserves_legacy_and_round_trips_delegation_metadata(
     assert modern_rows[0]["Write Scope"] == "src/app"
     assert modern_rows[0]["Parallel Safe"] == "Yes"
 
-    with_needs = modern.replace(
-        " | Parallel Safe |\n",
-        " | Parallel Safe | Execution Needs |\n",
-    ).replace(
-        "|---|---|---|---|---|---|---|---|---|\n",
-        "|---|---|---|---|---|---|---|---|---|---|\n",
-    ).replace(" | Yes |\n", " | Yes | isolated-worktree |\n")
+    with_needs = (
+        modern.replace(
+            " | Parallel Safe |\n",
+            " | Parallel Safe | Execution Needs |\n",
+        )
+        .replace(
+            "|---|---|---|---|---|---|---|---|---|\n",
+            "|---|---|---|---|---|---|---|---|---|---|\n",
+        )
+        .replace(" | Yes |\n", " | Yes | isolated-worktree |\n")
+    )
     found, rows, malformed = workflow_cli._implementation_task_table_rows(with_needs)
     assert found and not malformed
     assert rows[0]["Execution Needs"] == "isolated-worktree"
@@ -417,7 +418,10 @@ def test_binding_persistent_and_peer_needs_block_instead_of_silent_downgrade() -
     durable = plan(units=(unit("1", needs="durable-resume"),))
     assert durable.units[0].readiness == "blocked"
     assert durable.units[0].executor == "none"
-    assert "explicit current-request persistent-task authority is absent" in durable.units[0].executor_reason
+    assert (
+        "explicit current-request persistent-task authority is absent"
+        in durable.units[0].executor_reason
+    )
 
     peer = workflow_cli.build_delegation_plan(
         target=target("epic"),
@@ -502,9 +506,7 @@ def test_peer_team_capacity_uses_two_child_slots_per_team() -> None:
 
 def test_repository_scope_prevents_false_cross_repository_collision() -> None:
     left = replace(unit("1", scope=("src",)), repository_scope=("repo-a",))
-    right = replace(
-        unit("2", scope=("src",), order=1), repository_scope=("repo-b",)
-    )
+    right = replace(unit("2", scope=("src",), order=1), repository_scope=("repo-b",))
     built = plan(units=(left, right))
     assert built.selected_units == ("1", "2")
 
@@ -560,7 +562,9 @@ def test_exact_target_resolution_rejects_mixed_unknown_and_unapproved(tmp_path: 
     assert unapproved.value.code == "PW_DELEGATION_TARGET_UNAPPROVED"
 
 
-def test_delegate_plan_and_status_human_json_are_deterministic_and_read_only(tmp_path: Path) -> None:
+def test_delegate_plan_and_status_human_json_are_deterministic_and_read_only(
+    tmp_path: Path,
+) -> None:
     write_task_fixture(tmp_path)
     before = tree_hash(tmp_path)
     arguments = (
@@ -618,9 +622,13 @@ def test_epic_decomposition_dependencies_are_compatible_and_authoritative(tmp_pa
     assert rows[1]["Dependencies"] == "TASK-001"
     assert built.eligible_units == ("TASK-002",)
 
-    legacy = plan_path.read_text(encoding="utf-8").replace(" | Dependencies", "").replace(
-        "|---|---|---|---|---|", "|---|---|---|---|"
-    ).replace(" | TASK-001 |\n", " |\n").replace(" |\n", " |\n")
+    legacy = (
+        plan_path.read_text(encoding="utf-8")
+        .replace(" | Dependencies", "")
+        .replace("|---|---|---|---|---|", "|---|---|---|---|")
+        .replace(" | TASK-001 |\n", " |\n")
+        .replace(" |\n", " |\n")
+    )
     plan_path.write_text(
         "## Authorized Child Rows\n\n"
         "| ID | Title | Parent ACs | Source |\n"
@@ -646,9 +654,12 @@ def test_runtime_state_is_ignored_private_atomic_and_reconciles_without_duplicat
     state = workflow_cli.initialize_delegation_runtime_state(tmp_path, built)
     runtime_path = workflow_cli._delegation_runtime_path(tmp_path, "TASK-001")
     assert runtime_path.exists()
-    assert subprocess.run(
-        ["git", "check-ignore", "-q", str(runtime_path)], cwd=tmp_path, check=False
-    ).returncode == 0
+    assert (
+        subprocess.run(
+            ["git", "check-ignore", "-q", str(runtime_path)], cwd=tmp_path, check=False
+        ).returncode
+        == 0
+    )
     assert set(state) == {
         "schema_version",
         "target_id",
@@ -667,9 +678,7 @@ def test_runtime_state_is_ignored_private_atomic_and_reconciles_without_duplicat
             "state": "active",
         }
     }
-    resumed = workflow_cli.reconcile_delegation_runtime_state(
-        tmp_path, built, state, same_worktree
-    )
+    resumed = workflow_cli.reconcile_delegation_runtime_state(tmp_path, built, state, same_worktree)
     assert resumed["units"]["1"]["state"] == "active"  # type: ignore[index]
     assert "1" not in workflow_cli._delegation_status_payload(built, resumed)["eligible_units"]
 
@@ -780,9 +789,7 @@ def test_runtime_cli_initializes_reconciles_and_status_suppresses_relaunch(tmp_p
         "--format",
         "json",
     )
-    status = run_project(
-        tmp_path, "delegate", "status", "--id", "TASK-001", "--format", "json"
-    )
+    status = run_project(tmp_path, "delegate", "status", "--id", "TASK-001", "--format", "json")
     assert reconciled.returncode == status.returncode == 0
     assert json.loads(reconciled.stdout)["units"]["2"]["state"] == "active"
     status_payload = json.loads(status.stdout)

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import fnmatch
 import hashlib
 import json
 import os
@@ -10,15 +9,47 @@ import queue
 import re
 import shlex
 import shutil
-import sqlite3
 import subprocess
 import sys
 import tempfile
 import threading
 import time
-from collections.abc import Iterable, Mapping
-from pathlib import Path, PurePosixPath
-from typing import Any
+from collections.abc import Mapping
+from pathlib import Path
+from typing import Any, TypedDict, cast
+
+try:
+    from project_workflow.adapter_common import (
+        _canonical_json,
+        _connect_state,
+        _counter,
+        _identity,
+        _meta_get,
+        _meta_set,
+        _path_allowed,
+        _record_hook_event,
+        _set_terminal,
+        _state_snapshot,
+    )
+    from project_workflow.adapter_common import (
+        _normalized_relative_path as _common_normalized_relative_path,
+    )
+except ModuleNotFoundError:  # Standalone managed CLI assets.
+    from adapter_common import (  # type: ignore[import-not-found, no-redef]
+        _canonical_json,
+        _connect_state,
+        _counter,
+        _identity,
+        _meta_get,
+        _meta_set,
+        _path_allowed,
+        _record_hook_event,
+        _set_terminal,
+        _state_snapshot,
+    )
+    from adapter_common import (  # type: ignore[import-not-found, no-redef]
+        _normalized_relative_path as _common_normalized_relative_path,
+    )
 
 CODEX_ADAPTER_SCHEMA_VERSION = 1
 CODEX_ADAPTER_KIND = "codex-app-server"
@@ -40,16 +71,31 @@ CODEX_REQUIRED_SETTINGS = {
 }
 
 
+class CodexSettings(TypedDict):
+    schema_version: int
+    adapter_kind: str
+    enabled: bool
+    trust: str
+    executable: str
+    executable_identity: str
+    expected_version: str
+    model: str
+    prompt: str
+    allowed_tools: list[str]
+    allowed_command_patterns: list[str]
+    test_command_patterns: list[str]
+    required_changed_paths: list[str]
+
+
 class CodexAdapterError(RuntimeError):
     """Raised when the Codex adapter cannot preserve its declared boundary."""
 
 
-def _canonical_json(value: object) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
-
-
-def _identity(value: object) -> str:
-    return "sha256:" + hashlib.sha256(_canonical_json(value)).hexdigest()
+def _normalized_relative_path(path: str, root: Path | None = None) -> str:
+    try:
+        return _common_normalized_relative_path(path, root)
+    except ValueError as exc:
+        raise CodexAdapterError(str(exc)) from exc
 
 
 def _required_text(value: object, label: str) -> str:
@@ -69,7 +115,7 @@ def _string_list(value: object, label: str, *, empty: bool = False) -> list[str]
     return normalized
 
 
-def validate_codex_settings(value: object) -> dict[str, object]:
+def validate_codex_settings(value: object) -> CodexSettings:
     if not isinstance(value, dict) or set(value) != CODEX_REQUIRED_SETTINGS:
         raise CodexAdapterError("Codex adapter settings have an invalid shape")
     if value.get("schema_version") != CODEX_ADAPTER_SCHEMA_VERSION:
@@ -108,15 +154,18 @@ def validate_codex_settings(value: object) -> dict[str, object]:
             re.compile(pattern)
         except re.error as exc:
             raise CodexAdapterError(f"invalid Codex command pattern {pattern!r}: {exc}") from exc
-    return {
-        **value,
-        "executable": str(executable),
-        "executable_identity": executable_identity,
-        "allowed_tools": allowed_tools,
-        "allowed_command_patterns": command_patterns,
-        "test_command_patterns": test_patterns,
-        "required_changed_paths": required_changed_paths,
-    }
+    return cast(
+        CodexSettings,
+        {
+            **value,
+            "executable": str(executable),
+            "executable_identity": executable_identity,
+            "allowed_tools": allowed_tools,
+            "allowed_command_patterns": command_patterns,
+            "test_command_patterns": test_patterns,
+            "required_changed_paths": required_changed_paths,
+        },
+    )
 
 
 def inspect_codex_capability(value: object) -> dict[str, object]:
@@ -222,70 +271,6 @@ def probe_codex_capability(value: object) -> dict[str, object]:
         }
 
 
-def _connect_state(path: Path) -> sqlite3.Connection:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(path, timeout=4.0, isolation_level=None)
-    connection.execute("PRAGMA busy_timeout = 4000")
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
-    )
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS test_inputs "
-        "(digest TEXT PRIMARY KEY, attempts INTEGER NOT NULL)"
-    )
-    connection.execute("CREATE TABLE IF NOT EXISTS changed_paths (path TEXT PRIMARY KEY)")
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS hook_events "
-        "(sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_name TEXT NOT NULL, "
-        "event_cwd TEXT NOT NULL, tool_name TEXT NOT NULL, input_identity TEXT NOT NULL, "
-        "decision TEXT NOT NULL, detail TEXT NOT NULL)"
-    )
-    return connection
-
-
-def _meta_get(connection: sqlite3.Connection, key: str, default: str = "") -> str:
-    row = connection.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
-    return str(row[0]) if row else default
-
-
-def _meta_set(connection: sqlite3.Connection, key: str, value: object) -> None:
-    connection.execute(
-        "INSERT INTO meta(key, value) VALUES (?, ?) "
-        "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-        (key, str(value)),
-    )
-
-
-def _counter(connection: sqlite3.Connection, key: str) -> int:
-    return int(_meta_get(connection, key, "0"))
-
-
-def _record_hook_event(
-    state_path: Path,
-    event: Mapping[str, object],
-    *,
-    decision: str,
-    detail: str = "",
-) -> None:
-    tool_input = event.get("tool_input")
-    connection = _connect_state(state_path)
-    try:
-        connection.execute(
-            "INSERT INTO hook_events(event_name, event_cwd, tool_name, input_identity, "
-            "decision, detail) VALUES (?, ?, ?, ?, ?, ?)",
-            (
-                str(event.get("hook_event_name", "")),
-                str(event.get("cwd", "")),
-                str(event.get("tool_name", "")),
-                _identity(tool_input) if isinstance(tool_input, dict) else "",
-                decision,
-                detail,
-            ),
-        )
-    finally:
-        connection.close()
-
-
 def _initialize_state(path: Path, control: Mapping[str, object]) -> None:
     connection = _connect_state(path)
     try:
@@ -310,12 +295,6 @@ def _initialize_state(path: Path, control: Mapping[str, object]) -> None:
         connection.close()
 
 
-def _set_terminal(connection: sqlite3.Connection, status: str, reason: str) -> None:
-    if _meta_get(connection, "status", "running") not in CODEX_TERMINAL_STATES:
-        _meta_set(connection, "status", status)
-        _meta_set(connection, "reason", reason)
-
-
 def _deny(reason: str) -> dict[str, object]:
     return {
         "hookSpecificOutput": {
@@ -324,34 +303,6 @@ def _deny(reason: str) -> dict[str, object]:
             "permissionDecisionReason": reason,
         }
     }
-
-
-def _normalized_relative_path(path: str, root: Path | None = None) -> str:
-    candidate = path.replace("\\", "/")
-    parsed = PurePosixPath(candidate)
-    if not candidate or re.match(r"^[A-Za-z]:", candidate):
-        raise CodexAdapterError(f"path is not workspace-relative: {path}")
-    if root is None:
-        if parsed.is_absolute() or any(part in {"", ".", ".."} for part in parsed.parts):
-            raise CodexAdapterError(f"path is not workspace-relative: {path}")
-        return str(parsed)
-    resolved_root = root.resolve()
-    target = Path(candidate)
-    resolved_target = (
-        target.resolve() if target.is_absolute() else (resolved_root / target).resolve()
-    )
-    try:
-        return resolved_target.relative_to(resolved_root).as_posix()
-    except ValueError as exc:
-        raise CodexAdapterError(f"path is outside the workspace: {path}") from exc
-
-
-def _path_allowed(path: str, patterns: Iterable[str], root: Path | None = None) -> bool:
-    try:
-        candidate = _normalized_relative_path(path, root)
-    except CodexAdapterError:
-        return False
-    return any(fnmatch.fnmatchcase(candidate, pattern) for pattern in patterns)
 
 
 def _patch_paths(command: str) -> set[str]:
@@ -422,7 +373,7 @@ def _maximum(control: Mapping[str, object], name: str) -> int:
 
 def _reserve_pre_tool(
     control: Mapping[str, object],
-    settings: Mapping[str, object],
+    settings: CodexSettings,
     state_path: Path,
     root: Path,
     event: Mapping[str, object],
@@ -478,15 +429,16 @@ def _reserve_pre_tool(
         command = ""
         is_test = False
         if tool_name in {"Bash", "exec_command"}:
-            command = tool_input.get("command", tool_input.get("cmd", ""))
-            if not isinstance(command, str) or not any(
-                re.fullmatch(pattern, command, re.DOTALL)
+            command_value = tool_input.get("command", tool_input.get("cmd", ""))
+            if not isinstance(command_value, str) or not any(
+                re.fullmatch(pattern, command_value, re.DOTALL)
                 for pattern in settings["allowed_command_patterns"]
             ):
                 reason = "Codex shell command is outside sealed command authority."
                 _set_terminal(connection, "blocked", reason)
                 connection.execute("COMMIT")
                 return reason
+            command = command_value
             is_test = any(
                 re.fullmatch(pattern, command, re.DOTALL)
                 for pattern in settings["test_command_patterns"]
@@ -512,14 +464,15 @@ def _reserve_pre_tool(
         patch_paths: set[str] = set()
         normalized_patch_paths: set[str] = set()
         if tool_name == "apply_patch":
-            command = tool_input.get(
+            patch_value = tool_input.get(
                 "command", tool_input.get("patch", tool_input.get("input", ""))
             )
-            if not isinstance(command, str) or not (patch_paths := _patch_paths(command)):
+            if not isinstance(patch_value, str) or not (patch_paths := _patch_paths(patch_value)):
                 reason = "Codex patch targets are not inspectable."
                 _set_terminal(connection, "blocked", reason)
                 connection.execute("COMMIT")
                 return reason
+            command = patch_value
             allowed_paths = control["allowed_write_paths"]
             assert isinstance(allowed_paths, list)
             normalized_patch_paths = {_normalized_relative_path(path, root) for path in patch_paths}
@@ -691,58 +644,6 @@ def hook_main(control_path: str | None = None, state_value: str | None = None) -
     except Exception as exc:
         print(json.dumps(_deny(f"Project Workflow Codex hook failed closed: {exc}")))
         return 0
-
-
-def _state_snapshot(path: Path) -> dict[str, object]:
-    connection = _connect_state(path)
-    try:
-        meta = {
-            str(key): str(value) for key, value in connection.execute("SELECT key, value FROM meta")
-        }
-        changed = [
-            str(row[0])
-            for row in connection.execute("SELECT path FROM changed_paths ORDER BY path")
-        ]
-        identical_retries = sum(
-            max(0, int(attempts) - 1)
-            for _, attempts in connection.execute("SELECT digest, attempts FROM test_inputs")
-        )
-        hook_events = [
-            {
-                "sequence": int(sequence),
-                "event_name": str(event_name),
-                "cwd": str(event_cwd),
-                "tool_name": str(tool_name),
-                "input_identity": str(input_identity),
-                "decision": str(decision),
-                "detail": str(detail),
-            }
-            for (
-                sequence,
-                event_name,
-                event_cwd,
-                tool_name,
-                input_identity,
-                decision,
-                detail,
-            ) in connection.execute(
-                "SELECT sequence, event_name, event_cwd, tool_name, input_identity, decision, "
-                "detail FROM hook_events ORDER BY sequence"
-            )
-        ]
-    finally:
-        connection.close()
-    return {
-        "status": meta.get("status", "unknown"),
-        "reason": meta.get("reason", ""),
-        "hook_active": meta.get("hook_active") == "1",
-        "tool_calls": int(meta.get("tool-calls", "0")),
-        "test_invocations": int(meta.get("test-invocations", "0")),
-        "worker_launches": int(meta.get("worker-launches", "0")),
-        "changed_paths": changed,
-        "identical_retries": identical_retries,
-        "hook_events": hook_events,
-    }
 
 
 class _JsonRpcProcess:

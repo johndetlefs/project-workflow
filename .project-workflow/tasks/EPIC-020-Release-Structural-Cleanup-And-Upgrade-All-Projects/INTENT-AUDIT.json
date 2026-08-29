@@ -1,0 +1,122 @@
+{
+  "artifact_identity": "sha256:891b34ff6a118de70c56cece620c8a688baa5f20421c8494278bd60e2aa0c22e",
+  "commitments": [
+    {
+      "amendment": null,
+      "child_owners": ["TASK-109", "TASK-110", "TASK-111", "TASK-112"],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC1",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": ["AC1", "AC2", "AC3", "AC4", "AC5", "AC6", "AC7"],
+      "required_outcome_proof": "Public 0.9.1 release proof plus a complete consumer inventory in which every canonical installation is upgraded or has a current safety disposition.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc1"
+      ],
+      "target_locations": ["DECOMPOSITION.md#authorized-child-rows", "EPIC-CONTRACT.md#artifact-targets"],
+      "user_visible_consequence": "The owner receives one publicly usable maintenance release and a truthful latest-version result for every project."
+    },
+    {
+      "amendment": null,
+      "child_owners": ["TASK-109", "TASK-110", "TASK-111", "TASK-112"],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC2",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": ["AC1", "AC2", "AC3", "AC4", "AC5", "AC6", "AC7"],
+      "required_outcome_proof": "Each version, candidate, integration, publication, public verification, inventory, upgrade, and consolidated-receipt capability has an exact child owner and evidence.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc2"
+      ],
+      "target_locations": ["DECOMPOSITION.md#authorized-child-rows", "EPIC-CONTRACT.md#parent-ac-proof-ownership"],
+      "user_visible_consequence": "Release and adoption remain separately inspectable while still completing one owner-requested programme."
+    },
+    {
+      "amendment": null,
+      "child_owners": ["TASK-109", "TASK-110", "TASK-111", "TASK-112"],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC3",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": ["AC1", "AC2", "AC3", "AC4", "AC5", "AC6", "AC7"],
+      "required_outcome_proof": "One source identity proceeds through exact candidate, reviewed main, immutable tag, public retrieval, and fingerprint-bound consumer upgrades with no-op and Doctor results.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc3"
+      ],
+      "target_locations": ["DECOMPOSITION.md#authorized-child-rows", "EPIC-CONTRACT.md#sources-of-truth"],
+      "user_visible_consequence": "A maintainer can trace the actual package and every upgraded installation rather than trusting a release label."
+    },
+    {
+      "amendment": null,
+      "child_owners": ["TASK-109", "TASK-110", "TASK-111", "TASK-112"],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC4",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": ["AC1", "AC2", "AC3", "AC4", "AC5", "AC6", "AC7"],
+      "required_outcome_proof": "Identity, provenance, clean-root, fingerprint, no-op, scoped-diff, and Doctor gates reject divergent publication and unsafe or unproven upgrades.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc4"
+      ],
+      "target_locations": ["EPIC-CONTRACT.md#invalid-substitutes", "DECOMPOSITION.md#authorized-child-rows"],
+      "user_visible_consequence": "A green build cannot conceal a wrong public artifact or damaged consumer project."
+    },
+    {
+      "amendment": null,
+      "child_owners": ["TASK-109", "TASK-110", "TASK-111", "TASK-112"],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC5",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": ["AC1", "AC2", "AC3", "AC4", "AC5", "AC6", "AC7"],
+      "required_outcome_proof": "Diff and rollout receipts show no lifecycle redesign, forced consumer mutation, consumer delivery, historical rewrite, owner-acceptance claim, or Claude certification claim.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc5"
+      ],
+      "target_locations": ["EPIC-CONTRACT.md#invariants", "EPIC-CONTRACT.md#invalid-substitutes"],
+      "user_visible_consequence": "The requested release and upgrades do not silently expand into unrelated product or consumer delivery work."
+    },
+    {
+      "amendment": null,
+      "child_owners": ["TASK-109", "TASK-110", "TASK-111", "TASK-112"],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC6",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": ["AC1", "AC2", "AC3", "AC4", "AC5", "AC6"],
+      "required_outcome_proof": "Compatibility snapshots, source contract, public package journeys, and per-root preflight prove the maintenance-version and rollout assumptions or block continuation.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc6"
+      ],
+      "target_locations": ["EPIC-CONTRACT.md#invariants", "DECOMPOSITION.md#authorized-child-rows"],
+      "user_visible_consequence": "0.9.1 remains a compatible maintenance upgrade and uncertain repository state fails safely."
+    },
+    {
+      "amendment": null,
+      "child_owners": ["TASK-109", "TASK-110", "TASK-111", "TASK-112"],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC7",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": ["AC1", "AC2", "AC3", "AC4", "AC5", "AC6", "AC7"],
+      "required_outcome_proof": "The owner-approved artifact identity, decomposition, Git/public identities, complete inventory, and rollout receipt remain current and inspectable.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc7"
+      ],
+      "target_locations": ["REQUIREMENTS.md#owner-approval", "DECOMPOSITION.md#summary", "EPIC-CONTRACT.md#sources-of-truth"],
+      "user_visible_consequence": "The release and all-project request remains the authority for delivery instead of being replaced by implementation convenience."
+    }
+  ],
+  "review_source": "Owner-approved REQUIREMENTS.md, EPIC-CONTRACT.md, and DECOMPOSITION.md",
+  "reviewed_at": "2026-08-29",
+  "reviewed_by": "Codex Coordinator",
+  "schema_version": 1,
+  "verdict": "pass"
+}

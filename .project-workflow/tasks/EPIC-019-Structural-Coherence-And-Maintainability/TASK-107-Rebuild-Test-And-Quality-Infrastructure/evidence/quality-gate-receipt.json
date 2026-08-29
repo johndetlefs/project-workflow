@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-107",
+  "source": "86ca8859eb5e331db2505c2ae7230e2bc0030242 plus the Task 107 working-tree candidate",
+  "quality_commands": [
+    {
+      "command": "uv run --locked ruff check src/project_workflow/*.py scripts tests",
+      "outcome": "pass"
+    },
+    {
+      "command": "uv run --locked ruff format --check src/project_workflow/*.py scripts tests",
+      "outcome": "pass",
+      "files_checked": 63
+    },
+    {
+      "command": "uv run --locked mypy src/project_workflow/*.py",
+      "outcome": "pass",
+      "source_files_checked": 15,
+      "issues": 0
+    },
+    {
+      "command": "PATH=/opt/homebrew/bin:$PATH uv run --locked pytest -q",
+      "outcome": "pass",
+      "tests": 557,
+      "elapsed_seconds": 85.46
+    }
+  ],
+  "focused_proof": {
+    "split_suites": {
+      "tests": 154,
+      "outcome": "pass",
+      "elapsed_seconds": 45.13
+    },
+    "architecture_and_release_contract": {
+      "tests": 18,
+      "outcome": "pass"
+    }
+  },
+  "qa": {
+    "doctor_strict": "pass with 69 accepted historical warnings hidden and zero current issues",
+    "focused_tests": 172,
+    "focused_elapsed_seconds": 47.76,
+    "outcome": "pass",
+    "resolved_findings": [
+      "Release version ownership still pointed at the retired CLI monolith; moved to contracts.py.",
+      "Canonical adapters were formatted after installed copies were synchronized; refreshed all three managed adapter files byte-for-byte."
+    ]
+  },
+  "generation": {
+    "command": "python scripts/build_runtime_bundle.py --check",
+    "outcome": "pass",
+    "generated_mirrors_sha256": "b9791b557230ebb758113b64bfa49ddd96c61e6b3bd5d31836e05d469de2882d"
+  },
+  "build": {
+    "command": "uv run --locked python -m build --no-isolation",
+    "outcome": "pass",
+    "wheel": {
+      "path": "dist/project_workflow-0.9.0-py3-none-any.whl",
+      "sha256": "f97e8a9d5683ac571564cae2cb92c0b1dab838c058f8bb5d5335001a7645af08"
+    },
+    "sdist": {
+      "path": "dist/project_workflow-0.9.0.tar.gz",
+      "sha256": "35213172f5cb09bba3be80f860ceda91af70b13a181c9254a4799c100dabe274"
+    }
+  },
+  "package_journeys": {
+    "outcome": "pass",
+    "evidence": "evidence/package-journeys.json",
+    "evidence_sha256": "86c65ec17ab512890580224178c253981f40bf4c4b8277a9f34b1391f2432d36",
+    "scope": "fresh installs for four agent modes, current and legacy upgrade, Doctor, generated parity, package resources, and intent journey"
+  },
+  "proof_boundary": "Local exact-built-package evidence only. No push, merge, publication, release, adoption, owner acceptance, or authenticated Claude Code runtime canary is claimed."
+}

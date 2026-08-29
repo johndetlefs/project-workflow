@@ -21,11 +21,10 @@ from email.parser import Parser
 from pathlib import Path
 from typing import Any
 
-
 ROOT = Path(__file__).resolve().parents[1]
 VERSION_PATH = ROOT / "src/project_workflow/_version.py"
+CANONICAL_CONTRACTS_PATH = ROOT / "src/project_workflow/contracts.py"
 MIRROR_PATHS = (
-    ROOT / "src/project_workflow/cli.py",
     ROOT / "src/project_workflow/templates/workflow.py",
     ROOT / ".project-workflow/cli/workflow.py",
 )
@@ -111,15 +110,23 @@ def validate_source(*, expected_version: str | None, tag: str | None, clean: boo
     if tag and tag != f"v{version}":
         raise ContractError(f"tag {tag} does not match v{version}")
 
-    mirror_bytes = MIRROR_PATHS[0].read_bytes()
-    for path in MIRROR_PATHS:
+    version_paths = (CANONICAL_CONTRACTS_PATH, *MIRROR_PATHS)
+    for path in version_paths:
         text = path.read_text()
         match = re.search(r'^CURRENT_PACKAGE_VERSION = "([^"]+)"$', text, re.MULTILINE)
         if not match or match.group(1) != version:
             raise ContractError(f"version mirror mismatch: {path}")
+    mirror_bytes = MIRROR_PATHS[0].read_bytes()
     for path in MIRROR_PATHS[1:]:
         if path.read_bytes() != mirror_bytes:
             raise ContractError(f"managed CLI mirror differs from {MIRROR_PATHS[0]}: {path}")
+    mirror_text = mirror_bytes.decode("utf-8")
+    for marker in (
+        "# project-workflow:generated",
+        "# source-manifest: scripts/runtime-modules.txt",
+    ):
+        if marker not in mirror_text:
+            raise ContractError(f"generated CLI mirror is missing provenance: {marker}")
 
     manifest = json.loads(MANIFEST_PATH.read_text())
     if manifest.get("package_version") != version:
@@ -158,9 +165,7 @@ def validate_source(*, expected_version: str | None, tag: str | None, clean: boo
 
     source_coordinator = ROOT / "src/project_workflow/prompts/Coordinator.prompt.md"
     github_coordinator = ROOT / ".github/prompts/Coordinator.prompt.md"
-    codex_coordinator = (
-        ROOT / "src/project_workflow/codex/skills/project-coordinator/SKILL.md"
-    )
+    codex_coordinator = ROOT / "src/project_workflow/codex/skills/project-coordinator/SKILL.md"
     if source_coordinator.read_bytes() != github_coordinator.read_bytes():
         raise ContractError("development Coordinator prompt differs from packaged source")
     validate_coordinator_semantics(
@@ -204,9 +209,10 @@ def _metadata_from_wheel(path: Path) -> dict[str, str]:
         entry_points = [
             name for name in archive_names if name.endswith(".dist-info/entry_points.txt")
         ]
-        if len(entry_points) != 1 or "project = project_workflow.cli:main" not in archive.read(
-            entry_points[0]
-        ).decode():
+        if (
+            len(entry_points) != 1
+            or "project = project_workflow.cli:main" not in archive.read(entry_points[0]).decode()
+        ):
             raise ContractError(f"wheel has invalid project CLI entry point: {path.name}")
         validate_delegate_semantics(
             {
@@ -291,7 +297,9 @@ def write_receipt(args: argparse.Namespace) -> None:
     artifacts = distributions(args.dist, version)
     manifest = json.loads(MANIFEST_PATH.read_text())
     changelog_heading = next(
-        line for line in CHANGELOG_PATH.read_text().splitlines() if line.startswith(f"## {version} -")
+        line
+        for line in CHANGELOG_PATH.read_text().splitlines()
+        if line.startswith(f"## {version} -")
     )
     receipt = {
         "schema_version": 1,
@@ -378,7 +386,9 @@ def check_public_availability(version: str) -> None:
                 raise ContractError(f"project-workflow {version} already exists on PyPI")
     except urllib.error.HTTPError as exc:
         if exc.code != 404:
-            raise ContractError(f"cannot establish PyPI version availability: HTTP {exc.code}") from exc
+            raise ContractError(
+                f"cannot establish PyPI version availability: HTTP {exc.code}"
+            ) from exc
     except urllib.error.URLError as exc:
         raise ContractError(f"cannot establish PyPI version availability: {exc.reason}") from exc
     print(f"available: project-workflow {version} is not present on PyPI")

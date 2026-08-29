@@ -9,12 +9,7 @@ import pytest
 
 from project_workflow import cli as workflow_cli
 
-
-GLOBAL_HEADER = (
-    "# Stories\n\n"
-    "| ID | Title | Status | Docs |\n"
-    "|---|---|---|---|\n"
-)
+GLOBAL_HEADER = "# Stories\n\n| ID | Title | Status | Docs |\n|---|---|---|---|\n"
 EPIC_HEADER = (
     "# Stories\n\n"
     "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
@@ -166,11 +161,15 @@ def test_installation_inspection_covers_every_compatibility_state(tmp_path: Path
         "schema_version": workflow_cli.CURRENT_SCHEMA_VERSION,
         "applied_migrations": ("PW-0001-legacy-manifest",),
     }
-    assert facts(workflow_cli._inspect_operational_installation(upgradeable))["upgrade_command"] == (
-        workflow_cli.CANONICAL_UPGRADE_COMMAND
+    assert facts(workflow_cli._inspect_operational_installation(upgradeable))[
+        "upgrade_command"
+    ] == (workflow_cli.CANONICAL_UPGRADE_COMMAND)
+    assert (
+        facts(workflow_cli._inspect_operational_installation(invalid))["manifest_present"] is True
     )
-    assert facts(workflow_cli._inspect_operational_installation(invalid))["manifest_present"] is True
-    assert facts(workflow_cli._inspect_operational_installation(invalid))["manifest_parsed"] is False
+    assert (
+        facts(workflow_cli._inspect_operational_installation(invalid))["manifest_parsed"] is False
+    )
 
 
 def test_git_inspection_reports_clean_dirty_detached_and_read_only_commands(
@@ -300,9 +299,7 @@ def test_active_work_inspection_preserves_order_and_lifecycle_meaning(tmp_path: 
     assert active_work[0].lifecycle == "Ready"
     assert active_work[0].operational_meaning == "Approved work is ready for implementation."
     assert active_work[-1].sources[0].detail == "owner EPIC-001"
-    assert [finding.code for finding in findings] == [
-        "PW_STATUS_CLOSED_EPIC_HAS_ACTIVE_CHILD"
-    ]
+    assert [finding.code for finding in findings] == ["PW_STATUS_CLOSED_EPIC_HAS_ACTIVE_CHILD"]
 
 
 def test_lifecycle_meaning_covers_every_supported_status() -> None:

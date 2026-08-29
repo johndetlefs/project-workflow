@@ -8,15 +8,12 @@ import pytest
 
 from project_workflow import cli as workflow_cli
 
-
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = [sys.executable, "-m", "project_workflow.cli"]
 
 
 def run_project(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [*PROJECT, *args], cwd=root, check=False, capture_output=True, text=True
-    )
+    return subprocess.run([*PROJECT, *args], cwd=root, check=False, capture_output=True, text=True)
 
 
 def test_coordinator_and_clarify_source_assets_hold_the_delivery_contract() -> None:
@@ -25,9 +22,7 @@ def test_coordinator_and_clarify_source_assets_hold_the_delivery_contract() -> N
     coordinator_skill = (
         ROOT / "src/project_workflow/codex/skills/project-coordinator/SKILL.md"
     ).read_text()
-    coordinator_installed = (
-        ROOT / ".agents/skills/project-coordinator/SKILL.md"
-    ).read_text()
+    coordinator_installed = (ROOT / ".agents/skills/project-coordinator/SKILL.md").read_text()
 
     assert coordinator_prompt == coordinator_github
     assert coordinator_installed == workflow_cli._with_generated_marker(

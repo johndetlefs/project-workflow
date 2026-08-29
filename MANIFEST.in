@@ -5,4 +5,4 @@ recursive-include scripts *.py
 recursive-include tests *.py
 recursive-include tests/fixtures *
 recursive-include evaluations/intent_integrity *.json *.md *.py
-recursive-include evaluations/coordination *.json *.md *.py
+recursive-include evaluations/coordination *.json *.md

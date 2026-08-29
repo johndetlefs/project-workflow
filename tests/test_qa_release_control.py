@@ -173,9 +173,7 @@ def add_execution_receipt(
         "capability_identity": workflow_cli._execution_hash(capability),
         "phase": control["phase"],
         "candidate_identity": candidates["working_revision"],
-        "proof_obligations_identity": workflow_cli._execution_hash(
-            control["proof_obligations"]
-        ),
+        "proof_obligations_identity": workflow_cli._execution_hash(control["proof_obligations"]),
         "source_revision": control["source_revision"],
         "operation": "qa-remediation",
         "outcome": "pass",
@@ -304,9 +302,9 @@ def test_remediation_fails_closed_on_phase_limits_and_unbound_proof() -> None:
         control, kind="remediation", evidence_identity="evidence-after"
     )
     exhausted = deepcopy(control)
-    exhausted["limits"]["test-invocations"]["consumed"] = exhausted["limits"][
-        "test-invocations"
-    ]["maximum"]
+    exhausted["limits"]["test-invocations"]["consumed"] = exhausted["limits"]["test-invocations"][
+        "maximum"
+    ]
     exhausted["sealed_identity"] = workflow_cli._execution_hash(
         workflow_cli._execution_sealed_payload(exhausted)
     )
@@ -525,17 +523,13 @@ def test_fixed_release_rejects_forged_receipt_and_missing_candidate_identity(
     tmp_path: Path,
 ) -> None:
     (tmp_path / "candidate.txt").write_text("candidate\n", encoding="utf-8")
-    artifact = "sha256:" + hashlib.sha256(
-        (tmp_path / "candidate.txt").read_bytes()
-    ).hexdigest()
+    artifact = "sha256:" + hashlib.sha256((tmp_path / "candidate.txt").read_bytes()).hexdigest()
     plan = fixed_release_plan(
         "fabricated-source",
         artifact,
         [operation("publish", [sys.executable, "-c", "raise SystemExit(0)"])],
     )
-    _, receipt = workflow_cli._execution_run_fixed_release(
-        tmp_path, plan, lambda value: None
-    )
+    _, receipt = workflow_cli._execution_run_fixed_release(tmp_path, plan, lambda value: None)
     assert receipt["status"] == "fail"
     assert "readable Git source identity" in receipt["reason"]
     forged = deepcopy(plan)
@@ -741,9 +735,7 @@ def test_status_projects_single_qa_next_action_without_mutation(tmp_path: Path) 
     )
     state_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     before = state_path.read_bytes()
-    result = run_project(
-        tmp_path, "coordinate", "status", "--id", "TASK-001", "--format", "json"
-    )
+    result = run_project(tmp_path, "coordinate", "status", "--id", "TASK-001", "--format", "json")
     assert result.returncode == 0, result.stdout + result.stderr
     payload = json.loads(result.stdout)
     assert payload["qa_campaign"]["broad_qa_invocations"] == 1
@@ -752,6 +744,7 @@ def test_status_projects_single_qa_next_action_without_mutation(tmp_path: Path) 
 
 
 def test_managed_cli_copies_remain_identical() -> None:
-    source = (ROOT / "src/project_workflow/cli.py").read_bytes()
-    assert (ROOT / "src/project_workflow/templates/workflow.py").read_bytes() == source
-    assert (ROOT / ".project-workflow/cli/workflow.py").read_bytes() == source
+    template = (ROOT / "src/project_workflow/templates/workflow.py").read_bytes()
+    assert (ROOT / ".project-workflow/cli/workflow.py").read_bytes() == template
+    assert b"# project-workflow:generated" in template
+    assert b"# source-manifest: scripts/runtime-modules.txt" in template

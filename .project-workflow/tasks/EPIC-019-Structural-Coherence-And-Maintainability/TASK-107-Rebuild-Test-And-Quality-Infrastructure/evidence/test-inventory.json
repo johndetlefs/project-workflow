@@ -1,0 +1,54 @@
+{
+  "candidate": {
+    "all_test_files_below_2000_lines": true,
+    "collected_tests": 557,
+    "files": {
+      "tests/test_architecture.py": 163,
+      "tests/test_claude_adapter.py": 553,
+      "tests/test_codex_adapter.py": 506,
+      "tests/test_continuation_sufficiency.py": 308,
+      "tests/test_coordination_controls.py": 586,
+      "tests/test_coordination_evaluations.py": 172,
+      "tests/test_coordination_subtraction.py": 218,
+      "tests/test_coordinator_clarify_contract.py": 135,
+      "tests/test_delegate_epic_mode.py": 1409,
+      "tests/test_delegate_host_assets.py": 331,
+      "tests/test_delegate_task_mode.py": 1161,
+      "tests/test_delegation.py": 809,
+      "tests/test_doctor_installation.py": 712,
+      "tests/test_epic_planning.py": 721,
+      "tests/test_evidence_lifecycle.py": 1292,
+      "tests/test_execution_control_contract.py": 775,
+      "tests/test_intent_behavioral_eval.py": 173,
+      "tests/test_intent_integrity.py": 413,
+      "tests/test_operational_status.py": 382,
+      "tests/test_operational_status_actions.py": 422,
+      "tests/test_operational_status_classification.py": 311,
+      "tests/test_operational_status_cli.py": 286,
+      "tests/test_operational_status_inspection.py": 378,
+      "tests/test_package_journeys.py": 90,
+      "tests/test_qa_release_control.py": 750,
+      "tests/test_release_contract.py": 228,
+      "tests/test_repository_upgrade.py": 1417,
+      "tests/test_smoke_bomb.py": 411,
+      "tests/test_user_outcome_journey.py": 350,
+      "tests/test_verification_campaign.py": 1083,
+      "tests/test_work_items.py": 1227,
+      "tests/test_workspace_mode.py": 869
+    },
+    "maximum_test_file_lines": 1417,
+    "node_id_sha256": "5a821ef2ec021bb0befbbaef1fc80457381a2d31a3707c6d23ed7a79a7cdf238",
+    "test_file_count": 32
+  },
+  "comparison": {
+    "candidate_minus_released": 9,
+    "minimum_required": 548,
+    "preserved_or_increased": true
+  },
+  "released_baseline": {
+    "collected_tests": 548,
+    "source": "TASK-104 evidence/v0.9.0-compatibility-baseline.json",
+    "version": "0.9.0"
+  },
+  "schema_version": 1
+}

@@ -9,7 +9,6 @@ import pytest
 
 from project_workflow import cli as workflow_cli
 
-
 TOKEN = "epic-coordinator-only-token"
 BASE = "a" * 40
 HEAD_A = "b" * 40
@@ -35,9 +34,7 @@ def unit(
         source_order=order,
         source_path=".project-workflow/tasks/EPIC-001/DECOMPOSITION.md",
         authority_acs=parent_acs,
-        execution_needs=workflow_cli._delegation_execution_needs(
-            needs, unit_id=unit_id
-        ),
+        execution_needs=workflow_cli._delegation_execution_needs(needs, unit_id=unit_id),
     )
 
 
@@ -117,7 +114,8 @@ def capabilities(
                 )
                 if supported
             )
-            if verified else ()
+            if verified
+            else ()
         ),
     )
 
@@ -210,7 +208,15 @@ def test_real_epic_010_resolver_binds_decomposition_identity_and_parent_acs() ->
 
     assert target.kind == "epic"
     assert by_id["TASK-062"].authority_acs == (
-        "AC3", "AC6", "AC7", "AC9", "AC10", "AC11", "AC12", "AC14", "AC19"
+        "AC3",
+        "AC6",
+        "AC7",
+        "AC9",
+        "AC10",
+        "AC11",
+        "AC12",
+        "AC14",
+        "AC19",
     )
     assert by_id["TASK-063"].dependencies == ("TASK-061", "TASK-062")
 
@@ -327,18 +333,14 @@ def test_creation_fails_closed_when_runtime_observation_exceeds_or_drifts_from_p
     partial_run = coordinator(partial, tmp_path, host=capabilities())
 
     assert partial_run.creation_intents() == ()
-    assert "immutable plan lacks" in " ".join(
-        partial_run.capability_boundary()["reasons"]
-    )
+    assert "immutable plan lacks" in " ".join(partial_run.capability_boundary()["reasons"])
 
     complete = plan(unit("A"))
     mismatched_source = replace(capabilities(), source="different host observation")
     drifted_run = coordinator(complete, tmp_path, host=mismatched_source)
 
     assert drifted_run.creation_intents() == ()
-    assert "source does not match" in " ".join(
-        drifted_run.capability_boundary()["reasons"]
-    )
+    assert "source does not match" in " ".join(drifted_run.capability_boundary()["reasons"])
 
 
 def test_runtime_capacity_can_shrink_but_never_expand_immutable_plan_capacity(
@@ -412,9 +414,7 @@ def test_scope_collision_reduction_is_reported_and_repository_scoped(tmp_path: P
     )
 
     assert [item.unit_id for item in serialized.creation_intents()] == ["A"]
-    assert "collision" in " ".join(
-        serialized.summary()["creation_eligibility"]["B"]["reasons"]
-    )
+    assert "collision" in " ".join(serialized.summary()["creation_eligibility"]["B"]["reasons"])
 
     separate_repositories = duties("A", "B")
     separate_repositories["A"] = replace(
@@ -955,9 +955,7 @@ def test_lifecycle_gates_remain_independent_of_delegate_verification(tmp_path: P
     assert verify(run, result(run, "A")).accepted
 
     with pytest.raises(workflow_cli.EpicOrchestrationError) as child_gate:
-        run.assert_child_completion_observed(
-            "A", canonical_lifecycle="Review", qa_passed=True
-        )
+        run.assert_child_completion_observed("A", canonical_lifecycle="Review", qa_passed=True)
     assert child_gate.value.code == "PW_EPIC_CHILD_COMPLETION_GATED"
 
     with pytest.raises(workflow_cli.EpicOrchestrationError) as parent_gate:
@@ -982,8 +980,13 @@ def test_epic_runtime_consumes_subagent_surface_without_persistent_creation(
         requested=1,
     )
     host = capabilities(
-        persistent=False, worktrees=False, monitoring=False, reconciliation=False,
-        retirement=False, retirement_reconciliation=False, capacity=1,
+        persistent=False,
+        worktrees=False,
+        monitoring=False,
+        reconciliation=False,
+        retirement=False,
+        retirement_reconciliation=False,
+        capacity=1,
     )
     host = replace(host, additional_capabilities=("subagent",))
     run = coordinator(built, tmp_path, host=host)
@@ -993,7 +996,10 @@ def test_epic_runtime_consumes_subagent_surface_without_persistent_creation(
     assert launch.executor == "subagent"
     assert launch.packet.visibility_class == "ephemeral"
     run.register_launch(
-        launch, handle="subagent-a", branch=f"detached@{BASE}", worktree=tmp_path,
+        launch,
+        handle="subagent-a",
+        branch=f"detached@{BASE}",
+        worktree=tmp_path,
         coordinator_token=TOKEN,
     )
     accepted = verify(run, result(run, "A"))
@@ -1021,10 +1027,13 @@ def test_task_target_uses_shared_visible_surface_lifecycle_without_losing_handle
         requested_concurrency=1,
         available_child_capacity=1,
         observed_capabilities=(
-            "persistent-task", "task-monitoring", "task-reconciliation",
+            "persistent-task",
+            "task-monitoring",
+            "task-reconciliation",
         ),
         unsupported_capabilities=(
-            "task-retirement", "task-retirement-reconciliation",
+            "task-retirement",
+            "task-retirement-reconciliation",
         ),
         capability_source="2026-08-20 generic host adapter",
         persistent_task_authority="owner request for this run",
@@ -1050,7 +1059,9 @@ def test_task_target_uses_shared_visible_surface_lifecycle_without_losing_handle
     intent = run.launch_intents()[0]
     assert intent.packet.payload()["target"]["kind"] == "task"
     assert run.creation_intents()[0].payload()["requires"] == [
-        "persistent-task", "task-monitoring", "task-reconciliation",
+        "persistent-task",
+        "task-monitoring",
+        "task-reconciliation",
     ]
     run.register_launch(
         intent,
@@ -1186,12 +1197,18 @@ def test_visible_task_verification_disposition_and_retirement_are_separate_idemp
     run.register_retirement_requested(first, coordinator_token=TOKEN)
     assert run.retirement_intents()[0].intent_id == first.intent_id
     run.register_retirement_outcome(
-        first, observed_handle=str(native_handle), outcome="confirmed",
-        acknowledgement="codex:archived", coordinator_token=TOKEN,
+        first,
+        observed_handle=str(native_handle),
+        outcome="confirmed",
+        acknowledgement="codex:archived",
+        coordinator_token=TOKEN,
     )
     run.register_retirement_outcome(
-        first, observed_handle=str(native_handle), outcome="confirmed",
-        acknowledgement="codex:archived", coordinator_token=TOKEN,
+        first,
+        observed_handle=str(native_handle),
+        outcome="confirmed",
+        acknowledgement="codex:archived",
+        coordinator_token=TOKEN,
     )
 
     assert run.retirement_intents() == ()
@@ -1199,8 +1216,11 @@ def test_visible_task_verification_disposition_and_retirement_are_separate_idemp
     assert run.state.units["A"].handle == native_handle
     with pytest.raises(workflow_cli.EpicOrchestrationError) as conflict:
         run.register_retirement_outcome(
-            first, observed_handle=str(native_handle), outcome="failed",
-            acknowledgement="codex:visible", coordinator_token=TOKEN,
+            first,
+            observed_handle=str(native_handle),
+            outcome="failed",
+            acknowledgement="codex:visible",
+            coordinator_token=TOKEN,
         )
     assert conflict.value.code == "PW_EPIC_RETIREMENT_CONFLICT"
 
@@ -1217,8 +1237,11 @@ def test_retirement_failure_and_unknown_resume_keep_exact_handle_and_intent(
     intent = run.retirement_intents()[0]
     run.register_retirement_requested(intent, coordinator_token=TOKEN)
     run.register_retirement_outcome(
-        intent, observed_handle=intent.handle, outcome="failed",
-        acknowledgement="codex:archive-failed", coordinator_token=TOKEN,
+        intent,
+        observed_handle=intent.handle,
+        outcome="failed",
+        acknowledgement="codex:archive-failed",
+        coordinator_token=TOKEN,
     )
 
     assert run.state.units["A"].handle == intent.handle
@@ -1242,10 +1265,18 @@ def test_legacy_epic_runtime_migrates_visible_work_to_conservative_retention(
     legacy["integrated_paths"] = legacy.pop("verified_paths")
     raw_unit = legacy["units"]["A"]
     for key in (
-        "executor", "visibility_class", "retention_policy", "disposition_state",
-        "disposition_receipt", "attention_reasons", "owner_promoted",
-        "explicit_retain_reason", "retirement_state", "retirement_intent_id",
-        "retirement_ack", "prior_handles",
+        "executor",
+        "visibility_class",
+        "retention_policy",
+        "disposition_state",
+        "disposition_receipt",
+        "attention_reasons",
+        "owner_promoted",
+        "explicit_retain_reason",
+        "retirement_state",
+        "retirement_intent_id",
+        "retirement_ack",
+        "prior_handles",
     ):
         raw_unit.pop(key)
 

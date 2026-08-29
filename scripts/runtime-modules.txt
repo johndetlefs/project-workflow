@@ -1,0 +1,12 @@
+# Ordered canonical inputs for the dependency-free workflow runtime.
+# Paths are relative to the repository root. The final entry owns main().
+src/project_workflow/contracts.py
+src/project_workflow/repository.py
+src/project_workflow/lifecycle.py
+src/project_workflow/orchestration.py
+src/project_workflow/execution.py
+src/project_workflow/coordination.py
+src/project_workflow/inspection.py
+src/project_workflow/maintenance.py
+src/project_workflow/commands.py
+src/project_workflow/cli.py

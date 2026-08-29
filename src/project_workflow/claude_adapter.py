@@ -7,8 +7,8 @@ import json
 import os
 import queue
 import re
-import signal
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -17,10 +17,10 @@ import time
 from collections.abc import Mapping
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict, cast
 
 try:
-    from project_workflow.codex_adapter import (
+    from project_workflow.adapter_common import (
         _canonical_json,
         _connect_state,
         _counter,
@@ -33,7 +33,7 @@ try:
         _state_snapshot,
     )
 except ModuleNotFoundError:  # Standalone managed CLI assets.
-    from codex_adapter import (  # type: ignore[no-redef]
+    from adapter_common import (  # type: ignore[import-not-found, no-redef]
         _canonical_json,
         _connect_state,
         _counter,
@@ -73,6 +73,25 @@ CLAUDE_REQUIRED_SETTINGS = {
 }
 
 
+class ClaudeSettings(TypedDict):
+    schema_version: int
+    adapter_kind: str
+    enabled: bool
+    trust: str
+    executable: str
+    executable_identity: str
+    expected_version: str
+    model: str
+    prompt: str
+    allowed_tools: list[str]
+    disallowed_tools: list[str]
+    allowed_command_patterns: list[str]
+    test_command_patterns: list[str]
+    required_changed_paths: list[str]
+    required_output_identities: dict[str, str]
+    required_validation_commands: list[str]
+
+
 class ClaudeAdapterError(RuntimeError):
     """Raised when the Claude adapter cannot preserve its declared boundary."""
 
@@ -93,8 +112,7 @@ def _initialize_state(path: Path, control: Mapping[str, object]) -> None:
             for key in ("tool-calls", "test-invocations", "worker-launches"):
                 _meta_set(connection, key, 0)
             connection.execute(
-                "CREATE TABLE IF NOT EXISTS successful_validations "
-                "(command TEXT PRIMARY KEY)"
+                "CREATE TABLE IF NOT EXISTS successful_validations (command TEXT PRIMARY KEY)"
             )
         connection.execute("COMMIT")
     except Exception:
@@ -205,9 +223,8 @@ def _post_tool_check(
         command = tool_input.get("command") if isinstance(tool_input, dict) else None
         required_validations = settings.get("required_validation_commands")
         response = event.get("tool_response")
-        response_failed = (
-            event.get("hook_event_name") == "PostToolUseFailure"
-            or (isinstance(response, dict) and response.get("is_error") is True)
+        response_failed = event.get("hook_event_name") == "PostToolUseFailure" or (
+            isinstance(response, dict) and response.get("is_error") is True
         )
         if (
             isinstance(command, str)
@@ -254,14 +271,16 @@ def _normalized_relative_path(path: str, root: Path | None = None) -> str:
             raise ClaudeAdapterError(f"path is not workspace-relative: {path}")
         return candidate.as_posix()
     resolved_root = root.resolve()
-    resolved_target = candidate.resolve() if candidate.is_absolute() else (resolved_root / candidate).resolve()
+    resolved_target = (
+        candidate.resolve() if candidate.is_absolute() else (resolved_root / candidate).resolve()
+    )
     try:
         return resolved_target.relative_to(resolved_root).as_posix()
     except ValueError as exc:
         raise ClaudeAdapterError(f"path is outside the workspace: {path}") from exc
 
 
-def validate_claude_settings(value: object) -> dict[str, object]:
+def validate_claude_settings(value: object) -> ClaudeSettings:
     if not isinstance(value, dict) or set(value) != CLAUDE_REQUIRED_SETTINGS:
         raise ClaudeAdapterError("Claude adapter settings have an invalid shape")
     if value.get("schema_version") != CLAUDE_ADAPTER_SCHEMA_VERSION:
@@ -285,9 +304,7 @@ def validate_claude_settings(value: object) -> dict[str, object]:
     for field_name in ("expected_version", "model", "prompt"):
         _required_text(value.get(field_name), f"Claude adapter {field_name}")
     allowed_tools = _string_list(value.get("allowed_tools"), "allowed_tools")
-    disallowed_tools = _string_list(
-        value.get("disallowed_tools"), "disallowed_tools", empty=True
-    )
+    disallowed_tools = _string_list(value.get("disallowed_tools"), "disallowed_tools", empty=True)
     if set(allowed_tools) & set(disallowed_tools):
         raise ClaudeAdapterError("Claude allowed_tools and disallowed_tools overlap")
     command_patterns = _string_list(
@@ -328,18 +345,21 @@ def validate_claude_settings(value: object) -> dict[str, object]:
             raise ClaudeAdapterError(
                 "required_validation_commands must also be exact allowed_command_patterns"
             )
-    return {
-        **value,
-        "executable": str(executable),
-        "executable_identity": executable_identity,
-        "allowed_tools": allowed_tools,
-        "disallowed_tools": disallowed_tools,
-        "allowed_command_patterns": command_patterns,
-        "test_command_patterns": test_patterns,
-        "required_changed_paths": required_changed_paths,
-        "required_output_identities": required_output_identities,
-        "required_validation_commands": required_validation_commands,
-    }
+    return cast(
+        ClaudeSettings,
+        {
+            **value,
+            "executable": str(executable),
+            "executable_identity": executable_identity,
+            "allowed_tools": allowed_tools,
+            "disallowed_tools": disallowed_tools,
+            "allowed_command_patterns": command_patterns,
+            "test_command_patterns": test_patterns,
+            "required_changed_paths": required_changed_paths,
+            "required_output_identities": required_output_identities,
+            "required_validation_commands": required_validation_commands,
+        },
+    )
 
 
 def _unsupported(reason: str, classification: str) -> dict[str, object]:
@@ -366,9 +386,7 @@ def inspect_claude_capability(value: object) -> dict[str, object]:
             )
         executable = Path(str(settings["executable"]))
         if not executable.is_file() or not os.access(executable, os.X_OK):
-            return _unsupported(
-                "Claude executable is unavailable or not executable", "unavailable"
-            )
+            return _unsupported("Claude executable is unavailable or not executable", "unavailable")
         observed_identity = "sha256:" + hashlib.sha256(executable.read_bytes()).hexdigest()
         if observed_identity != settings["executable_identity"]:
             return _unsupported(
@@ -465,16 +483,13 @@ def _literal_command(pattern: str) -> str:
     return pattern
 
 
-def _native_permission_rules(
-    settings: Mapping[str, object], control: Mapping[str, object]
-) -> list[str]:
+def _native_permission_rules(settings: ClaudeSettings, control: Mapping[str, object]) -> list[str]:
     allowed_tools = set(settings["allowed_tools"])
     supported = CLAUDE_SAFE_NATIVE_TOOLS | {"Bash", "Edit", "Write"}
     unsupported = sorted(allowed_tools - supported)
     if unsupported:
         raise ClaudeAdapterError(
-            "Claude tools have no fail-closed native permission mapping: "
-            + ", ".join(unsupported)
+            "Claude tools have no fail-closed native permission mapping: " + ", ".join(unsupported)
         )
     rules = sorted(allowed_tools & CLAUDE_SAFE_NATIVE_TOOLS)
     if allowed_tools & {"Edit", "Write"}:
@@ -533,7 +548,7 @@ def _event_workspace_root(control: Mapping[str, object], event: Mapping[str, obj
 
 def _reserve_pre_tool(
     control: Mapping[str, object],
-    settings: Mapping[str, object],
+    settings: ClaudeSettings,
     state_path: Path,
     root: Path,
     event: Mapping[str, object],
@@ -584,15 +599,16 @@ def _reserve_pre_tool(
         command = ""
         is_test = False
         if tool_name == "Bash":
-            command = tool_input.get("command", "")
-            if not isinstance(command, str) or not any(
-                re.fullmatch(pattern, command, re.DOTALL)
+            command_value = tool_input.get("command", "")
+            if not isinstance(command_value, str) or not any(
+                re.fullmatch(pattern, command_value, re.DOTALL)
                 for pattern in settings["allowed_command_patterns"]
             ):
                 reason = "Claude shell command is outside sealed command authority."
                 _set_terminal(connection, "blocked", reason)
                 connection.execute("COMMIT")
                 return reason
+            command = command_value
             is_test = any(
                 re.fullmatch(pattern, command, re.DOTALL)
                 for pattern in settings["test_command_patterns"]
@@ -900,11 +916,7 @@ def _result_microdollars(value: object) -> int:
 
 
 def _plugin_root() -> Path:
-    return (
-        Path(__file__).resolve().parent
-        / "claude_plugin"
-        / "project-workflow-execution-control"
-    )
+    return Path(__file__).resolve().parent / "claude_plugin" / "project-workflow-execution-control"
 
 
 def _terminate_process_group(process: subprocess.Popen[str]) -> None:
@@ -987,10 +999,13 @@ def _run_claude_adapter(
         raise ClaudeAdapterError(
             "Claude material execution requires sealed output identities or validation commands"
         )
-    budget_limit = control.get("limits", {}).get("agent-budget")  # type: ignore[union-attr]
+    limits = control.get("limits")
+    if not isinstance(limits, dict):
+        raise ClaudeAdapterError("sealed execution control has malformed limits")
+    budget_limit = limits.get("agent-budget")
     if not isinstance(budget_limit, dict) or budget_limit.get("native_unit") != "usd-micros":
         raise ClaudeAdapterError("Claude adapter requires agent-budget authority in usd-micros")
-    turns_limit = control.get("limits", {}).get("turns")  # type: ignore[union-attr]
+    turns_limit = limits.get("turns")
     if not isinstance(turns_limit, dict) or turns_limit.get("native_unit") != "turns":
         raise ClaudeAdapterError("Claude adapter requires turns authority in turns")
     probe = probe_claude_capability(settings)
@@ -1143,7 +1158,9 @@ def _run_claude_adapter(
     snapshot = _state_snapshot(state_path)
     if not init_observed:
         terminal_status = "failed"
-        terminal_reason = terminal_reason.rstrip() + " Claude stream initialization was not observed."
+        terminal_reason = (
+            terminal_reason.rstrip() + " Claude stream initialization was not observed."
+        )
     if not snapshot["hook_active"]:
         terminal_status = "failed"
         terminal_reason = (
@@ -1200,8 +1217,7 @@ def _run_claude_adapter(
     connection = _connect_state(state_path)
     try:
         successful_validations = {
-            str(row[0])
-            for row in connection.execute("SELECT command FROM successful_validations")
+            str(row[0]) for row in connection.execute("SELECT command FROM successful_validations")
         }
     finally:
         connection.close()
@@ -1224,9 +1240,7 @@ def _run_claude_adapter(
         elif missing_required:
             closeout_reason = "Claude required changes are missing: " + ", ".join(missing_required)
         elif output_failures:
-            closeout_reason = "Claude required output proof failed: " + ", ".join(
-                output_failures
-            )
+            closeout_reason = "Claude required output proof failed: " + ", ".join(output_failures)
         elif missing_validations:
             closeout_reason = "Claude required validators did not pass: " + ", ".join(
                 missing_validations

@@ -1,0 +1,193 @@
+{
+  "adapters": [
+    {
+      "common_imports": [],
+      "installed_matches_source": true,
+      "installed_sha256": "sha256:0fdf506cd41565a0995f8a6821d951ab6b3aee138d0e4c3e20c1713c07b969a4",
+      "line_count": 169,
+      "name": "adapter_common",
+      "sha256": "sha256:0fdf506cd41565a0995f8a6821d951ab6b3aee138d0e4c3e20c1713c07b969a4"
+    },
+    {
+      "common_imports": [
+        "_canonical_json",
+        "_connect_state",
+        "_counter",
+        "_identity",
+        "_meta_get",
+        "_meta_set",
+        "_normalized_relative_path",
+        "_path_allowed",
+        "_record_hook_event",
+        "_set_terminal",
+        "_state_snapshot"
+      ],
+      "installed_matches_source": true,
+      "installed_sha256": "sha256:73cf9bc605574f21ddebd33c094b8c95f5c6bc76bff2c6c4f3f14f468253243f",
+      "line_count": 1093,
+      "name": "codex_adapter",
+      "sha256": "sha256:73cf9bc605574f21ddebd33c094b8c95f5c6bc76bff2c6c4f3f14f468253243f"
+    },
+    {
+      "common_imports": [
+        "_canonical_json",
+        "_connect_state",
+        "_counter",
+        "_identity",
+        "_meta_get",
+        "_meta_set",
+        "_path_allowed",
+        "_record_hook_event",
+        "_set_terminal",
+        "_state_snapshot"
+      ],
+      "installed_matches_source": true,
+      "installed_sha256": "sha256:54216602050687b3af1408cafd150f9b29e5a8c9bc566817800e62c3106c090a",
+      "line_count": 1299,
+      "name": "claude_adapter",
+      "sha256": "sha256:54216602050687b3af1408cafd150f9b29e5a8c9bc566817800e62c3106c090a"
+    }
+  ],
+  "dependency_order_valid": true,
+  "domain_modules_under_5000_lines": true,
+  "duplicate_top_level_definitions": {},
+  "entry_module_under_2000_lines": true,
+  "generated_runtime": {
+    "byte_identical": true,
+    "installed_helper_sha256": "sha256:72650508a7d530921b8054ea2fae2dd2d21375fa3bc77f7e1bc7da7ab7d421ee",
+    "template_sha256": "sha256:72650508a7d530921b8054ea2fae2dd2d21375fa3bc77f7e1bc7da7ab7d421ee"
+  },
+  "runtime_manifest": "scripts/runtime-modules.txt",
+  "runtime_module_count": 10,
+  "runtime_modules": [
+    {
+      "dependencies": [],
+      "dependencies_precede_module": true,
+      "line_count": 1430,
+      "name": "contracts",
+      "path": "src/project_workflow/contracts.py",
+      "sha256": "sha256:e57ada9c28c6dcd6f062131fd8a29af070c4bad44774f2f2ffe2c29069215c03",
+      "top_level_definition_count": 29
+    },
+    {
+      "dependencies": [
+        "contracts"
+      ],
+      "dependencies_precede_module": true,
+      "line_count": 2012,
+      "name": "repository",
+      "path": "src/project_workflow/repository.py",
+      "sha256": "sha256:2157265e430225e9adcc8232f5b1baa4030c7adfa88e936b903bed0474f0ea15",
+      "top_level_definition_count": 122
+    },
+    {
+      "dependencies": [
+        "contracts",
+        "repository"
+      ],
+      "dependencies_precede_module": true,
+      "line_count": 4483,
+      "name": "lifecycle",
+      "path": "src/project_workflow/lifecycle.py",
+      "sha256": "sha256:ebfc6b9cc15a38daf1eb9039d2fbf24f4cfbe856b5859cf02e46416e1878b1e9",
+      "top_level_definition_count": 150
+    },
+    {
+      "dependencies": [
+        "contracts",
+        "lifecycle",
+        "repository"
+      ],
+      "dependencies_precede_module": true,
+      "line_count": 3021,
+      "name": "orchestration",
+      "path": "src/project_workflow/orchestration.py",
+      "sha256": "sha256:eab3bb5b54b3bb60eb9918fd9ba01e8430cdaf0a943a3738964931b3e64164bd",
+      "top_level_definition_count": 70
+    },
+    {
+      "dependencies": [
+        "orchestration"
+      ],
+      "dependencies_precede_module": true,
+      "line_count": 2113,
+      "name": "execution",
+      "path": "src/project_workflow/execution.py",
+      "sha256": "sha256:88304370c6239ff851c744b1ef578ec7de54d1e58fd6c4bb6ca64bdd8e4d1edb",
+      "top_level_definition_count": 2
+    },
+    {
+      "dependencies": [
+        "contracts",
+        "lifecycle",
+        "orchestration",
+        "repository"
+      ],
+      "dependencies_precede_module": true,
+      "line_count": 2945,
+      "name": "coordination",
+      "path": "src/project_workflow/coordination.py",
+      "sha256": "sha256:7a9a24b8cc0b41e63660a1189d673ff50f8b76e5542d29b53e67f4325296075e",
+      "top_level_definition_count": 64
+    },
+    {
+      "dependencies": [
+        "contracts",
+        "coordination",
+        "lifecycle",
+        "repository"
+      ],
+      "dependencies_precede_module": true,
+      "line_count": 3446,
+      "name": "inspection",
+      "path": "src/project_workflow/inspection.py",
+      "sha256": "sha256:3d2955e45261ef29220bcf64cc8f28d813b57759b1ae759d4f97b1c237e01d77",
+      "top_level_definition_count": 66
+    },
+    {
+      "dependencies": [
+        "contracts",
+        "inspection",
+        "repository"
+      ],
+      "dependencies_precede_module": true,
+      "line_count": 2075,
+      "name": "maintenance",
+      "path": "src/project_workflow/maintenance.py",
+      "sha256": "sha256:1a0a50fc89205de10b1b6cb2443fe3da2fe9fa0649371dc4a532dc6f82d84649",
+      "top_level_definition_count": 46
+    },
+    {
+      "dependencies": [
+        "contracts",
+        "coordination",
+        "inspection",
+        "lifecycle",
+        "maintenance",
+        "orchestration",
+        "repository"
+      ],
+      "dependencies_precede_module": true,
+      "line_count": 3238,
+      "name": "commands",
+      "path": "src/project_workflow/commands.py",
+      "sha256": "sha256:d2ffeb98b72550104c5768d94ee0ed8ccfe5884cc1bfb3e092e2098dc5c15ece",
+      "top_level_definition_count": 59
+    },
+    {
+      "dependencies": [
+        "commands",
+        "contracts",
+        "lifecycle",
+        "repository"
+      ],
+      "dependencies_precede_module": true,
+      "line_count": 1235,
+      "name": "cli",
+      "path": "src/project_workflow/cli.py",
+      "sha256": "sha256:8eb578b08140bb6ee404894f5e7280c3886b3d25d5de785d3e3aa09f8baf21c0",
+      "top_level_definition_count": 2
+    }
+  ],
+  "schema_version": 1
+}

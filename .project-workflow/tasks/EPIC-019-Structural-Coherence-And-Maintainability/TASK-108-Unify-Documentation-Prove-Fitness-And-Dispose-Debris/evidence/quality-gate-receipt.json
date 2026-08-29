@@ -1,0 +1,47 @@
+{
+  "contract": "project-workflow-structural-cleanup-quality-v1",
+  "captured_at": "2026-08-29T15:30:00+10:00",
+  "source": "86ca8859eb5e331db2505c2ae7230e2bc0030242+working-tree-candidate",
+  "results": {
+    "documentation_contract": "pass: 12 current documents, version 0.9.0",
+    "runtime_bundle_check": "pass: generated runtime current and byte-identical",
+    "release_source_contract": "pass: 0.9.0",
+    "ruff_check": "pass",
+    "ruff_format": "pass: 65 files",
+    "mypy": "pass: zero issues in 15 canonical source files",
+    "pytest": "pass: 561 tests in 87.88 seconds",
+    "strict_doctor": "pass: no visible issues; 69 accepted historical warnings hidden",
+    "focused_candidate_boundary": "pass: 25 architecture, package, release-contract, and documentation tests",
+    "build": "pass: warning-free wheel and sdist",
+    "package_journeys": "pass: four agent modes, fresh/current/legacy/no-op, Doctor, intent lifecycle, and dependency-free helper"
+  },
+  "artifacts": {
+    "wheel": {
+      "path": "dist/project_workflow-0.9.0-py3-none-any.whl",
+      "sha256": "c3be9b9a699d0674cf815f81b067eea90f0a0e839c71103fc8ba2b8730b93c43"
+    },
+    "sdist": {
+      "path": "dist/project_workflow-0.9.0.tar.gz",
+      "sha256": "628cd1808ab3c7cd0b0a06f9c55c3bf296bf35174723f4cca5ff46e673d12d49"
+    },
+    "package_journeys": {
+      "path": "evidence/package-journeys.json",
+      "sha256": "2bf3e01b2128ca006332cb121922442c616b5fc0a983ed2c03210c4b3722502c"
+    },
+    "candidate_compatibility": {
+      "path": "evidence/candidate-compatibility.json",
+      "sha256": "589fefb0e0f400964f0d7150e8c623aa6d526e863197d0db6aac72b94e829d9e"
+    },
+    "architecture_snapshot": {
+      "path": "evidence/architecture-snapshot.json",
+      "sha256": "b9c3a844db943c470401ef269df93619826bfccaf9dd896505eacb35a4c3d619"
+    }
+  },
+  "proof_boundaries": [
+    "local validated source only",
+    "not merged or released",
+    "not published or rolled out",
+    "not owner acceptance",
+    "not authenticated Claude Code runtime certification"
+  ]
+}

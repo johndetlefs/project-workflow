@@ -80,9 +80,7 @@ def adapter_control(root: Path, settings: dict[str, object]) -> dict[str, object
             "maximum": maximum,
             "consumed": 0,
             "native_unit": (
-                "usd-micros"
-                if name == "agent-budget"
-                else "turns" if name == "turns" else name
+                "usd-micros" if name == "agent-budget" else "turns" if name == "turns" else name
             ),
             "source": "fixture",
         }
@@ -131,9 +129,7 @@ def test_read_only_inspection_never_executes_configured_binary(
 def test_inspection_reports_precise_non_support_states(
     tmp_path: Path, overrides: dict[str, object], classification: str
 ) -> None:
-    inspected = claude_adapter.inspect_claude_capability(
-        claude_settings(tmp_path, **overrides)
-    )
+    inspected = claude_adapter.inspect_claude_capability(claude_settings(tmp_path, **overrides))
     assert inspected["state"] == "unsupported"
     assert inspected["classification"] == classification
 
@@ -193,20 +189,26 @@ def test_hook_enforces_write_command_retry_worker_and_workspace_scope(tmp_path: 
     retry_state = tmp_path / "retry.sqlite3"
     claude_adapter._initialize_state(retry_state, control)
     test_event = {"tool_name": "Bash", "tool_input": {"command": "pytest -q"}}
-    assert claude_adapter._reserve_pre_tool(control, settings, retry_state, root, test_event) is None
-    assert claude_adapter._reserve_pre_tool(
-        control, settings, retry_state, root, test_event
-    ) == "Claude identical test retry authority is exhausted."
+    assert (
+        claude_adapter._reserve_pre_tool(control, settings, retry_state, root, test_event) is None
+    )
+    assert (
+        claude_adapter._reserve_pre_tool(control, settings, retry_state, root, test_event)
+        == "Claude identical test retry authority is exhausted."
+    )
 
     worker_state = tmp_path / "worker.sqlite3"
     claude_adapter._initialize_state(worker_state, control)
-    assert claude_adapter._reserve_pre_tool(
-        control,
-        settings,
-        worker_state,
-        root,
-        {"tool_name": "Agent", "tool_input": {"prompt": "expand scope"}},
-    ) == "Claude worker-launch authority is exhausted."
+    assert (
+        claude_adapter._reserve_pre_tool(
+            control,
+            settings,
+            worker_state,
+            root,
+            {"tool_name": "Agent", "tool_input": {"prompt": "expand scope"}},
+        )
+        == "Claude worker-launch authority is exhausted."
+    )
 
     sealed = {**control, "adapter_workspace_root": str(root.resolve())}
     outside = tmp_path / "outside"
@@ -495,9 +497,7 @@ def test_packaged_claude_plugin_is_subordinate_and_executable() -> None:
 
 def test_native_permissions_are_path_and_exact_command_scoped(tmp_path: Path) -> None:
     settings = claude_settings(tmp_path, allowed_tools=["Read", "Edit", "Bash"])
-    rules = claude_adapter._native_permission_rules(
-        settings, {"allowed_write_paths": ["src/**"]}
-    )
+    rules = claude_adapter._native_permission_rules(settings, {"allowed_write_paths": ["src/**"]})
     assert rules == [
         "Read",
         "Edit(/src/**)",
