@@ -45,9 +45,9 @@ the protected release path, so that the public version traces to reviewed code.
 
 ## Acceptance Criteria
 
-- [ ] AC1: The certified branch passes review/checks and merges into current main.
-- [ ] AC2: Annotated v0.9.1 peels to that reviewed main lineage.
-- [ ] AC3: The protected workflow publishes the coherent trusted release bundle.
+- [x] AC1: The certified branch passes review/checks and merges into current main.
+- [x] AC2: Annotated v0.9.1 peels to that reviewed main lineage.
+- [x] AC3: The protected workflow publishes the coherent trusted release bundle.
 
 ## Validation
 
@@ -59,37 +59,46 @@ the protected release path, so that the public version traces to reviewed code.
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | not recorded | not recorded | not recorded | not recorded |
+| . | PR #27; head `bb2784dd7571327aa4fa98cf467a2589a5405a50`; merge `cdd98f4f6642a940aba5c20961b965af6a05acb1` | CI run 33239700180 passed; both candidate commits are ancestors of fetched `origin/main`; annotated tag `v0.9.1` peels to the merge | Release run 33239801282 passed build, attest, PyPI trusted publish, and GitHub Release jobs | `evidence/release-integration.json`; GitHub PR, Actions, tag, deployment, and Release APIs |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |
-| 1 | Push and review certified branch | Push TASK-109's clean commit, create the release PR, and wait for required checks. | AC1 | Compare PR head to certified source and inspect checks. | To Do | TASK-109 | GitHub branch and PR | No | bounded-return |
-| 2 | Merge and prove main lineage | Merge the passing PR, fetch canonical main, and prove candidate ancestry. | AC1 | Inspect merge commit and ancestry. | To Do | 1 | GitHub PR; local Git refs | No | bounded-return |
-| 3 | Tag and publish once | Create annotated v0.9.1 on reviewed main, push it once, and monitor trusted publication. | AC2, AC3 | Inspect tag peel and all release jobs/assets. | To Do | 2 | Git tag; GitHub Actions; PyPI; GitHub Release | No | bounded-return |
+| 1 | Push and review certified branch | Push TASK-109's clean commit, create the release PR, and wait for required checks. | AC1 | Compare PR head to certified source and inspect checks. | Done | TASK-109 | GitHub branch and PR | No | bounded-return |
+| 2 | Merge and prove main lineage | Merge the passing PR, fetch canonical main, and prove candidate ancestry. | AC1 | Inspect merge commit and ancestry. | Done | 1 | GitHub PR; local Git refs | No | bounded-return |
+| 3 | Tag and publish once | Create annotated v0.9.1 on reviewed main, push it once, and monitor trusted publication. | AC2, AC3 | Inspect tag peel and all release jobs/assets. | Done | 2 | Git tag; GitHub Actions; PyPI; GitHub Release | No | bounded-return |
 
 ## Parent AC Evidence
 
-- AC3: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC3: PR #27 passed CI and merged at `cdd98f4f6642a940aba5c20961b965af6a05acb1`.
+  Annotated tag `v0.9.1` peels to that merge. Release run 33239801282 passed its reviewed-main
+  guard, complete validation, exact build/journey, attestation, PyPI trusted-publishing, and
+  same-bundle GitHub Release jobs.
 
 ## QA & Code Review
 
 - Intent QA contract: adversarial
-- Verdict: ____
-- Intent adversarial verdict: ____
-- Could every AC pass while the approved user job remains undone: ____
-- Intent audit state: ____
-- Outcome journey evidence: ____
-- Reviewer independence: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass
+- Intent adversarial verdict: Pass
+- Could every AC pass while the approved user job remains undone: No
+- Intent audit state: current
+- Outcome journey evidence: PR #27 head and CI identities, fetched main ancestry, annotated tag
+  peel, release run 33239801282 job/step conclusions, and the published GitHub Release asset
+  digests jointly prove the bounded integration and trusted-publication job.
+- Reviewer independence: A distinct read-only adversarial pass inspected live GitHub state after
+  publication. System policy prohibited a separate subagent, so independence is procedural.
+- Evidence: `evidence/release-integration.json`; PR #27; release run 33239801282; GitHub Release
+  `v0.9.1`.
+- Findings: No findings. Independent public retrieval, byte comparison, attestation verification,
+  and installed journeys remain TASK-111 rather than being inferred from workflow success.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: Keep environment approval after the attested build job so publication remains
+  a visible, deliberate gate without rebuilding artifacts.
+- Conventions or agent assets updated: None; the existing protected release contract worked.
+- Follow-up tasks: TASK-111 independently retrieves and proves the public release before rollout.
 
 ## Notes
 

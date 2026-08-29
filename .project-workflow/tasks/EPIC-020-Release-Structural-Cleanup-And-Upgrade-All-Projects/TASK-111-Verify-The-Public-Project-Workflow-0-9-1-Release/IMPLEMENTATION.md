@@ -45,9 +45,9 @@ authentic package that was actually released.
 
 ## Acceptance Criteria
 
-- [ ] AC1: PyPI/GitHub public artifacts, hashes, metadata, tag source, and attestations agree.
-- [ ] AC2: Public exact-version fresh and upgrade journeys pass across supported hosts.
-- [ ] AC3: A source-bound public checkpoint authorizes rollout without claiming adoption.
+- [x] AC1: PyPI/GitHub public artifacts, hashes, metadata, tag source, and attestations agree.
+- [x] AC2: Public exact-version fresh and upgrade journeys pass across supported hosts.
+- [x] AC3: A source-bound public checkpoint authorizes rollout without claiming adoption.
 
 ## Validation
 
@@ -59,37 +59,49 @@ authentic package that was actually released.
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | not recorded | not recorded | not recorded | not recorded |
+| . | Release `v0.9.1`; merge `cdd98f4f6642a940aba5c20961b965af6a05acb1` | Independent PyPI/GitHub byte comparison, SHA256SUMS, four expected provenance attestations, public version resolution, and all installed-package journeys passed | Public package verified; no consumer repository mutated by this task | `evidence/public/public-verification.json`; `evidence/public/package-journeys.json`; coordination checkpoint |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |
-| 1 | Verify public bytes and provenance | Download from PyPI and GitHub, compare identities, and verify attestations. | AC1, AC3 | Inspect public receipt, hashes, tag source, and attestation result. | To Do | TASK-110 | disposable downloads; task evidence | No | bounded-return |
-| 2 | Exercise public exact package | Run version plus fresh/current/legacy/no-op/Doctor/lifecycle/helper journeys from public 0.9.1. | AC2, AC3 | Inspect disposable journey output and package source proof. | To Do | 1 | disposable repositories; task evidence | No | bounded-return |
-| 3 | Record rollout checkpoint | Bind the passing public journey to EPIC-020 before consumer mutation. | AC3 | Inspect current coordination checkpoint. | To Do | 1, 2 | coordination state; task evidence | No | bounded-return |
+| 1 | Verify public bytes and provenance | Download from PyPI and GitHub, compare identities, and verify attestations. | AC1, AC3 | Inspect public receipt, hashes, tag source, and attestation result. | Done | TASK-110 | disposable downloads; task evidence | No | bounded-return |
+| 2 | Exercise public exact package | Run version plus fresh/current/legacy/no-op/Doctor/lifecycle/helper journeys from public 0.9.1. | AC2, AC3 | Inspect disposable journey output and package source proof. | Done | 1 | disposable repositories; task evidence | No | bounded-return |
+| 3 | Record rollout checkpoint | Bind the passing public journey to EPIC-020 before consumer mutation. | AC3 | Inspect current coordination checkpoint. | Done | 1, 2 | coordination state; task evidence | No | bounded-return |
 
 ## Parent AC Evidence
 
-- AC4: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC4: Independent PyPI and GitHub downloads are byte-identical and match the release receipt:
+  wheel `sha256:cdc483ea89547071052aa7c723e444ed410c536d33743f475d4f34176bba7ce5`,
+  sdist `sha256:d809a9a5eb0f19e3f98ef350cd6154dd38dee200c190a34824b7630afc822705`.
+  All four expected attested subjects verify against `release.yml`, tag ref `v0.9.1`, and merge
+  `cdd98f4`. Fresh public resolution reports 0.9.1, and the exact PyPI wheel passed every supported
+  disposable package journey. The passing coordination checkpoint now authorizes TASK-112.
 
 ## QA & Code Review
 
 - Intent QA contract: adversarial
-- Verdict: ____
-- Intent adversarial verdict: ____
-- Could every AC pass while the approved user job remains undone: ____
-- Intent audit state: ____
-- Outcome journey evidence: ____
-- Reviewer independence: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass
+- Intent adversarial verdict: Pass
+- Could every AC pass while the approved user job remains undone: No
+- Intent audit state: current
+- Outcome journey evidence: Fresh public `uvx` resolved `project 0.9.1`; the independently
+  downloaded PyPI wheel passed exact-package parity and all supported fresh/current/legacy/no-op,
+  Doctor, lifecycle, and helper journeys.
+- Reviewer independence: A distinct read-only public-consumer pass began from independently
+  downloaded files rather than release-workflow output. System policy prohibited a subagent.
+- Evidence: `evidence/public/public-verification.json`, `evidence/public/package-journeys.json`,
+  PyPI JSON, GitHub Release assets, signed attestations, and the coordination checkpoint.
+- Findings: No findings. `package-journeys.json` is a hashed release asset but is intentionally not
+  one of the four subjects configured for provenance attestation; the two distributions,
+  `SHA256SUMS`, and `release-receipt.json` all verified.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: Set an isolated writable `XDG_CACHE_HOME` for GitHub attestation verification
+  in restricted environments; a cache write failure is not an attestation failure.
+- Conventions or agent assets updated: None.
+- Follow-up tasks: TASK-112 may now use only the proven public exact version for safe upgrades.
 
 ## Notes
 

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-111",
+  "version": "0.9.1",
+  "tag": "v0.9.1",
+  "commit": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+  "github_release": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.9.1",
+  "pypi": "https://pypi.org/project/project-workflow/0.9.1/",
+  "artifacts": {
+    "wheel": {
+      "filename": "project_workflow-0.9.1-py3-none-any.whl",
+      "sha256": "cdc483ea89547071052aa7c723e444ed410c536d33743f475d4f34176bba7ce5",
+      "size": 526595,
+      "github_matches_pypi": true
+    },
+    "sdist": {
+      "filename": "project_workflow-0.9.1.tar.gz",
+      "sha256": "d809a9a5eb0f19e3f98ef350cd6154dd38dee200c190a34824b7630afc822705",
+      "size": 691126,
+      "github_matches_pypi": true
+    }
+  },
+  "release_receipt": {
+    "sha256": "28d6c5ab3cd75e1ac6e9fbe35a093e118864e948f4cb9ce8a9b3135eb03c9a13",
+    "sha256sums_verified": true,
+    "metadata_matches_tag_commit_version_assets_and_schema": true
+  },
+  "provenance": {
+    "signer_workflow": "github.com/johndetlefs/project-workflow/.github/workflows/release.yml",
+    "source_ref": "refs/tags/v0.9.1",
+    "source_digest": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+    "verified_subjects": [
+      "project_workflow-0.9.1-py3-none-any.whl",
+      "project_workflow-0.9.1.tar.gz",
+      "SHA256SUMS",
+      "release-receipt.json"
+    ],
+    "all_expected_subjects_verified": true
+  },
+  "public_execution": {
+    "uvx_version_output": "project 0.9.1",
+    "source": "PyPI-downloaded exact wheel",
+    "source_sha256": "cdc483ea89547071052aa7c723e444ed410c536d33743f475d4f34176bba7ce5",
+    "journey_receipt": "package-journeys.json",
+    "journey_receipt_sha256": "7e62e4a305942403508250e137b4f62b7b4991d6f52b7d969234f3c9044bafa6",
+    "fresh_hosts": ["codex", "claude-code", "cursor", "github-copilot"],
+    "legacy_upgrade": "applied",
+    "verdict": "pass"
+  },
+  "rollout_checkpoint": {
+    "unit": "TASK-111",
+    "verdict": "pass",
+    "affected_unit": "TASK-112"
+  },
+  "adoption_boundary": "No consumer repository was mutated or represented as upgraded by this task."
+}

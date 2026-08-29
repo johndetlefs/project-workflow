@@ -1,4 +1,42 @@
 {
   "task_id": "TASK-111",
-  "claims": []
+  "claims": [
+    {
+      "id": "CLM-111-AC4-ARTIFACTS",
+      "parent_ac": "AC4",
+      "claim": "Public PyPI and GitHub Release wheel and sdist bytes match the same release receipt and reviewed tag source, and every expected provenance subject verifies against the pinned release workflow.",
+      "recipe": "deployed-artifact-alignment",
+      "status": "pass",
+      "commit": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "timestamp": "2026-08-29T17:12:00+10:00",
+      "execution_target": "https://pypi.org/project/project-workflow/0.9.1/ and https://github.com/johndetlefs/project-workflow/releases/tag/v0.9.1",
+      "source_artifact": "Public release-receipt.json, SHA256SUMS, annotated v0.9.1, and GitHub artifact attestations",
+      "artifact_identity": "v0.9.1 at cdd98f4f6642a940aba5c20961b965af6a05acb1; wheel sha256 cdc483ea89547071052aa7c723e444ed410c536d33743f475d4f34176bba7ce5; sdist sha256 d809a9a5eb0f19e3f98ef350cd6154dd38dee200c190a34824b7630afc822705",
+      "observation_method": "Downloaded PyPI and GitHub files independently, compared distributions byte-for-byte, verified SHA256SUMS and receipt metadata, and verified the wheel, sdist, SHA256SUMS, and receipt attestations against release.yml, refs/tags/v0.9.1, and the reviewed source digest.",
+      "evidence_artifact": "evidence/public/public-verification.json",
+      "evidence_artifact_hash": "sha256:e119b9ef4ba8cc72de4f08ed839de2a7793c0b2262cec3f431b3903eeb22e785",
+      "invalid_substitutes": [
+        "Publication workflow success alone was not used as public artifact proof."
+      ]
+    },
+    {
+      "id": "CLM-111-AC4-RUNTIME",
+      "parent_ac": "AC4",
+      "claim": "Fresh public resolution and the exact PyPI wheel passed version, parity, fresh/current/legacy/no-op, Doctor, intent-lifecycle, and dependency-free helper journeys across all supported agent asset modes.",
+      "recipe": "runtime-target-source",
+      "status": "pass",
+      "commit": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "timestamp": "2026-08-29T17:12:00+10:00",
+      "execution_target": "Fresh isolated uv tool/cache directories and disposable Git repositories",
+      "source_artifact": "PyPI project-workflow==0.9.1 and exact downloaded wheel sha256:cdc483ea89547071052aa7c723e444ed410c536d33743f475d4f34176bba7ce5",
+      "observation_method": "Resolved the public version through uvx, then executed scripts/verify_package_journeys.py against the independently downloaded PyPI wheel.",
+      "target_used_source_proof": "uvx reported project 0.9.1; the journey receipt binds the exact public wheel and matching sdist digests, complete source/resource parity, four supported fresh hosts, current no-op upgrades, legacy migration, Doctor, lifecycle, and standalone helper execution.",
+      "evidence_artifact": "evidence/public/package-journeys.json",
+      "evidence_artifact_hash": "sha256:7e62e4a305942403508250e137b4f62b7b4991d6f52b7d969234f3c9044bafa6",
+      "invalid_substitutes": [
+        "No local source checkout or unpublished TASK-109 artifact was used as the runtime source.",
+        "Package proof is not authenticated Claude Code runtime certification."
+      ]
+    }
+  ]
 }

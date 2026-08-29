@@ -47,10 +47,10 @@ so that version drift is visible without damaging active work.
 
 ## Acceptance Criteria
 
-- [ ] AC1: The complete current project and canonical-installation inventory has one disposition per entry.
-- [ ] AC2: Every eligible root passes public fingerprinted upgrade, no-op, diff, preservation, version/helper, and Doctor proof.
-- [ ] AC3: Every ineligible or failed root remains unchanged with an exact blocker and no consumer delivery action.
-- [ ] AC4: One consolidated receipt maps release and every project result to parent AC5-AC7.
+- [x] AC1: The complete current project and canonical-installation inventory has one disposition per entry.
+- [x] AC2: Every eligible root passes public fingerprinted upgrade, no-op, diff, preservation, version/helper, and Doctor proof.
+- [x] AC3: Every ineligible or failed root remains unchanged with an exact blocker and no consumer delivery action.
+- [x] AC4: One consolidated receipt maps release and every project result to parent AC5-AC7.
 
 ## Validation
 
@@ -63,38 +63,64 @@ so that version drift is visible without damaging active work.
 
 | Repository | Branch / PR | Validation | Delivery | Evidence |
 | ---------- | ----------- | ---------- | -------- | -------- |
-| . | not recorded | not recorded | not recorded | not recorded |
+| . | Release merge `cdd98f4`; rollout evidence branch `codex/structural-coherence-cleanup` | 20 project entries and 15 manifest roots reconciled; one clean root current on 0.9.1; 14 dirty/ambiguous roots rechecked unchanged | Project Workflow clean `main` fast-forwarded to the released merge; no consumer commit, push, merge, release, or deployment | `evidence/rollout/rollout-receipt.json` |
 
 ## Task List
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status | Dependencies | Write Scope | Parallel Safe | Execution Needs |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ | ------------ | ----------- | ------------- | --------------- |
-| 1 | Reconcile complete project inventory | Discover current project entries and canonical manifests, deduplicate roots, and classify eligibility. | AC1, AC3 | Inspect one disposition for every entry/root. | To Do | TASK-111 | read-only project estate; task evidence | No | bounded-return |
-| 2 | Upgrade eligible canonical roots | Recheck safety, plan public 0.9.1, review/apply exact fingerprints, and stop on any changed input. | AC2, AC3 | Inspect per-root command and before/after state. | To Do | 1 | eligible consumer managed assets only | No | bounded-return |
-| 3 | Validate adoption separately from health | Prove no-op, managed diff, owner-content preservation, exact version/helper, and Doctor state for each applied root. | AC2, AC3 | Review scoped diffs and Doctor classification. | To Do | 2 | eligible consumer roots; task evidence | No | bounded-return |
-| 4 | Consolidate release and rollout receipt | Record every disposition, public identity, validation result, and residual boundary in one machine-readable artifact. | AC4 | Validate JSON and parent AC map. | To Do | 1, 2, 3 | task evidence; parent acceptance artifacts | No | bounded-return |
+| 1 | Reconcile complete project inventory | Discover current project entries and canonical manifests, deduplicate roots, and classify eligibility. | AC1, AC3 | Inspect one disposition for every entry/root. | Done | TASK-111 | read-only project estate; task evidence | No | bounded-return |
+| 2 | Upgrade eligible canonical roots | Recheck safety, plan public 0.9.1, review/apply exact fingerprints, and stop on any changed input. | AC2, AC3 | Inspect per-root command and before/after state. | Done | 1 | eligible consumer managed assets only | No | bounded-return |
+| 3 | Validate adoption separately from health | Prove no-op, managed diff, owner-content preservation, exact version/helper, and Doctor state for each applied root. | AC2, AC3 | Review scoped diffs and Doctor classification. | Done | 2 | eligible consumer roots; task evidence | No | bounded-return |
+| 4 | Consolidate release and rollout receipt | Record every disposition, public identity, validation result, and residual boundary in one machine-readable artifact. | AC4 | Validate JSON and parent AC map. | Done | 1, 2, 3 | task evidence; parent acceptance artifacts | No | bounded-return |
 
 ## Parent AC Evidence
 
-- AC5, AC6, AC7: Pending implementation evidence. Recipe-triggered claims must also be backed by `EVIDENCE.json`.
+- AC5: Codex project metadata contained 20 entries: 18 local and two cloud-only. The local estate
+  contained 12 saved installations and six saved non-consumers. A filesystem scan found 15 unique
+  manifest roots, including three additional roots not registered as saved projects. Every entry
+  and root has a disposition in the rollout receipt.
+- AC6: Project Workflow was the only clean, unambiguous root. Its clean `main` fast-forwarded from
+  `86ca885` to released merge `cdd98f4`; the public 0.9.1 plan fingerprint
+  `sha256:c58551f1e7b5f20803d47eb3593896b6e28a309b6d0839a65c8ab70afe6e6c5b`
+  reported `versions-current` with zero steps, helper version 0.9.1, strict Doctor passed, and the
+  worktree remained clean. The other 14 roots remained byte-for-byte unchanged because every one
+  was dirty; several also had stale, active-branch, duplicate-authority, or unregistered-root
+  blockers.
+- AC7: `evidence/rollout/rollout-receipt.json` binds release identity, all 20 projects, all 15
+  manifests, the one validated-current result, 14 exact blockers, unchanged status digests, and
+  zero consumer delivery actions.
 
 ## QA & Code Review
 
 - Intent QA contract: adversarial
-- Verdict: ____
-- Intent adversarial verdict: ____
-- Could every AC pass while the approved user job remains undone: ____
-- Intent audit state: ____
-- Outcome journey evidence: ____
-- Reviewer independence: ____
-- Evidence: ____
-- Findings: ____
+- Verdict: Pass
+- Intent adversarial verdict: Pass
+- Could every AC pass while the approved user job remains undone: No
+- Intent audit state: current
+- Outcome journey evidence: The normal owner journey starts with every Codex project plus every
+  local manifest root, applies the verified public version only to a clean canonical root, and ends
+  with one exact disposition for every entry. It does not turn unsafe non-mutation into a false
+  upgrade claim.
+- Reviewer independence: A distinct adversarial review reconciled Codex metadata against a fresh
+  filesystem manifest scan and repeated every blocked status digest after the sole eligible action.
+  System policy prohibited a separate subagent.
+- Evidence: `evidence/rollout/rollout-receipt.json`; live Codex project inventory; manifest scan;
+  per-root Git/manifest/agent/upstream/worktree/status checks; public 0.9.1 plan; helper; strict
+  Doctor.
+- Findings: No implementation defect. Fourteen installations remain on 0.9.0 by design because
+  their current repository state fails the approved safe-mutation precondition. That residual is a
+  visible operational boundary, not a hidden success claim.
 
 ## Retro
 
-- Reusable lessons: ____
-- Conventions or agent assets updated: ____
-- Follow-up tasks: ____
+- Reusable lessons: A rollout cannot remain continuously upgradable when prior managed-asset diffs
+  are left uncommitted in canonical roots; each repository needs its existing workflow change
+  reconciled before the next release can apply safely.
+- Conventions or agent assets updated: None in consumers; the release itself supplies the new
+  managed assets.
+- Follow-up tasks: Reconcile the 14 blocked repositories under their own authority, then rerun the
+  public fingerprinted 0.9.1 upgrade in each now-clean canonical root.
 
 ## Notes
 

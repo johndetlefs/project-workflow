@@ -2,15 +2,15 @@
   "boundary_decisions": [
     {
       "affected_units": [
-        "TASK-109"
+        "TASK-112"
       ],
       "amendment_identity": null,
-      "boundary": "before-review-or-complete",
-      "capability_change": "TASK-109 adversarial QA passed and retained candidate proof is current under the loaded contract.",
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-112 returned a complete 20-project, 15-manifest ledger; the one eligible root is current on 0.9.1 and all 14 blocked roots are unchanged.",
       "classification": "inside-envelope",
       "decided_by": "Codex Coordinator",
       "decision_date": "2026-08-29",
-      "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+      "intent_identity": "sha256:d30d478504f700680bc763d98dd937f1611baa0137bba18d1c1c5f6065d2efe6",
       "relevant_ocs": [
         "OC1",
         "OC2",
@@ -21,9 +21,84 @@
         "OC7"
       ],
       "shared_premises_valid": "yes",
-      "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
-      "source_revision": "3289ff9cfbe5f7c7f85fe9e2a9fe242c46c076e3",
-      "user_consequence": "TASK-109 may complete; release and rollout remain pending in TASK-110 through TASK-112."
+      "source_identity": "sha256:e41c3becd471e7ab55a795c123e770f9fabb9682ca16df545219e62850644b1e",
+      "source_revision": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "user_consequence": "TASK-112 may enter QA with the residual 0.9.0 installations explicitly visible rather than falsely reported upgraded."
+    },
+    {
+      "affected_units": [
+        "TASK-112"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "Adversarial reconciliation confirms complete coverage, one truthful current result, and fourteen exact unchanged blockers.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:d30d478504f700680bc763d98dd937f1611baa0137bba18d1c1c5f6065d2efe6",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:e41c3becd471e7ab55a795c123e770f9fabb9682ca16df545219e62850644b1e",
+      "source_revision": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "user_consequence": "TASK-112 may enter Review; unsafe non-mutation remains part of the approved all-project outcome."
+    },
+    {
+      "affected_units": [
+        "TASK-112"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-112 adversarial QA passed the complete-inventory and safe-disposition job.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:d30d478504f700680bc763d98dd937f1611baa0137bba18d1c1c5f6065d2efe6",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:e41c3becd471e7ab55a795c123e770f9fabb9682ca16df545219e62850644b1e",
+      "source_revision": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "user_consequence": "TASK-112 may complete; parent closeout must retain the fourteen-repository reconciliation boundary."
+    },
+    {
+      "affected_units": [
+        "EPIC-020"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "All four children are Complete; all seven parent ACs pass; release and public provenance are current; complete rollout ledger retains one current root and fourteen unchanged blockers.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:d30d478504f700680bc763d98dd937f1611baa0137bba18d1c1c5f6065d2efe6",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:e41c3becd471e7ab55a795c123e770f9fabb9682ca16df545219e62850644b1e",
+      "source_revision": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "user_consequence": "EPIC-020 may complete without claiming the fourteen blocked installations are upgraded, owner-accepted, deployed, or context-refreshed."
     }
   ],
   "decisions": [
@@ -35,18 +110,18 @@
     "context_contract": "declared",
     "telemetry": "unknown"
   },
-  "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+  "intent_identity": "sha256:d30d478504f700680bc763d98dd937f1611baa0137bba18d1c1c5f6065d2efe6",
   "last_boundary": {
     "affected_units": [
-      "TASK-109"
+      "EPIC-020"
     ],
     "amendment_identity": null,
     "boundary": "before-review-or-complete",
-    "capability_change": "TASK-109 adversarial QA passed and retained candidate proof is current under the loaded contract.",
+    "capability_change": "All four children are Complete; all seven parent ACs pass; release and public provenance are current; complete rollout ledger retains one current root and fourteen unchanged blockers.",
     "classification": "inside-envelope",
     "decided_by": "Codex Coordinator",
     "decision_date": "2026-08-29",
-    "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+    "intent_identity": "sha256:d30d478504f700680bc763d98dd937f1611baa0137bba18d1c1c5f6065d2efe6",
     "relevant_ocs": [
       "OC1",
       "OC2",
@@ -57,9 +132,9 @@
       "OC7"
     ],
     "shared_premises_valid": "yes",
-    "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
-    "source_revision": "3289ff9cfbe5f7c7f85fe9e2a9fe242c46c076e3",
-    "user_consequence": "TASK-109 may complete; release and rollout remain pending in TASK-110 through TASK-112."
+    "source_identity": "sha256:e41c3becd471e7ab55a795c123e770f9fabb9682ca16df545219e62850644b1e",
+    "source_revision": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
+    "user_consequence": "EPIC-020 may complete without claiming the fourteen blocked installations are upgraded, owner-accepted, deployed, or context-refreshed."
   },
   "loaded_contract": {
     "asset_version": "8",
@@ -68,139 +143,153 @@
     "package_version": "0.9.1",
     "recorded_at": "2026-08-29"
   },
-  "next_action": "Complete TASK-109 and begin TASK-110.",
+  "next_action": "Run final closeout and mark EPIC-020 Complete.",
   "outcome_checkpoint": {
     "checkpoint_unit": "TASK-111",
     "claim_class": "migration",
-    "record": null,
+    "record": {
+      "actor": "Project Workflow consumer",
+      "claim_class": "migration",
+      "material_operations": "Resolve public version; compare PyPI and GitHub bytes; verify receipt, hashes, and provenance; run fresh, current, legacy, no-op, Doctor, intent-lifecycle, and dependency-free helper journeys across Codex, Claude Code, Cursor, and GitHub Copilot assets",
+      "normal_entry_point": "Public project-workflow==0.9.1 from PyPI",
+      "observations": "The public release is safe as the rollout source; TASK-112 retains separate per-root adoption dispositions",
+      "owner_judgment": "not-required",
+      "recorded_at": "2026-08-29",
+      "recorded_by": "Codex Coordinator",
+      "resulting_state_or_artifact": "All public exact-package journeys passed with source SHA-256 cdc483ea89547071052aa7c723e444ed410c536d33743f475d4f34176bba7ce5",
+      "source_environment": "PyPI and GitHub Release v0.9.1 at cdd98f4f6642a940aba5c20961b965af6a05acb1",
+      "starting_state": "Fresh disposable repositories plus retained 0.9.0 legacy fixture",
+      "unit_id": "TASK-111",
+      "verdict": "pass"
+    },
     "required": true,
-    "status": "pending"
+    "status": "pass"
   },
-  "phase": "candidate-verification",
+  "phase": "safe-rollout",
   "repositories": {
     ".": {
-      "source_revision": "3289ff9cfbe5f7c7f85fe9e2a9fe242c46c076e3"
+      "source_revision": "cdd98f4f6642a940aba5c20961b965af6a05acb1"
     }
   },
   "schema_version": 2,
-  "source_revision": "3289ff9cfbe5f7c7f85fe9e2a9fe242c46c076e3",
+  "source_revision": "cdd98f4f6642a940aba5c20961b965af6a05acb1",
   "target_id": "EPIC-020",
   "verification_campaign": {
     "adapter": {
       "capabilities": [],
       "command": null,
       "kind": "manual",
-      "manual_command": "Regrade retained TASK-109 candidate outputs after QA-only workflow evidence changes"
+      "manual_command": "Inspect Codex project inventory, manifest-root reconciliation, public current-root proof, repeated blocked-root status digests, and consolidated rollout receipt"
     },
     "affected_scope": [
       "."
     ],
-    "candidate_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2",
+    "candidate_identity": "sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d",
     "claims": [
-      "0.9.1 exact candidate integrity"
+      "complete inventory and safe rollout disposition"
     ],
     "current_stage": null,
     "diagnostic_decision": null,
     "impact": "known",
-    "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+    "intent_identity": "sha256:d30d478504f700680bc763d98dd937f1611baa0137bba18d1c1c5f6065d2efe6",
     "limits": {
       "max_elapsed_seconds": 900,
       "max_failures": 1,
-      "max_target_calls": 10
+      "max_target_calls": 20
     },
     "mode": "certification",
     "next_action": "Proceed to the one existing independent QA gate.",
     "outcome": "pass",
-    "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
-    "receipt_ledger_identity": "sha256:a9b1e99090f5e21d72a2dde61802df5daf426bd810a2f4f36eff8f501a01a76d",
+    "proof_contract_identity": "sha256:e3c68011afb99a46e138f01f7fc9a60999b422242e82f74a5e98d44915af9a93",
+    "receipt_ledger_identity": "sha256:83d4bacb523830bb3c96ebd447bbca72417e235a88822c78142415ab6516f756",
     "receipts": [
       {
-        "artifact": ".project-workflow/tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/TASK-109-Prepare-And-Prove-The-Exact-Project-Workflow-0-9-1-Candidate/evidence/candidate/validation-summary.json",
-        "candidate_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2",
-        "elapsed_seconds": 1,
-        "evaluator_identity": "project-workflow-0.9.1-static-contract-v1",
-        "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+        "artifact": ".project-workflow/tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/TASK-112-Inventory-And-Safely-Upgrade-Every-Project-Workflow-Installation/evidence/rollout/rollout-receipt.json",
+        "candidate_identity": "sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d",
+        "elapsed_seconds": 25,
+        "evaluator_identity": "inventory-reconciliation-v1",
+        "intent_identity": "sha256:d30d478504f700680bc763d98dd937f1611baa0137bba18d1c1c5f6065d2efe6",
         "outcome": "pass",
-        "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
-        "receipt_identity": "sha256:403c962b0926afb586fab01dc5a5062d70668bd77da7a9c012b54d85e6818f5f",
+        "proof_contract_identity": "sha256:e3c68011afb99a46e138f01f7fc9a60999b422242e82f74a5e98d44915af9a93",
+        "receipt_identity": "sha256:c91adb9a09692b55c4184c009613c024a29df346035ee6b361b1d294947a0ad7",
         "recorded_at": "2026-08-29",
         "regrade": false,
-        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "runtime_identity": "codex-projects-filesystem-2026-08-29",
         "scope": [
           "."
         ],
-        "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+        "source_identity": "sha256:e41c3becd471e7ab55a795c123e770f9fabb9682ca16df545219e62850644b1e",
         "stage": "deterministic",
         "stage_complete": true,
-        "target_calls": 0,
-        "target_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2"
+        "target_calls": 2,
+        "target_identity": "sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d"
       },
       {
-        "artifact": ".project-workflow/tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/TASK-109-Prepare-And-Prove-The-Exact-Project-Workflow-0-9-1-Candidate/evidence/candidate/package-journeys.json",
-        "candidate_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2",
-        "elapsed_seconds": 1,
-        "evaluator_identity": "verify-package-journeys-v1",
-        "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+        "artifact": ".project-workflow/tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/TASK-112-Inventory-And-Safely-Upgrade-Every-Project-Workflow-Installation/evidence/rollout/rollout-receipt.json",
+        "candidate_identity": "sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d",
+        "elapsed_seconds": 4,
+        "evaluator_identity": "clean-root-current-doctor-v1",
+        "intent_identity": "sha256:d30d478504f700680bc763d98dd937f1611baa0137bba18d1c1c5f6065d2efe6",
         "outcome": "pass",
-        "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
-        "receipt_identity": "sha256:6ff6776c743c9db45f72c5e002a8b313f8e0bd30a97edccd7dfb28d1f1f53c17",
+        "proof_contract_identity": "sha256:e3c68011afb99a46e138f01f7fc9a60999b422242e82f74a5e98d44915af9a93",
+        "receipt_identity": "sha256:067f99ce2c2988f26505d70de0869e9593a045c9778c0c66e28c8cd0b3e7b071",
         "recorded_at": "2026-08-29",
         "regrade": false,
-        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "runtime_identity": "public-uvx-0.9.1-local-root",
         "scope": [
           "."
         ],
-        "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+        "source_identity": "sha256:e41c3becd471e7ab55a795c123e770f9fabb9682ca16df545219e62850644b1e",
         "stage": "canary",
         "stage_complete": true,
-        "target_calls": 0,
-        "target_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2"
+        "target_calls": 1,
+        "target_identity": "sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d"
       },
       {
-        "artifact": ".project-workflow/tasks/EPIC-019-Structural-Coherence-And-Maintainability/TASK-108-Unify-Documentation-Prove-Fitness-And-Dispose-Debris/evidence/qa-review.md",
-        "candidate_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2",
+        "artifact": ".project-workflow/tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/TASK-112-Inventory-And-Safely-Upgrade-Every-Project-Workflow-Installation/evidence/rollout/rollout-receipt.json",
+        "candidate_identity": "sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d",
         "elapsed_seconds": 1,
-        "evaluator_identity": "epic-019-qa-impact-v1",
-        "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+        "evaluator_identity": "blocked-root-preservation-v1",
+        "intent_identity": "sha256:d30d478504f700680bc763d98dd937f1611baa0137bba18d1c1c5f6065d2efe6",
         "outcome": "pass",
-        "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
-        "receipt_identity": "sha256:ef722d7262c85960c38a1f4667791d082c57e870d4325b6419941d26f7a601ce",
+        "proof_contract_identity": "sha256:e3c68011afb99a46e138f01f7fc9a60999b422242e82f74a5e98d44915af9a93",
+        "receipt_identity": "sha256:b253795c9521a654196b159804897110ba5d3314b66c63e4ac5fcba982fc30ca",
         "recorded_at": "2026-08-29",
         "regrade": false,
-        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "runtime_identity": "git-manifest-estate-2026-08-29",
         "scope": [
           "."
         ],
-        "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+        "source_identity": "sha256:e41c3becd471e7ab55a795c123e770f9fabb9682ca16df545219e62850644b1e",
         "stage": "affected",
         "stage_complete": true,
-        "target_calls": 0,
-        "target_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2"
+        "target_calls": 14,
+        "target_identity": "sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d"
       },
       {
-        "artifact": ".project-workflow/tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/TASK-109-Prepare-And-Prove-The-Exact-Project-Workflow-0-9-1-Candidate/evidence/candidate/validation-summary.json",
-        "candidate_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2",
+        "artifact": ".project-workflow/tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/TASK-112-Inventory-And-Safely-Upgrade-Every-Project-Workflow-Installation/evidence/rollout/rollout-receipt.json",
+        "candidate_identity": "sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d",
         "elapsed_seconds": 1,
-        "evaluator_identity": "project-workflow-0.9.1-full-suite-v1",
-        "intent_identity": "sha256:5e2f011229c4f00aa2df0ff66f614e23564d22e7d3c03b069aec2cd880a90f5e",
+        "evaluator_identity": "rollout-receipt-contract-v1",
+        "intent_identity": "sha256:d30d478504f700680bc763d98dd937f1611baa0137bba18d1c1c5f6065d2efe6",
         "outcome": "pass",
-        "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
-        "receipt_identity": "sha256:3bdabe150591edca52f69e453946d37a7cddc9964264505f293ec39326ee77f3",
+        "proof_contract_identity": "sha256:e3c68011afb99a46e138f01f7fc9a60999b422242e82f74a5e98d44915af9a93",
+        "receipt_identity": "sha256:b121170e5217533c9c46f61405d1340af6a8e28a45c03f602fe0f7d6e9f1477e",
         "recorded_at": "2026-08-29",
         "regrade": false,
-        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "runtime_identity": "jq-git-project-workflow-2026-08-29",
         "scope": [
           "."
         ],
-        "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+        "source_identity": "sha256:e41c3becd471e7ab55a795c123e770f9fabb9682ca16df545219e62850644b1e",
         "stage": "full",
         "stage_complete": true,
-        "target_calls": 0,
-        "target_identity": "sha256:a373a837ed7913856e156f21ce5a49675a044b9e8aa1e6c7c9b7ebffa8e012a2"
+        "target_calls": 1,
+        "target_identity": "sha256:30d02cfe50d2433f3123cf0047c146a3db4118f6e4f27a8345e379598474cc9d"
       }
     ],
     "schema_version": 1,
-    "source_identity": "sha256:caf32e5fb273d05805824cc8937c53c27ab7c427e02451dc56d774bf53c01a6a",
+    "source_identity": "sha256:e41c3becd471e7ab55a795c123e770f9fabb9682ca16df545219e62850644b1e",
     "stages": [
       "deterministic",
       "canary",
@@ -213,9 +302,9 @@
       "."
     ],
     "claims": [
-      "0.9.1 exact candidate integrity"
+      "complete inventory and safe rollout disposition"
     ],
-    "proof_contract_identity": "sha256:075665fd38fe16101dc0111d6a41f18f83ae8c9966f338519f6064f4173d329c",
+    "proof_contract_identity": "sha256:e3c68011afb99a46e138f01f7fc9a60999b422242e82f74a5e98d44915af9a93",
     "required": true,
     "stages": [
       "deterministic",
