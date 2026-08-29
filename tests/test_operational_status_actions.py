@@ -169,12 +169,32 @@ def test_installation_states_use_exact_commands_or_explicit_requests(
         (item("TASK-001", lifecycle="Testing"), "PW_STATUS_REVIEW_TASK", "--to 'Review'"),
         (item("TASK-001", lifecycle="Review"), "PW_STATUS_COMPLETE_TASK", "--to 'Complete'"),
         (item("FIX-001", kind="fix", lifecycle="To Do"), "PW_STATUS_TRIAGE_FIX", "fix triage"),
-        (item("FIX-001", kind="fix", lifecycle="Ready"), "PW_STATUS_START_FIX", "--to 'In Progress'"),
-        (item("FIX-001", kind="fix", lifecycle="In Progress"), "PW_STATUS_TEST_FIX", "--to 'Testing'"),
+        (
+            item("FIX-001", kind="fix", lifecycle="Ready"),
+            "PW_STATUS_START_FIX",
+            "--to 'In Progress'",
+        ),
+        (
+            item("FIX-001", kind="fix", lifecycle="In Progress"),
+            "PW_STATUS_TEST_FIX",
+            "--to 'Testing'",
+        ),
         (item("FIX-001", kind="fix", lifecycle="Testing"), "PW_STATUS_REVIEW_FIX", "--to 'Review'"),
-        (item("EPIC-001", kind="epic", lifecycle="Analysing"), "PW_STATUS_READY_EPIC", "--to 'Ready'"),
-        (item("EPIC-001", kind="epic", lifecycle="Ready"), "PW_STATUS_START_EPIC", "--to 'In Progress'"),
-        (item("EPIC-001", kind="epic", lifecycle="Closeout"), "PW_STATUS_COMPLETE_EPIC", "epic closeout"),
+        (
+            item("EPIC-001", kind="epic", lifecycle="Analysing"),
+            "PW_STATUS_READY_EPIC",
+            "--to 'Ready'",
+        ),
+        (
+            item("EPIC-001", kind="epic", lifecycle="Ready"),
+            "PW_STATUS_START_EPIC",
+            "--to 'In Progress'",
+        ),
+        (
+            item("EPIC-001", kind="epic", lifecycle="Closeout"),
+            "PW_STATUS_COMPLETE_EPIC",
+            "epic closeout",
+        ),
         (
             item("TASK-002", kind="epic-child", lifecycle="Proposed", owner_epic="EPIC-001"),
             "PW_STATUS_APPROVE_EPIC_CHILD",
@@ -224,7 +244,11 @@ def test_each_supported_lifecycle_uses_existing_transition_command(
         ({"implementation": "pending"}, "PW_STATUS_IMPLEMENTATION_REQUIRED", "agent"),
         ({"qa-review": "not-recorded"}, "PW_STATUS_QA_REQUIRED", "agent"),
         ({"parent-acceptance": "pending"}, "PW_STATUS_PARENT_ACCEPTANCE_REQUIRED", "agent"),
-        ({"structured-evidence": "pending"}, "PW_STATUS_STRUCTURED_EVIDENCE_REQUIRED", "external-authority"),
+        (
+            {"structured-evidence": "pending"},
+            "PW_STATUS_STRUCTURED_EVIDENCE_REQUIRED",
+            "external-authority",
+        ),
     ],
 )
 def test_earliest_unmet_proof_layer_wins_without_inflation(
@@ -283,9 +307,7 @@ def test_distinct_items_with_same_delivery_request_are_not_deduplicated(
     primary, secondary = resolve(tmp_path, work)
 
     assert primary.title.endswith("TASK-001")
-    assert [action.title for action in secondary] == [
-        "Advance delivery for TASK-002"
-    ]
+    assert [action.title for action in secondary] == ["Advance delivery for TASK-002"]
 
 
 def write_backlog(root: Path, rows: list[str]) -> None:
@@ -294,8 +316,7 @@ def write_backlog(root: Path, rows: list[str]) -> None:
     (workflow_dir / "BACKLOG.md").write_text(
         "# Backlog\n\n"
         "| ID | Title | Type | Priority | Status | Outcome | Promoted To | Notes |\n"
-        "|---|---|---|---|---|---|---|---|\n"
-        + "".join(f"{row}\n" for row in rows),
+        "|---|---|---|---|---|---|---|---|\n" + "".join(f"{row}\n" for row in rows),
         encoding="utf-8",
     )
 

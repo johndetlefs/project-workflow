@@ -7,7 +7,6 @@ from pathlib import Path
 
 from project_workflow import cli as workflow_cli
 
-
 PROJECT_CMD = [sys.executable, "-m", "project_workflow.cli"]
 
 
@@ -87,9 +86,7 @@ requirements from quietly replacing that outcome with an easier proxy.
 
 def test_new_templates_put_plain_intent_before_approval_and_keep_fix_compact() -> None:
     task = workflow_cli._requirements_template("TASK-001", "Meaning First")
-    child = workflow_cli._epic_child_requirements_template(
-        "TASK-002", "Child Meaning", "AC1"
-    )
+    child = workflow_cli._epic_child_requirements_template("TASK-002", "Child Meaning", "AC1")
     fix = workflow_cli._fix_template("FIX-001", "Bounded Repair")
 
     for requirements in (task, child):
@@ -181,7 +178,10 @@ def test_approval_summary_leads_with_meaning_and_records_intent_confirmation(
     )
     assert synopsis.returncode == 0, synopsis.stdout + synopsis.stderr
     assert synopsis.stdout.startswith("Approval synopsis\n\nIntent\n")
-    assert "Does this Intent accurately capture what you want and what success means?" in synopsis.stdout
+    assert (
+        "Does this Intent accurately capture what you want and what success means?"
+        in synopsis.stdout
+    )
     assert "AC1" not in synopsis.stdout
     assert "TASK-001" not in synopsis.stdout
     assert "sha256:" not in synopsis.stdout

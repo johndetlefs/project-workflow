@@ -1,0 +1,1160 @@
+{
+  "boundary_decisions": [
+    {
+      "affected_units": [
+        "TASK-104",
+        "TASK-105",
+        "TASK-106"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-104 establishes the canonical architecture, frozen compatibility baseline, deterministic bundle, and enforceable architecture gate without changing product behaviour",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:b975589245fdbed1e7e670200821d98cd7497ecb0c2c660a56f297ca681b3533",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-105 and TASK-106 may now extract canonical modules against a source-bound generated runtime"
+    },
+    {
+      "affected_units": [
+        "TASK-104",
+        "TASK-105",
+        "TASK-106",
+        "TASK-107",
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-104 implementation and evidence now instantiate the already approved architecture contract; owner intent and product scope are unchanged",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:62ccda0ac74304a6700737be5ebf2dec41a077ccb1d427a94747b093c2a7033e",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded physical context against the current implementation evidence and continue the existing cleanup"
+    },
+    {
+      "affected_units": [
+        "TASK-104"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-104 proof covers its bounded architecture, generator, baseline, and isolated-helper responsibilities without claiming final extraction or release",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:62ccda0ac74304a6700737be5ebf2dec41a077ccb1d427a94747b093c2a7033e",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Adversarial QA may review TASK-104; remaining modularization and exact-candidate proof stay assigned to later children"
+    },
+    {
+      "affected_units": [
+        "TASK-104"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-104 adversarial QA found and resolved one generator whitespace defect; capability and scope remain unchanged",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:14721ad017e5b4052e30a48aa7d4a82f5ffb546ab59d2f1623fd90bf71042361",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and close the existing TASK-104 review through affected validation, without commissioning a second QA"
+    },
+    {
+      "affected_units": [
+        "TASK-104"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-104 changes-requested finding is resolved with passing affected qa-review validation and no broader claims",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:14721ad017e5b4052e30a48aa7d4a82f5ffb546ab59d2f1623fd90bf71042361",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-104 may complete; final modular extraction and fitness proof remain pending in TASK-105 through TASK-108"
+    },
+    {
+      "affected_units": [
+        "TASK-104"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-104 QA disposition is now recorded in the exact governed form; no capability change",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:cae74563172f74f386ecb3a5ff2cbf6a481d8955fc166b170610c3ac3b5dce3c",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and evaluate completion against the preserved changes-requested verdict plus affected validation"
+    },
+    {
+      "affected_units": [
+        "TASK-104"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-104 retains its failed independent verdict and passes the one affected qa-review validation after resolving the named finding",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:cae74563172f74f386ecb3a5ff2cbf6a481d8955fc166b170610c3ac3b5dce3c",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-104 may complete without a fictional second QA; later children retain the remaining programme scope"
+    },
+    {
+      "affected_units": [
+        "TASK-105",
+        "TASK-106",
+        "TASK-107",
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-105 now instantiates the approved repository, lifecycle, inspection, maintenance, commands, and facade extraction with complete regression evidence",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:e7964316f033c89f09c0be34d940399ef70510a88345726f31b0dd08ec262942",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and take TASK-105 through its bounded QA gate"
+    },
+    {
+      "affected_units": [
+        "TASK-105",
+        "TASK-106"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-105 extracted repository and delivery domains without public command or schema drift",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:e7964316f033c89f09c0be34d940399ef70510a88345726f31b0dd08ec262942",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-106 can rely on the canonical repository and lifecycle layers; TASK-105 may enter Testing"
+    },
+    {
+      "affected_units": [
+        "TASK-105"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-105 evidence covers its bounded module ownership, generated helper, compatibility, and full regression claims",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:e7964316f033c89f09c0be34d940399ef70510a88345726f31b0dd08ec262942",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Adversarial QA may review TASK-105 without claiming final quality, documentation, or release completion"
+    },
+    {
+      "affected_units": [
+        "TASK-105",
+        "TASK-106",
+        "TASK-107",
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-105 adversarial QA passed the actual extracted repository and delivery architecture with no findings",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:7e8f22750d4406963f6d9f0e854c8bb7fb23ff736f85e9335fdc6e2e4435a12c",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and complete TASK-105; remaining programme claims stay pending"
+    },
+    {
+      "affected_units": [
+        "TASK-105"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-105 has a current passing adversarial verdict and source-bound evidence for every assigned parent AC",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:7e8f22750d4406963f6d9f0e854c8bb7fb23ff736f85e9335fdc6e2e4435a12c",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-105 may complete locally without implying push, merge, release, final quality, or final programme completion"
+    },
+    {
+      "affected_units": [
+        "TASK-106",
+        "TASK-107",
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-106 now instantiates the approved orchestration, execution, coordination, and genuinely shared adapter foundation with explicit host boundaries",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:7e41affd20e4ac8c549223f792240da4b764275c96721b109395d8996474b92f",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and take TASK-106 through bounded QA"
+    },
+    {
+      "affected_units": [
+        "TASK-106",
+        "TASK-107"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-106 extracted coordination and host execution while preserving schemas and the blocked Claude canary truth boundary",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:7e41affd20e4ac8c549223f792240da4b764275c96721b109395d8996474b92f",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-107 can rely on final canonical module and adapter owners; TASK-106 may enter Testing"
+    },
+    {
+      "affected_units": [
+        "TASK-106"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-106 evidence covers unique orchestration/coordination owners, shared adapter primitives, package/copy execution, schema compatibility, and the uncertified Claude boundary",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:7e41affd20e4ac8c549223f792240da4b764275c96721b109395d8996474b92f",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Adversarial QA may review TASK-106 without substituting package proof for a real Claude canary"
+    },
+    {
+      "affected_units": [
+        "TASK-106",
+        "TASK-107",
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-106 adversarial QA passed the exact orchestration, coordination, execution, and adapter candidate with no findings",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:8efc51e0e0d075d892d8db309f58832e6d062af7b80607de2505117a7016c329",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and complete TASK-106 without broadening the Claude proof claim"
+    },
+    {
+      "affected_units": [
+        "TASK-106"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-106 has a current passing adversarial verdict, full assigned evidence, and preserves the uncertified Claude boundary",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:8efc51e0e0d075d892d8db309f58832e6d062af7b80607de2505117a7016c329",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-106 may complete locally; static quality, final exact-candidate proof, delivery and release remain pending"
+    },
+    {
+      "affected_units": [
+        "TASK-106"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-106 parent evidence wording now separates compatibility proof from the unchanged TASK-102 blocker; capability is unchanged",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:f27b29c60551b681632baf3a57e975541e43539ada32889da326490f32e2b508",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and evaluate TASK-106 completion without treating its truthful external blocker as missing cleanup evidence"
+    },
+    {
+      "affected_units": [
+        "TASK-106"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-106 has current passing QA and complete assigned cleanup evidence while explicitly retaining the separate Claude canary blocker",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:f27b29c60551b681632baf3a57e975541e43539ada32889da326490f32e2b508",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-106 may complete locally without claiming authenticated Claude runtime certification"
+    },
+    {
+      "affected_units": [
+        "TASK-107",
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-107 now instantiates the approved test split, locked static gates, architecture enforcement, and exact built-package quality journey",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:b6e9e0c4039852768f27659f1d153b73b943c7edc3b475f81aec5cd173669851",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and take TASK-107 through its bounded QA gate"
+    },
+    {
+      "affected_units": [
+        "TASK-107",
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-107 rebuilt the test and quality infrastructure without reducing collection or changing public behaviour",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:b6e9e0c4039852768f27659f1d153b73b943c7edc3b475f81aec5cd173669851",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-108 can rely on enforced architecture, locked gates, and an exact built-package proof path; TASK-107 may enter Testing"
+    },
+    {
+      "affected_units": [
+        "TASK-107"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-107 evidence covers its test inventory, shared support, locked static gates, architecture enforcement, full regression, build, and exact-wheel responsibilities",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:b6e9e0c4039852768f27659f1d153b73b943c7edc3b475f81aec5cd173669851",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Adversarial QA may review TASK-107 without claiming final documentation, programme closeout, delivery, or release"
+    },
+    {
+      "affected_units": [
+        "TASK-107",
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-107 adversarial QA found and resolved release-owner and managed-adapter parity drift; the approved quality capability and scope are unchanged",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:a95ee8c14a6157c20db71739e058bd71bec1bfc8e9454cd25a3ef243945be7e0",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and evaluate TASK-107 completion against the corrected exact candidate"
+    },
+    {
+      "affected_units": [
+        "TASK-107"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-107 has current passing adversarial QA, complete assigned evidence, locked quality gates, strict Doctor, and preserved exact-package compatibility",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:a95ee8c14a6157c20db71739e058bd71bec1bfc8e9454cd25a3ef243945be7e0",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-107 may complete locally; documentation cleanup, final programme proof, delivery, and release remain pending"
+    },
+    {
+      "affected_units": [
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-108 now instantiates the approved documentation authority, evidence-led cleanup, exact candidate journey, compatibility verdict, and local-only delivery boundary",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:90228cadbcebeff3d02bd5656381f57c61601f71e19db0217ec41ade33989d4a",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and take TASK-108 through bounded QA and programme closeout"
+    },
+    {
+      "affected_units": [
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-108 unified current documentation, disposed local debris with uniqueness checks, and proved the final package/helper journey without public behaviour or delivery drift",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:90228cadbcebeff3d02bd5656381f57c61601f71e19db0217ec41ade33989d4a",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-108 may enter Testing and adversarial QA; parent closeout remains gated"
+    },
+    {
+      "affected_units": [
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-108 exact evidence covers documentation authority, cleanup necessity, final compatibility, package/helper fitness, and the local-only delivery boundary",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:90228cadbcebeff3d02bd5656381f57c61601f71e19db0217ec41ade33989d4a",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Adversarial QA may be accepted without claiming merge, release, rollout, owner acceptance, or Claude certification"
+    },
+    {
+      "affected_units": [
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-108 row statuses now use the governed Done vocabulary; implementation capability and evidence are unchanged",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:f65b8eab9c6ca6b0cd7992d7f1403f61f2e9aa24964e34d049f102e2afba3da5",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and advance TASK-108 through its normal Testing and Review gates"
+    },
+    {
+      "affected_units": [
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-108 evidence covers all assigned parent outcomes with both findings resolved and exact package proof retained",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:f65b8eab9c6ca6b0cd7992d7f1403f61f2e9aa24964e34d049f102e2afba3da5",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-108 may enter Review without claiming external delivery or Claude certification"
+    },
+    {
+      "affected_units": [
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-108 completed its five governed implementation rows and returned exact documentation, cleanup, compatibility, package, and QA evidence",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:f65b8eab9c6ca6b0cd7992d7f1403f61f2e9aa24964e34d049f102e2afba3da5",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-108 may enter Testing; parent programme closeout remains separately gated"
+    },
+    {
+      "affected_units": [
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-108 now records the passing QA verdict in the exact governed form; capability and proof scope are unchanged",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:b34a60c9d70b7631f7ebfef41b8e123433273d3e35f9c3e6175f0f9b230a4dfa",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract, seal the exact verification campaign, and evaluate completion"
+    },
+    {
+      "affected_units": [
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-108 QA fields now use the exact governed verdict, current-audit, and user-job falsifier vocabulary; reviewed outcome and candidate are unchanged",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:ffb5bb5eaf88a0106c4607274cdaac7276365f3df0c1fc6b55e18eca7430b6bf",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh context, retain exact target output, and regrade only if the campaign requires the new evaluator identity"
+    },
+    {
+      "affected_units": [
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-108 has a current passing adversarial verdict, four-stage exact-candidate campaign, complete assigned evidence, and a truthful local-only boundary",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:ffb5bb5eaf88a0106c4607274cdaac7276365f3df0c1fc6b55e18eca7430b6bf",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "TASK-108 may complete locally; parent acceptance and external delivery remain separate"
+    },
+    {
+      "affected_units": [
+        "TASK-104",
+        "TASK-105",
+        "TASK-106",
+        "TASK-107",
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "The Epic proof-owner table now uses exact decomposition-authorized child IDs so existing evidence maps mechanically; no outcome owner or proof obligation changed",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:8056f77ac1213a3670c4327dc5a4dcd09f34eccb2761dd6aca28f846d36c6a6b",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh context, regenerate acceptance audit, and close only if every parent AC passes"
+    },
+    {
+      "affected_units": [
+        "TASK-104",
+        "TASK-105",
+        "TASK-106",
+        "TASK-107",
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "All five children are Complete, all thirteen parent ACs pass, Retro has no deferral or missed scope, and the current four-stage exact-candidate campaign is delivery-ready",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:8056f77ac1213a3670c4327dc5a4dcd09f34eccb2761dd6aca28f846d36c6a6b",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "EPIC-019 may complete as local validated source only; merge, release, rollout, owner acceptance, and Claude certification remain unclaimed"
+    },
+    {
+      "affected_units": [
+        "TASK-104",
+        "TASK-105",
+        "TASK-106",
+        "TASK-107",
+        "TASK-108"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Terminal Epic verification now remains inspectable after completion; TASK-108 evidence and all exact-candidate receipts identify the repaired final source without changing approved outcomes",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:3abf8d6a2b493e63877910d8c1112d8c668e08f44b4420d66af92035417f177a",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Refresh the loaded contract and bind the verification campaign to the repaired final wheel before final closeout verification"
+    }
+  ],
+  "decisions": [
+    "One package, one public CLI, cohesive domain modules, and one generated dependency-free runtime",
+    "Preserve v0.9.0 behaviour and local-only delivery boundary",
+    "Execute sequentially because all child tasks mutate one shared architecture"
+  ],
+  "host_facts": {
+    "context_contract": "declared",
+    "telemetry": "unknown"
+  },
+  "intent_identity": "sha256:3abf8d6a2b493e63877910d8c1112d8c668e08f44b4420d66af92035417f177a",
+  "last_boundary": {
+    "affected_units": [
+      "TASK-104",
+      "TASK-105",
+      "TASK-106",
+      "TASK-107",
+      "TASK-108"
+    ],
+    "amendment_identity": null,
+    "boundary": "new-evidence-or-owner-reframe",
+    "capability_change": "Terminal Epic verification now remains inspectable after completion; TASK-108 evidence and all exact-candidate receipts identify the repaired final source without changing approved outcomes",
+    "classification": "inside-envelope",
+    "decided_by": "Coordinator",
+    "decision_date": "2026-08-29",
+    "intent_identity": "sha256:3abf8d6a2b493e63877910d8c1112d8c668e08f44b4420d66af92035417f177a",
+    "relevant_ocs": [
+      "OC1",
+      "OC2",
+      "OC3",
+      "OC4",
+      "OC5",
+      "OC6",
+      "OC7"
+    ],
+    "shared_premises_valid": "yes",
+    "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+    "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+    "user_consequence": "Refresh the loaded contract and bind the verification campaign to the repaired final wheel before final closeout verification"
+  },
+  "loaded_contract": {
+    "asset_version": "8",
+    "context_id": "01a04afb-4efa-7502-932b-d1d03bae35e8",
+    "contract_version": "2",
+    "package_version": "0.9.0",
+    "recorded_at": "2026-08-29"
+  },
+  "next_action": "Proceed to the one existing independent QA gate.",
+  "outcome_checkpoint": {
+    "checkpoint_unit": "TASK-107",
+    "claim_class": "authoring",
+    "record": {
+      "actor": "Project Workflow contributor",
+      "claim_class": "authoring",
+      "material_operations": "Run focused product-boundary tests; regenerate the standalone runtime; run locked Ruff, format and mypy; run all tests; build and exercise the exact wheel",
+      "normal_entry_point": "Change a canonical domain module and run its focused validation path",
+      "observations": "557 tests collected and passed; largest test file 1417 lines; Ruff and mypy passed; exact-wheel fresh/current/legacy journeys passed",
+      "owner_judgment": "not-required",
+      "recorded_at": "2026-08-29",
+      "recorded_by": "Coordinator",
+      "resulting_state_or_artifact": "Focused failures map to owning domains and one documented locked path produces a green exact package candidate",
+      "source_environment": "Python 3.10.20 locked uv environment in codex/structural-coherence-cleanup",
+      "starting_state": "Released v0.9.0 monolith with a 6085-line catch-all test file and unenforced static tools",
+      "unit_id": "TASK-107",
+      "verdict": "pass"
+    },
+    "required": true,
+    "status": "pass"
+  },
+  "phase": "closeout-verification",
+  "repositories": {
+    ".": {
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242"
+    }
+  },
+  "schema_version": 2,
+  "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+  "target_id": "EPIC-019",
+  "verification_campaign": {
+    "adapter": {
+      "capabilities": [],
+      "command": null,
+      "kind": "manual",
+      "manual_command": "Inspect the retained exact Task 108 quality and package receipts for the repaired final candidate; do not rerun unchanged target work"
+    },
+    "affected_scope": [
+      "."
+    ],
+    "candidate_identity": "sha256:c3be9b9a699d0674cf815f81b067eea90f0a0e839c71103fc8ba2b8730b93c43",
+    "claims": [
+      "v0.9.0 compatibility",
+      "deterministic standalone runtime",
+      "documentation authority",
+      "structural cohesion"
+    ],
+    "current_stage": null,
+    "diagnostic_decision": null,
+    "impact": "known",
+    "intent_identity": "sha256:3abf8d6a2b493e63877910d8c1112d8c668e08f44b4420d66af92035417f177a",
+    "limits": {
+      "max_elapsed_seconds": 900,
+      "max_failures": 1,
+      "max_target_calls": 10
+    },
+    "mode": "certification",
+    "next_action": "Proceed to the one existing independent QA gate.",
+    "outcome": "pass",
+    "proof_contract_identity": "sha256:d7b1b568264ca7b7e113e3218110c6a32ba55c1e606c64eae9f552991a699142",
+    "receipt_ledger_identity": "sha256:5f2552a9eb578bc6880396d006ea694bfc5d5d982cd2b3e8aaae3c9069e36c43",
+    "receipts": [
+      {
+        "artifact": ".project-workflow/tasks/EPIC-019-Structural-Coherence-And-Maintainability/TASK-108-Unify-Documentation-Prove-Fitness-And-Dispose-Debris/evidence/quality-gate-receipt.json",
+        "candidate_identity": "sha256:c3be9b9a699d0674cf815f81b067eea90f0a0e839c71103fc8ba2b8730b93c43",
+        "elapsed_seconds": 6,
+        "evaluator_identity": "project-workflow-static-contract-v1",
+        "intent_identity": "sha256:3abf8d6a2b493e63877910d8c1112d8c668e08f44b4420d66af92035417f177a",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:d7b1b568264ca7b7e113e3218110c6a32ba55c1e606c64eae9f552991a699142",
+        "receipt_identity": "sha256:60a98531ff5c1c58190143ab1082d8868131286dce7c6b5d8bd0aac0458c1b36",
+        "recorded_at": "2026-08-29",
+        "regrade": false,
+        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "scope": [
+          "."
+        ],
+        "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+        "stage": "deterministic",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "sha256:c3be9b9a699d0674cf815f81b067eea90f0a0e839c71103fc8ba2b8730b93c43"
+      },
+      {
+        "artifact": ".project-workflow/tasks/EPIC-019-Structural-Coherence-And-Maintainability/TASK-108-Unify-Documentation-Prove-Fitness-And-Dispose-Debris/evidence/package-journeys.json",
+        "candidate_identity": "sha256:c3be9b9a699d0674cf815f81b067eea90f0a0e839c71103fc8ba2b8730b93c43",
+        "elapsed_seconds": 12,
+        "evaluator_identity": "verify-package-journeys-v1",
+        "intent_identity": "sha256:3abf8d6a2b493e63877910d8c1112d8c668e08f44b4420d66af92035417f177a",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:d7b1b568264ca7b7e113e3218110c6a32ba55c1e606c64eae9f552991a699142",
+        "receipt_identity": "sha256:b916c85c446b1b8717f6079db35cdaebcd49d8c6de0a971f47d3edca196050fb",
+        "recorded_at": "2026-08-29",
+        "regrade": false,
+        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "scope": [
+          "."
+        ],
+        "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+        "stage": "canary",
+        "stage_complete": true,
+        "target_calls": 1,
+        "target_identity": "sha256:c3be9b9a699d0674cf815f81b067eea90f0a0e839c71103fc8ba2b8730b93c43"
+      },
+      {
+        "artifact": ".project-workflow/tasks/EPIC-019-Structural-Coherence-And-Maintainability/TASK-108-Unify-Documentation-Prove-Fitness-And-Dispose-Debris/evidence/qa-review.md",
+        "candidate_identity": "sha256:c3be9b9a699d0674cf815f81b067eea90f0a0e839c71103fc8ba2b8730b93c43",
+        "elapsed_seconds": 5,
+        "evaluator_identity": "project-workflow-affected-suite-v1",
+        "intent_identity": "sha256:3abf8d6a2b493e63877910d8c1112d8c668e08f44b4420d66af92035417f177a",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:d7b1b568264ca7b7e113e3218110c6a32ba55c1e606c64eae9f552991a699142",
+        "receipt_identity": "sha256:733db4d33acba708a39a2a8385e29285c3fe0f3837467adef95e0f875ea5abb5",
+        "recorded_at": "2026-08-29",
+        "regrade": false,
+        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "scope": [
+          "."
+        ],
+        "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+        "stage": "affected",
+        "stage_complete": true,
+        "target_calls": 1,
+        "target_identity": "sha256:c3be9b9a699d0674cf815f81b067eea90f0a0e839c71103fc8ba2b8730b93c43"
+      },
+      {
+        "artifact": ".project-workflow/tasks/EPIC-019-Structural-Coherence-And-Maintainability/TASK-108-Unify-Documentation-Prove-Fitness-And-Dispose-Debris/evidence/quality-gate-receipt.json",
+        "candidate_identity": "sha256:c3be9b9a699d0674cf815f81b067eea90f0a0e839c71103fc8ba2b8730b93c43",
+        "elapsed_seconds": 88,
+        "evaluator_identity": "project-workflow-full-suite-v1",
+        "intent_identity": "sha256:3abf8d6a2b493e63877910d8c1112d8c668e08f44b4420d66af92035417f177a",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:d7b1b568264ca7b7e113e3218110c6a32ba55c1e606c64eae9f552991a699142",
+        "receipt_identity": "sha256:a7d505a8ab19d11eb028fdd4c4af2db31d369b151df48795c443178ca201bc15",
+        "recorded_at": "2026-08-29",
+        "regrade": false,
+        "runtime_identity": "python-3.10.20-uv-0.9.30-darwin",
+        "scope": [
+          "."
+        ],
+        "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+        "stage": "full",
+        "stage_complete": true,
+        "target_calls": 1,
+        "target_identity": "sha256:c3be9b9a699d0674cf815f81b067eea90f0a0e839c71103fc8ba2b8730b93c43"
+      }
+    ],
+    "schema_version": 1,
+    "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+    "stages": [
+      "deterministic",
+      "canary",
+      "affected",
+      "full"
+    ]
+  },
+  "verification_requirement": {
+    "affected_scope": [
+      "."
+    ],
+    "claims": [
+      "v0.9.0 compatibility",
+      "deterministic standalone runtime",
+      "documentation authority",
+      "structural cohesion"
+    ],
+    "proof_contract_identity": "sha256:d7b1b568264ca7b7e113e3218110c6a32ba55c1e606c64eae9f552991a699142",
+    "required": true,
+    "stages": [
+      "deterministic",
+      "canary",
+      "affected",
+      "full"
+    ]
+  },
+  "work_item_path": ".project-workflow/tasks/EPIC-019-Structural-Coherence-And-Maintainability"
+}

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import io
 import importlib.util
+import io
 import tarfile
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
@@ -19,12 +18,8 @@ def disposable_epic(tmp_path: Path) -> tuple[Path, Path]:
     epic_dir = tmp_path / "EPIC-001-Prove-Export-Journey"
     child_dir = epic_dir / "TASK-001-Deliver-Complete-Export-Journey"
     child_dir.mkdir(parents=True)
-    (epic_dir / "REQUIREMENTS.md").write_text(
-        journeys.parent_requirements(), encoding="utf-8"
-    )
-    (child_dir / "REQUIREMENTS.md").write_text(
-        journeys.child_requirements(), encoding="utf-8"
-    )
+    (epic_dir / "REQUIREMENTS.md").write_text(journeys.parent_requirements(), encoding="utf-8")
+    (child_dir / "REQUIREMENTS.md").write_text(journeys.child_requirements(), encoding="utf-8")
     return epic_dir, child_dir
 
 
@@ -38,9 +33,7 @@ def test_sourced_reviewer_detects_actual_green_but_wrong_child(tmp_path: Path) -
     review = journeys.review_export_intent_alignment(epic_dir)
 
     assert review["classification"] == "proxy"
-    assert review["lost_capability"] == (
-        "The member cannot open the complete exported archive."
-    )
+    assert review["lost_capability"] == ("The member cannot open the complete exported archive.")
     assert review["checks"] == {
         "complete_archive_created": False,
         "complete_archive_opened": False,
@@ -52,9 +45,7 @@ def test_sourced_reviewer_detects_actual_green_but_wrong_child(tmp_path: Path) -
 
 def test_sourced_reviewer_recognizes_restored_complete_journey(tmp_path: Path) -> None:
     epic_dir, child_dir = disposable_epic(tmp_path)
-    (child_dir / "IMPLEMENTATION.md").write_text(
-        journeys.child_implementation(), encoding="utf-8"
-    )
+    (child_dir / "IMPLEMENTATION.md").write_text(journeys.child_implementation(), encoding="utf-8")
     journeys.write_outcome_evidence(child_dir)
 
     review = journeys.review_export_intent_alignment(epic_dir)

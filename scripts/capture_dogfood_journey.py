@@ -110,10 +110,7 @@ def relevant_artifacts(root: Path, epic_dir: Path, task_dir: Path) -> dict[str, 
     missing = [path for path in paths if not path.is_file()]
     if missing:
         raise RuntimeError(f"dogfood sources are missing: {missing}")
-    return {
-        path.relative_to(root).as_posix(): sha256_path(path)
-        for path in sorted(paths)
-    }
+    return {path.relative_to(root).as_posix(): sha256_path(path) for path in sorted(paths)}
 
 
 def capture(
@@ -136,9 +133,7 @@ def capture(
         raise RuntimeError("owner observation does not contain the captured meaning approval")
     raw_owner_event = verify_owner_approval_event(owner_observation)
 
-    synopsis = run(
-        [str(workflow), "epic", "approval-summary", "--epic-id", epic_id], root
-    )
+    synopsis = run([str(workflow), "epic", "approval-summary", "--epic-id", epic_id], root)
     if not synopsis.startswith("Approval synopsis\n\nIntent\n"):
         raise RuntimeError("approval synopsis is not meaning-first")
     if "Does this Intent accurately capture what you want and what success means?" not in synopsis:
@@ -187,9 +182,7 @@ def capture(
     if intent_audit.get("state") != "current" or intent_audit.get("verdict") != "pass":
         raise RuntimeError("live intent audit is not current and passing")
 
-    status = json.loads(
-        run([str(workflow), "status", "--id", epic_id, "--format", "json"], root)
-    )
+    status = json.loads(run([str(workflow), "status", "--id", epic_id, "--format", "json"], root))
     selected = next(
         (work for work in status.get("active_work", []) if work.get("id") == epic_id), None
     )

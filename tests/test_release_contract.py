@@ -10,7 +10,6 @@ from pathlib import Path
 
 import pytest
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
     "release_contract", REPO_ROOT / "scripts/release_contract.py"
@@ -25,8 +24,12 @@ def source_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     version_path.write_text('__version__ = "0.2.0"\n')
     mirror_paths = tuple(tmp_path / name for name in ("cli.py", "template.py", "workflow.py"))
     mirror = 'CURRENT_PACKAGE_VERSION = "0.2.0"\n'
-    for path in mirror_paths:
-        path.write_text(mirror)
+    mirror_paths[0].write_text(mirror)
+    generated = (
+        "# project-workflow:generated\n# source-manifest: scripts/runtime-modules.txt\n" + mirror
+    )
+    for path in mirror_paths[1:]:
+        path.write_text(generated)
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps({"package_version": "0.2.0"}))
     (tmp_path / "CHANGELOG.md").write_text("## 0.2.0 - 2026-07-22\n")
@@ -72,7 +75,8 @@ def source_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (tmp_path / "uv.lock").write_text("version = 1\n")
     monkeypatch.setattr(release_contract, "ROOT", tmp_path)
     monkeypatch.setattr(release_contract, "VERSION_PATH", version_path)
-    monkeypatch.setattr(release_contract, "MIRROR_PATHS", mirror_paths)
+    monkeypatch.setattr(release_contract, "CANONICAL_CONTRACTS_PATH", mirror_paths[0])
+    monkeypatch.setattr(release_contract, "MIRROR_PATHS", mirror_paths[1:])
     monkeypatch.setattr(release_contract, "MANIFEST_PATH", manifest_path)
     monkeypatch.setattr(release_contract, "CHANGELOG_PATH", tmp_path / "CHANGELOG.md")
     return tmp_path
@@ -140,9 +144,10 @@ def artifact_fixture(tmp_path: Path, version: str = "0.2.0") -> Path:
 
 def test_source_contract_accepts_one_consistent_identity(tmp_path, monkeypatch):
     source_fixture(tmp_path, monkeypatch)
-    assert release_contract.validate_source(
-        expected_version="0.2.0", tag="v0.2.0", clean=False
-    ) == "0.2.0"
+    assert (
+        release_contract.validate_source(expected_version="0.2.0", tag="v0.2.0", clean=False)
+        == "0.2.0"
+    )
 
 
 @pytest.mark.parametrize("tag", ["v0.1.2", "0.2.0", "v0.2.1"])
@@ -208,7 +213,9 @@ def test_public_availability_rejects_existing_version(monkeypatch):
         def __exit__(self, *args):
             return None
 
-    monkeypatch.setattr(release_contract.urllib.request, "urlopen", lambda *args, **kwargs: ExistingResponse())
+    monkeypatch.setattr(
+        release_contract.urllib.request, "urlopen", lambda *args, **kwargs: ExistingResponse()
+    )
     with pytest.raises(release_contract.ContractError, match="already exists"):
         release_contract.check_public_availability("0.2.0")
 

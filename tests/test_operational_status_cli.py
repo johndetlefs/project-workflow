@@ -8,7 +8,6 @@ from pathlib import Path
 
 from project_workflow import cli as workflow_cli
 
-
 PROJECT_CMD = [sys.executable, "-m", "project_workflow.cli"]
 
 
@@ -135,21 +134,15 @@ def test_active_and_missing_focus_are_consistent_across_json_and_human(
     assert created.returncode == 0, created.stdout + created.stderr
     before = tree_hash(tmp_path)
 
-    focused_json = run_project(
-        ["status", "--id", "TASK-001", "--format", "json"], tmp_path
-    )
+    focused_json = run_project(["status", "--id", "TASK-001", "--format", "json"], tmp_path)
     focused_human = run_project(["status", "--id", "TASK-001"], tmp_path)
-    missing = run_project(
-        ["status", "--id", "TASK-999", "--format", "json"], tmp_path
-    )
+    missing = run_project(["status", "--id", "TASK-999", "--format", "json"], tmp_path)
 
     focused_payload = json.loads(focused_json.stdout)
     missing_payload = json.loads(missing.stdout)
     assert focused_json.returncode == focused_human.returncode == missing.returncode == 0
     assert [entry["id"] for entry in focused_payload["active_work"]] == ["TASK-001"]
-    assert focused_payload["primary_action"]["code"] == (
-        "PW_STATUS_REQUIREMENTS_APPROVAL_REQUIRED"
-    )
+    assert focused_payload["primary_action"]["code"] == ("PW_STATUS_REQUIREMENTS_APPROVAL_REQUIRED")
     assert focused_payload["primary_action"]["code"] in focused_human.stdout
     assert missing_payload["active_work"] == []
     assert missing_payload["primary_action"]["code"] == "PW_STATUS_FOCUS_NOT_FOUND"
@@ -160,9 +153,7 @@ def test_strict_mode_uses_same_snapshot_schema_and_marks_visible_warnings_blocki
     tmp_path: Path,
 ) -> None:
     init_repository(tmp_path)
-    created = run_project(
-        ["task", "init", "--title", "Strict Draft", "--update-tracker"], tmp_path
-    )
+    created = run_project(["task", "init", "--title", "Strict Draft", "--update-tracker"], tmp_path)
     assert created.returncode == 0
     tracker_path = tmp_path / ".project-workflow" / "TRACKER.md"
     tracker_path.write_text(
@@ -170,12 +161,8 @@ def test_strict_mode_uses_same_snapshot_schema_and_marks_visible_warnings_blocki
         encoding="utf-8",
     )
 
-    normal = json.loads(
-        run_project(["status", "--format", "json"], tmp_path).stdout
-    )
-    strict = json.loads(
-        run_project(["status", "--strict", "--format", "json"], tmp_path).stdout
-    )
+    normal = json.loads(run_project(["status", "--format", "json"], tmp_path).stdout)
+    strict = json.loads(run_project(["status", "--strict", "--format", "json"], tmp_path).stdout)
 
     assert list(normal) == list(strict)
     assert normal["health"]["facts"][0] == {"key": "strict", "value": False}
@@ -198,9 +185,7 @@ def test_root_option_inspects_target_without_changing_calling_directory(
     before_caller = tree_hash(caller)
     before_repository = tree_hash(repository)
 
-    result = run_project(
-        ["status", "--root", str(repository), "--format", "json"], caller
-    )
+    result = run_project(["status", "--root", str(repository), "--format", "json"], caller)
     payload = json.loads(result.stdout)
 
     assert result.returncode == 0
@@ -227,9 +212,7 @@ def test_disposable_git_journey_uses_local_helper_without_mutation(tmp_path: Pat
             text=True,
         )
         assert completed.returncode == 0, completed.stdout + completed.stderr
-    created = run_project(
-        ["task", "init", "--title", "Journey Task", "--update-tracker"], tmp_path
-    )
+    created = run_project(["task", "init", "--title", "Journey Task", "--update-tracker"], tmp_path)
     assert created.returncode == 0
     head_before = subprocess.run(
         ["git", "rev-parse", "HEAD"],
@@ -248,15 +231,11 @@ def test_disposable_git_journey_uses_local_helper_without_mutation(tmp_path: Pat
     tree_before = tree_hash(tmp_path)
 
     human = run_local_helper(["status", "--id", "TASK-001"], tmp_path)
-    machine = run_local_helper(
-        ["status", "--id", "TASK-001", "--format", "json"], tmp_path
-    )
+    machine = run_local_helper(["status", "--id", "TASK-001", "--format", "json"], tmp_path)
     payload = json.loads(machine.stdout)
 
     assert human.returncode == machine.returncode == 0
-    assert human.stdout.startswith(
-        "Next action\n- [PW_STATUS_REQUIREMENTS_APPROVAL_REQUIRED]"
-    )
+    assert human.stdout.startswith("Next action\n- [PW_STATUS_REQUIREMENTS_APPROVAL_REQUIRED]")
     assert payload["git"]["state"] == "dirty"
     assert payload["active_work"][0]["id"] == "TASK-001"
     assert payload["proof"]["state"] == "declared"
@@ -264,34 +243,39 @@ def test_disposable_git_journey_uses_local_helper_without_mutation(tmp_path: Pat
     assert payload["primary_action"]["responsible_party"] == "owner"
     assert payload["primary_action"]["sources"][0]["kind"] == "requirements"
     assert tree_hash(tmp_path) == tree_before
-    assert subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=tmp_path,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip() == head_before
-    assert subprocess.run(
-        ["git", "status", "--porcelain"],
-        cwd=tmp_path,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout == status_before
+    assert (
+        subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        == head_before
+    )
+    assert (
+        subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+        == status_before
+    )
 
 
 def test_readme_and_generated_agent_guidance_teach_status_boundaries() -> None:
     root = Path(__file__).resolve().parents[1]
     readme = (root / "README.md").read_text(encoding="utf-8")
-    codex_guidance = (root / "src/project_workflow/codex/AGENTS.md").read_text(
+    usage = (root / "docs/using-project-workflow.md").read_text(encoding="utf-8")
+    codex_guidance = (root / "src/project_workflow/codex/AGENTS.md").read_text(encoding="utf-8")
+    cursor_guidance = (root / "src/project_workflow/cursor/rules/project-workflow.mdc").read_text(
         encoding="utf-8"
     )
-    cursor_guidance = (
-        root / "src/project_workflow/cursor/rules/project-workflow.mdc"
-    ).read_text(encoding="utf-8")
     managed = workflow_cli._managed_project_workflow_block()
 
-    for text in (readme, codex_guidance, cursor_guidance, managed):
+    for text in (codex_guidance, cursor_guidance, managed, usage):
         assert "workflow status" in text
         assert "--id <WORK-ID>" in text
         assert "--strict" in text
@@ -300,4 +284,5 @@ def test_readme_and_generated_agent_guidance_teach_status_boundaries() -> None:
         assert "upgrade" in text
         assert "QA" in text
     assert "never executes its recommended action" in managed
-    assert "Git, release, publication, and deployment remain separate stages" in readme
+    assert "separate evidence layers" in readme
+    assert "[Using Project Workflow](docs/using-project-workflow.md)" in readme

@@ -9,7 +9,6 @@ import pytest
 
 from project_workflow import cli as workflow_cli
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_CMD = [sys.executable, "-m", "project_workflow.cli"]
 
@@ -65,10 +64,7 @@ def test_tri_state_capabilities_are_truthful_and_capacity_is_runtime_bounded() -
         unsupported_capabilities=("subagent",),
         capability_source="2026-08-19 current host tool inspection",
     )
-    states = {
-        item.capability: (item.state, item.provenance)
-        for item in fallback.capability_matrix
-    }
+    states = {item.capability: (item.state, item.provenance) for item in fallback.capability_matrix}
     assert states["subagent"] == (
         "unsupported",
         "runtime-observed:2026-08-19 current host tool inspection",
@@ -108,9 +104,7 @@ def test_tri_state_capabilities_are_truthful_and_capacity_is_runtime_bounded() -
 def test_delegate_source_and_development_assets_share_the_graph_contract() -> None:
     prompt = (REPO_ROOT / "src/project_workflow/prompts/Delegate.prompt.md").read_text()
     github = (REPO_ROOT / ".github/prompts/Delegate.prompt.md").read_text()
-    skill = (
-        REPO_ROOT / "src/project_workflow/codex/skills/project-delegate/SKILL.md"
-    ).read_text()
+    skill = (REPO_ROOT / "src/project_workflow/codex/skills/project-delegate/SKILL.md").read_text()
     installed_skill = (REPO_ROOT / ".agents/skills/project-delegate/SKILL.md").read_text()
 
     assert prompt == github
@@ -152,20 +146,16 @@ def test_delegate_source_and_development_assets_share_the_graph_contract() -> No
     assert installed_skill == workflow_cli._with_generated_marker(
         REPO_ROOT / ".agents/skills/project-delegate/SKILL.md", skill
     )
-    assert (
-        REPO_ROOT / "src/project_workflow/cli.py"
-    ).read_bytes() == (REPO_ROOT / "src/project_workflow/templates/workflow.py").read_bytes()
-    assert (
-        REPO_ROOT / "src/project_workflow/cli.py"
-    ).read_bytes() == (REPO_ROOT / ".project-workflow/cli/workflow.py").read_bytes()
+    generated = (REPO_ROOT / "src/project_workflow/templates/workflow.py").read_bytes()
+    assert generated == (REPO_ROOT / ".project-workflow/cli/workflow.py").read_bytes()
+    assert b"# project-workflow:generated" in generated
+    assert b"# source-manifest: scripts/runtime-modules.txt" in generated
 
 
 def test_planner_assets_author_execution_needs_as_work_facts() -> None:
     prompt = (REPO_ROOT / "src/project_workflow/prompts/Planner.prompt.md").read_text()
     github = (REPO_ROOT / ".github/prompts/Planner.prompt.md").read_text()
-    skill = (
-        REPO_ROOT / "src/project_workflow/codex/skills/project-planner/SKILL.md"
-    ).read_text()
+    skill = (REPO_ROOT / "src/project_workflow/codex/skills/project-planner/SKILL.md").read_text()
     installed = (REPO_ROOT / ".agents/skills/project-planner/SKILL.md").read_text()
     assert prompt == github
     for text in (prompt, skill, installed):
@@ -189,9 +179,9 @@ def test_managed_host_guidance_uses_property_selection_and_safe_retirement() -> 
     cursor_rules = (
         REPO_ROOT / "src/project_workflow/cursor/rules/project-workflow.mdc"
     ).read_text()
-    readme = (REPO_ROOT / "README.md").read_text()
+    usage = (REPO_ROOT / "docs/using-project-workflow.md").read_text()
 
-    for text in (codex_agents, cursor_rules, readme):
+    for text in (codex_agents, cursor_rules, usage):
         lowered = " ".join(text.lower().split())
         assert "task-versus-epic" in lowered
         assert "durable-resume" in lowered
@@ -202,18 +192,22 @@ def test_managed_host_guidance_uses_property_selection_and_safe_retirement() -> 
         assert "persistent-task" in lowered
         assert "peer-team" in lowered
         assert "owner-promoted" in lowered
-        assert "never retire the coordinator" in lowered or "coordinator is never retired" in lowered
+        assert (
+            "never retire the coordinator" in lowered or "coordinator is never retired" in lowered
+        )
 
-    assert "Positive examples:" in readme
-    assert "Negative examples:" in readme
-    assert "archive-on-verified" in readme
-    assert "not runtime-validated" in readme
+    assert "Positive examples:" in usage
+    assert "Negative examples:" in usage
+    assert "archive-on-verified" in usage
+    assert "not runtime-validated" in " ".join(usage.split())
+    assert (
+        "[Using Project Workflow](docs/using-project-workflow.md)"
+        in (REPO_ROOT / "README.md").read_text()
+    )
 
 
 @pytest.mark.parametrize("agent", sorted(workflow_cli.AGENT_CHOICES))
-def test_each_host_init_installs_native_truthful_delegate_asset(
-    tmp_path: Path, agent: str
-) -> None:
+def test_each_host_init_installs_native_truthful_delegate_asset(tmp_path: Path, agent: str) -> None:
     root = tmp_path / agent
     root.mkdir()
     initialized = run_project(root, "init", "--agent", agent)
@@ -226,9 +220,7 @@ def test_each_host_init_installs_native_truthful_delegate_asset(
         check=False,
     )
     assert ignored.returncode == 0
-    assert "runtime/delegations/" in (
-        root / ".project-workflow/.gitignore"
-    ).read_text()
+    assert "runtime/delegations/" in (root / ".project-workflow/.gitignore").read_text()
 
     if agent == "codex":
         delegate = (root / ".agents/skills/project-delegate/SKILL.md").read_text()
@@ -283,9 +275,7 @@ def test_asset_v1_upgrade_preserves_user_delegate_collision_and_then_noops(
     manifest.write_text(json.dumps(payload, indent=2) + "\n")
     init_git(tmp_path)
 
-    planned = run_project(
-        tmp_path, "upgrade", "--agent", "codex", "--plan", "--format", "json"
-    )
+    planned = run_project(tmp_path, "upgrade", "--agent", "codex", "--plan", "--format", "json")
     assert planned.returncode == 0, planned.stdout + planned.stderr
     plan = json.loads(planned.stdout)
     assert ".agents/skills/project-delegate/SKILL.md.new" in plan["asset_changes"]
@@ -322,9 +312,7 @@ def test_asset_v1_upgrade_preserves_user_delegate_collision_and_then_noops(
 
     subprocess.run(("git", "add", "."), cwd=tmp_path, check=True)
     subprocess.run(("git", "commit", "-qm", "upgrade"), cwd=tmp_path, check=True)
-    repeated = run_project(
-        tmp_path, "upgrade", "--agent", "codex", "--plan", "--format", "json"
-    )
+    repeated = run_project(tmp_path, "upgrade", "--agent", "codex", "--plan", "--format", "json")
     assert repeated.returncode == 0, repeated.stdout + repeated.stderr
     assert json.loads(repeated.stdout)["asset_changes"] == []
     assert not delegate.with_name("SKILL.md.new.2").exists()

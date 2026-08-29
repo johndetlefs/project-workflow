@@ -8,7 +8,17 @@ Add local conventions, validation commands, safety constraints, handoff rules, a
 
 - This machine has Homebrew `uvx` at `/opt/homebrew/bin/uvx`.
 - The Codex app may omit `/opt/homebrew/bin` from `PATH`. Before skipping UVX validation or reporting `uvx` unavailable, check the explicit path and rerun with `PATH="/opt/homebrew/bin:$PATH"`.
-- The complete validation command is `PATH="/opt/homebrew/bin:$PATH" .venv/bin/pytest -q`; the UVX packaging test must pass rather than skip on this machine.
+- The complete validation command is `PATH="/opt/homebrew/bin:$PATH" uv run --locked pytest -q`; the UVX packaging test must pass rather than skip on this machine.
+
+## Contributor Quality Gates
+
+- Install the locked development environment with `uv sync --locked --extra dev`.
+- Run `uv run --locked ruff check src/project_workflow/*.py scripts tests`.
+- Run `uv run --locked ruff format --check src/project_workflow/*.py scripts tests`.
+- Run `uv run --locked mypy src/project_workflow/*.py`.
+- Run `uv run --locked python scripts/check_documentation.py`.
+- Run `PATH="/opt/homebrew/bin:$PATH" uv run --locked pytest -q` for the complete regression gate.
+- Regenerate bundled runtimes only with `uv run --locked python scripts/build_runtime_bundle.py --write`, then require the same command with `--check` before delivery.
 
 ## Delivery Proof
 

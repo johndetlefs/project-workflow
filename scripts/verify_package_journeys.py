@@ -16,7 +16,6 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_PREFIX = "project_workflow/"
 PROMPT_SUFFIX = ".prompt.md"
@@ -67,17 +66,12 @@ def _wheel_resources(package_path: Path) -> dict[str, bytes]:
     if package_path.suffix != ".whl":
         raise RuntimeError("package journey parity requires an exact wheel path")
     with zipfile.ZipFile(package_path) as archive:
-        return {
-            name: archive.read(name)
-            for name in archive.namelist()
-            if not name.endswith("/")
-        }
+        return {name: archive.read(name) for name in archive.namelist() if not name.endswith("/")}
 
 
 def _source_package_assets() -> dict[str, Path]:
     source_root = ROOT / "src/project_workflow"
     assets = {
-        "project_workflow/cli.py": source_root / "cli.py",
         "project_workflow/templates/workflow.py": source_root / "templates/workflow.py",
         "project_workflow/templates/workflow": source_root / "templates/workflow",
         "project_workflow/codex/AGENTS.md": source_root / "codex/AGENTS.md",
@@ -85,12 +79,12 @@ def _source_package_assets() -> dict[str, Path]:
             source_root / "cursor/rules/project-workflow.mdc"
         ),
     }
+    for path in sorted(source_root.glob("*.py")):
+        assets[f"project_workflow/{path.name}"] = path
     for path in sorted((source_root / "prompts").glob("*.md")):
         assets[f"project_workflow/prompts/{path.name}"] = path
     for path in sorted((source_root / "codex/skills").glob("*/SKILL.md")):
-        assets[
-            f"project_workflow/codex/skills/{path.parent.name}/SKILL.md"
-        ] = path
+        assets[f"project_workflow/codex/skills/{path.parent.name}/SKILL.md"] = path
     return assets
 
 
@@ -132,13 +126,13 @@ def verify_package_source_parity(package_path: Path) -> dict[str, Any]:
             raise RuntimeError(f"wheel resource differs from current source: {resource_name}")
         manifest[resource_name] = sha256_bytes(source_bytes)
 
-    cli_bytes = resources["project_workflow/cli.py"]
+    helper_bytes = resources["project_workflow/templates/workflow.py"]
     for mirror in (
         ROOT / "src/project_workflow/templates/workflow.py",
         ROOT / ".project-workflow/cli/workflow.py",
     ):
-        if mirror.read_bytes() != cli_bytes:
-            raise RuntimeError(f"wheel helper differs from current CLI mirror: {mirror}")
+        if mirror.read_bytes() != helper_bytes:
+            raise RuntimeError(f"wheel helper differs from generated runtime: {mirror}")
 
     metadata_names = [name for name in resources if name.endswith(".dist-info/METADATA")]
     if len(metadata_names) != 1:
@@ -202,7 +196,7 @@ def _agent_name(prompt_name: str) -> str:
 def _render_native_agent(prompt: bytes, prompt_name: str, host: str) -> bytes:
     frontmatter, body = _split_frontmatter(prompt.decode("utf-8"))
     name = _agent_name(prompt_name)
-    description = (_frontmatter_value(frontmatter, "description") or name).replace('"', r'\"')
+    description = (_frontmatter_value(frontmatter, "description") or name).replace('"', r"\"")
     rendered_body = re.sub(
         r"\$\{input:([A-Za-z][A-Za-z0-9_-]*)(?::[^}]*)?\}",
         lambda match: f"<{match.group(1)}>",
@@ -215,8 +209,7 @@ def _render_native_agent(prompt: bytes, prompt_name: str, host: str) -> bytes:
         "---\n\n"
         f"Invocation contract ({host}): supply values such as `<taskId>` or `<scope>` "
         "in the user request or current conversation. Treat angle-bracket values as required "
-        "request fields, not literal text.\n\n"
-        + rendered_body.lstrip()
+        "request fields, not literal text.\n\n" + rendered_body.lstrip()
     )
     return rendered.encode("utf-8")
 
@@ -227,30 +220,26 @@ def _generated_bytes(relative: str, content: bytes) -> bytes:
         return content
     suffix = Path(relative).suffix
     marker = (
-        f"<!-- {GENERATED_MARKER} -->"
-        if suffix in {".md", ".mdc"}
-        else f"# {GENERATED_MARKER}"
+        f"<!-- {GENERATED_MARKER} -->" if suffix in {".md", ".mdc"} else f"# {GENERATED_MARKER}"
     )
     if suffix in {".md", ".mdc"}:
         frontmatter = re.match(r"^(---\n.*?\n---\n)(.*)$", text, flags=re.DOTALL)
         if frontmatter:
             header, body = frontmatter.groups()
-            return f"{header}{marker}\n\n{body.lstrip()}".encode("utf-8")
-        return f"{marker}\n\n{text.lstrip()}".encode("utf-8")
+            return f"{header}{marker}\n\n{body.lstrip()}".encode()
+        return f"{marker}\n\n{text.lstrip()}".encode()
     if text.startswith("#!"):
         first_line, separator, rest = text.partition("\n")
         if separator:
-            return f"{first_line}\n{marker}\n{rest}".encode("utf-8")
-    return f"{marker}\n{text.lstrip()}".encode("utf-8")
+            return f"{first_line}\n{marker}\n{rest}".encode()
+    return f"{marker}\n{text.lstrip()}".encode()
 
 
 def verify_generated_asset_parity(
     path: Path, agent: str, resources: dict[str, bytes]
 ) -> dict[str, Any]:
     expected: dict[str, bytes] = {
-        ".project-workflow/cli/workflow.py": resources[
-            "project_workflow/templates/workflow.py"
-        ],
+        ".project-workflow/cli/workflow.py": resources["project_workflow/templates/workflow.py"],
         ".project-workflow/cli/workflow": resources["project_workflow/templates/workflow"],
     }
     prompts = {
@@ -292,8 +281,7 @@ def verify_generated_asset_parity(
         raise RuntimeError(f"unsupported agent for parity verification: {agent}")
 
     expected = {
-        relative: _generated_bytes(relative, content)
-        for relative, content in expected.items()
+        relative: _generated_bytes(relative, content) for relative, content in expected.items()
     }
     manifest: dict[str, str] = {}
     for relative, content in sorted(expected.items()):
@@ -302,9 +290,7 @@ def verify_generated_asset_parity(
             raise RuntimeError(f"generated asset differs from wheel resource: {agent}:{relative}")
         manifest[relative] = sha256_bytes(content)
 
-    host_guidance = path / (
-        "AGENTS.md" if agent == "codex" else ".github/copilot-instructions.md"
-    )
+    host_guidance = path / ("AGENTS.md" if agent == "codex" else ".github/copilot-instructions.md")
     if agent in {"codex", "github-copilot"}:
         guidance = host_guidance.read_text(encoding="utf-8")
         for phrase in (
@@ -697,27 +683,36 @@ As a signed-in member, I want to export and open my complete archive, so that my
 
 def green_but_wrong_implementation() -> str:
     """Return an internally green child that silently narrows archive export to a preview."""
-    return child_implementation().replace(
-        "As a signed-in member, I want to export and open my complete archive, so that my account data is portable.",
-        "As a signed-in member, I want to preview my account export before leaving Settings.",
-    ).replace(
-        "- [x] AC1: The normal export route creates a complete archive that the member opens.",
-        "- [x] AC1: The normal export route shows a successful export preview.",
-    ).replace(
-        "- AC1 / parent AC1: `user-outcome-journey` receipt binds the normal route to the opened archive.",
-        "- AC1 / parent AC1: `user-outcome-journey` receipt binds the normal route to the preview.",
-    ).replace(
-        "Normal route and outcome receipt pass",
-        "Preview route and outcome receipt pass",
-    ).replace(
-        "- AC1: The normal settings route produced the complete archive and the member opened it; see `EVIDENCE.json` and `evidence/export-journey.txt`.",
-        "- AC1: The normal settings route produced an export preview; see `EVIDENCE.json` and `evidence/export-preview.txt`.",
-    ).replace(
-        "- Outcome journey evidence: The child-local record exercises the normal export and open journey.",
-        "- Outcome journey evidence: The child-local record exercises the export preview journey.",
-    ).replace(
-        "- Findings: The preview-only candidate was rejected before readiness.",
-        "- Findings: None; the preview and internal success flag are green.",
+    return (
+        child_implementation()
+        .replace(
+            "As a signed-in member, I want to export and open my complete archive, so that my account data is portable.",
+            "As a signed-in member, I want to preview my account export before leaving Settings.",
+        )
+        .replace(
+            "- [x] AC1: The normal export route creates a complete archive that the member opens.",
+            "- [x] AC1: The normal export route shows a successful export preview.",
+        )
+        .replace(
+            "- AC1 / parent AC1: `user-outcome-journey` receipt binds the normal route to the opened archive.",
+            "- AC1 / parent AC1: `user-outcome-journey` receipt binds the normal route to the preview.",
+        )
+        .replace(
+            "Normal route and outcome receipt pass",
+            "Preview route and outcome receipt pass",
+        )
+        .replace(
+            "- AC1: The normal settings route produced the complete archive and the member opened it; see `EVIDENCE.json` and `evidence/export-journey.txt`.",
+            "- AC1: The normal settings route produced an export preview; see `EVIDENCE.json` and `evidence/export-preview.txt`.",
+        )
+        .replace(
+            "- Outcome journey evidence: The child-local record exercises the normal export and open journey.",
+            "- Outcome journey evidence: The child-local record exercises the export preview journey.",
+        )
+        .replace(
+            "- Findings: The preview-only candidate was rejected before readiness.",
+            "- Findings: None; the preview and internal success flag are green.",
+        )
     )
 
 
@@ -885,7 +880,9 @@ def review_export_intent_alignment(epic_dir: Path) -> dict[str, Any]:
             "ordinary settings route."
         ),
         "classification": "preserved" if preserved else "proxy",
-        "lost_capability": "" if preserved else "The member cannot open the complete exported archive.",
+        "lost_capability": ""
+        if preserved
+        else "The member cannot open the complete exported archive.",
         "checks": {
             "complete_archive_created": archive_created,
             "complete_archive_opened": archive_opened,
@@ -936,7 +933,7 @@ def write_intent_audit_from_review(
             "verdict": "changes-requested" if classification == "proxy" else "pass",
         }
     )
-    child_rel = next(epic_dir.glob("TASK-001-*" )).name
+    child_rel = next(epic_dir.glob("TASK-001-*")).name
     for record in payload["commitments"]:
         record.update(
             {
@@ -990,20 +987,18 @@ def verify_exact_package_intent_journey(
     run(command + ["epic", "ready", "--epic-id", "EPIC-001"], path, env)
     run(command + ["epic", "decompose", "--epic-id", "EPIC-001", "--limit", "1"], path, env)
     run(command + ["epic", "approve", "--epic-id", "EPIC-001", "--id", "TASK-001"], path, env)
-    run(command + ["epic", "scaffold-child", "--epic-id", "EPIC-001", "--id", "TASK-001"], path, env)
+    run(
+        command + ["epic", "scaffold-child", "--epic-id", "EPIC-001", "--id", "TASK-001"], path, env
+    )
     child_dir = next(epic_dir.glob("TASK-001-*"))
     (child_dir / "REQUIREMENTS.md").write_text(child_requirements(), encoding="utf-8")
-    (child_dir / "IMPLEMENTATION.md").write_text(
-        green_but_wrong_implementation(), encoding="utf-8"
-    )
+    (child_dir / "IMPLEMENTATION.md").write_text(green_but_wrong_implementation(), encoding="utf-8")
     write_preview_evidence(child_dir)
 
     proxy_review = review_export_intent_alignment(epic_dir)
     if proxy_review["classification"] != "proxy" or all(proxy_review["checks"].values()):
         raise RuntimeError("sourced reviewer did not detect the actual preview-only child")
-    proxy_audit = write_intent_audit_from_review(
-        epic_dir, command, env, review=proxy_review
-    )
+    proxy_audit = write_intent_audit_from_review(epic_dir, command, env, review=proxy_review)
     rejected = run_result(
         command + ["epic", "ready-child", "--epic-id", "EPIC-001", "--id", "TASK-001"],
         path,
@@ -1011,10 +1006,12 @@ def verify_exact_package_intent_journey(
     )
     if rejected.returncode == 0:
         raise RuntimeError("green-but-wrong child unexpectedly passed intent readiness")
-    if "changes-requested" not in rejected.stdout or "complete exported archive" not in rejected.stdout:
+    if (
+        "changes-requested" not in rejected.stdout
+        or "complete exported archive" not in rejected.stdout
+    ):
         raise RuntimeError(
-            "proxy rejection did not name classification and lost capability:\n"
-            + rejected.stdout
+            "proxy rejection did not name classification and lost capability:\n" + rejected.stdout
         )
 
     proxy_child = {
@@ -1031,9 +1028,7 @@ def verify_exact_package_intent_journey(
         passing_review["checks"].values()
     ):
         raise RuntimeError("sourced reviewer did not recognize the restored complete journey")
-    passing_audit = write_intent_audit_from_review(
-        epic_dir, command, env, review=passing_review
-    )
+    passing_audit = write_intent_audit_from_review(epic_dir, command, env, review=passing_review)
     run(command + ["epic", "ready-child", "--epic-id", "EPIC-001", "--id", "TASK-001"], path, env)
     run(command + ["epic", "lifecycle", "--epic-id", "EPIC-001", "--to", "In Progress"], path, env)
     for status in ("Testing", "Review", "Complete"):
@@ -1083,9 +1078,7 @@ def main() -> int:
     env = os.environ.copy()
     env["UV_CACHE_DIR"] = env.get("UV_CACHE_DIR", "/tmp/project-workflow-release-uv-cache")
     env["UV_TOOL_DIR"] = env.get("UV_TOOL_DIR", "/tmp/project-workflow-release-uv-tools")
-    env["UV_TOOL_BIN_DIR"] = env.get(
-        "UV_TOOL_BIN_DIR", "/tmp/project-workflow-release-uv-tool-bin"
-    )
+    env["UV_TOOL_BIN_DIR"] = env.get("UV_TOOL_BIN_DIR", "/tmp/project-workflow-release-uv-tool-bin")
     package_path = Path(args.package_source).resolve()
     command = [uvx, "--from", str(package_path), "project"]
     package_parity = verify_package_source_parity(package_path)
@@ -1109,9 +1102,7 @@ def main() -> int:
             verify_delegate_asset(fresh, agent)
             verify_coordinator_asset(fresh, agent)
             intent_helper_sha256 = verify_intent_assets(fresh, agent)
-            generated_parity = verify_generated_asset_parity(
-                fresh, agent, wheel_resources
-            )
+            generated_parity = verify_generated_asset_parity(fresh, agent, wheel_resources)
             version_output = run(command + ["--version"], fresh, env).strip()
             if version_output != f"project {args.version}":
                 raise RuntimeError(f"runtime version mismatch: {version_output}")
@@ -1119,9 +1110,7 @@ def main() -> int:
                 [str(fresh / ".project-workflow/cli/workflow"), "doctor"], fresh, env
             )
             commit_all(fresh, env)
-            upgrade_output = run(
-                command + ["upgrade", "--agent", agent, "--yes"], fresh, env
-            )
+            upgrade_output = run(command + ["upgrade", "--agent", agent, "--yes"], fresh, env)
             verify_manifest(fresh, args.version)
             verify_delegate_asset(fresh, agent)
             verify_coordinator_asset(fresh, agent)
@@ -1178,11 +1167,11 @@ def main() -> int:
                 env,
             )
         )
-        preserved_after = {
-            relative: sha256_path(legacy / relative) for relative in preserved_paths
-        }
+        preserved_after = {relative: sha256_path(legacy / relative) for relative in preserved_paths}
         if preserved_before != preserved_after:
-            raise RuntimeError("legacy upgrade changed historical tracker, backlog, guidance or notes")
+            raise RuntimeError(
+                "legacy upgrade changed historical tracker, backlog, guidance or notes"
+            )
         no_op_plan = json.loads(
             run(
                 command + ["upgrade", "--agent", "codex", "--plan", "--format", "json"],

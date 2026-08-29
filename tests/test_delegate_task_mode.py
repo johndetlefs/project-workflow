@@ -10,7 +10,6 @@ import pytest
 
 from project_workflow import cli as workflow_cli
 
-
 TOKEN = "coordinator-only-token"
 SHARED_HASH = "shared-state-sha256"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -179,9 +178,7 @@ def test_packet_is_complete_bounded_and_coordinator_is_single_writer() -> None:
     assert len(packet["forbidden_actions"]) == 4
     assert len(packet["stop_conditions"]) == 4
     assert "full conversation history" in packet["invalid_substitutes"][-1]
-    assert packet["return_contract"][-1] == (
-        "dependency result and shared-premise validity"
-    )
+    assert packet["return_contract"][-1] == ("dependency result and shared-premise validity")
 
     with pytest.raises(workflow_cli.TaskOrchestrationError) as caught:
         run.checkpoint("A", coordinator_token="worker-token")
@@ -193,14 +190,10 @@ def test_packet_obligations_fail_closed_when_empty_duplicate_or_invalid() -> Non
         workflow_cli.TaskExecutionObligations((), (), (), ())
     assert empty.value.code == "PW_TASK_PACKET_OBLIGATIONS_INVALID"
     with pytest.raises(workflow_cli.TaskOrchestrationError) as duplicate:
-        workflow_cli.TaskExecutionObligations(
-            ("AC1", "AC1"), ("test",), ("evidence",), (".",)
-        )
+        workflow_cli.TaskExecutionObligations(("AC1", "AC1"), ("test",), ("evidence",), (".",))
     assert duplicate.value.code == "PW_TASK_PACKET_OBLIGATIONS_INVALID"
     with pytest.raises(workflow_cli.TaskOrchestrationError) as invalid_repo:
-        workflow_cli.TaskExecutionObligations(
-            ("AC1",), ("test",), ("evidence",), ("../repo",)
-        )
+        workflow_cli.TaskExecutionObligations(("AC1",), ("test",), ("evidence",), ("../repo",))
     assert invalid_repo.value.code == "PW_TASK_PACKET_OBLIGATIONS_INVALID"
 
 
@@ -294,7 +287,9 @@ def test_intervening_diff_collision_is_rejected_before_dependency_release() -> N
         coordinator_token=TOKEN,
     )
     # Simulate a coordinator-observed collision despite the planned disjoint prefix.
-    run.state.integrated_paths.append((run.state.integration_revision, "external", ("src/b/file.py",)))
+    run.state.integrated_paths.append(
+        (run.state.integration_revision, "external", ("src/b/file.py",))
+    )
     run.state.integration_revision += 1
     rejected = run.verify_result(
         result(run, "B", "bounded-b", "src/b/file.py"),
@@ -442,18 +437,14 @@ def test_coordinator_observations_override_worker_validation_and_evidence_claims
 
 
 def test_unsafe_execution_is_exclusive_in_both_launch_orders() -> None:
-    unsafe_first = coordinator(
-        plan(unit("A", parallel_safe=False), unit("B", order=1)), capacity=2
-    )
+    unsafe_first = coordinator(plan(unit("A", parallel_safe=False), unit("B", order=1)), capacity=2)
     decisions = {item.unit_id: item for item in unsafe_first.decisions()}
     assert decisions["A"].executor == "subagent" and decisions["A"].launchable
     assert not decisions["B"].launchable
     unsafe_first.launch("A", handle="unsafe-a", coordinator_token=TOKEN)
     assert not next(item for item in unsafe_first.decisions() if item.unit_id == "B").launchable
 
-    safe_first = coordinator(
-        plan(unit("A"), unit("B", parallel_safe=False, order=1)), capacity=2
-    )
+    safe_first = coordinator(plan(unit("A"), unit("B", parallel_safe=False, order=1)), capacity=2)
     decisions = {item.unit_id: item for item in safe_first.decisions()}
     assert decisions["A"].launchable
     assert not decisions["B"].launchable
@@ -556,9 +547,7 @@ def test_attempt_fingerprint_and_global_handle_ownership_reject_stale_results() 
     run.retry("A", coordinator_token=TOKEN)
     run.launch("A", handle="bounded-a-2", coordinator_token=TOKEN)
     stale = result(run, "A", "bounded-a-2", "src/a/file.py")
-    stale = workflow_cli.TaskWorkerResult(
-        **{**stale.__dict__, "attempt": 1}
-    )
+    stale = workflow_cli.TaskWorkerResult(**{**stale.__dict__, "attempt": 1})
     with pytest.raises(workflow_cli.TaskOrchestrationError) as caught:
         run.verify_result(
             stale,
@@ -763,9 +752,7 @@ def test_persisted_resume_preserves_attempts_active_handles_and_orphans(tmp_path
         coordinator_token=TOKEN,
     )
     assert after_canonical_write.state.units["A"].state == "done"
-    assert after_canonical_write.state.units["A"].completion_provenance.startswith(
-        "canonical:"
-    )
+    assert after_canonical_write.state.units["A"].completion_provenance.startswith("canonical:")
     after_canonical_write.persist(tmp_path, coordinator_token=TOKEN)
     resumed_again = workflow_cli.TaskOrchestrator.resume(
         root=tmp_path,
@@ -806,7 +793,9 @@ def test_resume_applies_refreshed_canonical_block_without_relaunch(
     (task_dir / "REQUIREMENTS.md").write_text("# Requirements\n", encoding="utf-8")
     target, units = workflow_cli._resolve_delegation_target(tmp_path, ("TASK-001",))
     initial_plan = workflow_cli.build_delegation_plan(
-        target=target, units=units, requested_concurrency=1,
+        target=target,
+        units=units,
+        requested_concurrency=1,
         available_child_capacity=1,
         observed_capabilities=("subagent",),
         capability_source=TASK_CAPABILITY_SOURCE,
@@ -824,7 +813,9 @@ def test_resume_applies_refreshed_canonical_block_without_relaunch(
         tmp_path, ("TASK-001",)
     )
     refreshed_plan = workflow_cli.build_delegation_plan(
-        target=refreshed_target, units=refreshed_units, requested_concurrency=1,
+        target=refreshed_target,
+        units=refreshed_units,
+        requested_concurrency=1,
         available_child_capacity=1,
         observed_capabilities=("subagent",),
         capability_source=TASK_CAPABILITY_SOURCE,
@@ -889,9 +880,7 @@ def test_runtime_testing_gate_rejects_force_until_every_unit_is_done() -> None:
     run.assert_testing_allowed(force=True)
 
 
-def write_cli_fixture(
-    root: Path, *, row_status: str | None, malformed: bool = False
-) -> Path:
+def write_cli_fixture(root: Path, *, row_status: str | None, malformed: bool = False) -> Path:
     workflow = root / ".project-workflow"
     task_dir = workflow / "tasks" / "TASK-001-Task-Mode"
     task_dir.mkdir(parents=True)
@@ -904,8 +893,7 @@ def write_cli_fixture(
     implementation.write_text(
         "## Task List\n\n"
         "| ID | Title | Description | Acceptance Criteria | User Verification | Status |\n"
-        "|---|---|---|---|---|---|\n"
-        + row,
+        "|---|---|---|---|---|---|\n" + row,
         encoding="utf-8",
     )
     (task_dir / "REQUIREMENTS.md").write_text("# Requirements\n", encoding="utf-8")
@@ -1092,10 +1080,7 @@ def test_testing_gate_rejects_decoy_or_duplicate_tables_on_every_entrypoint(
     tmp_path: Path, command: tuple[str, ...], bypass_kind: str
 ) -> None:
     tracker = write_cli_fixture(tmp_path, row_status="To Do")
-    implementation = (
-        tmp_path
-        / ".project-workflow/tasks/TASK-001-Task-Mode/IMPLEMENTATION.md"
-    )
+    implementation = tmp_path / ".project-workflow/tasks/TASK-001-Task-Mode/IMPLEMENTATION.md"
     done_table = (
         "| ID | Title | Description | Acceptance Criteria | User Verification | Status |\n"
         "|---|---|---|---|---|---|\n"
@@ -1165,12 +1150,12 @@ def test_all_done_rows_allow_forced_recovery_transition(tmp_path: Path) -> None:
     assert "| TASK-001 | Task Mode | Testing |" in tracker.read_text(encoding="utf-8")
 
 
-def test_source_generated_and_local_python_helpers_are_byte_identical() -> None:
+def test_generated_python_helpers_are_byte_identical() -> None:
     root = Path(__file__).resolve().parents[1]
     paths = (
-        root / "src/project_workflow/cli.py",
         root / "src/project_workflow/templates/workflow.py",
         root / ".project-workflow/cli/workflow.py",
     )
     hashes = {hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
     assert len(hashes) == 1
+    assert b"# project-workflow:generated" in paths[0].read_bytes()

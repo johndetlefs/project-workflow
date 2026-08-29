@@ -290,7 +290,12 @@ def test_operational_status_keeps_proof_and_delivery_independent() -> None:
         ),
         (
             lambda: workflow_cli.OperationalStatusWorkItem(
-                "TASK-001", "Task", "unknown-kind", "Ready", "Ready to begin.", (source("global-tracker", "tracker"),)
+                "TASK-001",
+                "Task",
+                "unknown-kind",
+                "Ready",
+                "Ready to begin.",
+                (source("global-tracker", "tracker"),),
             ),
             "Unknown operational status work item kind",
         ),
@@ -359,11 +364,17 @@ def test_operational_status_records_are_frozen_and_preserve_source_order() -> No
         (tracker_source, global_source),
     )
 
-    assert [entry["kind"] for entry in workflow_cli._operational_status_work_item_payload(work_item)["sources"]] == [
+    assert [
+        entry["kind"]
+        for entry in workflow_cli._operational_status_work_item_payload(work_item)["sources"]
+    ] == [
         "epic-tracker",
         "global-tracker",
     ]
-    assert [entry["kind"] for entry in workflow_cli._operational_status_finding_payload(finding)["sources"]] == [
+    assert [
+        entry["kind"]
+        for entry in workflow_cli._operational_status_finding_payload(finding)["sources"]
+    ] == [
         "epic-tracker",
         "global-tracker",
     ]

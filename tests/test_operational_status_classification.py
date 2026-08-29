@@ -11,9 +11,7 @@ from project_workflow import cli as workflow_cli
 
 
 def source() -> workflow_cli.OperationalStatusSource:
-    return workflow_cli.OperationalStatusSource(
-        "global-tracker", ".project-workflow/TRACKER.md"
-    )
+    return workflow_cli.OperationalStatusSource("global-tracker", ".project-workflow/TRACKER.md")
 
 
 def fact(key: str, value: object) -> workflow_cli.OperationalStatusFact:
@@ -123,9 +121,7 @@ def test_aggregate_proof_stops_at_each_missing_prerequisite(
     overrides: dict[str, str],
     expected: str,
 ) -> None:
-    assert workflow_cli._operational_aggregate_proof_state(
-        proof_layers(**overrides)
-    ) == expected
+    assert workflow_cli._operational_aggregate_proof_state(proof_layers(**overrides)) == expected
 
 
 def test_proof_classification_is_stable_and_idempotent(
@@ -142,15 +138,11 @@ def test_proof_classification_is_stable_and_idempotent(
     first_proof, first_items = workflow_cli.classify_operational_proof(
         tmp_path, (work_item(lifecycle="In Progress"),)
     )
-    second_proof, second_items = workflow_cli.classify_operational_proof(
-        tmp_path, first_items
-    )
+    second_proof, second_items = workflow_cli.classify_operational_proof(tmp_path, first_items)
 
     assert first_proof == second_proof
     assert first_items == second_items
-    assert [entry.key for entry in first_items[0].facts].count(
-        "aggregate_proof_state"
-    ) == 1
+    assert [entry.key for entry in first_items[0].facts].count("aggregate_proof_state") == 1
     assert first_proof.state == "repository-validated"
 
 
@@ -174,9 +166,7 @@ def test_health_matches_doctor_evaluation_including_accepted_and_legacy_counts(
         "owner",
         False,
     )
-    accepted_fingerprint = workflow_cli._doctor_issue_fingerprint(
-        accepted_issue, tmp_path
-    )
+    accepted_fingerprint = workflow_cli._doctor_issue_fingerprint(accepted_issue, tmp_path)
     issues = [accepted_issue, legacy_issue]
     accepted = {accepted_fingerprint: "Historical fixture."}
     monkeypatch.setattr(workflow_cli, "run_doctor", lambda _root: issues)
@@ -187,9 +177,7 @@ def test_health_matches_doctor_evaluation_including_accepted_and_legacy_counts(
     )
 
     health, findings = workflow_cli.classify_operational_health(tmp_path)
-    strict_health, strict_findings = workflow_cli.classify_operational_health(
-        tmp_path, strict=True
-    )
+    strict_health, strict_findings = workflow_cli.classify_operational_health(tmp_path, strict=True)
     expected = workflow_cli._evaluate_doctor(
         issues,
         root=tmp_path,
@@ -267,9 +255,7 @@ def test_delivery_requires_exact_local_receipt_evidence_for_later_states(
     expected: str,
 ) -> None:
     receipt_path = write_receipt(tmp_path, "delivery.json", payload)
-    item = work_item(
-        item_facts=(fact("delivery_receipt", receipt_path.name),)
-    )
+    item = work_item(item_facts=(fact("delivery_receipt", receipt_path.name),))
     before = tree_hash(tmp_path)
 
     delivery, findings = workflow_cli.classify_operational_delivery(tmp_path, item)
@@ -319,9 +305,7 @@ def test_delivery_reports_missing_and_malformed_receipts_without_inflation(
     )
 
     assert missing.state == malformed.state == "repository-complete"
-    assert [finding.code for finding in missing_findings] == [
-        "PW_STATUS_DELIVERY_RECEIPT_MISSING"
-    ]
+    assert [finding.code for finding in missing_findings] == ["PW_STATUS_DELIVERY_RECEIPT_MISSING"]
     assert [finding.code for finding in malformed_findings] == [
         "PW_STATUS_DELIVERY_RECEIPT_INVALID"
     ]

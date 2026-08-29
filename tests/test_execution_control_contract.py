@@ -11,9 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from project_workflow import claude_adapter, codex_adapter
 from project_workflow import cli as workflow_cli
-from project_workflow import claude_adapter
-from project_workflow import codex_adapter
 
 PROJECT = [sys.executable, "-m", "project_workflow.cli"]
 ROOT = Path(__file__).parents[1]
@@ -485,9 +484,10 @@ def test_coordinate_status_and_doctor_share_execution_projection(tmp_path: Path)
 
 
 def test_managed_cli_copies_are_identical() -> None:
-    source = (ROOT / "src/project_workflow/cli.py").read_bytes()
-    assert (ROOT / "src/project_workflow/templates/workflow.py").read_bytes() == source
+    source = (ROOT / "src/project_workflow/templates/workflow.py").read_bytes()
     assert (ROOT / ".project-workflow/cli/workflow.py").read_bytes() == source
+    assert b"# project-workflow:generated" in source
+    assert b"# source-manifest: scripts/runtime-modules.txt" in source
     product_text = "\n".join(
         (
             source.decode("utf-8"),

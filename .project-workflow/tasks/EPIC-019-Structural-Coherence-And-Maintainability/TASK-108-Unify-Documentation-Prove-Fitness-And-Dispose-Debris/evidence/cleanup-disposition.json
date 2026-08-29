@@ -1,0 +1,120 @@
+{
+  "contract": "project-workflow-cleanup-disposition-v1",
+  "captured_at": "2026-08-29T15:42:00+10:00",
+  "source": "86ca8859eb5e331db2505c2ae7230e2bc0030242+working-tree-candidate",
+  "rules": {
+    "remove_only_after": [
+      "target is exact and local",
+      "no unique work",
+      "no active task or task-thread dependency",
+      "no retained evidence claim",
+      "recoverable source exists when appropriate"
+    ],
+    "never_inferred": [
+      "remote branch deletion",
+      "historical evidence deletion",
+      "blocked-work completion",
+      "merge, release, rollout, or owner acceptance"
+    ]
+  },
+  "dispositions": [
+    {
+      "target": "README.md and RELEASING.md",
+      "kind": "current-documentation",
+      "decision": "replace",
+      "evidence": "README was 896 lines and RELEASING.md claimed 0.6.0 as current; focused replacements are 134 and 102 lines and pass the documentation contract.",
+      "result": "replaced without changing product behaviour"
+    },
+    {
+      "target": ".project-workflow/CONSTITUTION.md",
+      "kind": "stable-product-authority",
+      "decision": "retain-unchanged",
+      "evidence": "git diff is empty; its coherent-core and copied-helper-sprawl principles already govern this cleanup.",
+      "result": "retained byte-for-byte from v0.9.0"
+    },
+    {
+      "target": "repository empty directories",
+      "kind": "directory",
+      "decision": "none-found",
+      "evidence": "find reported no empty directory outside Git, environment, build, distribution, and cache trees.",
+      "result": "no deletion required"
+    },
+    {
+      "target": "codex/epic-018-v0.9.0-rollout local branch",
+      "kind": "local-branch",
+      "decision": "remove",
+      "evidence": "Commit 43803ad is an ancestor of origin/main, the branch owns no worktree, and origin/codex/epic-018-v0.9.0-rollout remains recoverable.",
+      "result": "deleted locally with git branch -d; no remote mutation"
+    },
+    {
+      "target": "/private/tmp/pw-cross-host.TywgOX and codex/cross-host-execution-control",
+      "kind": "worktree-and-branch",
+      "decision": "retain",
+      "evidence": "The worktree is clean and its commit is on origin/main, but the attached EPIC-018 task retains the explicit TASK-102 authenticated Claude canary obligation.",
+      "result": "retained for active blocked proof work"
+    },
+    {
+      "target": "/private/tmp/pw-enforcement.5bFv0N and codex/enforced-execution-envelope",
+      "kind": "worktree-and-branch",
+      "decision": "retain",
+      "evidence": "The worktree is clean but branch bd78627 is one unique commit ahead and five commits behind origin/main; it is not an ancestor of main.",
+      "result": "retained; unique work not dispositioned"
+    },
+    {
+      "target": "main and codex/structural-coherence-cleanup worktrees",
+      "kind": "worktree",
+      "decision": "retain",
+      "evidence": "Main is the canonical checkout and the cleanup worktree is the current authorized implementation context.",
+      "result": "retained"
+    },
+    {
+      "target": "dist, src/project_workflow.egg-info, .mypy_cache, .pytest_cache, .ruff_cache, and __pycache__ trees",
+      "kind": "ignored-local-output",
+      "decision": "remove-after-final-proof",
+      "evidence": "All paths are ignored generated build, metadata, bytecode, or tool-cache output; exact candidate hashes and journey receipts are retained in task evidence before removal.",
+      "result": "removed after final hashes and package-journey receipt were retained; post-cleanup ignored status contains only .venv"
+    },
+    {
+      "target": ".venv",
+      "kind": "ignored-local-environment",
+      "decision": "retain",
+      "evidence": "The 103 MB locked Python 3.10 project environment is the declared repeatable validation runtime, not repository content or unexplained debris.",
+      "result": "retained for maintainership"
+    },
+    {
+      "target": "16 tracked historical wheel and sdist files",
+      "kind": "binary-evidence",
+      "decision": "retain",
+      "evidence": "The 8.3 MB files are exact candidates attached to completed release, package, upgrade, and runtime claims; appearance as binary or duplicate packaging is not proof of redundancy.",
+      "result": "retained as auditable evidence"
+    },
+    {
+      "target": ".project-workflow/tasks and accepted Doctor history",
+      "kind": "workflow-history",
+      "decision": "retain",
+      "evidence": "574 files / 13 MB hold requirements, decisions, receipts, blocked work, deferrals, and accepted-warning provenance; current docs explicitly classify them as history rather than product instruction.",
+      "result": "retained"
+    },
+    {
+      "target": "src/project_workflow/templates/workflow.py and .project-workflow/cli/workflow.py",
+      "kind": "generated-runtime-mirrors",
+      "decision": "retain-generated",
+      "evidence": "Both dependency-free runtime targets are product requirements, generated from scripts/runtime-modules.txt, and byte-identical at sha256:21d14e16a695d8621c875c558210acc246d615825c865c1126744b4027d9e722.",
+      "result": "retained as generated derivatives, not authored copies"
+    },
+    {
+      "target": "installed Codex, Claude, and shared adapter copies",
+      "kind": "generated-adapter-mirrors",
+      "decision": "retain-generated",
+      "evidence": "Package/source-repository copy hashes match respectively: Codex 9248843b, Claude 727e341c, shared 0fdf506c; host-specific semantics remain explicit.",
+      "result": "retained with parity checks"
+    },
+    {
+      "target": "TASK-102 authenticated Claude Code canary blocker",
+      "kind": "active-proof-boundary",
+      "decision": "retain-blocked",
+      "evidence": "Package and fixture proof do not establish an authenticated, hook-active Claude runtime canary.",
+      "result": "preserved; no certification claim"
+    }
+  ]
+}

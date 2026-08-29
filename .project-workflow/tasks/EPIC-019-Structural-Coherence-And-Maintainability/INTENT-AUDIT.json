@@ -1,0 +1,236 @@
+{
+  "artifact_identity": "sha256:783423885fd00f4019f0d2452f18ffe817c535086ba8f170f6362caba6db4c17",
+  "commitments": [
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-104",
+        "TASK-105",
+        "TASK-106",
+        "TASK-108"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC1",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [
+        "AC1",
+        "AC2",
+        "AC3",
+        "AC4",
+        "AC5",
+        "AC8",
+        "AC11"
+      ],
+      "required_outcome_proof": "Architecture ownership, deterministic bundle parity, adapter boundaries, documentation authority, and exact-candidate compatibility all pass.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc1"
+      ],
+      "target_locations": [
+        "DECOMPOSITION.md#authorized-child-rows",
+        "EPIC-CONTRACT.md#artifact-targets"
+      ],
+      "user_visible_consequence": "Maintainers and coding agents have one canonical change path for every behaviour and instruction."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-104",
+        "TASK-105",
+        "TASK-106",
+        "TASK-107",
+        "TASK-108"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC2",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [
+        "AC1",
+        "AC2",
+        "AC3",
+        "AC4",
+        "AC5",
+        "AC6",
+        "AC7",
+        "AC8",
+        "AC9",
+        "AC10",
+        "AC11",
+        "AC12"
+      ],
+      "required_outcome_proof": "Each architecture, extraction, test, quality, documentation, cleanup, compatibility, and QA acceptance criterion has a child owner and passing evidence.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc2"
+      ],
+      "target_locations": [
+        "DECOMPOSITION.md#authorized-child-rows",
+        "ACCEPTANCE-MAP.md"
+      ],
+      "user_visible_consequence": "The cleanup leaves a complete maintainability system rather than an isolated file split."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-104",
+        "TASK-107",
+        "TASK-108"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC3",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [
+        "AC3",
+        "AC4",
+        "AC7",
+        "AC10",
+        "AC11"
+      ],
+      "required_outcome_proof": "A focused source change passes locked static checks, deterministic regeneration, the full suite, strict Doctor, build inspection, and exact package/local-helper journeys.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc3"
+      ],
+      "target_locations": [
+        "DECOMPOSITION.md#authorized-child-rows",
+        "EPIC-CONTRACT.md#parent-ac-proof-ownership"
+      ],
+      "user_visible_consequence": "A contributor can complete the normal change journey without editing generated mirrors."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-104",
+        "TASK-105",
+        "TASK-106",
+        "TASK-107",
+        "TASK-108"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC4",
+      "lost_capability": "",
+      "material": true,
+      "parent_acs": [
+        "AC2",
+        "AC3",
+        "AC4",
+        "AC5",
+        "AC6",
+        "AC7",
+        "AC8",
+        "AC9",
+        "AC10",
+        "AC11",
+        "AC12",
+        "AC13"
+      ],
+      "required_outcome_proof": "Architecture and QA checks reject micro-module sprawl, generated-source drift, public compatibility changes, stale guidance, proof deletion, and broadened delivery or runtime claims.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc4"
+      ],
+      "target_locations": [
+        "DECOMPOSITION.md#authorized-child-rows",
+        "EPIC-CONTRACT.md#invalid-substitutes"
+      ],
+      "user_visible_consequence": "A green but structurally incoherent or behaviourally narrowed cleanup cannot pass."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-104",
+        "TASK-108"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC5",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": [
+        "AC4",
+        "AC5",
+        "AC8",
+        "AC9",
+        "AC10",
+        "AC11",
+        "AC12",
+        "AC13"
+      ],
+      "required_outcome_proof": "Compatibility snapshots, cleanup dispositions, documentation review, and delivery-state records show no lifecycle redesign, product expansion, release, rollout, or Claude certification.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc5"
+      ],
+      "target_locations": [
+        "EPIC-CONTRACT.md#invariants",
+        "DECOMPOSITION.md#authorized-child-rows"
+      ],
+      "user_visible_consequence": "The maintainability cleanup does not silently become a product redesign or delivery action."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-104",
+        "TASK-105",
+        "TASK-106"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC6",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": [
+        "AC3",
+        "AC4",
+        "AC5",
+        "AC10",
+        "AC11"
+      ],
+      "required_outcome_proof": "Python 3.10, deterministic standalone runtime, no-installed-package journeys, adapter paths, and v0.9.0 compatibility snapshots pass.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc6"
+      ],
+      "target_locations": [
+        "EPIC-CONTRACT.md#invariants",
+        "DECOMPOSITION.md#authorized-child-rows"
+      ],
+      "user_visible_consequence": "Existing repositories keep a dependency-free local helper and supported runtime contract."
+    },
+    {
+      "amendment": null,
+      "child_owners": [
+        "TASK-104",
+        "TASK-108"
+      ],
+      "classification": "preserved",
+      "disposition": "active",
+      "id": "OC7",
+      "lost_capability": "",
+      "material": false,
+      "parent_acs": [
+        "AC8",
+        "AC9",
+        "AC10",
+        "AC11",
+        "AC12",
+        "AC13"
+      ],
+      "required_outcome_proof": "The approved artifact identity, v0.9.0 source identity, cleanup ledger, exact-candidate evidence, independent QA, and local-only delivery boundary remain inspectable.",
+      "source_locations": [
+        "REQUIREMENTS.md#intent-spine-oc7"
+      ],
+      "target_locations": [
+        "EPIC-CONTRACT.md#sources-of-truth",
+        "DECOMPOSITION.md#summary"
+      ],
+      "user_visible_consequence": "Owner intent and released-baseline authority remain traceable without implying later delivery approval."
+    }
+  ],
+  "review_source": "Owner-approved REQUIREMENTS.md, EPIC-CONTRACT.md, and DECOMPOSITION.md plus current child implementation and evidence review",
+  "reviewed_at": "2026-08-29",
+  "reviewed_by": "Codex Coordinator",
+  "schema_version": 1,
+  "verdict": "pass"
+}

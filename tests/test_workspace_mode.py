@@ -12,7 +12,6 @@ import pytest
 
 from project_workflow import cli as workflow_cli
 
-
 PROJECT_CMD = [sys.executable, "-m", "project_workflow.cli"]
 
 
@@ -105,11 +104,7 @@ def write_workspace_config(root: Path) -> Path:
     workflow_dir = root / ".project-workflow"
     workflow_dir.mkdir(parents=True, exist_ok=True)
     config_path = workflow_dir / "config.json"
-    payload = (
-        json.loads(config_path.read_text(encoding="utf-8"))
-        if config_path.exists()
-        else {}
-    )
+    payload = json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {}
     payload["workspace"] = {
         "authority_repository": "workspace",
         "repositories": [
@@ -399,12 +394,14 @@ def run_disposable_workspace_cli_journey(root: Path) -> dict[str, object]:
         )
     }
     for repository_id in ("workspace", "next", "email"):
-        assert before_lifecycle_close[repository_id]["head"] == after_lifecycle_close[
-            repository_id
-        ]["head"]
-        assert before_lifecycle_close[repository_id]["branch"] == after_lifecycle_close[
-            repository_id
-        ]["branch"]
+        assert (
+            before_lifecycle_close[repository_id]["head"]
+            == after_lifecycle_close[repository_id]["head"]
+        )
+        assert (
+            before_lifecycle_close[repository_id]["branch"]
+            == after_lifecycle_close[repository_id]["branch"]
+        )
     assert before_lifecycle_close["next"] == after_lifecycle_close["next"]
     assert before_lifecycle_close["email"] == after_lifecycle_close["email"]
 
@@ -428,6 +425,9 @@ def run_disposable_workspace_cli_journey(root: Path) -> dict[str, object]:
             "bootstrap_entrypoint": "python -m project_workflow.cli",
             "journey_entrypoint": ".project-workflow/cli/workflow",
             "source_cli_sha256": file_sha256(Path(workflow_cli.__file__).resolve()),
+            "canonical_generated_runtime_sha256": file_sha256(
+                Path(workflow_cli.__file__).resolve().parent / "templates" / "workflow.py"
+            ),
             "generated_helper_sha256": file_sha256(
                 root / ".project-workflow" / "cli" / "workflow.py"
             ),
@@ -482,9 +482,7 @@ def run_disposable_workspace_cli_journey(root: Path) -> dict[str, object]:
                 for path in sorted(evidence_dir.glob("*-validation.txt"))
             ],
             "all_task_artifacts": sorted(
-                str(path.relative_to(root))
-                for path in task_dir.rglob("*")
-                if path.is_file()
+                str(path.relative_to(root)) for path in task_dir.rglob("*") if path.is_file()
             ),
         },
     }
@@ -832,15 +830,14 @@ def test_disposable_workspace_cli_journey_reaches_complete_with_retained_proof(
     receipt = run_disposable_workspace_cli_journey(tmp_path / "cli-journey")
 
     assert receipt["lifecycle"]["final_status"] == "Complete"
-    assert receipt["source"]["source_cli_sha256"] == receipt["source"][
-        "generated_helper_sha256"
-    ]
+    assert (
+        receipt["source"]["canonical_generated_runtime_sha256"]
+        == receipt["source"]["generated_helper_sha256"]
+    )
     assert receipt["workspace"]["child_workflow_state_created"] is False
     assert receipt["status_observation"]["before_after_read_only_git_state_equal"] is True
     assert (
-        receipt["git_mutation_boundary"][
-            "heads_and_branches_unchanged_by_workflow_lifecycle"
-        ]
+        receipt["git_mutation_boundary"]["heads_and_branches_unchanged_by_workflow_lifecycle"]
         is True
     )
     assert receipt["git_mutation_boundary"]["commit_push_merge_release_deploy_performed"] is False

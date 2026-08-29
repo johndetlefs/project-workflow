@@ -1,0 +1,3337 @@
+{
+  "baseline": {
+    "commit": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+    "public_wheel_sha256": "9e30c52fb70c8d5e86e173a2e5da6566a7f68f2a450718d6c28f25996bb0d82b",
+    "released_test_count": 548,
+    "tag": "v0.9.0",
+    "version": "0.9.0"
+  },
+  "captured_from": {
+    "branch": "codex/structural-coherence-cleanup",
+    "head": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+    "installed_mirror_sha256": "21d14e16a695d8621c875c558210acc246d615825c865c1126744b4027d9e722",
+    "source_cli_sha256": "ee4ff6bc48c8d9687a6f2bcce9399d947924cae9570fd50f7da8cd9364809f90",
+    "template_sha256": "21d14e16a695d8621c875c558210acc246d615825c865c1126744b4027d9e722"
+  },
+  "command_surface": {
+    "options": [
+      {
+        "choices": null,
+        "dest": "version",
+        "nargs": 0,
+        "option_strings": [
+          "--version"
+        ],
+        "required": false
+      }
+    ],
+    "subcommands": {
+      "backlog": {
+        "options": [],
+        "subcommands": {
+          "add": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "notes",
+                "nargs": null,
+                "option_strings": [
+                  "--notes"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "outcome",
+                "nargs": null,
+                "option_strings": [
+                  "--outcome"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "High",
+                  "Medium",
+                  "Low",
+                  "Unset"
+                ],
+                "dest": "priority",
+                "nargs": null,
+                "option_strings": [
+                  "--priority"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "Proposed",
+                  "Accepted",
+                  "Deferred",
+                  "Rejected",
+                  "Superseded",
+                  "Promoted"
+                ],
+                "dest": "status",
+                "nargs": null,
+                "option_strings": [
+                  "--status"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "title",
+                "nargs": null,
+                "option_strings": [
+                  "--title"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "Idea",
+                  "Task Candidate",
+                  "Epic Candidate",
+                  "Discovery",
+                  "Follow-Up"
+                ],
+                "dest": "type",
+                "nargs": null,
+                "option_strings": [
+                  "--type"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "init": {
+            "options": [],
+            "subcommands": {}
+          },
+          "list": {
+            "options": [],
+            "subcommands": {}
+          },
+          "promote": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "accept",
+                "nargs": 0,
+                "option_strings": [
+                  "--accept"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "title",
+                "nargs": null,
+                "option_strings": [
+                  "--title"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "task",
+                  "epic"
+                ],
+                "dest": "to",
+                "nargs": null,
+                "option_strings": [
+                  "--to"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "status": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "Proposed",
+                  "Accepted",
+                  "Deferred",
+                  "Rejected",
+                  "Superseded",
+                  "Promoted"
+                ],
+                "dest": "to",
+                "nargs": null,
+                "option_strings": [
+                  "--to"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "update": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "notes",
+                "nargs": null,
+                "option_strings": [
+                  "--notes"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "outcome",
+                "nargs": null,
+                "option_strings": [
+                  "--outcome"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "High",
+                  "Medium",
+                  "Low",
+                  "Unset"
+                ],
+                "dest": "priority",
+                "nargs": null,
+                "option_strings": [
+                  "--priority"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "promoted_to",
+                "nargs": null,
+                "option_strings": [
+                  "--promoted-to"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "title",
+                "nargs": null,
+                "option_strings": [
+                  "--title"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "Idea",
+                  "Task Candidate",
+                  "Epic Candidate",
+                  "Discovery",
+                  "Follow-Up"
+                ],
+                "dest": "type",
+                "nargs": null,
+                "option_strings": [
+                  "--type"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "validate": {
+            "options": [],
+            "subcommands": {}
+          }
+        }
+      },
+      "coordinate": {
+        "options": [],
+        "subcommands": {
+          "boundary": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "affected_units",
+                "nargs": null,
+                "option_strings": [
+                  "--affected-units"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "amendment_identity",
+                "nargs": null,
+                "option_strings": [
+                  "--amendment-identity"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "after-plan-or-decomposition",
+                  "before-unit-start",
+                  "unit-return-or-dependency-join",
+                  "new-evidence-or-owner-reframe",
+                  "before-review-or-complete"
+                ],
+                "dest": "boundary",
+                "nargs": null,
+                "option_strings": [
+                  "--boundary"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "capability_change",
+                "nargs": null,
+                "option_strings": [
+                  "--capability-change"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "inside-envelope",
+                  "drift-detected",
+                  "approved-change"
+                ],
+                "dest": "classification",
+                "nargs": null,
+                "option_strings": [
+                  "--classification"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "consequence",
+                "nargs": null,
+                "option_strings": [
+                  "--consequence"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "decided_by",
+                "nargs": null,
+                "option_strings": [
+                  "--decided-by"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "next_action",
+                "nargs": null,
+                "option_strings": [
+                  "--next-action"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "ocs",
+                "nargs": null,
+                "option_strings": [
+                  "--ocs"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "dest": "shared_premises_valid",
+                "nargs": null,
+                "option_strings": [
+                  "--shared-premises-valid"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "checkpoint": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "actor",
+                "nargs": null,
+                "option_strings": [
+                  "--actor"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "affected_units",
+                "nargs": null,
+                "option_strings": [
+                  "--affected-units"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "entry_point",
+                "nargs": null,
+                "option_strings": [
+                  "--entry-point"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "observations",
+                "nargs": null,
+                "option_strings": [
+                  "--observations"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "operations",
+                "nargs": null,
+                "option_strings": [
+                  "--operations"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "not-required",
+                  "required",
+                  "provided"
+                ],
+                "dest": "owner_judgment",
+                "nargs": null,
+                "option_strings": [
+                  "--owner-judgment"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "recorded_by",
+                "nargs": null,
+                "option_strings": [
+                  "--recorded-by"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "resulting_state",
+                "nargs": null,
+                "option_strings": [
+                  "--resulting-state"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "source_environment",
+                "nargs": null,
+                "option_strings": [
+                  "--source-environment"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "starting_state",
+                "nargs": null,
+                "option_strings": [
+                  "--starting-state"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "unit",
+                "nargs": null,
+                "option_strings": [
+                  "--unit"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "pass",
+                  "fail",
+                  "pending"
+                ],
+                "dest": "verdict",
+                "nargs": null,
+                "option_strings": [
+                  "--verdict"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "context-record": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "context_id",
+                "nargs": null,
+                "option_strings": [
+                  "--context-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "loaded_asset_version",
+                "nargs": null,
+                "option_strings": [
+                  "--loaded-asset-version"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "loaded_contract_version",
+                "nargs": null,
+                "option_strings": [
+                  "--loaded-contract-version"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "loaded_package_version",
+                "nargs": null,
+                "option_strings": [
+                  "--loaded-package-version"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "next_action",
+                "nargs": null,
+                "option_strings": [
+                  "--next-action"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "init": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "checkpoint_unit",
+                "nargs": null,
+                "option_strings": [
+                  "--checkpoint-unit"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "mechanical",
+                  "user-facing",
+                  "authoring",
+                  "visual",
+                  "gameplay-feel",
+                  "migration",
+                  "replacement"
+                ],
+                "dest": "claim_class",
+                "nargs": null,
+                "option_strings": [
+                  "--claim-class"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "context_id",
+                "nargs": null,
+                "option_strings": [
+                  "--context-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "decision",
+                "nargs": null,
+                "option_strings": [
+                  "--decision"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "force",
+                "nargs": 0,
+                "option_strings": [
+                  "--force"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "loaded_asset_version",
+                "nargs": null,
+                "option_strings": [
+                  "--loaded-asset-version"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "loaded_contract_version",
+                "nargs": null,
+                "option_strings": [
+                  "--loaded-contract-version"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "loaded_package_version",
+                "nargs": null,
+                "option_strings": [
+                  "--loaded-package-version"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "yes",
+                  "no"
+                ],
+                "dest": "material_user_facing",
+                "nargs": null,
+                "option_strings": [
+                  "--material-user-facing"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "yes",
+                  "no"
+                ],
+                "dest": "material_verification",
+                "nargs": null,
+                "option_strings": [
+                  "--material-verification"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "next_action",
+                "nargs": null,
+                "option_strings": [
+                  "--next-action"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "phase",
+                "nargs": null,
+                "option_strings": [
+                  "--phase"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "repository_source",
+                "nargs": null,
+                "option_strings": [
+                  "--repository-source"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "source_revision",
+                "nargs": null,
+                "option_strings": [
+                  "--source-revision"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "verification_claims",
+                "nargs": null,
+                "option_strings": [
+                  "--verification-claims"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "verification_scope",
+                "nargs": null,
+                "option_strings": [
+                  "--verification-scope"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "verification_stages",
+                "nargs": null,
+                "option_strings": [
+                  "--verification-stages"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "phase": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "next_action",
+                "nargs": null,
+                "option_strings": [
+                  "--next-action"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "phase",
+                "nargs": null,
+                "option_strings": [
+                  "--phase"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "repository_source",
+                "nargs": null,
+                "option_strings": [
+                  "--repository-source"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "source_revision",
+                "nargs": null,
+                "option_strings": [
+                  "--source-revision"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "preflight": {
+            "options": [
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "status": {
+            "options": [
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "verification-capabilities": {
+            "options": [
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "verification-init": {
+            "options": [
+              {
+                "choices": [
+                  "request-binding",
+                  "selection",
+                  "fail-fast",
+                  "limits",
+                  "typed-outcomes",
+                  "checkpoint-resume",
+                  "input-bound-receipts",
+                  "transcript-regrade"
+                ],
+                "dest": "adapter_capability",
+                "nargs": null,
+                "option_strings": [
+                  "--adapter-capability"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "adapter_command_json",
+                "nargs": null,
+                "option_strings": [
+                  "--adapter-command-json"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "manual",
+                  "command"
+                ],
+                "dest": "adapter_kind",
+                "nargs": null,
+                "option_strings": [
+                  "--adapter-kind"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "affected_scope",
+                "nargs": null,
+                "option_strings": [
+                  "--affected-scope"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "candidate_identity",
+                "nargs": null,
+                "option_strings": [
+                  "--candidate-identity"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "claims",
+                "nargs": null,
+                "option_strings": [
+                  "--claims"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "diagnostic_decision",
+                "nargs": null,
+                "option_strings": [
+                  "--diagnostic-decision"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "force",
+                "nargs": 0,
+                "option_strings": [
+                  "--force"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "known",
+                  "unknown"
+                ],
+                "dest": "impact",
+                "nargs": null,
+                "option_strings": [
+                  "--impact"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "manual_command",
+                "nargs": null,
+                "option_strings": [
+                  "--manual-command"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "max_elapsed_seconds",
+                "nargs": null,
+                "option_strings": [
+                  "--max-elapsed-seconds"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "max_failures",
+                "nargs": null,
+                "option_strings": [
+                  "--max-failures"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "max_target_calls",
+                "nargs": null,
+                "option_strings": [
+                  "--max-target-calls"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "certification",
+                  "diagnostic"
+                ],
+                "dest": "mode",
+                "nargs": null,
+                "option_strings": [
+                  "--mode"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "stages",
+                "nargs": null,
+                "option_strings": [
+                  "--stages"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "verification-preflight": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "claim",
+                "nargs": null,
+                "option_strings": [
+                  "--claim"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "yes",
+                  "no"
+                ],
+                "dest": "material_verification",
+                "nargs": null,
+                "option_strings": [
+                  "--material-verification"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "scope",
+                "nargs": null,
+                "option_strings": [
+                  "--scope"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "stage",
+                "nargs": null,
+                "option_strings": [
+                  "--stage"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "verification-record": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "artifact",
+                "nargs": null,
+                "option_strings": [
+                  "--artifact"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "elapsed_seconds",
+                "nargs": null,
+                "option_strings": [
+                  "--elapsed-seconds"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "evaluator_identity",
+                "nargs": null,
+                "option_strings": [
+                  "--evaluator-identity"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "pass",
+                  "product-failure",
+                  "evaluator-failure",
+                  "provider-failure",
+                  "harness-failure",
+                  "limit-reached"
+                ],
+                "dest": "outcome",
+                "nargs": null,
+                "option_strings": [
+                  "--outcome"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "regrade",
+                "nargs": 0,
+                "option_strings": [
+                  "--regrade"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "runtime_identity",
+                "nargs": null,
+                "option_strings": [
+                  "--runtime-identity"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "scope",
+                "nargs": null,
+                "option_strings": [
+                  "--scope"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "deterministic",
+                  "canary",
+                  "affected",
+                  "full"
+                ],
+                "dest": "stage",
+                "nargs": null,
+                "option_strings": [
+                  "--stage"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "yes",
+                  "no"
+                ],
+                "dest": "stage_complete",
+                "nargs": null,
+                "option_strings": [
+                  "--stage-complete"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "target_calls",
+                "nargs": null,
+                "option_strings": [
+                  "--target-calls"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "target_identity",
+                "nargs": null,
+                "option_strings": [
+                  "--target-identity"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "verification-run": {
+            "options": [
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "regrade",
+                "nargs": 0,
+                "option_strings": [
+                  "--regrade"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "runtime_identity",
+                "nargs": null,
+                "option_strings": [
+                  "--runtime-identity"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "deterministic",
+                  "canary",
+                  "affected",
+                  "full"
+                ],
+                "dest": "stage",
+                "nargs": null,
+                "option_strings": [
+                  "--stage"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "target_identity",
+                "nargs": null,
+                "option_strings": [
+                  "--target-identity"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          }
+        }
+      },
+      "delegate": {
+        "options": [],
+        "subcommands": {
+          "plan": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "available_child_capacity",
+                "nargs": null,
+                "option_strings": [
+                  "--available-child-capacity"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "capability_source",
+                "nargs": null,
+                "option_strings": [
+                  "--capability-source"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "persistent-task",
+                  "isolated-worktree",
+                  "task-monitoring",
+                  "task-reconciliation",
+                  "subagent",
+                  "worktree",
+                  "subagent-isolated-worktree",
+                  "persistent-task-isolated-worktree",
+                  "peer-team",
+                  "peer-messaging",
+                  "peer-team-isolated-worktree",
+                  "persistent-task-owner-steering",
+                  "task-retirement",
+                  "task-retirement-reconciliation"
+                ],
+                "dest": "observed_capability",
+                "nargs": null,
+                "option_strings": [
+                  "--observed-capability"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "persistent_task_authority",
+                "nargs": null,
+                "option_strings": [
+                  "--persistent-task-authority"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "requested_concurrency",
+                "nargs": null,
+                "option_strings": [
+                  "--requested-concurrency"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "unit",
+                "nargs": null,
+                "option_strings": [
+                  "--unit"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "persistent-task",
+                  "isolated-worktree",
+                  "task-monitoring",
+                  "task-reconciliation",
+                  "subagent",
+                  "worktree",
+                  "subagent-isolated-worktree",
+                  "persistent-task-isolated-worktree",
+                  "peer-team",
+                  "peer-messaging",
+                  "peer-team-isolated-worktree",
+                  "persistent-task-owner-steering",
+                  "task-retirement",
+                  "task-retirement-reconciliation"
+                ],
+                "dest": "unsupported_capability",
+                "nargs": null,
+                "option_strings": [
+                  "--unsupported-capability"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "state-init": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "available_child_capacity",
+                "nargs": null,
+                "option_strings": [
+                  "--available-child-capacity"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "capability_source",
+                "nargs": null,
+                "option_strings": [
+                  "--capability-source"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "persistent-task",
+                  "isolated-worktree",
+                  "task-monitoring",
+                  "task-reconciliation",
+                  "subagent",
+                  "worktree",
+                  "subagent-isolated-worktree",
+                  "persistent-task-isolated-worktree",
+                  "peer-team",
+                  "peer-messaging",
+                  "peer-team-isolated-worktree",
+                  "persistent-task-owner-steering",
+                  "task-retirement",
+                  "task-retirement-reconciliation"
+                ],
+                "dest": "observed_capability",
+                "nargs": null,
+                "option_strings": [
+                  "--observed-capability"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "persistent_task_authority",
+                "nargs": null,
+                "option_strings": [
+                  "--persistent-task-authority"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "requested_concurrency",
+                "nargs": null,
+                "option_strings": [
+                  "--requested-concurrency"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "unit",
+                "nargs": null,
+                "option_strings": [
+                  "--unit"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "persistent-task",
+                  "isolated-worktree",
+                  "task-monitoring",
+                  "task-reconciliation",
+                  "subagent",
+                  "worktree",
+                  "subagent-isolated-worktree",
+                  "persistent-task-isolated-worktree",
+                  "peer-team",
+                  "peer-messaging",
+                  "peer-team-isolated-worktree",
+                  "persistent-task-owner-steering",
+                  "task-retirement",
+                  "task-retirement-reconciliation"
+                ],
+                "dest": "unsupported_capability",
+                "nargs": null,
+                "option_strings": [
+                  "--unsupported-capability"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "state-reconcile": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "available_child_capacity",
+                "nargs": null,
+                "option_strings": [
+                  "--available-child-capacity"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "capability_source",
+                "nargs": null,
+                "option_strings": [
+                  "--capability-source"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "persistent-task",
+                  "isolated-worktree",
+                  "task-monitoring",
+                  "task-reconciliation",
+                  "subagent",
+                  "worktree",
+                  "subagent-isolated-worktree",
+                  "persistent-task-isolated-worktree",
+                  "peer-team",
+                  "peer-messaging",
+                  "peer-team-isolated-worktree",
+                  "persistent-task-owner-steering",
+                  "task-retirement",
+                  "task-retirement-reconciliation"
+                ],
+                "dest": "observed_capability",
+                "nargs": null,
+                "option_strings": [
+                  "--observed-capability"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "observed_handles",
+                "nargs": null,
+                "option_strings": [
+                  "--observed-handles"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "persistent_task_authority",
+                "nargs": null,
+                "option_strings": [
+                  "--persistent-task-authority"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "requested_concurrency",
+                "nargs": null,
+                "option_strings": [
+                  "--requested-concurrency"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "unit",
+                "nargs": null,
+                "option_strings": [
+                  "--unit"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "persistent-task",
+                  "isolated-worktree",
+                  "task-monitoring",
+                  "task-reconciliation",
+                  "subagent",
+                  "worktree",
+                  "subagent-isolated-worktree",
+                  "persistent-task-isolated-worktree",
+                  "peer-team",
+                  "peer-messaging",
+                  "peer-team-isolated-worktree",
+                  "persistent-task-owner-steering",
+                  "task-retirement",
+                  "task-retirement-reconciliation"
+                ],
+                "dest": "unsupported_capability",
+                "nargs": null,
+                "option_strings": [
+                  "--unsupported-capability"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "status": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "available_child_capacity",
+                "nargs": null,
+                "option_strings": [
+                  "--available-child-capacity"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "capability_source",
+                "nargs": null,
+                "option_strings": [
+                  "--capability-source"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "persistent-task",
+                  "isolated-worktree",
+                  "task-monitoring",
+                  "task-reconciliation",
+                  "subagent",
+                  "worktree",
+                  "subagent-isolated-worktree",
+                  "persistent-task-isolated-worktree",
+                  "peer-team",
+                  "peer-messaging",
+                  "peer-team-isolated-worktree",
+                  "persistent-task-owner-steering",
+                  "task-retirement",
+                  "task-retirement-reconciliation"
+                ],
+                "dest": "observed_capability",
+                "nargs": null,
+                "option_strings": [
+                  "--observed-capability"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "persistent_task_authority",
+                "nargs": null,
+                "option_strings": [
+                  "--persistent-task-authority"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "requested_concurrency",
+                "nargs": null,
+                "option_strings": [
+                  "--requested-concurrency"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "unit",
+                "nargs": null,
+                "option_strings": [
+                  "--unit"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "persistent-task",
+                  "isolated-worktree",
+                  "task-monitoring",
+                  "task-reconciliation",
+                  "subagent",
+                  "worktree",
+                  "subagent-isolated-worktree",
+                  "persistent-task-isolated-worktree",
+                  "peer-team",
+                  "peer-messaging",
+                  "peer-team-isolated-worktree",
+                  "persistent-task-owner-steering",
+                  "task-retirement",
+                  "task-retirement-reconciliation"
+                ],
+                "dest": "unsupported_capability",
+                "nargs": null,
+                "option_strings": [
+                  "--unsupported-capability"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          }
+        }
+      },
+      "doctor": {
+        "options": [
+          {
+            "choices": [
+              "human",
+              "json"
+            ],
+            "dest": "format",
+            "nargs": null,
+            "option_strings": [
+              "--format"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "root",
+            "nargs": null,
+            "option_strings": [
+              "--root"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "show_accepted",
+            "nargs": 0,
+            "option_strings": [
+              "--show-accepted"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "strict",
+            "nargs": 0,
+            "option_strings": [
+              "--strict"
+            ],
+            "required": false
+          }
+        ],
+        "subcommands": {}
+      },
+      "epic": {
+        "options": [],
+        "subcommands": {
+          "adopt": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "approved_by",
+                "nargs": null,
+                "option_strings": [
+                  "--approved-by"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "evidence_refreshed",
+                "nargs": 0,
+                "option_strings": [
+                  "--evidence-refreshed"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "source",
+                "nargs": null,
+                "option_strings": [
+                  "--source"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "amend": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "approved_by",
+                "nargs": null,
+                "option_strings": [
+                  "--approved-by"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "parent_acs",
+                "nargs": null,
+                "option_strings": [
+                  "--parent-acs"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "reason",
+                "nargs": null,
+                "option_strings": [
+                  "--reason"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "source",
+                "nargs": null,
+                "option_strings": [
+                  "--source"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "title",
+                "nargs": null,
+                "option_strings": [
+                  "--title"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "Task",
+                  "Epic",
+                  "Milestone"
+                ],
+                "dest": "type",
+                "nargs": null,
+                "option_strings": [
+                  "--type"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "approval-summary": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "approve": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "approve-requirements": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "approved_by",
+                "nargs": null,
+                "option_strings": [
+                  "--approved-by"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "source",
+                "nargs": null,
+                "option_strings": [
+                  "--source"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "audit": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "closeout": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "complete",
+                "nargs": 0,
+                "option_strings": [
+                  "--complete"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "decompose": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "item_type",
+                "nargs": null,
+                "option_strings": [
+                  "--type"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "limit",
+                "nargs": null,
+                "option_strings": [
+                  "--limit"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "prefix",
+                "nargs": null,
+                "option_strings": [
+                  "--prefix"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "init": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "folder_suffix",
+                "nargs": null,
+                "option_strings": [
+                  "--folder-suffix"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "overwrite",
+                "nargs": 0,
+                "option_strings": [
+                  "--overwrite"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "status",
+                "nargs": null,
+                "option_strings": [
+                  "--status"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "title",
+                "nargs": null,
+                "option_strings": [
+                  "--title"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "intent-audit": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "lifecycle": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "Analysing",
+                  "Ready",
+                  "In Progress",
+                  "Closeout",
+                  "Complete"
+                ],
+                "dest": "to",
+                "nargs": null,
+                "option_strings": [
+                  "--to"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "ready": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "ready-child": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "scaffold-child": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "branch_prefix",
+                "nargs": null,
+                "option_strings": [
+                  "--branch-prefix"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "create_branch",
+                "nargs": 0,
+                "option_strings": [
+                  "--create-branch"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "epic_branch",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-branch"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "overwrite",
+                "nargs": 0,
+                "option_strings": [
+                  "--overwrite"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "status": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "epic_id",
+                "nargs": null,
+                "option_strings": [
+                  "--epic-id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "force",
+                "nargs": 0,
+                "option_strings": [
+                  "--force"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "reason",
+                "nargs": null,
+                "option_strings": [
+                  "--reason"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "Proposed",
+                  "Approved",
+                  "In Progress",
+                  "Testing",
+                  "Review",
+                  "Blocked",
+                  "Complete"
+                ],
+                "dest": "to",
+                "nargs": null,
+                "option_strings": [
+                  "--to"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          }
+        }
+      },
+      "execute": {
+        "options": [
+          {
+            "choices": [
+              "human",
+              "json"
+            ],
+            "dest": "format",
+            "nargs": null,
+            "option_strings": [
+              "--format"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "id",
+            "nargs": null,
+            "option_strings": [
+              "--id"
+            ],
+            "required": true
+          }
+        ],
+        "subcommands": {}
+      },
+      "fix": {
+        "options": [],
+        "subcommands": {
+          "close": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "closed_by",
+                "nargs": null,
+                "option_strings": [
+                  "--closed-by"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "closed_date",
+                "nargs": null,
+                "option_strings": [
+                  "--closed-date"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "decision",
+                "nargs": null,
+                "option_strings": [
+                  "--decision"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "Fixed",
+                  "Duplicate",
+                  "Rejected",
+                  "Deferred"
+                ],
+                "dest": "disposition",
+                "nargs": null,
+                "option_strings": [
+                  "--disposition"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "init": {
+            "options": [
+              {
+                "choices": [
+                  "Defect",
+                  "Regression",
+                  "Change Request",
+                  "Incident"
+                ],
+                "dest": "classification",
+                "nargs": null,
+                "option_strings": [
+                  "--classification"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "Normal",
+                  "Hotfix"
+                ],
+                "dest": "mode",
+                "nargs": null,
+                "option_strings": [
+                  "--mode"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "title",
+                "nargs": null,
+                "option_strings": [
+                  "--title"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "promote": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "promoted_by",
+                "nargs": null,
+                "option_strings": [
+                  "--promoted-by"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "reason",
+                "nargs": null,
+                "option_strings": [
+                  "--reason"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "title",
+                "nargs": null,
+                "option_strings": [
+                  "--title"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "task",
+                  "epic"
+                ],
+                "dest": "to",
+                "nargs": null,
+                "option_strings": [
+                  "--to"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "status": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "To Do",
+                  "Ready",
+                  "In Progress",
+                  "Testing",
+                  "Review",
+                  "Blocked",
+                  "Complete",
+                  "N/A"
+                ],
+                "dest": "to",
+                "nargs": null,
+                "option_strings": [
+                  "--to"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "triage": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          }
+        }
+      },
+      "init": {
+        "options": [
+          {
+            "choices": null,
+            "dest": "agent",
+            "nargs": null,
+            "option_strings": [
+              "--agent"
+            ],
+            "required": false
+          }
+        ],
+        "subcommands": {}
+      },
+      "release": {
+        "options": [
+          {
+            "choices": [
+              "human",
+              "json"
+            ],
+            "dest": "format",
+            "nargs": null,
+            "option_strings": [
+              "--format"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "id",
+            "nargs": null,
+            "option_strings": [
+              "--id"
+            ],
+            "required": true
+          }
+        ],
+        "subcommands": {}
+      },
+      "smoke-bomb": {
+        "options": [
+          {
+            "choices": null,
+            "dest": "apply",
+            "nargs": 0,
+            "option_strings": [
+              "--apply"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "client_agent",
+            "nargs": null,
+            "option_strings": [
+              "--client-agent"
+            ],
+            "required": true
+          },
+          {
+            "choices": null,
+            "dest": "fail_after_replacements",
+            "nargs": null,
+            "option_strings": [
+              "--fail-after-replacements"
+            ],
+            "required": false
+          },
+          {
+            "choices": [
+              "human",
+              "json"
+            ],
+            "dest": "format",
+            "nargs": null,
+            "option_strings": [
+              "--format"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "output",
+            "nargs": null,
+            "option_strings": [
+              "--output"
+            ],
+            "required": true
+          },
+          {
+            "choices": null,
+            "dest": "plan",
+            "nargs": 0,
+            "option_strings": [
+              "--plan"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "plan_fingerprint",
+            "nargs": null,
+            "option_strings": [
+              "--plan-fingerprint"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "root",
+            "nargs": null,
+            "option_strings": [
+              "--root"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "validation_command",
+            "nargs": null,
+            "option_strings": [
+              "--validation-command"
+            ],
+            "required": true
+          },
+          {
+            "choices": null,
+            "dest": "yes",
+            "nargs": 0,
+            "option_strings": [
+              "--yes"
+            ],
+            "required": false
+          }
+        ],
+        "subcommands": {}
+      },
+      "status": {
+        "options": [
+          {
+            "choices": [
+              "human",
+              "json"
+            ],
+            "dest": "format",
+            "nargs": null,
+            "option_strings": [
+              "--format"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "id",
+            "nargs": null,
+            "option_strings": [
+              "--id"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "repository",
+            "nargs": null,
+            "option_strings": [
+              "--repository"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "root",
+            "nargs": null,
+            "option_strings": [
+              "--root"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "strict",
+            "nargs": 0,
+            "option_strings": [
+              "--strict"
+            ],
+            "required": false
+          }
+        ],
+        "subcommands": {}
+      },
+      "task": {
+        "options": [],
+        "subcommands": {
+          "adopt": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "approved_by",
+                "nargs": null,
+                "option_strings": [
+                  "--approved-by"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "evidence_refreshed",
+                "nargs": 0,
+                "option_strings": [
+                  "--evidence-refreshed"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "source",
+                "nargs": null,
+                "option_strings": [
+                  "--source"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "approval-summary": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "approve-requirements": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "approved_by",
+                "nargs": null,
+                "option_strings": [
+                  "--approved-by"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "source",
+                "nargs": null,
+                "option_strings": [
+                  "--source"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "init": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "base_branch",
+                "nargs": null,
+                "option_strings": [
+                  "--base-branch"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "branch_prefix",
+                "nargs": null,
+                "option_strings": [
+                  "--branch-prefix"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "create_branch",
+                "nargs": 0,
+                "option_strings": [
+                  "--create-branch"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "folder_suffix",
+                "nargs": null,
+                "option_strings": [
+                  "--folder-suffix"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "overwrite",
+                "nargs": 0,
+                "option_strings": [
+                  "--overwrite"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "prefix",
+                "nargs": null,
+                "option_strings": [
+                  "--prefix"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "status",
+                "nargs": null,
+                "option_strings": [
+                  "--status"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "title",
+                "nargs": null,
+                "option_strings": [
+                  "--title"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "update_tracker",
+                "nargs": 0,
+                "option_strings": [
+                  "--update-tracker"
+                ],
+                "required": false
+              }
+            ],
+            "subcommands": {}
+          },
+          "ready": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          },
+          "status": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "force",
+                "nargs": 0,
+                "option_strings": [
+                  "--force"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "reason",
+                "nargs": null,
+                "option_strings": [
+                  "--reason"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "To Do",
+                  "Analysing",
+                  "Ready",
+                  "Plan Confirmed",
+                  "In Progress",
+                  "Closeout",
+                  "Blocked",
+                  "Testing",
+                  "Review",
+                  "Complete",
+                  "N/A"
+                ],
+                "dest": "to",
+                "nargs": null,
+                "option_strings": [
+                  "--to"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          }
+        }
+      },
+      "upgrade": {
+        "options": [
+          {
+            "choices": null,
+            "dest": "agent",
+            "nargs": null,
+            "option_strings": [
+              "--agent"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "apply",
+            "nargs": 0,
+            "option_strings": [
+              "--apply"
+            ],
+            "required": false
+          },
+          {
+            "choices": [
+              "human",
+              "json"
+            ],
+            "dest": "format",
+            "nargs": null,
+            "option_strings": [
+              "--format"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "plan",
+            "nargs": 0,
+            "option_strings": [
+              "--plan"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "plan_fingerprint",
+            "nargs": null,
+            "option_strings": [
+              "--plan-fingerprint"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "root",
+            "nargs": null,
+            "option_strings": [
+              "--root"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "yes",
+            "nargs": 0,
+            "option_strings": [
+              "--yes"
+            ],
+            "required": false
+          }
+        ],
+        "subcommands": {}
+      },
+      "validate": {
+        "options": [
+          {
+            "choices": [
+              "human",
+              "json"
+            ],
+            "dest": "format",
+            "nargs": null,
+            "option_strings": [
+              "--format"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "root",
+            "nargs": null,
+            "option_strings": [
+              "--root"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "show_accepted",
+            "nargs": 0,
+            "option_strings": [
+              "--show-accepted"
+            ],
+            "required": false
+          },
+          {
+            "choices": null,
+            "dest": "strict",
+            "nargs": 0,
+            "option_strings": [
+              "--strict"
+            ],
+            "required": false
+          }
+        ],
+        "subcommands": {}
+      },
+      "validation": {
+        "options": [],
+        "subcommands": {
+          "impact": {
+            "options": [
+              {
+                "choices": null,
+                "dest": "baseline",
+                "nargs": null,
+                "option_strings": [
+                  "--baseline"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "change_summary",
+                "nargs": null,
+                "option_strings": [
+                  "--change-summary"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "unaffected",
+                  "affected",
+                  "ambiguous"
+                ],
+                "dest": "classification",
+                "nargs": null,
+                "option_strings": [
+                  "--classification"
+                ],
+                "required": true
+              },
+              {
+                "choices": null,
+                "dest": "decided_by",
+                "nargs": null,
+                "option_strings": [
+                  "--decided-by"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "human",
+                  "json"
+                ],
+                "dest": "format",
+                "nargs": null,
+                "option_strings": [
+                  "--format"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "id",
+                "nargs": null,
+                "option_strings": [
+                  "--id"
+                ],
+                "required": true
+              },
+              {
+                "choices": [
+                  "requirements-approval",
+                  "readiness",
+                  "implementation",
+                  "qa-review",
+                  "parent-acceptance",
+                  "structured-evidence"
+                ],
+                "dest": "proof_layer",
+                "nargs": null,
+                "option_strings": [
+                  "--proof-layer"
+                ],
+                "required": false
+              },
+              {
+                "choices": null,
+                "dest": "root",
+                "nargs": null,
+                "option_strings": [
+                  "--root"
+                ],
+                "required": false
+              },
+              {
+                "choices": [
+                  "pending",
+                  "pass",
+                  "fail",
+                  "not-required"
+                ],
+                "dest": "validation_verdict",
+                "nargs": null,
+                "option_strings": [
+                  "--validation-verdict"
+                ],
+                "required": true
+              }
+            ],
+            "subcommands": {}
+          }
+        }
+      }
+    }
+  },
+  "contracts": {
+    "asset_version": 8,
+    "coordination_contract_version": 2,
+    "coordination_schema_version": 2,
+    "doctor_output_schema_version": 1,
+    "execution_control_schema_version": 1,
+    "manifest_version": 1,
+    "operational_status_schema_version": 1,
+    "package_version": "0.9.0",
+    "repository_schema_version": 1
+  },
+  "generated_paths": [
+    ".agents/skills/project-backlog/SKILL.md",
+    ".agents/skills/project-clarify/SKILL.md",
+    ".agents/skills/project-constitution/SKILL.md",
+    ".agents/skills/project-coordinator/SKILL.md",
+    ".agents/skills/project-delegate/SKILL.md",
+    ".agents/skills/project-epic/SKILL.md",
+    ".agents/skills/project-fix/SKILL.md",
+    ".agents/skills/project-implement/SKILL.md",
+    ".agents/skills/project-planner/SKILL.md",
+    ".agents/skills/project-qa-review/SKILL.md",
+    ".agents/skills/project-requirements/SKILL.md",
+    ".agents/skills/project-retro/SKILL.md",
+    ".agents/skills/project-smoke-bomb/SKILL.md",
+    ".agents/skills/project-task/SKILL.md",
+    ".github/prompts/Backlog.prompt.md",
+    ".github/prompts/Clarify.prompt.md",
+    ".github/prompts/Constitution.prompt.md",
+    ".github/prompts/Coordinator.prompt.md",
+    ".github/prompts/Delegate.prompt.md",
+    ".github/prompts/Epic.prompt.md",
+    ".github/prompts/Fix.prompt.md",
+    ".github/prompts/Implement.prompt.md",
+    ".github/prompts/Planner.prompt.md",
+    ".github/prompts/QAReview.prompt.md",
+    ".github/prompts/Requirements.prompt.md",
+    ".github/prompts/Retro.prompt.md",
+    ".github/prompts/SmokeBomb.prompt.md",
+    ".github/prompts/Task.prompt.md",
+    ".project-workflow/cli/README.md",
+    ".project-workflow/cli/adapter_common.py",
+    ".project-workflow/cli/claude_adapter.py",
+    ".project-workflow/cli/claude_plugin/project-workflow-execution-control/.claude-plugin/plugin.json",
+    ".project-workflow/cli/claude_plugin/project-workflow-execution-control/README.md",
+    ".project-workflow/cli/claude_plugin/project-workflow-execution-control/hooks/hooks.json",
+    ".project-workflow/cli/claude_plugin/project-workflow-execution-control/scripts/project-workflow-claude-hook",
+    ".project-workflow/cli/codex_adapter.py",
+    ".project-workflow/cli/workflow",
+    ".project-workflow/cli/workflow.py"
+  ],
+  "schema_version": 1
+}

@@ -39,3 +39,5 @@
 | EPIC-016 | Effective And Proportionate Coordination | In Progress | `tasks/EPIC-016-Effective-And-Proportionate-Coordination/REQUIREMENTS.md` |
 | EPIC-017 | Proportionate Verification Lifecycle | Complete | `tasks/EPIC-017-Proportionate-Verification-Lifecycle/REQUIREMENTS.md` |
 | EPIC-018 | Cross-Host Bounded Execution And Release Control | In Progress | `tasks/EPIC-018-Cross-Host-Bounded-Execution-And-Release-Control/REQUIREMENTS.md` |
+| EPIC-019 | Structural Coherence And Maintainability | Complete | `tasks/EPIC-019-Structural-Coherence-And-Maintainability/REQUIREMENTS.md` |
+| EPIC-020 | Release Structural Cleanup And Upgrade All Projects | In Progress | `tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/REQUIREMENTS.md` |

@@ -204,6 +204,25 @@ def record(
     return run_project(root, *args)
 
 
+def test_terminal_work_item_keeps_verification_campaign_inspectable(tmp_path: Path) -> None:
+    fixture_repo(tmp_path)
+    initialized = init_campaign(tmp_path)
+    assert initialized.returncode == 0, initialized.stdout + initialized.stderr
+
+    tracker_path = tmp_path / ".project-workflow/TRACKER.md"
+    lines, _header, rows = workflow_cli._global_tracker_rows(tracker_path)
+    row = next(row for row in rows if row["ID"] == "TASK-001")
+    row["Status"] = "Complete"
+    lines[int(row["_line_idx"])] = workflow_cli._format_global_tracker_row(row)
+    tracker_path.write_text("".join(lines), encoding="utf-8")
+
+    state = workflow_cli._coordination_load_state(tmp_path, "TASK-001")
+    projection = workflow_cli._verification_campaign_projection(tmp_path, "TASK-001", state)
+
+    assert projection["lifecycle"] == "Complete"
+    assert projection["campaign_present"] is True
+
+
 def test_incomplete_release_preflight_is_read_only_and_invokes_nothing(
     tmp_path: Path,
 ) -> None:

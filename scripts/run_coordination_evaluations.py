@@ -11,7 +11,6 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS_PATH = ROOT / "evaluations/coordination/scenarios.json"
 SCHEMA_PATH = ROOT / "evaluations/coordination/output-schema.json"
@@ -60,15 +59,12 @@ def provenance_command(command: tuple[str, ...], output_path: Path) -> list[str]
         str(SCHEMA_PATH): str(SCHEMA_PATH.relative_to(ROOT)),
         str(output_path): "<ephemeral-output-path>",
     }
-    return [replacements.get(token, token) for token in command[:-1]] + [
-        "<prompt-via-stdin>"
-    ]
+    return [replacements.get(token, token) for token in command[:-1]] + ["<prompt-via-stdin>"]
 
 
 def build_prompt(contract_label: str, contract: str, corpus: dict[str, object]) -> str:
     scenarios = [
-        {"id": scenario["id"], "prompt": scenario["prompt"]}
-        for scenario in corpus["scenarios"]
+        {"id": scenario["id"], "prompt": scenario["prompt"]} for scenario in corpus["scenarios"]
     ]
     return f"""You are evaluating one supplied Project Workflow contract.
 
@@ -149,9 +145,7 @@ def run_trial(
             "model": model,
             "command": provenance_command(command, output_path),
             "prompt_hash": sha256_bytes(prompt.encode("utf-8")),
-            "response_hash": sha256_bytes(
-                json.dumps(response, sort_keys=True).encode("utf-8")
-            ),
+            "response_hash": sha256_bytes(json.dumps(response, sort_keys=True).encode("utf-8")),
             "usage": usage or "not-reported",
             "event_types": sorted(set(event_types)),
         }
@@ -162,9 +156,7 @@ def grade(corpus: dict[str, object], response: dict[str, object]) -> dict[str, o
     scenarios = corpus["scenarios"]
     expected = {item["id"]: item for item in scenarios}
     results = response.get("results", [])
-    actual = {
-        item.get("id"): item for item in results if isinstance(item, dict) and item.get("id")
-    }
+    actual = {item.get("id"): item for item in results if isinstance(item, dict) and item.get("id")}
     verdicts: list[dict[str, object]] = []
     for scenario_id, scenario in expected.items():
         result = actual.get(scenario_id)
@@ -203,17 +195,12 @@ def grade(corpus: dict[str, object], response: dict[str, object]) -> dict[str, o
                     control for control in actual_controls if control not in accepted_controls
                 ]
                 if missing_controls:
-                    failures.append(
-                        "missing preservation controls: " + ", ".join(missing_controls)
-                    )
+                    failures.append("missing preservation controls: " + ", ".join(missing_controls))
                 if unexpected_controls:
                     failures.append(
-                        "unexpected preservation controls: "
-                        + ", ".join(unexpected_controls)
+                        "unexpected preservation controls: " + ", ".join(unexpected_controls)
                     )
-        verdicts.append(
-            {"id": scenario_id, "pass": not failures, "failures": failures}
-        )
+        verdicts.append({"id": scenario_id, "pass": not failures, "failures": failures})
     return {
         "passed": sum(1 for item in verdicts if item["pass"]),
         "total": len(verdicts),
@@ -227,9 +214,7 @@ def main() -> None:
     parser.add_argument("--model", required=True)
     parser.add_argument("--trials", type=int, default=2)
     parser.add_argument("--baseline-ref", default="origin/main")
-    parser.add_argument(
-        "--condition", choices=("both", "baseline", "candidate"), default="both"
-    )
+    parser.add_argument("--condition", choices=("both", "baseline", "candidate"), default="both")
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     if args.trials < 2:
@@ -241,9 +226,7 @@ def main() -> None:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     runs: list[dict[str, object]] = []
     selected_conditions = (
-        ("baseline", "candidate")
-        if args.condition == "both"
-        else (args.condition,)
+        ("baseline", "candidate") if args.condition == "both" else (args.condition,)
     )
     for label, contract in (("baseline", baseline), ("candidate", candidate)):
         if label not in selected_conditions:
@@ -272,9 +255,7 @@ def main() -> None:
         "corpus_hash": sha256_bytes(CORPUS_PATH.read_bytes()),
         "harness_hash": sha256_bytes(Path(__file__).read_bytes()),
         "candidate_commit": git("rev-parse", "HEAD"),
-        "candidate_tracked_diff_hash": sha256_bytes(
-            git("diff", "--binary").encode("utf-8")
-        ),
+        "candidate_tracked_diff_hash": sha256_bytes(git("diff", "--binary").encode("utf-8")),
         "candidate_contract_hash": sha256_bytes(candidate.encode("utf-8")),
         "baseline_ref": args.baseline_ref,
         "baseline_commit": git("rev-parse", args.baseline_ref),

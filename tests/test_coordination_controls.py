@@ -167,14 +167,16 @@ def test_existing_task_lifecycle_enforces_source_bound_decisions_automatically(
         "_task_ready_issues_for_paths",
         lambda *, requirements_path, implementation_path: [],
     )
-    update = lambda: workflow_cli._update_global_tracker_row_status(
-        root=tmp_path,
-        tracker_path=tmp_path / ".project-workflow/TRACKER.md",
-        row_id="TASK-001",
-        new_status="Testing",
-        force=False,
-        reason=None,
-    )
+
+    def update():
+        return workflow_cli._update_global_tracker_row_status(
+            root=tmp_path,
+            tracker_path=tmp_path / ".project-workflow/TRACKER.md",
+            row_id="TASK-001",
+            new_status="Testing",
+            force=False,
+            reason=None,
+        )
 
     with pytest.raises(SystemExit) as missing_return:
         update()
@@ -314,14 +316,17 @@ def test_epic_child_lifecycle_rejects_stale_source_bound_decision(
         "_task_ready_issues_for_paths",
         lambda *, requirements_path, implementation_path, parent_ac_ids: [],
     )
-    update = lambda: workflow_cli._update_epic_child_status(
-        root=tmp_path,
-        epic_tracker_path=epic_dir / "TRACKER.md",
-        row_id="TASK-901",
-        new_status="Testing",
-        force=False,
-        reason=None,
-    )
+
+    def update():
+        return workflow_cli._update_epic_child_status(
+            root=tmp_path,
+            epic_tracker_path=epic_dir / "TRACKER.md",
+            row_id="TASK-901",
+            new_status="Testing",
+            force=False,
+            reason=None,
+        )
+
     with pytest.raises(SystemExit) as stale:
         update()
     assert "stale source-bound" in str(stale.value)

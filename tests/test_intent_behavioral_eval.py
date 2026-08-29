@@ -6,7 +6,6 @@ import json
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).parents[1]
 EVAL_DIR = ROOT / "evaluations" / "intent_integrity"
 
@@ -114,9 +113,7 @@ def test_grader_rejects_proxy_completion_even_when_route_is_full() -> None:
 
 def test_preserved_release_trials_pass_all_six_cases_and_calibration_is_retained() -> None:
     grader = load_grader()
-    expectations = json.loads(
-        (EVAL_DIR / "expectations.json").read_text(encoding="utf-8")
-    )
+    expectations = json.loads((EVAL_DIR / "expectations.json").read_text(encoding="utf-8"))
     results = EVAL_DIR / "results"
     trials = {
         path.stem: json.loads(path.read_text(encoding="utf-8"))
@@ -150,26 +147,27 @@ def test_run_manifest_binds_every_raw_trial_to_prompt_runtime_and_evaluator() ->
         "trial-3",
     }
     prompts = json.loads((EVAL_DIR / "prompts.json").read_text(encoding="utf-8"))
-    assert all(
-        re.fullmatch(r"[0-9a-f-]{36}", trial["session_id"])
-        for trial in manifest["trials"]
-    )
+    assert all(re.fullmatch(r"[0-9a-f-]{36}", trial["session_id"]) for trial in manifest["trials"])
     for name in ("cases", "output_schema", "expectations"):
         filename = {
             "cases": "cases.json",
             "output_schema": "output.schema.json",
             "expectations": "expectations.json",
         }[name]
-        assert runtime[f"{name}_sha256"] == hashlib.sha256(
-            (EVAL_DIR / filename).read_bytes()
-        ).hexdigest()
-    assert runtime["evaluator_sha256"] == hashlib.sha256(
-        (EVAL_DIR / "grade_results.py").read_bytes()
-    ).hexdigest()
+        assert (
+            runtime[f"{name}_sha256"]
+            == hashlib.sha256((EVAL_DIR / filename).read_bytes()).hexdigest()
+        )
+    assert (
+        runtime["evaluator_sha256"]
+        == hashlib.sha256((EVAL_DIR / "grade_results.py").read_bytes()).hexdigest()
+    )
     for trial in manifest["trials"]:
-        assert trial["prompt_sha256"] == hashlib.sha256(
-            prompts[trial["trial_id"]].encode("utf-8")
-        ).hexdigest()
-        assert trial["raw_result_sha256"] == hashlib.sha256(
-            (EVAL_DIR / trial["raw_result"]).read_bytes()
-        ).hexdigest()
+        assert (
+            trial["prompt_sha256"]
+            == hashlib.sha256(prompts[trial["trial_id"]].encode("utf-8")).hexdigest()
+        )
+        assert (
+            trial["raw_result_sha256"]
+            == hashlib.sha256((EVAL_DIR / trial["raw_result"]).read_bytes()).hexdigest()
+        )

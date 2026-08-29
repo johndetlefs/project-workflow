@@ -1,0 +1,114 @@
+{
+  "boundary_decisions": [
+    {
+      "affected_units": [
+        "TASK-109",
+        "TASK-110",
+        "TASK-111",
+        "TASK-112"
+      ],
+      "amendment_identity": null,
+      "boundary": "after-plan-or-decomposition",
+      "capability_change": "Four child plans preserve candidate, publication, public verification, and complete-estate rollout without scope change",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-08-29",
+      "intent_identity": "sha256:42084484f6751cf5a500f3d7e679f9653676b8da0f3cfdfd9ab2a24317ca0396",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+      "user_consequence": "Proceed through TASK-109 exact-candidate preparation"
+    }
+  ],
+  "decisions": [
+    "0.9.1 is a compatible maintenance release",
+    "Only public exact-version package may upgrade consumers",
+    "Complete inventory is mandatory; unsafe roots remain unchanged"
+  ],
+  "host_facts": {
+    "context_contract": "declared",
+    "telemetry": "unknown"
+  },
+  "intent_identity": "sha256:42084484f6751cf5a500f3d7e679f9653676b8da0f3cfdfd9ab2a24317ca0396",
+  "last_boundary": {
+    "affected_units": [
+      "TASK-109",
+      "TASK-110",
+      "TASK-111",
+      "TASK-112"
+    ],
+    "amendment_identity": null,
+    "boundary": "after-plan-or-decomposition",
+    "capability_change": "Four child plans preserve candidate, publication, public verification, and complete-estate rollout without scope change",
+    "classification": "inside-envelope",
+    "decided_by": "Coordinator",
+    "decision_date": "2026-08-29",
+    "intent_identity": "sha256:42084484f6751cf5a500f3d7e679f9653676b8da0f3cfdfd9ab2a24317ca0396",
+    "relevant_ocs": [
+      "OC1",
+      "OC2",
+      "OC3",
+      "OC4",
+      "OC5",
+      "OC6",
+      "OC7"
+    ],
+    "shared_premises_valid": "yes",
+    "source_identity": "sha256:1a319af8bd2529743726c62c9f0eb8ad19dc5468449795fd46b851153cd1a6d8",
+    "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+    "user_consequence": "Proceed through TASK-109 exact-candidate preparation"
+  },
+  "loaded_contract": {
+    "asset_version": "8",
+    "context_id": "01a04afb-4efa-7502-932b-d1d03bae35e8-pw091",
+    "contract_version": "2",
+    "package_version": "0.9.1",
+    "recorded_at": "2026-08-29"
+  },
+  "next_action": "Validate and commit exact TASK-109 source",
+  "outcome_checkpoint": {
+    "checkpoint_unit": "TASK-111",
+    "claim_class": "migration",
+    "record": null,
+    "required": true,
+    "status": "pending"
+  },
+  "phase": "candidate-preparation",
+  "repositories": {
+    ".": {
+      "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242"
+    }
+  },
+  "schema_version": 2,
+  "source_revision": "86ca8859eb5e331db2505c2ae7230e2bc0030242",
+  "target_id": "EPIC-020",
+  "verification_campaign": null,
+  "verification_requirement": {
+    "affected_scope": [
+      "."
+    ],
+    "claims": [
+      "release identity",
+      "public artifact integrity",
+      "consumer upgrade preservation"
+    ],
+    "proof_contract_identity": "sha256:f7bed0224f4727794f0913335e4de3cf97596da9a6e8425a76ec19446f198956",
+    "required": true,
+    "stages": [
+      "deterministic",
+      "canary",
+      "affected",
+      "full"
+    ]
+  },
+  "work_item_path": ".project-workflow/tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects"
+}
