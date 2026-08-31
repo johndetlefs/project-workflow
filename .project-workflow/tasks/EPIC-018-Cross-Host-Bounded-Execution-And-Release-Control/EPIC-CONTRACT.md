@@ -78,10 +78,21 @@
   and mechanisms.
 - Unsupported or unknown binding host capability fails closed for material work and cannot be
   advertised as supported.
-- Codex and Claude Code are the minimum initial supported hosts. No other host inherits the claim.
+- Codex is the only runtime-certified host for v0.9.2. Claude Code remains a packaged, fail-closed
+  future certification target under AC10. No other host inherits a sealed-runtime claim.
 - All shipped core and adapter assets come from the Project Workflow repository and package.
 - Automated, host-runtime, package, merge, publication, installation, adoption, effectiveness, and
   owner-acceptance proof remain separate.
+
+## Codex-Only Release Overlay
+
+- Amendment AMD-002 authorizes v0.9.2 runtime certification, publication, and safe rollout for the
+  exact proven Codex path.
+- TASK-103 owns the Codex release boundary but not parent AC10. A retained Claude unsupported result
+  is required for truthfulness and capability diagnosis, not treated as a passing runtime canary.
+- TASK-102 and parent AC10 remain open. EPIC-018 cannot close from the Codex-only release alone.
+- Package presence, structural adapter conformance, and managed Claude assets never substitute for
+  an authenticated real Claude Code success and interruption journey.
 
 ## Artifact Targets
 

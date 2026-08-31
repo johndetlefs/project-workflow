@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## 0.9.2 - 2026-08-31
+
 ### Added
 
 - Added public `project execution configure`, `status`, and `disable` commands so operators can
@@ -15,6 +17,12 @@ All notable changes to this project are documented in this file.
 - Documented Codex installation as repository-local skills plus a package-owned ephemeral per-run
   hook. A persistent marketplace-plugin listing is neither required nor treated as activation or
   runtime proof.
+
+### Known proof boundary
+
+- Sealed runtime execution is certified for Codex only in this release. The Claude Code adapter and
+  managed assets remain packaged and fail closed, but no real authenticated Claude Code canary has
+  passed; this release makes no Claude runtime or dual-host certification claim.
 
 ## 0.9.1 - 2026-08-29
 

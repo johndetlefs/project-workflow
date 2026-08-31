@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-31T11:27:43+10:00",
+  "version": "0.9.2",
+  "source_basis": "43165486d75761dc6cb1d6861ca69f4b8ebd7dc5 plus the AMD-002 and versioned working-tree candidate",
+  "wheel": {
+    "path": "evidence/package-candidate-v0.9.2/project_workflow-0.9.2-py3-none-any.whl",
+    "sha256": "f7eadfcfad517759839ce68b80bf22dc89cf07809a1b9d6daa0fe44fe7e03e54",
+    "size_bytes": 537908
+  },
+  "sdist": {
+    "path": "evidence/package-candidate-v0.9.2/project_workflow-0.9.2.tar.gz",
+    "sha256": "859124b3def63432366172c8d7a376cf077ed37f7005c73ed85493c9c1cb497e",
+    "size_bytes": 705131
+  },
+  "package_journeys": {
+    "path": "evidence/package-journeys-v0.9.2.json",
+    "sha256": "d14ffc47b831de909b2519de9e9c6b0de30a15901fd0b66e2a42370060bbcb97",
+    "wheel_resource_count": 48,
+    "sdist_bound_source_count": 91,
+    "fresh_agent_modes": ["codex", "claude-code", "cursor", "github-copilot"],
+    "legacy_preservation": "pass"
+  },
+  "real_codex_success": {
+    "path": "evidence/codex-success-v0.9.2.json",
+    "sha256": "585a5e4662d1c0a71e1f9385c0648c4483b57f3bb0d7fa4dc9ae1bdffdf693b3",
+    "receipt_identity": "sha256:3790e86baa3f0d95d432650cf0b4bb965ba88aea7d18e67e24fa2b155dfb78d6"
+  },
+  "real_codex_interruption": {
+    "path": "evidence/codex-interruption-v0.9.2.json",
+    "sha256": "13a86e5c472de1a0caf07cea73f06eda728a1da8a297113dcf553bb059d4907a",
+    "receipt_identity": "sha256:a22456ddaee799006a8ea90adeaa106e81d360a366ec235b3b7228335cdf2105"
+  },
+  "claude_runtime_certification": "not-in-release-scope-and-unproved",
+  "release_state": "local-candidate-not-published"
+}

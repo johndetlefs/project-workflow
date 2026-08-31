@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-31T11:27:43+10:00",
+  "candidate_version": "0.9.2",
+  "package_manifest": "evidence/package-manifest-v0.9.2.json",
+  "checks": {
+    "documentation_contract": "pass: 12 current documents",
+    "release_source_contract": "pass: version and tag v0.9.2",
+    "generated_runtime_parity": "pass",
+    "uv_lock": "pass: 21 packages",
+    "ruff": "pass",
+    "ruff_format": "pass: 67 files",
+    "mypy": "pass: 16 source files",
+    "pytest": "pass: 567 tests in 96.86 seconds",
+    "exact_wheel_package_journeys": "pass",
+    "real_codex_success": "pass",
+    "real_codex_interruption": "pass",
+    "strict_doctor": "pass: no issues; 69 accepted warnings hidden",
+    "intent_audit": "pass: current after AMD-002"
+  },
+  "model_invocations": {
+    "configuration_and_status": 0,
+    "real_codex_success_turns": 1,
+    "real_codex_interruption_turns": 1,
+    "independent_qa": 0
+  },
+  "proof_boundaries": {
+    "codex_runtime": "certified for the exact retained 0.9.2 wheel and exact recorded Codex executable",
+    "claude_runtime": "unproved and excluded from the v0.9.2 runtime certification under AMD-002",
+    "merge": "not-yet",
+    "publication": "not-yet",
+    "adoption": "not-yet",
+    "owner_acceptance": "not-claimed"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-31T11:27:43+10:00",
+  "package_sha256": "f7eadfcfad517759839ce68b80bf22dc89cf07809a1b9d6daa0fe44fe7e03e54",
+  "host": {
+    "kind": "codex",
+    "version": "codex-cli 0.145.0-alpha.30",
+    "executable_sha256": "ccf63c3a58cef44281da4a54a3ec65c6a612e579991d6c9e754613f2fbc3299d",
+    "model": "gpt-5.6-luna"
+  },
+  "candidate_source_revision": "b457f185b10ed6f316fae1de5acdc32fd6226c8d",
+  "configuration_identity": "sha256:71474653080afa90e259f84d894a1d45c077219842b9088e6112349e2fc8a2de",
+  "sealed_identity": "sha256:8c902998fea79194dc141d38dcead63a8cab93c537182fb3543f95c5dd31736f",
+  "configuration_model_invocations": 0,
+  "terminal_status": "completed",
+  "hook_active": true,
+  "changed_paths": ["src/canary.txt"],
+  "canary_sha256": "1640efeb618271823b985c4f528cf0545d206e71304006c6251026be49d456ad",
+  "canary_utf8": "project-workflow-codex-success\n",
+  "native_metrics": {
+    "agent-budget": 28550,
+    "changed-paths": 1,
+    "elapsed-seconds": 9,
+    "identical-retries": 0,
+    "test-invocations": 0,
+    "tool-calls": 1,
+    "turns": 1,
+    "worker-launches": 0,
+    "write-scope": 0
+  },
+  "receipt": {
+    "outcome": "pass",
+    "evidence_identity": "sha256:18bb1a2a034a71e66aadf7871b5b6506f9e742844a9b95741d60c4cd2e501908",
+    "receipt_identity": "sha256:3790e86baa3f0d95d432650cf0b4bb965ba88aea7d18e67e24fa2b155dfb78d6"
+  }
+}

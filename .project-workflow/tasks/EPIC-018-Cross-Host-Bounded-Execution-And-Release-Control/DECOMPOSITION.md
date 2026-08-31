@@ -5,8 +5,8 @@
 - Epic: EPIC-018
 - Status: Approved by parent requirements envelope
 - Authority source: Parent REQUIREMENTS.md Owner Approval
-- Source requirements identity: sha256:e82b93afd94e0ce83e9be7a8a2b52b97e9b608ea080ba0ea7834bddeac422dd8
-- Last updated: 2026-08-28
+- Source requirements identity: sha256:4fb20ac510298374315f6e6988d1b25c68ad65a206f19c910c31e6ecf2e6e57d
+- Last updated: 2026-08-31
 
 ## Authorized Child Rows
 
@@ -16,7 +16,7 @@
 | TASK-100 | Enforce Proportionate QA Remediation And Fixed Release | AC4, AC5, AC6, AC7, AC8, AC15 | Proposed Child Work | Define Host-Neutral Execution And Candidate Contract | bounded-return |
 | TASK-101 | Refactor FIX-010 Into The Codex Adapter | AC3, AC4, AC8, AC9, AC12, AC13, AC14 | Proposed Child Work | Define Host-Neutral Execution And Candidate Contract; Enforce Proportionate QA Remediation And Fixed Release | bounded-return |
 | TASK-102 | Build The Claude Code Adapter | AC3, AC4, AC8, AC10, AC11, AC12, AC13 | Proposed Child Work | Define Host-Neutral Execution And Candidate Contract; Enforce Proportionate QA Remediation And Fixed Release | bounded-return |
-| TASK-103 | Prove Cross-Host Conformance And Delivery Boundary | AC5, AC6, AC8, AC9, AC10, AC11, AC12, AC13, AC14, AC15, AC16 | Proposed Child Work | Refactor FIX-010 Into The Codex Adapter; Build The Claude Code Adapter | bounded-return |
+| TASK-103 | Prove Cross-Host Conformance And Delivery Boundary | AC5, AC6, AC8, AC9, AC11, AC12, AC13, AC14, AC15, AC16 | AMD-002 Codex-only release boundary | Refactor FIX-010 Into The Codex Adapter; Build The Claude Code Adapter | bounded-return |
 
 ## Authority Rules
 

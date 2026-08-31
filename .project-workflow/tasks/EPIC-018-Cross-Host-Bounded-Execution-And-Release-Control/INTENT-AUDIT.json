@@ -1,5 +1,5 @@
 {
-  "artifact_identity": "sha256:21586106fa3cd9dd0850916bc4be0040f58cd4b3bff190078f3bb0e442f7cbdf",
+  "artifact_identity": "sha256:c9da28048d5bef4f79a259582d8d662190190dc0445a2fcbcd0578355e17d544",
   "commitments": [
     {
       "amendment": null,
@@ -100,7 +100,7 @@
       "user_visible_consequence": "Every host-support and delivery claim remains subordinate to current source, exact evidence and the separately authorized merge, release, installation, adoption and owner-acceptance boundaries."
     }
   ],
-  "review_source": "EPIC-018 Coordinator semantic review of John Detlefs's approved parent intent, current Epic contract and decomposition, complete OC-to-AC/child/proof coverage, TASK-099 through TASK-102 evidence, and TASK-103's exact-package implementation, real Codex success and interruption receipts, current Claude executable blocker, proportionality ledger and frozen QA candidate. The attempted Review transition was correctly stopped before commissioning QA because parent AC10, AC6 and AC15 do not yet have passing child-local proof. The child preserves every cross-host, bounded-execution, package-journey, recurrence and delivery-boundary commitment: Codex proof is credited only at its exact layer, Claude runtime remains explicitly non-passing, and no parent AC, workflow owner, QA gate or external delivery gate is waived.",
+  "review_source": "EPIC-018 Coordinator semantic review of John Detlefs's AMD-002 Codex-only release amendment, the refreshed parent requirements, Epic contract, decomposition, complete OC-to-AC/child/proof coverage, TASK-099 through TASK-102 evidence, and TASK-103's exact-package implementation, real Codex success and interruption receipts, current Claude executable blocker, proportionality ledger and frozen QA candidate. AMD-002 narrows only the v0.9.2 runtime certification and delivery claim: TASK-103 no longer owns parent AC10, Codex proof is credited only at its exact layer, Claude remains explicitly uncertified and fail closed under TASK-102, EPIC-018 stays open, and no workflow owner, QA gate, proof layer or owner-acceptance boundary is waived.",
   "reviewed_at": "2026-08-31",
   "reviewed_by": "EPIC-018 Coordinator",
   "schema_version": 1,

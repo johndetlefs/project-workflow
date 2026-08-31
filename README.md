@@ -4,22 +4,26 @@ Project Workflow is a repository-native delivery system for turning owner intent
 implemented, evidenced, reviewed work. Its state is plain Markdown and JSON beside the code, so
 people and coding agents can inspect the same requirements, status, decisions, and proof.
 
-It supports GitHub Copilot, Claude Code, OpenAI Codex, and Cursor. It complements issue trackers,
-Git hosts, CI, registries, and deployment platforms; it does not replace their authority.
+Its repository guidance supports GitHub Copilot, Claude Code, OpenAI Codex, and Cursor. Sealed
+runtime enforcement has a narrower, versioned proof boundary: v0.9.2 is runtime-certified for
+Codex only. The packaged Claude Code adapter remains fail-closed and uncertified until its real
+authenticated host canary passes; Cursor and GitHub Copilot are not sealed-runtime targets. Project
+Workflow complements issue trackers, Git hosts, CI, registries, and deployment platforms; it does
+not replace their authority.
 
 ## Quick Start
 
 From the root of an existing Git repository:
 
 ```bash
-uvx --from project-workflow==0.9.1 project init --agent codex
+uvx --from project-workflow==0.9.2 project init --agent codex
 ```
 
 Choose `github-copilot`, `claude-code`, `codex`, or `cursor` to match the agent that will operate
 the repository. For an existing installation, use upgrade—not init:
 
 ```bash
-uvx --from project-workflow==0.9.1 project upgrade --agent codex
+uvx --from project-workflow==0.9.2 project upgrade --agent codex
 ```
 
 Then describe the outcome in ordinary language. The installed guidance routes it to the smallest
@@ -122,7 +126,7 @@ Read [Contributing](docs/contributing.md) before changing source and
 | Repository operating rules | [AGENTS.md](AGENTS.md) and [local guidance](.project-workflow/guidance.md) |
 | Orientation and first commands | This README |
 | Work-item operation | [Using Project Workflow](docs/using-project-workflow.md) |
-| Bounded Codex and Claude Code execution | [Sealed Host Execution](docs/execution-control.md) |
+| Codex-certified sealed execution and Claude Code limitations | [Sealed Host Execution](docs/execution-control.md) |
 | Source boundaries and generated ownership | [Architecture](docs/architecture.md) |
 | Development and validation | [Contributing](docs/contributing.md) |
 | Upgrade, hygiene, and generated assets | [Maintenance](docs/maintenance.md) |

@@ -871,6 +871,84 @@
       "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
       "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
       "user_consequence": "Codex remains proven on the exact candidate, but cross-host completion and release remain unavailable without the missing proof or an owner-approved scope amendment"
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": "AMD-002:sha256:f76d81d6509c35710907edfde5ae2d2be678a106be1a11a705e0ab09bb1d1734",
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "AMD-002 narrows v0.9.2 runtime certification and delivery to the proven Codex path while retaining Claude as packaged, fail-closed, uncertified TASK-102 work.",
+      "classification": "approved-change",
+      "decided_by": "John Detlefs via EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:3cfd638434b8089527528ae3cdb159633f56450c43e50326ec93822c64ac1da4",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
+      "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
+      "user_consequence": "Release and safely roll out v0.9.2 as Codex-certified only; keep EPIC-018 and AC10 open without any Claude runtime claim."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "The exact 0.9.2 package, Codex success/interruption canaries, full regression, recurrence ledger, and Claude fail-closed diagnosis implement only the AMD-002 Codex release boundary.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:3cfd638434b8089527528ae3cdb159633f56450c43e50326ec93822c64ac1da4",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
+      "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
+      "user_consequence": "Accept TASK-103 into Testing and keep TASK-102/AC10 open for future Claude certification."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "The frozen v0.9.2 candidate and updated task ledger record the already approved AMD-002 Codex-only boundary without changing runtime, proof, or owner authority.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:de12e92eb3fdc7d9d82bf9e58057d5aaa1127e4c5ecda6ea7d940c2e38c222de",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
+      "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
+      "user_consequence": "Load the current 0.9.2 context contract and commission exactly one independent QA review."
     }
   ],
   "decisions": [
@@ -882,18 +960,19 @@
     "context_contract": "declared",
     "telemetry": "unknown"
   },
-  "intent_identity": "sha256:e7020ba882b1e6613c41875ef4fe3fbf83551ddebf48445b82ab8dc2636573c2",
+  "intent_identity": "sha256:de12e92eb3fdc7d9d82bf9e58057d5aaa1127e4c5ecda6ea7d940c2e38c222de",
   "last_boundary": {
     "affected_units": [
+      "TASK-102",
       "TASK-103"
     ],
     "amendment_identity": null,
     "boundary": "new-evidence-or-owner-reframe",
-    "capability_change": "none; the Review gate retains the approved real-Claude, single-QA and terminal-recurrence obligations as explicit blockers",
+    "capability_change": "The frozen v0.9.2 candidate and updated task ledger record the already approved AMD-002 Codex-only boundary without changing runtime, proof, or owner authority.",
     "classification": "inside-envelope",
     "decided_by": "EPIC-018 Coordinator",
     "decision_date": "2026-08-31",
-    "intent_identity": "sha256:e7020ba882b1e6613c41875ef4fe3fbf83551ddebf48445b82ab8dc2636573c2",
+    "intent_identity": "sha256:de12e92eb3fdc7d9d82bf9e58057d5aaa1127e4c5ecda6ea7d940c2e38c222de",
     "relevant_ocs": [
       "OC1",
       "OC2",
@@ -906,16 +985,16 @@
     "shared_premises_valid": "yes",
     "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
     "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
-    "user_consequence": "Codex remains proven on the exact candidate, but cross-host completion and release remain unavailable without the missing proof or an owner-approved scope amendment"
+    "user_consequence": "Load the current 0.9.2 context contract and commission exactly one independent QA review."
   },
   "loaded_contract": {
     "asset_version": "8",
-    "context_id": "codex-task103-blocked-handoff",
+    "context_id": "codex-task103-v092-qa",
     "contract_version": "2",
-    "package_version": "0.9.1",
+    "package_version": "0.9.2",
     "recorded_at": "2026-08-31"
   },
-  "next_action": "Obtain authority either to install and authenticate Claude Code for the real canary or to amend the release scope explicitly.",
+  "next_action": "Freeze the exact 0.9.2 candidate and commission one independent QA review.",
   "outcome_checkpoint": {
     "checkpoint_unit": null,
     "claim_class": "mechanical",

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-31T11:27:43+10:00",
+  "package_sha256": "f7eadfcfad517759839ce68b80bf22dc89cf07809a1b9d6daa0fe44fe7e03e54",
+  "host": {
+    "kind": "codex",
+    "version": "codex-cli 0.145.0-alpha.30",
+    "executable_sha256": "ccf63c3a58cef44281da4a54a3ec65c6a612e579991d6c9e754613f2fbc3299d",
+    "model": "gpt-5.6-luna"
+  },
+  "candidate_source_revision": "c72ff1ba1536f39141ba487c57846aa7b4ff1740",
+  "configuration_identity": "sha256:6bb87149c88bdd65d5288061f2856f21ebf4c0781c178f6cb43e6c8cf26c4c80",
+  "sealed_identity": "sha256:8f7fc9c4a1f6bf9fcdab6fb78b506eb14da73d0b494e702180d9ba0aca09370b",
+  "tool_call_limit": 1,
+  "command_exit": 2,
+  "terminal_status": "interrupted",
+  "terminal_reason": "Codex tool-call authority is exhausted.",
+  "hook_active": true,
+  "changed_paths": ["src/first.txt"],
+  "first_file_sha256": "2a798e0ac033942e12550f212d7713229c6fd24c925c93e712541049697175a0",
+  "second_file_exists": false,
+  "native_metrics": {
+    "agent-budget": 28653,
+    "changed-paths": 1,
+    "elapsed-seconds": 9,
+    "identical-retries": 0,
+    "test-invocations": 0,
+    "tool-calls": 1,
+    "turns": 1,
+    "worker-launches": 0,
+    "write-scope": 0
+  },
+  "receipt": {
+    "outcome": "blocked",
+    "evidence_identity": "sha256:cc2b2fc29ed80cf0517cebd0f7f4083a9d04e54ff956400280e62c2102228779",
+    "receipt_identity": "sha256:a22456ddaee799006a8ea90adeaa106e81d360a366ec235b3b7228335cdf2105"
+  }
+}

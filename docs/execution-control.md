@@ -26,8 +26,8 @@ receipt, release, adoption, and owner acceptance are separate proof layers.
 Install a new repository or upgrade an existing one through the canonical package:
 
 ```bash
-uvx --from project-workflow==0.9.1 project init --agent codex
-uvx --from project-workflow==0.9.1 project upgrade --agent codex
+uvx --from project-workflow==0.9.2 project init --agent codex
+uvx --from project-workflow==0.9.2 project upgrade --agent codex
 ```
 
 Create current Coordinator state for the approved work item before configuring execution. The
@@ -100,7 +100,16 @@ diff because configuration and receipt persistence necessarily update that state
 operator configuration may never grant the worker write authority over any such file; all other
 tracked and untracked product paths remain subject to the clean-source and sealed-scope checks.
 
-## Claude Code Differences
+## Claude Code Adapter Status
+
+Project Workflow 0.9.2 does not claim Claude Code runtime certification. The adapter and managed
+assets are packaged so the host-neutral boundary stays inspectable, but the current release has no
+real authenticated Claude Code canary. Material execution must therefore fail closed unless a later
+candidate proves the exact executable, authentication, hook activation, permissions, native limits,
+required outputs, interruption, and core receipt. Passing Codex evidence is not Claude evidence.
+
+For future Claude certification, use the following distinct native configuration rather than
+translating Codex units:
 
 Use `"host": "claude-code"`, an absolute executable ending in `claude`, and
 `"agent-budget"` native unit `"usd-micros"`. Claude configuration may also contain:

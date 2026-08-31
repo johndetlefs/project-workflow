@@ -4,8 +4,8 @@
 
 - Task: EPIC-018
 - Title: Cross-Host Bounded Execution And Release Control
-- Last updated: 2026-08-29
-- Proposal state: Implementation substantially complete; v0.9.0 delivery authorized with real Claude Code runtime proof pending
+- Last updated: 2026-08-31
+- Proposal state: Codex-certified v0.9.2 delivery authorized; Claude Code runtime certification remains open
 - Intent contract: full
 
 ## Intent
@@ -13,8 +13,9 @@
 Make Project Workflow mechanically bound material agent implementation, proportionate QA
 remediation, verification, and release so useful delivery cannot expand into an open-ended
 test-fix-review-release loop. The capability belongs to Project Workflow and must work through
-truthful host adapters, initially Codex and Claude Code, without imposing constant model overhead
-on read-only or cheap work.
+truthful host adapters, with Codex as the certified v0.9.2 runtime and Claude Code retained as a
+fail-closed future certification target, without imposing constant model overhead on read-only or
+cheap work.
 
 ## Intent Spine
 
@@ -72,6 +73,24 @@ on read-only or cheap work.
 - Source: this Codex owner thread, 2026-08-29: "Release it ... update it in every single project,
   even with dirty trees ... with the understanding that we haven't yet done tests in Claude."
 
+## Owner-Authorized Codex-Only Release Decision — 2026-08-31
+
+- The owner explicitly authorizes a Codex-only runtime certification release, publication, and
+  safe rollout to every eligible Project Workflow installation.
+- v0.9.2 may claim sealed runtime enforcement only for the exact Codex path proved by real success
+  and interruption canaries. It must not claim Claude Code runtime certification or real dual-host
+  equivalence.
+- The Claude Code adapter and managed assets remain packaged so the host-neutral architecture and
+  fail-closed capability diagnosis stay intact. Missing executable, authentication, hooks,
+  permissions, native limits, output proof, or receipts remains unsupported and blocks execution.
+- Parent AC10 remains open under TASK-102. TASK-103 no longer owns AC10 and may complete the
+  Codex-only release boundary after one independent QA gate, exact v0.9.2 package proof, publication,
+  and adoption accounting. EPIC-018 remains open until Claude is certified or separately descoped
+  by another owner amendment.
+- AMD-002 supersedes the earlier assumption that both runtimes must be certified before any current
+  release, but it does not convert missing Claude evidence into a pass or erase its retained blocker.
+- Source: this Codex owner thread, 2026-08-31: "I'm happy to permit a codex only release."
+
 ## Owner Approval
 
 - Intent reviewed and accurately reflected: Yes
@@ -81,9 +100,9 @@ on read-only or cheap work.
 - Approved for implementation: No
 - Approved scope envelope: Yes
 - Approved by: John Detlefs
-- Approval date: 2026-08-29
-- Approval note / source: Owner instruction in this task on 2026-08-29: release v0.9.0 and update every project, including dirty trees, while retaining the outstanding real Claude test and avoiding recursive QA.
-- Approved artifact identity: sha256:770cf0843fc8f4c3c6f3b8a67324463fd9eea0928c97bee908c605d5341b9531
+- Approval date: 2026-08-31
+- Approval note / source: Codex owner thread, 2026-08-31: I'm happy to permit a codex only release.
+- Approved artifact identity: sha256:4fb20ac510298374315f6e6988d1b25c68ad65a206f19c910c31e6ecf2e6e57d
 
 ## Goal
 
@@ -329,7 +348,7 @@ products and they do not own workflow or candidate truth.
 | Enforce Proportionate QA Remediation And Fixed Release | AC4, AC5, AC6, AC7, AC8, AC15 | Implement the single findings/remediation campaign, affected-proof continuation, release-candidate promotion, and terminal fixed-candidate release behavior. | Define Host-Neutral Execution And Candidate Contract |
 | Refactor FIX-010 Into The Codex Adapter | AC3, AC4, AC8, AC9, AC12, AC13, AC14 | Mine the verified prototype, implement current Codex enforcement, package/activate it truthfully, and retire Codex-only public architecture. | Define Host-Neutral Execution And Candidate Contract; Enforce Proportionate QA Remediation And Fixed Release |
 | Build The Claude Code Adapter | AC3, AC4, AC8, AC10, AC11, AC12, AC13 | Implement current Claude Code launch, hook, aggregate-limit, capability, packaging, and receipt behavior against the same generic contract. | Define Host-Neutral Execution And Candidate Contract; Enforce Proportionate QA Remediation And Fixed Release |
-| Prove Cross-Host Conformance And Delivery Boundary | AC5, AC6, AC8, AC9, AC10, AC11, AC12, AC13, AC14, AC15, AC16 | Run focused and adversarial tests, real dual-host canaries, package journeys, one independent QA per child, recurrence dogfood, and explicit delivery-state evidence. | Refactor FIX-010 Into The Codex Adapter; Build The Claude Code Adapter |
+| Prove Cross-Host Conformance And Delivery Boundary | AC5, AC6, AC8, AC9, AC11, AC12, AC13, AC14, AC15, AC16 | Run focused and adversarial tests, real Codex canaries, structural cross-host conformance, truthful Claude capability diagnosis, package journeys, one independent QA, recurrence dogfood, and explicit Codex-only delivery-state evidence. | Refactor FIX-010 Into The Codex Adapter; Build The Claude Code Adapter |
 
 ## Outcome Commitment Coverage
 
@@ -365,7 +384,8 @@ products and they do not own workflow or candidate truth.
 - EPIC-017 remains the materially expensive verification-campaign authority. EPIC-018 bounds the
   wider host execution that can otherwise implement, diagnose, remediate, re-review, and release
   around that campaign.
-- Codex and Claude Code are the minimum first-release supported hosts; other hosts are not implied.
+- Codex is the only runtime-certified host for v0.9.2. Claude Code remains the next fail-closed
+  certification target under AC10; other hosts are not implied.
 - Public commands are host-neutral; project-enforce is prototype terminology only.
 - Read-only and cheap deterministic work do not incur an execution-agent launch.
 - Finite limits are task/configuration evidence, not one arbitrary universal number, and never
@@ -396,8 +416,9 @@ products and they do not own workflow or candidate truth.
 - Leading indicators: denied material bypasses; zero model launches for read-only countercases;
   zero repeated broad-QA calls; bounded finding-to-affected-proof transitions; one promoted release
   candidate; one terminal release attempt; and complete typed receipts.
-- Review horizon: after both real host canaries and the sanitized recurrence journey pass, before
-  any merge, package release, or consumer installation decision.
+- Review horizon: the Codex-only v0.9.2 release may proceed after its real canaries, recurrence
+  journey, one independent QA, and exact package checks pass. Full Epic closeout still waits for
+  the real Claude Code canary or a later explicit owner amendment.
 
 ## Validation Plan
 
@@ -408,11 +429,12 @@ products and they do not own workflow or candidate truth.
   rejected release-candidate records.
 - Run the complete QA findings/remediation journey with exact broad-QA, affected-proof, correction,
   and no-progress invocation counts.
-- Run real supported Codex and Claude Code canaries in disposable repositories with equivalent
-  inputs and compare state/receipt semantics.
+- Run real supported Codex canaries in disposable repositories. Retain structural cross-host
+  comparisons and a precise Claude capability blocker until a real authenticated Claude Code
+  runtime is available; do not infer Claude proof from Codex.
 - Run fresh install, upgrade, no-op, disable/uninstall, generated-asset parity, package build, and
   retained-artifact journeys for both adapters.
 - Run the complete locked Project Workflow suite once after the candidate is frozen, one
   independent adversarial QA per child, intent/acceptance audits, strict Doctor, and diff hygiene.
-- Stop with local validated evidence. Do not infer merge, release, installation, adoption, or owner
-  acceptance.
+- Keep merge, release, installation, adoption, and owner acceptance separate; execute those layers
+  only under the current 2026-08-31 owner authority and record each result independently.
