@@ -1079,6 +1079,113 @@
       "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
       "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
       "user_consequence": "Authorize only the Codex-certified v0.9.2 delivery; leave TASK-102, AC10, and EPIC-018 open."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Public v0.9.2 release and safe all-project adoption accounting complete AMD-002 without adding Claude certification.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:70407c96cf8977827fb45f67419a74993690b2400abf424ad2950360ac1f8e03",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+      "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
+      "user_consequence": "Load the current closeout contract and complete TASK-103 only; keep TASK-102, parent AC10, and EPIC-018 open."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-103 now has exact public release and complete safe-rollout evidence under AMD-002.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:70407c96cf8977827fb45f67419a74993690b2400abf424ad2950360ac1f8e03",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+      "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
+      "user_consequence": "Complete TASK-103 only; keep TASK-102, parent AC10, and EPIC-018 open."
+    },
+    {
+      "affected_units": [
+        "TASK-099",
+        "TASK-100",
+        "TASK-101",
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "EPIC-CONTRACT proof ownership now uses current TASK identifiers and matches every child tracker coverage row; no outcome boundary changed.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:4808b8475ed06d588309b61628ed28931a7626accbf772850966dd00fd60cdf3",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+      "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
+      "user_consequence": "Refresh the acceptance map against correct proof owners while keeping TASK-102 and EPIC-018 open."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-103 remains correctly Complete after proof-owner normalization and retro guidance updates.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:4808b8475ed06d588309b61628ed28931a7626accbf772850966dd00fd60cdf3",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+      "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
+      "user_consequence": "Retain TASK-103 Complete; keep TASK-102, parent AC10, and EPIC-018 open."
     }
   ],
   "decisions": [
@@ -1090,7 +1197,7 @@
     "context_contract": "declared",
     "telemetry": "unknown"
   },
-  "intent_identity": "sha256:a7568e7d9495102ded728afc8f860cb17d530823ce317b19388b58cdb4bc2371",
+  "intent_identity": "sha256:4808b8475ed06d588309b61628ed28931a7626accbf772850966dd00fd60cdf3",
   "last_boundary": {
     "affected_units": [
       "TASK-102",
@@ -1098,11 +1205,11 @@
     ],
     "amendment_identity": null,
     "boundary": "before-review-or-complete",
-    "capability_change": "TASK-103 remains in Review with the original QA verdict preserved and all named findings resolved through current affected proof.",
+    "capability_change": "TASK-103 remains correctly Complete after proof-owner normalization and retro guidance updates.",
     "classification": "inside-envelope",
     "decided_by": "EPIC-018 Coordinator",
     "decision_date": "2026-08-31",
-    "intent_identity": "sha256:a7568e7d9495102ded728afc8f860cb17d530823ce317b19388b58cdb4bc2371",
+    "intent_identity": "sha256:4808b8475ed06d588309b61628ed28931a7626accbf772850966dd00fd60cdf3",
     "relevant_ocs": [
       "OC1",
       "OC2",
@@ -1115,11 +1222,11 @@
     "shared_premises_valid": "yes",
     "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
     "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
-    "user_consequence": "Authorize only the Codex-certified v0.9.2 delivery; leave TASK-102, AC10, and EPIC-018 open."
+    "user_consequence": "Retain TASK-103 Complete; keep TASK-102, parent AC10, and EPIC-018 open."
   },
   "loaded_contract": {
     "asset_version": "8",
-    "context_id": "codex-task103-v092-release",
+    "context_id": "codex-task103-v092-proof-owner-closeout",
     "contract_version": "2",
     "package_version": "0.9.2",
     "recorded_at": "2026-08-31"
@@ -1146,7 +1253,7 @@
       "capabilities": [],
       "command": null,
       "kind": "manual",
-      "manual_command": "Use the retained TASK-103 deterministic, exact-package, real-Codex, affected-validation, and full-regression evidence."
+      "manual_command": "Use the retained TASK-103 deterministic, exact-package, real-Codex, affected-validation, full-regression, public-release, and rollout evidence."
     },
     "affected_scope": [
       "Project Workflow source",
@@ -1164,7 +1271,7 @@
     "current_stage": null,
     "diagnostic_decision": null,
     "impact": "known",
-    "intent_identity": "sha256:a7568e7d9495102ded728afc8f860cb17d530823ce317b19388b58cdb4bc2371",
+    "intent_identity": "sha256:4808b8475ed06d588309b61628ed28931a7626accbf772850966dd00fd60cdf3",
     "limits": {
       "max_elapsed_seconds": 300,
       "max_failures": 1,
@@ -1174,17 +1281,17 @@
     "next_action": "Proceed to the one existing independent QA gate.",
     "outcome": "pass",
     "proof_contract_identity": "sha256:f308d1272d71390771589199ffd46a578cef75ae05952f664c90eba9d88168f4",
-    "receipt_ledger_identity": "sha256:3ae466a2fd9d0e0ec577aee34977845e3a4cbdd051508a14216b05f0d902885b",
+    "receipt_ledger_identity": "sha256:e86eb303f7f14470324fdce8c521df34d20894deb1b1641af911def2aa24bacb",
     "receipts": [
       {
         "artifact": "evidence/task103-validation-v0.9.2-final.json",
         "candidate_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069",
         "elapsed_seconds": 15,
         "evaluator_identity": "sha256:176055ec131c4362de15a5037465032fc23b2959f6fd56893a0f8aee32840f1a",
-        "intent_identity": "sha256:a7568e7d9495102ded728afc8f860cb17d530823ce317b19388b58cdb4bc2371",
+        "intent_identity": "sha256:4808b8475ed06d588309b61628ed28931a7626accbf772850966dd00fd60cdf3",
         "outcome": "pass",
         "proof_contract_identity": "sha256:f308d1272d71390771589199ffd46a578cef75ae05952f664c90eba9d88168f4",
-        "receipt_identity": "sha256:ea266f006fd223eac7dc9676b3fa757211a7f6a6fcd7eb47f17fbffe60065840",
+        "receipt_identity": "sha256:f834c843083065733e9c0389426a83b9ee7a1e13839e0758ebf8bcfde9cc64bd",
         "recorded_at": "2026-08-31",
         "regrade": false,
         "runtime_identity": "sha256:a2e5f535f5afc9ab52b94fe5b4a2e1bb4bd0bffe30b59c7611c4297f80d9f09a",
@@ -1202,10 +1309,10 @@
         "candidate_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069",
         "elapsed_seconds": 19,
         "evaluator_identity": "sha256:bf0495e46d273f31e52f38595adc294237eb869e9c0655f316d16c05cf18937b",
-        "intent_identity": "sha256:a7568e7d9495102ded728afc8f860cb17d530823ce317b19388b58cdb4bc2371",
+        "intent_identity": "sha256:4808b8475ed06d588309b61628ed28931a7626accbf772850966dd00fd60cdf3",
         "outcome": "pass",
         "proof_contract_identity": "sha256:f308d1272d71390771589199ffd46a578cef75ae05952f664c90eba9d88168f4",
-        "receipt_identity": "sha256:ee50d567a7a19fd6c3ba80588a794d92cca6b7581143a83b6668b601933b4f90",
+        "receipt_identity": "sha256:1a983abdfba4847eac042aa173a0c61f1d30da4957ea985693be12f991f1bff1",
         "recorded_at": "2026-08-31",
         "regrade": false,
         "runtime_identity": "sha256:ccf63c3a58cef44281da4a54a3ec65c6a612e579991d6c9e754613f2fbc3299d",
@@ -1224,10 +1331,10 @@
         "candidate_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069",
         "elapsed_seconds": 15,
         "evaluator_identity": "sha256:176055ec131c4362de15a5037465032fc23b2959f6fd56893a0f8aee32840f1a",
-        "intent_identity": "sha256:a7568e7d9495102ded728afc8f860cb17d530823ce317b19388b58cdb4bc2371",
+        "intent_identity": "sha256:4808b8475ed06d588309b61628ed28931a7626accbf772850966dd00fd60cdf3",
         "outcome": "pass",
         "proof_contract_identity": "sha256:f308d1272d71390771589199ffd46a578cef75ae05952f664c90eba9d88168f4",
-        "receipt_identity": "sha256:fb817785885659159f8da8eacb5def30edec6df60d22e5c7fdd8a08dc1683cfa",
+        "receipt_identity": "sha256:0e6a651502018e533e2d2444c9927c97cfc84d7d04145ec9ae57574f3e4a1cdf",
         "recorded_at": "2026-08-31",
         "regrade": false,
         "runtime_identity": "sha256:a2e5f535f5afc9ab52b94fe5b4a2e1bb4bd0bffe30b59c7611c4297f80d9f09a",
@@ -1242,14 +1349,14 @@
         "target_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069"
       },
       {
-        "artifact": "evidence/package-journeys-v0.9.2-final.json; retained pre-QA 567-test regression; passing affected-validation disposition",
+        "artifact": "evidence/package-journeys-v0.9.2-final.json; retained pre-QA 567-test regression; passing affected-validation disposition; successful release run 33349932156; evidence/release-rollout-v0.9.2.json",
         "candidate_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069",
         "elapsed_seconds": 97,
         "evaluator_identity": "sha256:268a082bc4b05ddea2f392e5b9a884a6b0b9d7da61e7caed1a41dcb320d34a62",
-        "intent_identity": "sha256:a7568e7d9495102ded728afc8f860cb17d530823ce317b19388b58cdb4bc2371",
+        "intent_identity": "sha256:4808b8475ed06d588309b61628ed28931a7626accbf772850966dd00fd60cdf3",
         "outcome": "pass",
         "proof_contract_identity": "sha256:f308d1272d71390771589199ffd46a578cef75ae05952f664c90eba9d88168f4",
-        "receipt_identity": "sha256:4e9b9ba215060130e584dca7d468930f534762912a866f4723078c6deaf65861",
+        "receipt_identity": "sha256:ffca1ac6c47331fef842a2151bbde2e9b20e63022a3af4157ceae8b99d5acf93",
         "recorded_at": "2026-08-31",
         "regrade": false,
         "runtime_identity": "sha256:a2e5f535f5afc9ab52b94fe5b4a2e1bb4bd0bffe30b59c7611c4297f80d9f09a",

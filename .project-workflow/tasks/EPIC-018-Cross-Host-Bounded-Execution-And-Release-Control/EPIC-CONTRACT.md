@@ -4,7 +4,7 @@
 
 - Epic: EPIC-018
 - Title: Cross-Host Bounded Execution And Release Control
-- Last updated: 2026-08-28
+- Last updated: 2026-08-31
 
 ## Sources of Truth
 
@@ -122,16 +122,18 @@
 
 | Parent AC | Proof Owner | Required Evidence |
 | --- | --- | --- |
-| AC1, AC2 | Define Host-Neutral Execution And Candidate Contract | Source/dependency scan plus lifecycle/campaign singularity tests. |
-| AC3, AC4 | Define Host-Neutral Execution And Candidate Contract | Direct read-only countercases, material bypass denials, immutable-limit and blocked-proof receipts. |
-| AC5, AC7 | Define Host-Neutral Execution And Candidate Contract; Enforce Proportionate QA Remediation And Fixed Release | Working-revision/candidate-lineage tests, progress requirements, and exact blocked disposition. |
-| AC6 | Enforce Proportionate QA Remediation And Fixed Release | One-QA findings ledger, automatic correction, affected-proof, no-progress, and invocation-count evidence. |
-| AC8 | Enforce Proportionate QA Remediation And Fixed Release; Prove Cross-Host Conformance And Delivery Boundary | Clean candidate, once-only operations, failure termination, bounded infrastructure recovery, and prohibited-authority tests. |
-| AC9 | Refactor FIX-010 Into The Codex Adapter | Real supported Codex canary, subordinate aggregation, interruption, receipt, and install evidence. |
-| AC10 | Build The Claude Code Adapter | Real supported Claude Code canary, hook/budget/turn/tool/timeout receipt, and install evidence. |
-| AC11 | Build The Claude Code Adapter; Prove Cross-Host Conformance And Delivery Boundary | Cross-host state, denial, candidate, proof, and receipt conformance matrix. |
-| AC12 | Define Host-Neutral Execution And Candidate Contract; both host adapters | Unsupported/version/trust/policy fixtures and truthful capability/status results. |
-| AC13 | Both host adapters; Prove Cross-Host Conformance And Delivery Boundary | Retained-package fresh/upgrade/no-op/disable journeys and Doctor activation state. |
-| AC14 | Refactor FIX-010 Into The Codex Adapter; Prove Cross-Host Conformance And Delivery Boundary | Complete prototype disposition map plus source/package scans rejecting retained lock-in assumptions. |
-| AC15 | Prove Cross-Host Conformance And Delivery Boundary | Sanitized recurrence journey with exact model, QA, proof, candidate, release, and loop counts. |
-| AC16 | Prove Cross-Host Conformance And Delivery Boundary | Proof-layer ledger and local-only delivery receipt that stops before external actions. |
+| AC1, AC2 | TASK-099 | Source/dependency scan plus lifecycle/campaign singularity tests. |
+| AC3 | TASK-099, TASK-101, TASK-102 | Direct read-only countercases plus exact Codex and Claude adapter evidence. |
+| AC4 | TASK-099, TASK-100, TASK-101, TASK-102 | Material bypass denials, immutable-limit and blocked-proof receipts, and host-adapter enforcement. |
+| AC5 | TASK-099, TASK-100, TASK-103 | Working-revision/candidate-lineage tests, progress requirements, and exact delivery recurrence. |
+| AC6 | TASK-100, TASK-103 | One-QA findings ledger, automatic correction, affected-proof, no-progress, invocation-count, and retained closeout evidence. |
+| AC7 | TASK-099, TASK-100 | Exact blocked disposition and bounded escalation evidence. |
+| AC8 | TASK-100, TASK-101, TASK-102, TASK-103 | Clean candidate, once-only operations, failure termination, bounded infrastructure recovery, and prohibited-authority tests. |
+| AC9 | TASK-101, TASK-103 | Real supported Codex success/interruption canaries, aggregation, receipts, and install evidence. |
+| AC10 | TASK-102 | Real supported Claude Code success/interruption canaries, hook/budget/turn/tool/timeout receipts, and install evidence. |
+| AC11 | TASK-099, TASK-102, TASK-103 | Cross-host state, denial, candidate, proof, and receipt conformance matrix without converting structural conformance into Claude runtime proof. |
+| AC12 | TASK-099, TASK-101, TASK-102, TASK-103 | Unsupported/version/trust/policy fixtures and truthful capability/status results. |
+| AC13 | TASK-101, TASK-102, TASK-103 | Retained-package fresh/upgrade/no-op/disable journeys and Doctor activation state. |
+| AC14 | TASK-101, TASK-103 | Complete prototype disposition map plus source/package scans rejecting retained lock-in assumptions. |
+| AC15 | TASK-100, TASK-103 | Sanitized recurrence journey with exact model, QA, proof, candidate, release, and loop counts. |
+| AC16 | TASK-103 | Proof-layer ledger through the exact public Codex release and safe eligible adoption, while Claude certification and owner acceptance remain separate. |

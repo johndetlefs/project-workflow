@@ -160,6 +160,38 @@
       "evidence_artifact": "evidence/task103-validation-v0.9.2-final.json",
       "evidence_artifact_hash": "sha256:176055ec131c4362de15a5037465032fc23b2959f6fd56893a0f8aee32840f1a",
       "invalid_substitutes": []
+    },
+    {
+      "id": "TASK-103-AC7-PUBLIC-RELEASE",
+      "recipe": "runtime-target-source",
+      "status": "pass",
+      "commit": "1a69bffdc674700b10b99a586c9a957d67ac1f74",
+      "timestamp": "2026-08-31T12:24:34+10:00",
+      "parent_ac": "AC14",
+      "claim": "PR #29 merged the reviewed source to main, annotated tag v0.9.2 names that exact merge, and successful release run 33349932156 published one attested bundle to PyPI and GitHub Release with matching public hashes.",
+      "execution_target": "GitHub PR #29, annotated tag v0.9.2, release run 33349932156, PyPI 0.9.2 and GitHub Release v0.9.2",
+      "source_artifact": "Merge commit 1a69bffdc674700b10b99a586c9a957d67ac1f74",
+      "observation_method": "Verified the merged PR, tag dereference, successful hosted build/publish jobs, public registry metadata, GitHub assets and an isolated no-cache public uvx invocation.",
+      "target_used_source_proof": "PyPI and GitHub expose wheel sha256:f799937517b07f3f3320d742b93f73eaa5ae2ed67097e1c28363a945578dc8e3 and sdist sha256:22997da435409f879ea09ebb82c23da567d0028eb0d96683736701c518fd6d98; isolated uvx reports project 0.9.2.",
+      "evidence_artifact": "evidence/release-rollout-v0.9.2.json",
+      "evidence_artifact_hash": "sha256:c82b6afbe19b41251d29a35ade8bccdae9ed0c23f4fd262545eb24cb8fa280b1",
+      "invalid_substitutes": []
+    },
+    {
+      "id": "TASK-103-AC7-SAFE-ROLLOUT",
+      "recipe": "runtime-target-source",
+      "status": "pass",
+      "commit": "release 1a69bffdc674700b10b99a586c9a957d67ac1f74 plus retained consumer disposition receipt",
+      "timestamp": "2026-08-31T12:24:34+10:00",
+      "parent_ac": "AC13",
+      "claim": "Every current Codex project and every discovered manifest root has an exact disposition: Project Workflow is already current on 0.9.2, the one other clean canonical root was upgraded from the public package and validated, and all thirteen unsafe roots remained unchanged.",
+      "execution_target": "Twenty Codex project entries and fifteen Project Workflow manifest roots under /Users/johndetlefs/repos",
+      "source_artifact": "Public project-workflow 0.9.2 plus live Git, manifest and Codex project inventory",
+      "observation_method": "Fetched current remotes, reconciled Codex project metadata with a manifest scan, inspected branch/upstream/divergence/worktrees/status, applied one exact reviewed public plan, ran the no-op re-plan/version/strict-Doctor checks, and repeated every blocked status hash.",
+      "target_used_source_proof": "The johndetlefs plan fingerprint sha256:cee4aab497319c1f4c6228a0a18eabf2582df1be45c7402d875d34f69074b252 applied seven managed files; the follow-up plan had zero asset changes, helper reports project 0.9.2, strict Doctor passed, and thirteen blocker hashes were byte-identical before and after.",
+      "evidence_artifact": "evidence/release-rollout-v0.9.2.json",
+      "evidence_artifact_hash": "sha256:c82b6afbe19b41251d29a35ade8bccdae9ed0c23f4fd262545eb24cb8fa280b1",
+      "invalid_substitutes": []
     }
   ]
 }
