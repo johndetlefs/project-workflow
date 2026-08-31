@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-31T11:53:49+10:00",
+  "candidate_version": "0.9.2",
+  "candidate_source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
+  "package_manifest": "evidence/package-manifest-v0.9.2-final.json",
+  "workflow_validation_impact": {
+    "decision": "affected",
+    "affected_layers": [
+      "qa-review",
+      "execution configuration",
+      "host write-scope enforcement",
+      "proof-authority binding",
+      "exact package",
+      "real Codex runtime receipts"
+    ],
+    "broad_qa_repeated": false,
+    "full_suite_repeated": false,
+    "reason": "The three QA findings affected execution configuration, adapter scope, and runtime receipt evidence; focused suites, packaging, and both real Codex canaries were therefore rerun. Unaffected repository-wide tests were not repeated."
+  },
+  "checks": {
+    "focused_affected_pytest": "pass: 54 tests",
+    "documentation_contract": "pass: 12 current documents",
+    "generated_runtime_parity": "pass",
+    "ruff": "pass",
+    "ruff_format": "pass: 67 files",
+    "mypy": "pass: 16 source files",
+    "exact_wheel_package_journeys": "pass",
+    "real_codex_success": "pass",
+    "real_codex_interruption": "pass",
+    "canonical_success_control_and_receipt_validation": "pass",
+    "canonical_interruption_control_and_receipt_validation": "pass",
+    "retained_pre_qa_full_regression": "567 passed; not substituted for affected validation"
+  },
+  "findings_disposition": [
+    {
+      "id": "QA-1",
+      "status": "resolved",
+      "resolution": "Shared adapter path authorization now hard-denies every semantic workflow coordination path even under broad operator patterns; public configuration also rejects exact task, Epic-root, Epic-child, and canonical broad patterns.",
+      "proof": "54 focused tests include both adapters and exact Coordinator-owned path shapes."
+    },
+    {
+      "id": "QA-2",
+      "status": "resolved",
+      "resolution": "The core derives proof-contract and verification-claim obligations from the durable verification requirement, prepends them to the sealed control, reserves those namespaces from operator input, and rejects active controls that omit them.",
+      "proof": "Focused configuration test validates derivation and rejects a correctly resealed control after the durable obligations are removed."
+    },
+    {
+      "id": "QA-3",
+      "status": "resolved",
+      "resolution": "Both successor canary artifacts retain the exact operator configuration, complete sealed control, complete canonical core receipt, runtime hook observations, output identities, and package/source identity.",
+      "proof": "Both retained controls and receipts pass the canonical execution-control validator and their identities are independently recalculable."
+    }
+  ],
+  "qa_closeout": {
+    "original_verdict": "changes-requested",
+    "findings_disposition": "resolved",
+    "affected_validation_verdict": "pass",
+    "can_user_job_still_remain_undone": "no",
+    "second_qa_commissioned": false,
+    "broad_qa_invocations": 1
+  },
+  "model_invocations": {
+    "configuration_and_status": 0,
+    "real_codex_success_turns": 1,
+    "real_codex_interruption_turns": 1,
+    "independent_qa": 1,
+    "second_qa": 0
+  },
+  "proof_boundaries": {
+    "codex_runtime": "certified for the exact retained final 0.9.2 wheel and recorded Codex executable",
+    "claude_runtime": "unproved and excluded from the v0.9.2 runtime certification under AMD-002",
+    "merge": "not-yet",
+    "publication": "not-yet",
+    "adoption": "not-yet",
+    "owner_acceptance": "not-claimed"
+  }
+}

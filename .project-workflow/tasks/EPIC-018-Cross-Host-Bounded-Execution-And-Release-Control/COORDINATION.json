@@ -949,6 +949,84 @@
       "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
       "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
       "user_consequence": "Load the current 0.9.2 context contract and commission exactly one independent QA review."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "The sole TASK-103 QA findings are resolved within AMD-002 by hard-denying coordination writes, binding durable proof authority, and retaining complete canonical receipts.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:2a7782317e838eb3c6979f8abb26fb0956b9823faa22c0e430b653532108aeb6",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+      "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
+      "user_consequence": "Use one affected-validation disposition and the exact successor package/runtime evidence; do not commission a second QA or claim Claude runtime support."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "TASK-103 preserves AMD-002, the original independent Changes Requested verdict, and closes only its three named findings through one passing affected-validation disposition.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:0ad181da3532c928aca94be0206f114fe1520e24b181828331f7aa5df3624454",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+      "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
+      "user_consequence": "TASK-103 may enter Review for the Codex-only v0.9.2 release; TASK-102, AC10, and EPIC-018 remain open for Claude runtime proof."
+    },
+    {
+      "affected_units": [
+        "TASK-102",
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "The final Intent audit, affected-validation record, successor package, and complete receipts preserve AMD-002 and all open Claude obligations.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:0ad181da3532c928aca94be0206f114fe1520e24b181828331f7aa5df3624454",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+      "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
+      "user_consequence": "Load the refreshed contract, retain one final certification ledger with no additional target calls, and proceed to TASK-103 Review."
     }
   ],
   "decisions": [
@@ -960,7 +1038,7 @@
     "context_contract": "declared",
     "telemetry": "unknown"
   },
-  "intent_identity": "sha256:de12e92eb3fdc7d9d82bf9e58057d5aaa1127e4c5ecda6ea7d940c2e38c222de",
+  "intent_identity": "sha256:0ad181da3532c928aca94be0206f114fe1520e24b181828331f7aa5df3624454",
   "last_boundary": {
     "affected_units": [
       "TASK-102",
@@ -968,11 +1046,11 @@
     ],
     "amendment_identity": null,
     "boundary": "new-evidence-or-owner-reframe",
-    "capability_change": "The frozen v0.9.2 candidate and updated task ledger record the already approved AMD-002 Codex-only boundary without changing runtime, proof, or owner authority.",
+    "capability_change": "The final Intent audit, affected-validation record, successor package, and complete receipts preserve AMD-002 and all open Claude obligations.",
     "classification": "inside-envelope",
     "decided_by": "EPIC-018 Coordinator",
     "decision_date": "2026-08-31",
-    "intent_identity": "sha256:de12e92eb3fdc7d9d82bf9e58057d5aaa1127e4c5ecda6ea7d940c2e38c222de",
+    "intent_identity": "sha256:0ad181da3532c928aca94be0206f114fe1520e24b181828331f7aa5df3624454",
     "relevant_ocs": [
       "OC1",
       "OC2",
@@ -983,18 +1061,18 @@
       "OC7"
     ],
     "shared_premises_valid": "yes",
-    "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
-    "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
-    "user_consequence": "Load the current 0.9.2 context contract and commission exactly one independent QA review."
+    "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+    "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
+    "user_consequence": "Load the refreshed contract, retain one final certification ledger with no additional target calls, and proceed to TASK-103 Review."
   },
   "loaded_contract": {
     "asset_version": "8",
-    "context_id": "codex-task103-v092-qa",
+    "context_id": "codex-task103-v092-review",
     "contract_version": "2",
     "package_version": "0.9.2",
     "recorded_at": "2026-08-31"
   },
-  "next_action": "Freeze the exact 0.9.2 candidate and commission one independent QA review.",
+  "next_action": "Proceed to the one existing independent QA gate.",
   "outcome_checkpoint": {
     "checkpoint_unit": null,
     "claim_class": "mechanical",
@@ -1002,16 +1080,149 @@
     "required": false,
     "status": "not-required"
   },
-  "phase": "implementation",
+  "phase": "verification",
   "repositories": {
     "project-workflow": {
-      "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182"
+      "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048"
     }
   },
   "schema_version": 2,
-  "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
+  "source_revision": "f419d5a1264cad251d7c70cae6ace9a776d64048",
   "target_id": "EPIC-018",
-  "verification_campaign": null,
+  "verification_campaign": {
+    "adapter": {
+      "capabilities": [],
+      "command": null,
+      "kind": "manual",
+      "manual_command": "Use the retained TASK-103 deterministic, exact-package, real-Codex, affected-validation, and full-regression evidence."
+    },
+    "affected_scope": [
+      "Project Workflow source",
+      "Codex canary repository",
+      "Claude Code canary repository",
+      "retained package artifacts"
+    ],
+    "candidate_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069",
+    "claims": [
+      "bounded execution and QA remediation",
+      "fixed candidate release",
+      "truthful Codex and Claude Code enforcement",
+      "package activation and cross-host recurrence control"
+    ],
+    "current_stage": null,
+    "diagnostic_decision": null,
+    "impact": "known",
+    "intent_identity": "sha256:0ad181da3532c928aca94be0206f114fe1520e24b181828331f7aa5df3624454",
+    "limits": {
+      "max_elapsed_seconds": 300,
+      "max_failures": 1,
+      "max_target_calls": 3
+    },
+    "mode": "certification",
+    "next_action": "Proceed to the one existing independent QA gate.",
+    "outcome": "pass",
+    "proof_contract_identity": "sha256:f308d1272d71390771589199ffd46a578cef75ae05952f664c90eba9d88168f4",
+    "receipt_ledger_identity": "sha256:785feb7eeeffac21b69b2c8b0bd7e8a722f75277da19c87f9cc52ddc195d927c",
+    "receipts": [
+      {
+        "artifact": "evidence/task103-validation-v0.9.2-final.json",
+        "candidate_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069",
+        "elapsed_seconds": 15,
+        "evaluator_identity": "sha256:176055ec131c4362de15a5037465032fc23b2959f6fd56893a0f8aee32840f1a",
+        "intent_identity": "sha256:0ad181da3532c928aca94be0206f114fe1520e24b181828331f7aa5df3624454",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:f308d1272d71390771589199ffd46a578cef75ae05952f664c90eba9d88168f4",
+        "receipt_identity": "sha256:c379d835a7a13d0f24aa6f44633322c7029d4782039de0dc25676dd7ace50310",
+        "recorded_at": "2026-08-31",
+        "regrade": false,
+        "runtime_identity": "sha256:a2e5f535f5afc9ab52b94fe5b4a2e1bb4bd0bffe30b59c7611c4297f80d9f09a",
+        "scope": [
+          "Project Workflow source"
+        ],
+        "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+        "stage": "deterministic",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "sha256:f419d5a1264cad251d7c70cae6ace9a776d64048"
+      },
+      {
+        "artifact": "evidence/codex-success-v0.9.2-final.json; evidence/codex-interruption-v0.9.2-final.json; evidence/claude-capability.json",
+        "candidate_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069",
+        "elapsed_seconds": 19,
+        "evaluator_identity": "sha256:bf0495e46d273f31e52f38595adc294237eb869e9c0655f316d16c05cf18937b",
+        "intent_identity": "sha256:0ad181da3532c928aca94be0206f114fe1520e24b181828331f7aa5df3624454",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:f308d1272d71390771589199ffd46a578cef75ae05952f664c90eba9d88168f4",
+        "receipt_identity": "sha256:26c0d40ab696a3df7393dbf9fe63dc95895252df089c69eea55ba05fd7570dfb",
+        "recorded_at": "2026-08-31",
+        "regrade": false,
+        "runtime_identity": "sha256:ccf63c3a58cef44281da4a54a3ec65c6a612e579991d6c9e754613f2fbc3299d",
+        "scope": [
+          "Codex canary repository",
+          "Claude Code canary repository"
+        ],
+        "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+        "stage": "canary",
+        "stage_complete": true,
+        "target_calls": 2,
+        "target_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069"
+      },
+      {
+        "artifact": "evidence/task103-validation-v0.9.2-final.json",
+        "candidate_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069",
+        "elapsed_seconds": 15,
+        "evaluator_identity": "sha256:176055ec131c4362de15a5037465032fc23b2959f6fd56893a0f8aee32840f1a",
+        "intent_identity": "sha256:0ad181da3532c928aca94be0206f114fe1520e24b181828331f7aa5df3624454",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:f308d1272d71390771589199ffd46a578cef75ae05952f664c90eba9d88168f4",
+        "receipt_identity": "sha256:4a75597ef043d9a622d3998bd8a96f3ad9a2d48152b07a0a07e342dc0c15b55f",
+        "recorded_at": "2026-08-31",
+        "regrade": false,
+        "runtime_identity": "sha256:a2e5f535f5afc9ab52b94fe5b4a2e1bb4bd0bffe30b59c7611c4297f80d9f09a",
+        "scope": [
+          "Project Workflow source",
+          "retained package artifacts"
+        ],
+        "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+        "stage": "affected",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069"
+      },
+      {
+        "artifact": "evidence/package-journeys-v0.9.2-final.json; retained pre-QA 567-test regression; passing affected-validation disposition",
+        "candidate_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069",
+        "elapsed_seconds": 97,
+        "evaluator_identity": "sha256:268a082bc4b05ddea2f392e5b9a884a6b0b9d7da61e7caed1a41dcb320d34a62",
+        "intent_identity": "sha256:0ad181da3532c928aca94be0206f114fe1520e24b181828331f7aa5df3624454",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:f308d1272d71390771589199ffd46a578cef75ae05952f664c90eba9d88168f4",
+        "receipt_identity": "sha256:2d9e2fdaca5a93c2e8458c2b3ed37e0cf4247fba2c26f7f0b7cb845b2813346a",
+        "recorded_at": "2026-08-31",
+        "regrade": false,
+        "runtime_identity": "sha256:a2e5f535f5afc9ab52b94fe5b4a2e1bb4bd0bffe30b59c7611c4297f80d9f09a",
+        "scope": [
+          "Project Workflow source",
+          "Codex canary repository",
+          "Claude Code canary repository",
+          "retained package artifacts"
+        ],
+        "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+        "stage": "full",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069"
+      }
+    ],
+    "schema_version": 1,
+    "source_identity": "sha256:6c0f980c1b5097710bbbfd1d5b25d9ef58ef1b3498a44cad2eefa8769e515147",
+    "stages": [
+      "deterministic",
+      "canary",
+      "affected",
+      "full"
+    ]
+  },
   "verification_requirement": {
     "affected_scope": [
       "Project Workflow source",

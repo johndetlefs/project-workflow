@@ -114,6 +114,8 @@ def _path_allowed(path: str, patterns: Iterable[str], root: Path | None = None) 
         candidate = _normalized_relative_path(path, root)
     except ValueError:
         return False
+    if _is_workflow_coordination_path(candidate):
+        return False
     return any(fnmatch.fnmatchcase(candidate, pattern) for pattern in patterns)
 
 
