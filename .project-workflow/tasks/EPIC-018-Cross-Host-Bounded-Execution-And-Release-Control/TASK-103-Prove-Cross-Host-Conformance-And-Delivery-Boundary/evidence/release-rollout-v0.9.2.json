@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-31T12:24:34+10:00",
+  "release": {
+    "version": "0.9.2",
+    "pull_request": "https://github.com/johndetlefs/project-workflow/pull/29",
+    "merge_commit": "1a69bffdc674700b10b99a586c9a957d67ac1f74",
+    "tag": "v0.9.2",
+    "tag_commit": "1a69bffdc674700b10b99a586c9a957d67ac1f74",
+    "release_run": {
+      "id": 33349932156,
+      "url": "https://github.com/johndetlefs/project-workflow/actions/runs/33349932156",
+      "conclusion": "success"
+    },
+    "github_release": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.9.2",
+    "pypi": "https://pypi.org/project/project-workflow/0.9.2/",
+    "public_files": [
+      {
+        "filename": "project_workflow-0.9.2-py3-none-any.whl",
+        "sha256": "f799937517b07f3f3320d742b93f73eaa5ae2ed67097e1c28363a945578dc8e3",
+        "size": 538645
+      },
+      {
+        "filename": "project_workflow-0.9.2.tar.gz",
+        "sha256": "22997da435409f879ea09ebb82c23da567d0028eb0d96683736701c518fd6d98",
+        "size": 705240
+      }
+    ],
+    "public_install_check": {
+      "command": "/opt/homebrew/bin/uvx --no-cache --no-config --isolated --default-index https://pypi.org/simple --from project-workflow==0.9.2 project --version",
+      "result": "project 0.9.2",
+      "status": "pass"
+    },
+    "certification": "codex-only",
+    "claude_runtime_certified": false
+  },
+  "inventory": {
+    "codex_project_entries": 20,
+    "local_project_entries": 18,
+    "chatgpt_cloud_entries": 2,
+    "discovered_manifest_roots": 15,
+    "saved_project_manifest_roots": 12,
+    "additional_manifest_roots": 3,
+    "current_or_upgraded_roots": 2,
+    "upgraded_roots": 1,
+    "already_current_roots": 1,
+    "blocked_unchanged_roots": 13,
+    "project_entries": [
+      {"label": "performance-by-design", "path": "/Users/johndetlefs/repos/dept/pbd", "disposition": "no-project-workflow-manifest"},
+      {"label": "contraceptives-option-finder", "path": "/Users/johndetlefs/repos/dept/health-direct/contraceptives-option-finder", "disposition": "manifest-root-blocked"},
+      {"label": "Mechanics Playground", "path": "/Users/johndetlefs/repos/mechanics-playground", "disposition": "manifest-root-blocked"},
+      {"label": "Game Foundation", "path": "/Users/johndetlefs/repos/game-foundation", "disposition": "manifest-root-blocked"},
+      {"label": "johndetlefs", "path": "/Users/johndetlefs/repos/johndetlefs", "disposition": "upgraded-0.9.2"},
+      {"label": "Toby's Games", "path": "/Users/johndetlefs/repos/tobys-games", "disposition": "manifest-root-blocked"},
+      {"label": "The Moon Is Hollow", "path": "/Users/johndetlefs/repos/the-moon-is-hollow", "disposition": "manifest-root-blocked"},
+      {"label": "strategy-workspace", "path": "/Users/johndetlefs/repos/strategy-workspace", "disposition": "no-project-workflow-manifest"},
+      {"label": "strategic-advisor", "path": "/Users/johndetlefs/repos/strategic-advisor", "disposition": "manifest-root-blocked"},
+      {"label": "daily-checklist", "path": "/Users/johndetlefs/repos/daily-checklist", "disposition": "manifest-root-blocked"},
+      {"label": "project-workflow", "path": "/Users/johndetlefs/repos/project-workflow", "disposition": "already-current-0.9.2"},
+      {"label": "client-management-app", "path": "/Users/johndetlefs/repos/client-management-app", "disposition": "manifest-root-blocked"},
+      {"label": "shopify-monitor", "path": "/Users/johndetlefs/repos/shopify-monitor", "disposition": "manifest-root-blocked"},
+      {"label": "videos", "path": "/Users/johndetlefs/repos/videos", "disposition": "no-project-workflow-manifest"},
+      {"label": "shopify", "path": "/Users/johndetlefs/repos/shopify", "disposition": "no-project-workflow-manifest"},
+      {"label": "alessa-vino", "path": "/Users/johndetlefs/repos/shopify-clients/alessa-vino", "disposition": "no-project-workflow-manifest"},
+      {"label": "gpt-app", "path": "/Users/johndetlefs/repos/dept/health-direct/gpt-app", "disposition": "manifest-root-blocked"},
+      {"label": "games", "path": "/Users/johndetlefs/repos/games", "disposition": "non-git-no-project-workflow-manifest"},
+      {"label": "Breath of the wild", "path": null, "disposition": "chatgpt-cloud-no-local-installation"},
+      {"label": "Writing a Book", "path": null, "disposition": "chatgpt-cloud-no-local-installation"}
+    ]
+  },
+  "manifest_roots": [
+    {
+      "path": "/Users/johndetlefs/repos/project-workflow",
+      "agent": "codex",
+      "branch": "main",
+      "head": "1a69bffdc674700b10b99a586c9a957d67ac1f74",
+      "upstream": "origin/main",
+      "ahead": 0,
+      "behind": 0,
+      "dirty_count": 0,
+      "package_version": "0.9.2",
+      "disposition": "already-current-clean-canonical"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/johndetlefs",
+      "agent": "codex",
+      "branch": "main",
+      "head": "d15f23987da85de2f5d0df85044620df736bbce3",
+      "upstream": "origin/main",
+      "ahead": 0,
+      "behind": 0,
+      "pre_status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_version": "0.9.1",
+      "target_version": "0.9.2",
+      "plan_fingerprint": "sha256:cee4aab497319c1f4c6228a0a18eabf2582df1be45c7402d875d34f69074b252",
+      "changed_files": [
+        ".project-workflow/.gitignore",
+        ".project-workflow/cli/adapter_common.py",
+        ".project-workflow/cli/claude_adapter.py",
+        ".project-workflow/cli/codex_adapter.py",
+        ".project-workflow/cli/workflow.py",
+        ".project-workflow/manifest.json",
+        "AGENTS.md"
+      ],
+      "post_status_sha256": "4d1bbb67e3fb6c114145937423fd4c997e2232651a9cd7cbc3cd616d7768c9fe",
+      "no_op_plan_fingerprint": "sha256:cb4900365a48e80f65ab67e3fef75547c14633e8c7f17aa3012eb031aeed7411",
+      "no_op_asset_changes": 0,
+      "doctor": "pass-with-3-accepted-warnings-hidden",
+      "managed_new_files": 0,
+      "disposition": "upgraded-public-0.9.2-and-validated"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/client-management-app", "branch": "main", "head": "a4432b9f51537f641d57993a2c5114db61692c84", "upstream": "origin/main", "ahead": 3, "behind": 0, "dirty_count": 31, "package_version": "0.9.0", "status_sha256": "0dd4aefa0976c088d0f9b61af2317027541910e3b738c0e49ae342236bfa4da4", "disposition": "blocked-dirty-and-ahead-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/daily-checklist", "branch": "main", "head": "38d440a85c05477da4c190ff488f990a9e241a90", "upstream": "origin/main", "ahead": 3, "behind": 0, "dirty_count": 31, "package_version": "0.9.0", "status_sha256": "0dd4aefa0976c088d0f9b61af2317027541910e3b738c0e49ae342236bfa4da4", "disposition": "blocked-dirty-and-ahead-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/dept/health-direct/contraceptives-option-finder", "branch": "main", "head": "d077d3b73a2e02a96d0d9b841768bbaa68906602", "upstream": "origin/main", "ahead": 0, "behind": 82, "dirty_count": 26, "package_version": "0.9.0", "status_sha256": "2e4cab0ebc67de346d70169f28173d52ada6c0a2b69da205f1a66878b2a3f8df", "disposition": "blocked-dirty-and-stale-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/dept/health-direct/gpt-app", "branch": "archive/service-finder-google-maps-integration-2026-07-20", "head": "396a5cc18126dca10dce778adfad2b0482db7ea1", "upstream": null, "dirty_count": 34, "package_version": "0.9.0", "status_sha256": "125a5fbd462718aaf728685151b8e584329ea96996820c8b129be223265f1a94", "disposition": "blocked-dirty-noncanonical-branch-and-duplicate-authority-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/dept/health-direct/gpt-app-main", "branch": "main", "head": "9b2beb1b3c0a9a7995e1746ce4929d8e31fe9b7e", "upstream": "origin/main", "ahead": 0, "behind": 249, "dirty_count": 32, "package_version": "0.9.0", "status_sha256": "1fceba26464809b93ba24071005f60b94716baa3e00251a0fe6eecad57b6690f", "disposition": "blocked-dirty-stale-and-duplicate-authority-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/game-foundation", "branch": "codex/GF-045-consumer-authoring-extension", "head": "a6542339c87a37df3fc9ae3601844490e5ada7e4", "upstream": null, "dirty_count": 9, "package_version": "0.9.0", "status_sha256": "5f3cf0b42c3ef2d9b6c9d09e52997264e26801f4013ce6ccf1d9cbb78750cbfd", "disposition": "blocked-dirty-active-branch-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/mechanics-playground", "branch": "main", "head": "c552a6ce4765f57ac5c454b166ddc9c5d81014e4", "upstream": "origin/main", "ahead": 4, "behind": 0, "dirty_count": 9, "package_version": "0.9.0", "status_sha256": "5f3cf0b42c3ef2d9b6c9d09e52997264e26801f4013ce6ccf1d9cbb78750cbfd", "disposition": "blocked-dirty-and-ahead-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/shopify-clients/avoca-interiors", "branch": "main", "head": "60108decf2c01ae4a955512c068c27a9921fec8c", "upstream": "origin/main", "ahead": 0, "behind": 0, "dirty_count": 25, "package_version": "0.9.0", "status_sha256": "661681ec0042f85d79e987d916e0e3e74b3ca0fa79621c32cc4a21f66401e5af", "disposition": "blocked-dirty-unregistered-root-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/shopify-monitor", "branch": "main", "head": "1783ad0f14b7699a60ca43b04bb3674427935c28", "upstream": "origin/main", "ahead": 0, "behind": 0, "dirty_count": 30, "package_version": "0.9.0", "status_sha256": "a596d2a7a053af5e7c9478677787496f101870de0e11822372c7ba9af5d1d0f5", "disposition": "blocked-dirty-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/shopify-theme", "branch": "main", "head": "731042f1d4100524dece15c584ab149b8a60ef3b", "upstream": "origin/main", "ahead": 0, "behind": 0, "dirty_count": 25, "package_version": "0.9.0", "status_sha256": "661681ec0042f85d79e987d916e0e3e74b3ca0fa79621c32cc4a21f66401e5af", "disposition": "blocked-dirty-unregistered-root-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/strategic-advisor", "branch": "main", "head": "a456589ee3a5631ee246a491225dca0c7deea17e", "upstream": "origin/main", "ahead": 0, "behind": 0, "dirty_count": 6, "package_version": "0.9.0", "status_sha256": "d3f316380d368acf6ece680f901943d7cc5723121edde7de8fb43fc70d763279", "disposition": "blocked-dirty-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/the-moon-is-hollow", "branch": "codex/EPIC-001-product-foundation", "head": "5c698edcbeeb04763b776307ebad272aec3d2536", "upstream": null, "dirty_count": 18, "package_version": "0.9.0", "status_sha256": "86921c5d192f04273a3ed6a251b837045f4cc3fe497d425146cfc25e3b687121", "disposition": "blocked-dirty-active-branch-unchanged"
+    },
+    {
+      "path": "/Users/johndetlefs/repos/tobys-games", "branch": "main", "head": "626029ca8f9595377a322092a3608d0481389011", "upstream": "origin/main", "ahead": 3, "behind": 0, "dirty_count": 16, "package_version": "0.9.0", "status_sha256": "f2750e41538c258db3e90d36a79862dc50852b89b60d0c7bee308b3adb109f60", "disposition": "blocked-dirty-and-ahead-unchanged"
+    }
+  ],
+  "safety": {
+    "public_exact_version_used": true,
+    "reviewed_fingerprint_apply": true,
+    "no_op_replan_passed": true,
+    "strict_doctor_passed_for_upgraded_root": true,
+    "forced_dirty_upgrades": 0,
+    "blocked_roots_rechecked_unchanged": true,
+    "consumer_commits_or_pushes": 0
+  },
+  "codex_integration": {
+    "global_marketplace_plugin_required": false,
+    "global_project_workflow_plugin_installed": false,
+    "repository_local_skills_present": true,
+    "ephemeral_execution_hook_present": true,
+    "exact_candidate_success_canary": "pass",
+    "exact_candidate_interruption_canary": "pass",
+    "operational_verdict": "Codex repository integration and sealed execution are operational; a permanent marketplace plugin is deliberately not part of the supported installation contract."
+  },
+  "remaining_boundary": "TASK-102, parent AC10, and EPIC-018 remain open until an exact authenticated Claude runtime canary exists. Thirteen dirty or ambiguous consumer roots remain unchanged on 0.9.0 and require repository-specific reconciliation before safe adoption."
+}

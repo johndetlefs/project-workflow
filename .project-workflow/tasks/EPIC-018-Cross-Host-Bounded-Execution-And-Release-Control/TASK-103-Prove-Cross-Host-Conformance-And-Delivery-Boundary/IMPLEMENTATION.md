@@ -57,7 +57,7 @@ Keep repository-local skills as the normal Codex integration and activate the ex
 
 | Repository | Source | Initial state | Delivery state | Evidence |
 |---|---|---|---|---|
-| `.` | `codex/task-103-cross-host-conformance` from `origin/main` at `e299b0155d284764c29f3b1269f11323887792fc` | implementation through QA-remediation commit `f419d5a`; retained final evidence follows that source | exact local v0.9.2 wheel `sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069`; not yet merged or published | `evidence/package-manifest-v0.9.2-final.json`, complete exact-wheel Codex controls/receipts, package journeys, affected validation, and preserved independent QA |
+| `.` | PR #29 merged to `main` at `1a69bffdc674700b10b99a586c9a957d67ac1f74`; annotated tag `v0.9.2` | exact local candidate proof, one preserved independent QA findings set, and passing affected remediation proof | public Codex-certified 0.9.2 release; PyPI and GitHub hashes agree; one eligible consumer upgraded, one already current, and thirteen blocked roots unchanged | `evidence/release-rollout-v0.9.2.json`; exact-package controls/receipts; release run `33349932156` |
 
 ## Task List
 
@@ -75,47 +75,79 @@ Keep repository-local skills as the normal Codex integration and activate the ex
 
 - Parent AC5, AC8, AC9, AC11, AC12, AC13, AC14, AC15 and AC16 have current source, package,
   deterministic, or real-Codex evidence recorded in child-local artifacts.
+- Parent AC6: one independent Changes Requested report is retained, all three findings have a
+  passing affected-validation disposition, and no second broad QA was commissioned.
 - Parent AC10 remains explicitly unproved under TASK-102 because no Claude executable is installed;
   AMD-002 removes it from this task's Codex-only release ownership without converting it to a pass.
-- Merge, publication, rollout, adoption, and owner acceptance remain uncredited.
+- Merge and publication are proved at `1a69bff` / `v0.9.2`; release run `33349932156` published
+  the same public wheel and sdist to PyPI and GitHub Release.
+- Rollout accounting covers all 20 current Codex project entries and all 15 discovered manifests.
+  Project Workflow was already current, `johndetlefs` was upgraded from the public exact version
+  with a reviewed fingerprint and no-op re-plan, and thirteen dirty or ambiguous roots remained
+  unchanged with matching pre/post status hashes.
+- Owner acceptance remains uncredited. TASK-102, parent AC10, and EPIC-018 remain open for the
+  authenticated Claude runtime proof excluded by AMD-002.
 
-## QA
+## QA & Code Review
 
-- Candidate reviewed: commit `620d1d31c7c4460c2ceb557f318aeb199db1ff75`; exact pre-remediation
-  v0.9.2 wheel `sha256:f7eadfcfad517759839ce68b80bf22dc89cf07809a1b9d6daa0fe44fe7e03e54`.
-- Successor candidate: source commit `f419d5a1264cad251d7c70cae6ace9a776d64048`; exact v0.9.2
-  wheel `sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069`.
-- Reviewer independence: separate ephemeral read-only Codex QA context; no source or workflow-state
-  mutation was permitted.
-- Original verdict: **Changes Requested**. Preserved in `evidence/qa-review-v0.9.2.md`.
-- Findings: worker authority could include Coordinator-owned coordination state; active proof
+- Intent QA contract: adversarial
+- Verdict: Changes Requested
+- Intent adversarial verdict: Fail
+- Could every AC pass while the approved user job remains undone: Yes
+- Intent audit state: current
+- Outcome journey evidence: The exact package, real Codex success and interruption journeys,
+  public release, isolated public install, and safe all-project rollout are retained in child-local
+  evidence.
+- Reviewer independence: One separate ephemeral read-only Codex QA context reviewed commit
+  `620d1d31c7c4460c2ceb557f318aeb199db1ff75`; no source or workflow-state mutation was permitted.
+- Evidence: The original report is preserved in `evidence/qa-review-v0.9.2.md`; the successor
+  package and affected proof are retained in `evidence/task103-validation-v0.9.2-final.json` and
+  `evidence/release-rollout-v0.9.2.json`.
+- Findings: Worker authority could include Coordinator-owned coordination state; active proof
   obligations were not bound to durable verification authority; retained canary artifacts omitted
   the complete core receipts and exact sealed inputs required for independent identity validation.
-- Intent adversarial verdict: the reviewed AC set could appear green while the approved user job
-  remained unsafe or unproved because authority state could be mutated and receipts could not be
-  independently verified.
-- Current Intent audit at review: pass/current,
-  `sha256:c9da28048d5bef4f79a259582d8d662190190dc0445a2fcbcd0578355e17d544`.
-- Workflow validation impact: **affected** for `qa-review`, execution configuration, shared adapter
-  path enforcement, proof-authority binding, the exact package, and real Codex receipts.
-- Findings disposition: **Resolved**. Shared runtime authorization now hard-denies coordination
-  state; active controls derive and require durable proof-contract/claim obligations; both final
-  canaries retain the exact configuration, full sealed control, full core receipt, observations,
-  source, package, and output identities.
-- Affected validation verdict: **Pass**. Fifty-four focused tests, documentation, generated parity,
-  Ruff, formatting, mypy, exact-package journeys, both real Codex canaries, and canonical
-  validation of both retained controls/receipts passed. The user job cannot still remain undone
-  through the three named QA gaps: **No**.
-- Disposition: the original Changes Requested verdict is closed through the passing affected-
-  validation record in `evidence/task103-validation-v0.9.2-final.json`; it is not replaced by a
-  fictional second review verdict.
-- QA invocation count: 1
+- Findings disposition: Resolved
+- Affected validation verdict: Pass
+- Could every AC pass after affected validation while the approved user job remains undone: No
+- Affected validation evidence: Shared runtime authorization hard-denies coordination state,
+  active controls derive and require durable proof-contract and claim obligations, both final
+  canaries retain complete sealed inputs and canonical receipts, 54 focused tests and all affected
+  quality/package gates passed, and the successor was merged, publicly released and safely adopted
+  wherever eligible.
 - Second QA commissioned: No
+- QA invocation count: 1
+- Candidate reviewed: commit `620d1d31c7c4460c2ceb557f318aeb199db1ff75`; exact pre-remediation
+  wheel `sha256:f7eadfcfad517759839ce68b80bf22dc89cf07809a1b9d6daa0fe44fe7e03e54`.
+- Successor candidate: source commit `f419d5a1264cad251d7c70cae6ace9a776d64048`; exact local wheel
+  `sha256:461f3ec65261bf6d5d7971a06f88c73fb71a98de16724b67f76e556ed7533069`.
+- Disposition: The preserved Changes Requested verdict is closed through affected validation; it is
+  not overwritten by a fictional second review.
 
-## Retrospective
+## Retro
 
-- Durable conventions: pending completion evidence
-- Follow-up work: only evidence-backed residuals may be recorded
+- Date: 2026-08-31
+- Lessons: Codex installation health is repository-local skill discovery plus an exact sealed-run
+  receipt, not a permanent marketplace-plugin row. The supported adapter must continue to create and
+  remove its hook inside the supervised execution context.
+- Lessons: Public availability needs an isolated resolver check. The first in-repository `uvx`
+  attempt inherited local resolver context and returned a false missing-version result even though
+  PyPI JSON and the simple index exposed 0.9.2; `--no-cache --no-config --isolated` proved the
+  package correctly.
+- Lessons: The attested tag workflow rebuilt and validated the exact public distribution. Its public
+  archive hashes differ from the retained pre-merge candidate, so release evidence must bind both
+  layers explicitly rather than describing them as the same file.
+- Lessons: "Upgrade all projects" means one exact disposition per project and manifest root. It
+  does not authorize overwriting dirty, stale, active-branch, duplicate-authority, or unregistered
+  repositories; thirteen such roots retained byte-identical status hashes.
+- Updated assets: `.project-workflow/guidance.md` now owns isolated public-package verification and
+  public-artifact identity guidance; `docs/execution-control.md` already owns the non-global-plugin
+  activation contract; this task retains the release and rollout receipt.
+- Follow-up suggestions: TASK-102 remains the only Project Workflow host-certification follow-up.
+  Each of the thirteen blocked consumer roots needs reconciliation under its own repository
+  authority before rerunning the public fingerprinted upgrade.
+- Missed in-scope work: None. The Codex-only release, publication, activation proof, complete estate
+  accounting, and safe eligible adoption are retained. Owner acceptance and Claude certification
+  were not part of the completed boundary and remain unclaimed.
 
 ## Notes
 
