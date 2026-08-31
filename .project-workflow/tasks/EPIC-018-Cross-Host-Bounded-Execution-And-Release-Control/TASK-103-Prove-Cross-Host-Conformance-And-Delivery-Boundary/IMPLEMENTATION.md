@@ -81,12 +81,22 @@ Keep repository-local skills as the normal Codex integration and activate the ex
 
 ## QA
 
-- Candidate: exact local v0.9.2 wheel `sha256:f7eadfcfad517759839ce68b80bf22dc89cf07809a1b9d6daa0fe44fe7e03e54`
-- Findings set: not commissioned
-- Disposition: Testing. AMD-002 removes parent AC10 from this task's release ownership while keeping
-  TASK-102 blocked truthfully. Exact 0.9.2 package, Codex runtime, recurrence, and validation proof
-  pass; parent AC6 and Review remain pending the one independent QA findings set.
-- QA invocation count: 0
+- Candidate reviewed: commit `620d1d31c7c4460c2ceb557f318aeb199db1ff75`; exact local v0.9.2
+  wheel `sha256:f7eadfcfad517759839ce68b80bf22dc89cf07809a1b9d6daa0fe44fe7e03e54`
+- Reviewer independence: separate ephemeral read-only Codex QA context; no source or workflow-state
+  mutation was permitted.
+- Original verdict: **Changes Requested**. Preserved in `evidence/qa-review-v0.9.2.md`.
+- Findings: worker authority could include Coordinator-owned coordination state; active proof
+  obligations were not bound to durable verification authority; retained canary artifacts omitted
+  the complete core receipts and exact sealed inputs required for independent identity validation.
+- Intent adversarial verdict: the reviewed AC set could appear green while the approved user job
+  remained unsafe or unproved because authority state could be mutated and receipts could not be
+  independently verified.
+- Current Intent audit at review: pass/current,
+  `sha256:c9da28048d5bef4f79a259582d8d662190190dc0445a2fcbcd0578355e17d544`.
+- Disposition: named corrections are in progress through one affected-validation campaign. The
+  original verdict is not replaced by a second QA verdict.
+- QA invocation count: 1
 - Second QA commissioned: No
 
 ## Retrospective

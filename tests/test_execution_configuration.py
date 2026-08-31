@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from project_workflow import cli as workflow_cli
 
 PROJECT = [sys.executable, "-m", "project_workflow.cli"]
@@ -31,7 +33,7 @@ def run_git(root: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
-def fixture_repo(tmp_path: Path) -> tuple[Path, str]:
+def fixture_repo(tmp_path: Path, *, material_verification: bool = False) -> tuple[Path, str]:
     root = tmp_path / "repo"
     root.mkdir()
     initialized = run_project(root, "init", "--agent", "codex")
@@ -58,8 +60,7 @@ def fixture_repo(tmp_path: Path) -> tuple[Path, str]:
     run_git(root, "add", ".")
     run_git(root, "commit", "-m", "Fixture source")
     source_revision = run_git(root, "rev-parse", "HEAD")
-    coordinated = run_project(
-        root,
+    coordinate_args = [
         "coordinate",
         "init",
         "--id",
@@ -79,8 +80,20 @@ def fixture_repo(tmp_path: Path) -> tuple[Path, str]:
         "--next-action",
         "Configure bounded execution.",
         "--material-verification",
-        "no",
-    )
+        "yes" if material_verification else "no",
+    ]
+    if material_verification:
+        coordinate_args.extend(
+            [
+                "--verification-claims",
+                "exact accepted outcome,sealed authority",
+                "--verification-stages",
+                "deterministic,affected",
+                "--verification-scope",
+                "configured repository",
+            ]
+        )
+    coordinated = run_project(root, *coordinate_args)
     assert coordinated.returncode == 0, coordinated.stdout + coordinated.stderr
     return root, source_revision
 
@@ -345,3 +358,76 @@ def test_configuration_never_grants_worker_write_authority_over_coordination(
     )
     assert rejected.returncode == 1
     assert "must not grant worker authority over COORDINATION.json" in rejected.stderr
+
+
+@pytest.mark.parametrize(
+    "coordination_path",
+    [
+        ".project-workflow/tasks/TASK-001-Configured-Execution/COORDINATION.json",
+        ".project-workflow/tasks/EPIC-018-Cross-Host/COORDINATION.json",
+        ".project-workflow/tasks/EPIC-018-Cross-Host/TASK-001-Child/COORDINATION.json",
+    ],
+)
+def test_configuration_rejects_exact_coordinator_owned_paths(
+    tmp_path: Path, coordination_path: str
+) -> None:
+    root, _source_revision = fixture_repo(tmp_path)
+    executable = fake_codex(tmp_path)
+    config = operator_config(executable)
+    config["allowed_write_paths"] = [coordination_path]
+
+    rejected = run_project(
+        root,
+        "execution",
+        "configure",
+        "--id",
+        "TASK-001",
+        "--config",
+        str(write_config(tmp_path, config)),
+    )
+
+    assert rejected.returncode == 1
+    assert "must not grant worker authority over COORDINATION.json" in rejected.stderr
+
+
+def test_configuration_binds_durable_verification_authority_into_sealed_control(
+    tmp_path: Path,
+) -> None:
+    root, _source_revision = fixture_repo(tmp_path, material_verification=True)
+    executable = fake_codex(tmp_path)
+    config_path = write_config(tmp_path, operator_config(executable))
+
+    configured = run_project(
+        root,
+        "execution",
+        "configure",
+        "--id",
+        "TASK-001",
+        "--config",
+        str(config_path),
+        "--format",
+        "json",
+    )
+
+    assert configured.returncode == 0, configured.stdout + configured.stderr
+    coordination_path = (
+        root / ".project-workflow/tasks/TASK-001-Configured-Execution/COORDINATION.json"
+    )
+    state = json.loads(coordination_path.read_text(encoding="utf-8"))
+    requirement = state["verification_requirement"]
+    obligations = state["execution_control"]["proof_obligations"]
+    assert obligations == [
+        f"verification-contract:{requirement['proof_contract_identity']}",
+        "verification-claim:exact accepted outcome",
+        "verification-claim:sealed authority",
+        "exact-canary-content",
+        "sealed-scope",
+    ]
+
+    control = state["execution_control"]
+    control["proof_obligations"] = ["exact-canary-content", "sealed-scope"]
+    control["sealed_identity"] = workflow_cli._execution_hash(
+        workflow_cli._execution_sealed_payload(control)
+    )
+    with pytest.raises(ValueError, match="omits the durable verification requirement"):
+        workflow_cli._coordination_validate_state(state, target_id="TASK-001")

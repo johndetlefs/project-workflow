@@ -11,6 +11,7 @@ import subprocess
 from pathlib import Path
 from typing import cast
 
+from .adapter_common import _is_workflow_coordination_path
 from .contracts import (
     EXECUTION_CONTROL_SCHEMA_VERSION,
     EXECUTION_OPERATOR_CONFIG_SCHEMA_VERSION,
@@ -26,6 +27,7 @@ from .coordination import (
     _execution_control_projection,
     _execution_copy,
     _execution_hash,
+    _execution_required_proof_obligations,
     _execution_sealed_payload,
     _execution_validate_control,
     _print_execution_projection,
@@ -111,9 +113,12 @@ def _execution_operator_config(path: Path) -> dict[str, object]:
             raise ValueError("allowed_write_paths must stay within the repository")
         coordination_samples = (
             ".project-workflow/tasks/TASK-000/COORDINATION.json",
+            ".project-workflow/tasks/EPIC-000/COORDINATION.json",
             ".project-workflow/tasks/EPIC-000/TASK-000/COORDINATION.json",
         )
-        if any(fnmatch.fnmatchcase(sample, raw_path) for sample in coordination_samples):
+        if _is_workflow_coordination_path(raw_path) or any(
+            fnmatch.fnmatchcase(sample, raw_path) for sample in coordination_samples
+        ):
             raise ValueError(
                 "allowed_write_paths must not grant worker authority over COORDINATION.json"
             )
@@ -128,6 +133,13 @@ def _execution_operator_config(path: Path) -> dict[str, object]:
     proof_obligations = _execution_operator_string_list(
         value.get("proof_obligations"), "proof_obligations"
     )
+    if any(
+        obligation.startswith(("verification-contract:", "verification-claim:"))
+        for obligation in proof_obligations
+    ):
+        raise ValueError(
+            "proof_obligations must not declare Coordinator-owned verification authority"
+        )
     allowed_tools = _execution_operator_string_list(value.get("allowed_tools"), "allowed_tools")
     allowed_command_patterns = _execution_operator_string_list(
         value.get("allowed_command_patterns", []), "allowed_command_patterns", empty=True
@@ -345,7 +357,10 @@ def _execution_configure_payload(
     configured_proof = cast(list[str], config["proof_obligations"])
     configured_paths = cast(list[str], config["allowed_write_paths"])
     configured_operations = cast(list[str], config["permitted_operations"])
-    proof_obligations = list(configured_proof)
+    required_proof = _execution_required_proof_obligations(
+        coordination.get("verification_requirement")
+    )
+    proof_obligations = [*required_proof, *configured_proof]
     baseline_evidence = _execution_hash(
         {"source_revision": source_revision, "proof_obligations": proof_obligations}
     )

@@ -222,6 +222,23 @@ def _verification_validate_requirement(requirement: object) -> None:
         raise ValueError("verification_requirement.proof_contract_identity is stale or malformed.")
 
 
+def _execution_required_proof_obligations(requirement: object) -> list[str]:
+    """Derive active execution obligations from Coordinator-owned verification authority."""
+    if requirement is None:
+        return []
+    _verification_validate_requirement(requirement)
+    assert isinstance(requirement, dict)
+    if requirement["required"] is False:
+        return []
+    claims = requirement["claims"]
+    assert isinstance(claims, list)
+    proof_contract_identity = str(requirement["proof_contract_identity"])
+    return [
+        f"verification-contract:{proof_contract_identity}",
+        *(f"verification-claim:{claim}" for claim in claims),
+    ]
+
+
 def _verification_validate_campaign(campaign: object) -> None:
     if not isinstance(campaign, dict):
         raise ValueError("verification_campaign must be an object when present.")
@@ -456,7 +473,20 @@ def _coordination_validate_state(payload: object, *, target_id: str | None = Non
                     )
     execution_control = payload.get("execution_control")
     if execution_control is not None:
-        _execution_validate_control(execution_control, work_id=actual_target)
+        validated_control = _execution_validate_control(execution_control, work_id=actual_target)
+        required_obligations = _execution_required_proof_obligations(requirement)
+        active_obligations = validated_control["proof_obligations"]
+        assert isinstance(active_obligations, list)
+        missing_obligations = [
+            obligation
+            for obligation in required_obligations
+            if obligation not in active_obligations
+        ]
+        if missing_obligations:
+            raise ValueError(
+                "execution_control omits the durable verification requirement: "
+                + ", ".join(missing_obligations)
+            )
     execution_history = payload.get("execution_control_history")
     if execution_history is not None:
         if not isinstance(execution_history, list):

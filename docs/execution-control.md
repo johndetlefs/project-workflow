@@ -69,7 +69,11 @@ Every limit is explicit and host-native. Project Workflow does not supply a univ
 configuration file contains operator policy, not an internal `COORDINATION.json` payload: the CLI
 observes and hashes the exact executable/version, probes the supported non-model host contract,
 constructs the generic capability mapping, computes the sealed identity, and writes state through
-the Coordinator-owned writer.
+the Coordinator-owned writer. When coordination declares material verification, the core—not the
+operator—prepends the current proof-contract identity and every durable verification claim to the
+sealed proof obligations. Reserved `verification-contract:` and `verification-claim:` entries are
+therefore rejected in operator configuration. The active control cannot validate if those derived
+obligations are missing.
 
 Configure, inspect, and execute:
 

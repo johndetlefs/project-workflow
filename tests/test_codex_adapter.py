@@ -89,6 +89,12 @@ def test_git_source_check_excludes_coordinator_state_but_not_product_changes(
     assert codex_adapter._git_changed_paths(root) == {"README.md", "src/canary.txt"}
 
 
+def test_worker_scope_hard_denies_coordinator_owned_state(tmp_path: Path) -> None:
+    root = tmp_path.resolve()
+    path = ".project-workflow/tasks/EPIC-018-Example/COORDINATION.json"
+    assert codex_adapter._path_allowed(path, ["**"], root) is False
+
+
 def adapter_control(root: Path, settings: dict[str, object]) -> dict[str, object]:
     maxima = {
         "elapsed-seconds": 30,

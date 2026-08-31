@@ -13418,6 +13418,23 @@ def _verification_validate_requirement(requirement: object) -> None:
         raise ValueError("verification_requirement.proof_contract_identity is stale or malformed.")
 
 
+def _execution_required_proof_obligations(requirement: object) -> list[str]:
+    """Derive active execution obligations from Coordinator-owned verification authority."""
+    if requirement is None:
+        return []
+    _verification_validate_requirement(requirement)
+    assert isinstance(requirement, dict)
+    if requirement["required"] is False:
+        return []
+    claims = requirement["claims"]
+    assert isinstance(claims, list)
+    proof_contract_identity = str(requirement["proof_contract_identity"])
+    return [
+        f"verification-contract:{proof_contract_identity}",
+        *(f"verification-claim:{claim}" for claim in claims),
+    ]
+
+
 def _verification_validate_campaign(campaign: object) -> None:
     if not isinstance(campaign, dict):
         raise ValueError("verification_campaign must be an object when present.")
@@ -13652,7 +13669,20 @@ def _coordination_validate_state(payload: object, *, target_id: str | None = Non
                     )
     execution_control = payload.get("execution_control")
     if execution_control is not None:
-        _execution_validate_control(execution_control, work_id=actual_target)
+        validated_control = _execution_validate_control(execution_control, work_id=actual_target)
+        required_obligations = _execution_required_proof_obligations(requirement)
+        active_obligations = validated_control["proof_obligations"]
+        assert isinstance(active_obligations, list)
+        missing_obligations = [
+            obligation
+            for obligation in required_obligations
+            if obligation not in active_obligations
+        ]
+        if missing_obligations:
+            raise ValueError(
+                "execution_control omits the durable verification requirement: "
+                + ", ".join(missing_obligations)
+            )
     execution_history = payload.get("execution_control_history")
     if execution_history is not None:
         if not isinstance(execution_history, list):
@@ -16316,9 +16346,12 @@ def _execution_operator_config(path: Path) -> dict[str, object]:
             raise ValueError("allowed_write_paths must stay within the repository")
         coordination_samples = (
             ".project-workflow/tasks/TASK-000/COORDINATION.json",
+            ".project-workflow/tasks/EPIC-000/COORDINATION.json",
             ".project-workflow/tasks/EPIC-000/TASK-000/COORDINATION.json",
         )
-        if any(fnmatch.fnmatchcase(sample, raw_path) for sample in coordination_samples):
+        if _is_workflow_coordination_path(raw_path) or any(
+            fnmatch.fnmatchcase(sample, raw_path) for sample in coordination_samples
+        ):
             raise ValueError(
                 "allowed_write_paths must not grant worker authority over COORDINATION.json"
             )
@@ -16333,6 +16366,13 @@ def _execution_operator_config(path: Path) -> dict[str, object]:
     proof_obligations = _execution_operator_string_list(
         value.get("proof_obligations"), "proof_obligations"
     )
+    if any(
+        obligation.startswith(("verification-contract:", "verification-claim:"))
+        for obligation in proof_obligations
+    ):
+        raise ValueError(
+            "proof_obligations must not declare Coordinator-owned verification authority"
+        )
     allowed_tools = _execution_operator_string_list(value.get("allowed_tools"), "allowed_tools")
     allowed_command_patterns = _execution_operator_string_list(
         value.get("allowed_command_patterns", []), "allowed_command_patterns", empty=True
@@ -16550,7 +16590,10 @@ def _execution_configure_payload(
     configured_proof = cast(list[str], config["proof_obligations"])
     configured_paths = cast(list[str], config["allowed_write_paths"])
     configured_operations = cast(list[str], config["permitted_operations"])
-    proof_obligations = list(configured_proof)
+    required_proof = _execution_required_proof_obligations(
+        coordination.get("verification_requirement")
+    )
+    proof_obligations = [*required_proof, *configured_proof]
     baseline_evidence = _execution_hash(
         {"source_revision": source_revision, "proof_obligations": proof_obligations}
     )
