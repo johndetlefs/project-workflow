@@ -1,5 +1,5 @@
 {
-  "artifact_identity": "sha256:5daca5180d9f062b67f9cf1cf465597796cfcf2cca37b9913e5f21137cf5f0f7",
+  "artifact_identity": "sha256:21586106fa3cd9dd0850916bc4be0040f58cd4b3bff190078f3bb0e442f7cbdf",
   "commitments": [
     {
       "amendment": null,
@@ -100,8 +100,8 @@
       "user_visible_consequence": "Every host-support and delivery claim remains subordinate to current source, exact evidence and the separately authorized merge, release, installation, adoption and owner-acceptance boundaries."
     }
   ],
-  "review_source": "EPIC-018 Coordinator review of John Detlefs's 2026-08-28 meaning approval and 2026-08-29 delivery-sequence amendment, the exact current requirements and Epic contract, five-row decomposition, complete OC-to-AC/child/proof coverage, completed TASK-099 through TASK-101 evidence, TASK-102's preserved independent QA plus affected remediation, and the exact v0.9.0 release/adoption ledger. The amendment authorized v0.9.0 merge, publication, and universal installation before the real Claude canary without narrowing or waiving any OC or parent AC: the packaged Claude adapter remains fail-closed and explicitly not runtime-certified, TASK-102 remains Blocked, TASK-103 remains Approved, no second broad QA was commissioned, and EPIC-018 cannot close until the real cross-host evidence is completed or separately deferred by the owner.",
-  "reviewed_at": "2026-08-29",
+  "review_source": "EPIC-018 Coordinator semantic review of John Detlefs's approved parent intent, current Epic contract and decomposition, complete OC-to-AC/child/proof coverage, TASK-099 through TASK-102 evidence, and TASK-103's exact-package implementation, real Codex success and interruption receipts, current Claude executable blocker, proportionality ledger and frozen QA candidate. The attempted Review transition was correctly stopped before commissioning QA because parent AC10, AC6 and AC15 do not yet have passing child-local proof. The child preserves every cross-host, bounded-execution, package-journey, recurrence and delivery-boundary commitment: Codex proof is credited only at its exact layer, Claude runtime remains explicitly non-passing, and no parent AC, workflow owner, QA gate or external delivery gate is waived.",
+  "reviewed_at": "2026-08-31",
   "reviewed_by": "EPIC-018 Coordinator",
   "schema_version": 1,
   "verdict": "pass"

@@ -86,6 +86,11 @@ from .contracts import (
     VERIFICATION_CAMPAIGN_STAGES,
     VERIFICATION_RECEIPT_OUTCOMES,
 )
+from .execution_config import (
+    cmd_execution_configure,
+    cmd_execution_disable,
+    cmd_execution_status,
+)
 from .lifecycle import (
     EPIC_GLOBAL_LIFECYCLE_STATUSES,
 )
@@ -101,6 +106,7 @@ if __package__:
     from . import contracts as _contracts
     from . import coordination as _coordination
     from . import execution as _execution
+    from . import execution_config as _execution_config
     from . import inspection as _inspection
     from . import lifecycle as _lifecycle
     from . import maintenance as _maintenance
@@ -114,6 +120,7 @@ if __package__:
         _orchestration,
         _execution,
         _coordination,
+        _execution_config,
         _inspection,
         _maintenance,
         _commands,
@@ -239,6 +246,32 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output format (default: human)",
     )
     execute_parser.set_defaults(func=cmd_execute)
+
+    execution_parser = subparsers.add_parser(
+        "execution",
+        help="Configure and inspect sealed packaged host execution",
+    )
+    execution_sub = execution_parser.add_subparsers(dest="execution_command", required=True)
+    execution_configure_parser = execution_sub.add_parser(
+        "configure",
+        help="Create or refresh sealed execution authority from a public operator config",
+    )
+    execution_configure_parser.add_argument("--id", required=True)
+    execution_configure_parser.add_argument("--config", required=True)
+    execution_configure_parser.add_argument("--format", choices=("human", "json"), default="human")
+    execution_configure_parser.set_defaults(func=cmd_execution_configure)
+    execution_disable_parser = execution_sub.add_parser(
+        "disable", help="Disable the current receipt-free packaged host authority"
+    )
+    execution_disable_parser.add_argument("--id", required=True)
+    execution_disable_parser.add_argument("--format", choices=("human", "json"), default="human")
+    execution_disable_parser.set_defaults(func=cmd_execution_disable)
+    execution_status_parser = execution_sub.add_parser(
+        "status", help="Inspect sealed execution authority without dispatching a model"
+    )
+    execution_status_parser.add_argument("--id", required=True)
+    execution_status_parser.add_argument("--format", choices=("human", "json"), default="human")
+    execution_status_parser.set_defaults(func=cmd_execution_status)
 
     release_parser = subparsers.add_parser(
         "release",

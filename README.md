@@ -75,6 +75,10 @@ intent audit, parent acceptance map, closeout audit, and retro. Fixes stay delib
 For detailed commands and examples, read [Using Project Workflow](docs/using-project-workflow.md)
 or run `./.project-workflow/cli/workflow --help`.
 
+Approved material work can optionally use [Sealed Host Execution](docs/execution-control.md). Codex
+uses repository-local skills plus an ephemeral per-run hook; a permanent marketplace-plugin entry
+is neither required nor accepted as activation proof.
+
 ## What Is Installed
 
 Initialization creates:
@@ -118,6 +122,7 @@ Read [Contributing](docs/contributing.md) before changing source and
 | Repository operating rules | [AGENTS.md](AGENTS.md) and [local guidance](.project-workflow/guidance.md) |
 | Orientation and first commands | This README |
 | Work-item operation | [Using Project Workflow](docs/using-project-workflow.md) |
+| Bounded Codex and Claude Code execution | [Sealed Host Execution](docs/execution-control.md) |
 | Source boundaries and generated ownership | [Architecture](docs/architecture.md) |
 | Development and validation | [Contributing](docs/contributing.md) |
 | Upgrade, hygiene, and generated assets | [Maintenance](docs/maintenance.md) |

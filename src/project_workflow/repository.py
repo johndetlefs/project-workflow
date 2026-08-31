@@ -264,28 +264,38 @@ def _ensure_user_config_file(path: Path) -> str:
 def _ensure_delegation_runtime_ignore(root: Path) -> str:
     ignore_path = root / ".project-workflow" / ".gitignore"
     ignore_path.parent.mkdir(parents=True, exist_ok=True)
-    entry = "runtime/delegations/"
     content = ignore_path.read_text(encoding="utf-8") if ignore_path.exists() else ""
-    if entry in {line.strip() for line in content.splitlines()}:
-        return f"Exists: {ignore_path} delegation runtime entry"
+    present = {line.strip() for line in content.splitlines()}
+    sections = (
+        ("# Machine-local delegation handles and leases", "runtime/delegations/"),
+        ("# Package-owned Python bytecode", "cli/__pycache__/"),
+    )
+    missing = [(comment, entry) for comment, entry in sections if entry not in present]
+    if not missing:
+        return f"Exists: {ignore_path} runtime ignore entries"
     separator = "" if not content or content.endswith("\n") else "\n"
+    addition = "\n".join(f"{comment}\n{entry}" for comment, entry in missing)
     ignore_path.write_text(
-        content + separator + "\n# Machine-local delegation handles and leases\n" + entry + "\n",
+        content + separator + ("\n" if content else "") + addition + "\n",
         encoding="utf-8",
     )
-    return f"Updated: {ignore_path} delegation runtime entry"
+    return f"Updated: {ignore_path} runtime ignore entries"
 
 
 def _planned_delegation_runtime_ignore(root: Path) -> bytes:
     ignore_path = root / ".project-workflow" / ".gitignore"
-    entry = "runtime/delegations/"
     content = ignore_path.read_text(encoding="utf-8") if ignore_path.exists() else ""
-    if entry in {line.strip() for line in content.splitlines()}:
+    present = {line.strip() for line in content.splitlines()}
+    sections = (
+        ("# Machine-local delegation handles and leases", "runtime/delegations/"),
+        ("# Package-owned Python bytecode", "cli/__pycache__/"),
+    )
+    missing = [(comment, entry) for comment, entry in sections if entry not in present]
+    if not missing:
         return content.encode("utf-8")
     separator = "" if not content or content.endswith("\n") else "\n"
-    return (
-        content + separator + "\n# Machine-local delegation handles and leases\n" + entry + "\n"
-    ).encode("utf-8")
+    addition = "\n".join(f"{comment}\n{entry}" for comment, entry in missing)
+    return (content + separator + ("\n" if content else "") + addition + "\n").encode("utf-8")
 
 
 def _managed_project_workflow_block() -> str:

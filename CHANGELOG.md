@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Added public `project execution configure`, `status`, and `disable` commands so operators can
+  create and inspect exact host-neutral sealed authority without fabricating internal coordination
+  JSON or hashes. Successor envelopes retain previous controls and receipts.
+
+### Changed
+
+- Documented Codex installation as repository-local skills plus a package-owned ephemeral per-run
+  hook. A persistent marketplace-plugin listing is neither required nor treated as activation or
+  runtime proof.
+
 ## 0.9.1 - 2026-08-29
 
 ### Changed

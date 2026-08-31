@@ -454,6 +454,23 @@ def _coordination_validate_state(payload: object, *, target_id: str | None = Non
                     raise ValueError(
                         "verification_campaign does not match the durable verification requirement."
                     )
+    execution_control = payload.get("execution_control")
+    if execution_control is not None:
+        _execution_validate_control(execution_control, work_id=actual_target)
+    execution_history = payload.get("execution_control_history")
+    if execution_history is not None:
+        if not isinstance(execution_history, list):
+            raise ValueError("execution_control_history must be a list.")
+        snapshot_identities: set[str] = set()
+        for index, historical in enumerate(execution_history):
+            try:
+                validated = _execution_validate_control(historical, work_id=actual_target)
+            except ValueError as exc:
+                raise ValueError(f"execution_control_history[{index}] is invalid: {exc}") from exc
+            snapshot_identity = _execution_hash(validated)
+            if snapshot_identity in snapshot_identities:
+                raise ValueError("execution_control_history contains a duplicate snapshot.")
+            snapshot_identities.add(snapshot_identity)
 
 
 def _coordination_write_state(root: Path, target_id: str, payload: dict[str, object]) -> Path:

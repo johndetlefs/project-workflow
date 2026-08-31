@@ -220,7 +220,15 @@ def test_each_host_init_installs_native_truthful_delegate_asset(tmp_path: Path, 
         check=False,
     )
     assert ignored.returncode == 0
-    assert "runtime/delegations/" in (root / ".project-workflow/.gitignore").read_text()
+    ignored_bytecode = subprocess.run(
+        ("git", "check-ignore", "-q", ".project-workflow/cli/__pycache__/workflow.pyc"),
+        cwd=root,
+        check=False,
+    )
+    assert ignored_bytecode.returncode == 0
+    ignore_text = (root / ".project-workflow/.gitignore").read_text()
+    assert "runtime/delegations/" in ignore_text
+    assert "cli/__pycache__/" in ignore_text
 
     if agent == "codex":
         delegate = (root / ".agents/skills/project-delegate/SKILL.md").read_text()

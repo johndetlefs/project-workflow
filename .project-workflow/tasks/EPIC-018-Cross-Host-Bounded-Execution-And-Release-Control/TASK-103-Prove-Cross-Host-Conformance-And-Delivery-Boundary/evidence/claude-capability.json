@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-31T10:36:36+10:00",
+  "host": "claude-code",
+  "state": "unsupported",
+  "model_invocations": 0,
+  "executable_found": false,
+  "checks": [
+    "PATH",
+    "/Users/johndetlefs/.local/bin/claude",
+    "/opt/homebrew/bin/claude",
+    "/usr/local/bin/claude",
+    "/Applications/Claude.app/Contents/MacOS/claude"
+  ],
+  "blocker": "No Claude Code executable is installed, so there is no executable identity, authentication probe, hook activation, native permission containment, or real-host receipt to certify.",
+  "invalid_substitutes": [
+    "Claude adapter unit tests",
+    "managed plugin assets",
+    "package members",
+    "mocked streamed output",
+    "the passing Codex canary"
+  ]
+}

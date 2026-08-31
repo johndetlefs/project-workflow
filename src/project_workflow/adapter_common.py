@@ -117,6 +117,16 @@ def _path_allowed(path: str, patterns: Iterable[str], root: Path | None = None) 
     return any(fnmatch.fnmatchcase(candidate, pattern) for pattern in patterns)
 
 
+def _is_workflow_coordination_path(path: str) -> bool:
+    """Return whether Git state belongs to Coordinator control rather than product source."""
+    parsed = PurePosixPath(path.replace("\\", "/"))
+    return (
+        len(parsed.parts) >= 4
+        and parsed.parts[:2] == (".project-workflow", "tasks")
+        and parsed.name == "COORDINATION.json"
+    )
+
+
 def _state_snapshot(path: Path) -> dict[str, object]:
     connection = _connect_state(path)
     try:

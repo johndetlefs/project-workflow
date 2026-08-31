@@ -6,6 +6,7 @@ src/project_workflow/lifecycle.py
 src/project_workflow/orchestration.py
 src/project_workflow/execution.py
 src/project_workflow/coordination.py
+src/project_workflow/execution_config.py
 src/project_workflow/inspection.py
 src/project_workflow/maintenance.py
 src/project_workflow/commands.py

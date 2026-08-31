@@ -771,6 +771,106 @@
       "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
       "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
       "user_consequence": "Treat v0.9.0 as merged, public, and installed everywhere while TASK-102 remains Blocked, TASK-103 remains Approved, and Claude runtime support remains uncertified."
+    },
+    {
+      "affected_units": [
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-103 now records the approved cross-host package, operator-path, runtime, recurrence, and delivery-boundary work without narrowing any Epic capability.",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:7bb9622f03223f3a643e66307954932cecddf1fe79016275e11bd5d66cb3ad97",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
+      "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
+      "user_consequence": "Proceed with TASK-103 through the current sequential plan; Codex proof may complete independently while Claude remains truthfully gated."
+    },
+    {
+      "affected_units": [
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "none; TASK-103 implements the approved operator path and retains the required Claude blocker without narrowing support claims",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:20c1d4bf89006edced9ea6e9d221e30d0567d9803b178cefcc57b7cca70e09b7",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
+      "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
+      "user_consequence": "the approved bounded execution, cross-host truthfulness, recurrence and delivery boundaries remain intact on the frozen candidate"
+    },
+    {
+      "affected_units": [
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "none; TASK-103 returns the approved public configuration surface, exact package proof, real Codex receipts and explicit Claude blocker",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:20c1d4bf89006edced9ea6e9d221e30d0567d9803b178cefcc57b7cca70e09b7",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
+      "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
+      "user_consequence": "the returned unit preserves all parent commitments and leaves unsupported Claude runtime visibly non-passing"
+    },
+    {
+      "affected_units": [
+        "TASK-103"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "none; the Review gate retains the approved real-Claude, single-QA and terminal-recurrence obligations as explicit blockers",
+      "classification": "inside-envelope",
+      "decided_by": "EPIC-018 Coordinator",
+      "decision_date": "2026-08-31",
+      "intent_identity": "sha256:e7020ba882b1e6613c41875ef4fe3fbf83551ddebf48445b82ab8dc2636573c2",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
+      "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
+      "user_consequence": "Codex remains proven on the exact candidate, but cross-host completion and release remain unavailable without the missing proof or an owner-approved scope amendment"
     }
   ],
   "decisions": [
@@ -782,38 +882,40 @@
     "context_contract": "declared",
     "telemetry": "unknown"
   },
-  "intent_identity": "sha256:8d2e25ba43177981d521a310c2785f89c04429607bb8ead14789af7f57eb7704",
+  "intent_identity": "sha256:e7020ba882b1e6613c41875ef4fe3fbf83551ddebf48445b82ab8dc2636573c2",
   "last_boundary": {
     "affected_units": [
-      "TASK-102",
       "TASK-103"
     ],
     "amendment_identity": null,
     "boundary": "new-evidence-or-owner-reframe",
-    "capability_change": "None; the v0.9.0 release and universal adoption ledger records delivery already authorized by AMD-001 and preserves every outstanding Claude and cross-host proof obligation.",
+    "capability_change": "none; the Review gate retains the approved real-Claude, single-QA and terminal-recurrence obligations as explicit blockers",
     "classification": "inside-envelope",
     "decided_by": "EPIC-018 Coordinator",
-    "decision_date": "2026-08-29",
-    "intent_identity": "sha256:8d2e25ba43177981d521a310c2785f89c04429607bb8ead14789af7f57eb7704",
+    "decision_date": "2026-08-31",
+    "intent_identity": "sha256:e7020ba882b1e6613c41875ef4fe3fbf83551ddebf48445b82ab8dc2636573c2",
     "relevant_ocs": [
+      "OC1",
       "OC2",
       "OC3",
       "OC4",
+      "OC5",
+      "OC6",
       "OC7"
     ],
     "shared_premises_valid": "yes",
-    "source_identity": "sha256:49940036befaffdeb31fcb1d49457fb05e2ff2463848dce169b2ead43af20377",
-    "source_revision": "c1426f2c64864eb14eb682731829de7c236bc8c0",
-    "user_consequence": "Treat v0.9.0 as merged, public, and installed everywhere while TASK-102 remains Blocked, TASK-103 remains Approved, and Claude runtime support remains uncertified."
+    "source_identity": "sha256:b8730c8456e6dabbb0f02a2c9e9eb0269f93e265148cc4f392059f87ca90cc2a",
+    "source_revision": "0f02f42b5e5da61e5bef79f8b2cac74203f39182",
+    "user_consequence": "Codex remains proven on the exact candidate, but cross-host completion and release remain unavailable without the missing proof or an owner-approved scope amendment"
   },
   "loaded_contract": {
     "asset_version": "8",
-    "context_id": "codex-owner-release-thread-epic-018-v0.9.0-rollout",
+    "context_id": "codex-task103-blocked-handoff",
     "contract_version": "2",
-    "package_version": "0.9.0",
-    "recorded_at": "2026-08-29"
+    "package_version": "0.9.1",
+    "recorded_at": "2026-08-31"
   },
-  "next_action": "Integrate the exact v0.9.0 release/adoption evidence; retain TASK-102 Blocked, TASK-103 Approved, and EPIC-018 In Progress.",
+  "next_action": "Obtain authority either to install and authenticate Claude Code for the real canary or to amend the release scope explicitly.",
   "outcome_checkpoint": {
     "checkpoint_unit": null,
     "claim_class": "mechanical",

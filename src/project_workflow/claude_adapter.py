@@ -25,6 +25,7 @@ try:
         _connect_state,
         _counter,
         _identity,
+        _is_workflow_coordination_path,
         _meta_get,
         _meta_set,
         _path_allowed,
@@ -38,6 +39,7 @@ except ModuleNotFoundError:  # Standalone managed CLI assets.
         _connect_state,
         _counter,
         _identity,
+        _is_workflow_coordination_path,
         _meta_get,
         _meta_set,
         _path_allowed,
@@ -138,7 +140,7 @@ def _git_head(root: Path) -> str:
 
 def _git_changed_paths(root: Path) -> set[str]:
     result = subprocess.run(
-        ["git", "status", "--porcelain=v1", "-z"],
+        ["git", "status", "--porcelain=v1", "--untracked-files=all", "-z"],
         cwd=root,
         check=False,
         capture_output=True,
@@ -159,7 +161,7 @@ def _git_changed_paths(root: Path) -> set[str]:
                 raise ClaudeAdapterError("Claude adapter received incomplete Git rename status")
             changed.add(records[index])
             index += 1
-    return changed
+    return {path for path in changed if not _is_workflow_coordination_path(path)}
 
 
 def _maximum(control: Mapping[str, object], name: str) -> int:

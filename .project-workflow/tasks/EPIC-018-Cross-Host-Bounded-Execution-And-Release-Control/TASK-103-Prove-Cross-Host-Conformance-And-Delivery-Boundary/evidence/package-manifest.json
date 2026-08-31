@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-31T10:36:36+10:00",
+  "delivery_layer": "local-candidate",
+  "package_version": "0.9.1",
+  "asset_version": 8,
+  "base_commit": "e299b0155d284764c29f3b1269f11323887792fc",
+  "source_diff_identity": "sha256:5d5a49349d140e4d9b85dd7781fbfb6613393caa60f8386ab781d98d792d8752",
+  "artifacts": {
+    "wheel": {
+      "path": "evidence/package-candidate/project_workflow-0.9.1-py3-none-any.whl",
+      "sha256": "c8cbb58194c544b4094965cd57f0d08fcc2e7ec3c88ac339cfc10b91ca0979dd"
+    },
+    "sdist": {
+      "path": "evidence/package-candidate/project_workflow-0.9.1.tar.gz",
+      "sha256": "995db53286c6b58ce118ce1292c1c1ce8a566845f201a05ba79418320de8d619"
+    }
+  },
+  "source_identities": {
+    "execution_config.py": "sha256:6d685d85427349100870dadca5765766ce0f759b332d16b1026e882f27cb98db",
+    "codex_adapter.py": "sha256:eeb24719c0b199304b1e7e92b861112a5a8eebe0583f71caf350265f18a5509a",
+    "claude_adapter.py": "sha256:b7d2761888f65e020928d21f7b134dbbf76dd66248c3103d43d4b7f383cec53f",
+    "adapter_common.py": "sha256:da4f9056dc9b2cd2c22d9ee4521276db0e7fe3b76be8211152c6e4c3dff88450",
+    "repository.py": "sha256:d6ae08780842492e457f93cbc3d6b09b6670bf91f21d13ccc9a09f0897f2eb56",
+    "workflow.py": "sha256:170afaae30d4ae5b9086e749602c3fbb805cc34d3553fd51baa3b41f359df41f"
+  },
+  "generated_parity": {
+    "standalone_runtime_matches_template": true,
+    "codex_adapter_mirror_matches_source": true,
+    "claude_adapter_mirror_matches_source": true,
+    "adapter_common_mirror_matches_source": true
+  },
+  "exact_package_journey": {
+    "agent": "codex",
+    "fresh_init_repository_state": "current",
+    "strict_doctor": "pass",
+    "installed_skill_count": 14,
+    "package_owned_python_cache_ignored": true,
+    "upgrade_plan_fingerprint": "sha256:b74e7f2018512c9d53c785dfdd1a682dae560e9205fb5d3b0dc167ddd3f140f3",
+    "upgrade_apply_status": "noop",
+    "upgrade_changed_files": [],
+    "replan_fingerprint": "sha256:b74e7f2018512c9d53c785dfdd1a682dae560e9205fb5d3b0dc167ddd3f140f3"
+  },
+  "not_proved": [
+    "public package publication",
+    "merge",
+    "portfolio adoption",
+    "owner acceptance"
+  ]
+}
