@@ -150,7 +150,7 @@ def test_generated_helper_is_dependency_free() -> None:
         capture_output=True,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert result.stdout.strip() == "project 0.9.1"
+    assert result.stdout.strip() == "project 0.9.2"
 
 
 def test_runtime_module_size_budget_after_extraction() -> None:

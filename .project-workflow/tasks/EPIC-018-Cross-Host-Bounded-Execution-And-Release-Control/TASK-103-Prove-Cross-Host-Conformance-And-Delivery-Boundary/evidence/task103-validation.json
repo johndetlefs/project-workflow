@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-31T10:36:36+10:00",
+  "candidate": {
+    "base_commit": "e299b0155d284764c29f3b1269f11323887792fc",
+    "working_tree_source_identity": "sha256:5d5a49349d140e4d9b85dd7781fbfb6613393caa60f8386ab781d98d792d8752",
+    "wheel_sha256": "c8cbb58194c544b4094965cd57f0d08fcc2e7ec3c88ac339cfc10b91ca0979dd",
+    "sdist_sha256": "995db53286c6b58ce118ce1292c1c1ce8a566845f201a05ba79418320de8d619"
+  },
+  "gates": {
+    "documentation_contract": "pass",
+    "generated_runtime_check": "pass",
+    "ruff": "pass",
+    "ruff_format": "pass: 67 files",
+    "mypy": "pass: 16 source files",
+    "full_pytest": "pass: 567 tests in 97.30s",
+    "exact_package_journeys": "pass: four fresh hosts, upgrades, parity, legacy preservation",
+    "real_codex_success": "pass",
+    "real_codex_interruption": "pass",
+    "claude_real_runtime": "blocked: executable absent"
+  },
+  "proportionality": {
+    "configuration_model_invocations": 0,
+    "status_model_invocations": 0,
+    "disable_model_invocations": 0,
+    "real_success_model_turns": 1,
+    "real_interruption_model_turns": 1,
+    "independent_qa_lineages_planned": 1,
+    "release_candidates_created": 0
+  },
+  "proof_layers": {
+    "source": "pass",
+    "automated": "pass",
+    "package": "pass",
+    "codex_runtime": "pass",
+    "claude_runtime": "blocked",
+    "merge": "not-authorized",
+    "publication": "not-authorized",
+    "portfolio_adoption": "not-authorized",
+    "owner_acceptance": "pending"
+  }
+}

@@ -9,7 +9,7 @@ AGENTS.md and .project-workflow/guidance.md own repository operating rules.
 Project Workflow remains one Python package, one public project command, and one dependency-free
 repository-local helper. Modular source is an implementation improvement, not a product split.
 
-The target is ten or fewer substantial runtime modules plus explicit host adapters. Add a module
+The target is eleven or fewer substantial runtime modules plus explicit host adapters. Add a module
 only when it owns a distinct reason to change and reduces coupling more than it adds navigation.
 Split a module when it mixes material responsibilities or exceeds 5,000 authored lines; do not
 split cohesive code solely to satisfy a line count. cli.py is limited to parser/dispatch assembly
@@ -25,10 +25,11 @@ and compatibility access and must remain below 2,000 lines after extraction.
 | orchestration.py | Task/Epic work packets, delegation plans, runtime state and reconciliation primitives | contracts, repository, lifecycle |
 | execution.py | Capability-aware Task and Epic orchestrators that execute an approved delegation plan | orchestration |
 | coordination.py | Durable coordination, verification campaigns, execution control, lifecycle gates, QA/remediation and fixed candidates | contracts, repository, lifecycle, orchestration |
+| execution_config.py | Public operator configuration, capability sealing, disable/successor history and model-free execution inspection | contracts, coordination, explicit host adapters |
 | inspection.py | Doctor diagnostics plus read-only operational status classification, actions and rendering | contracts, repository, lifecycle, coordination |
 | maintenance.py | Upgrade and smoke-bomb transactions that compose repository and inspection services | contracts, repository, inspection |
 | commands.py | CLI command handlers that compose domain services without owning product policy | earlier domain modules |
-| cli.py | Public entry point, parser assembly, dispatch and documented compatibility facade | contracts, commands and parser callbacks |
+| cli.py | Public entry point, parser assembly, dispatch and documented compatibility facade | contracts, commands, execution_config and parser callbacks |
 | adapter_common.py | Pure dependency-free primitives whose semantics are identical on every host | Python standard library |
 | codex_adapter.py and claude_adapter.py | Explicit host launch, hook, capability, limit and receipt behaviour | adapter_common |
 

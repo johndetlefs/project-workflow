@@ -109,6 +109,11 @@ artifacts cannot replace the exact required target.
 Implementation validation precedes QA. QA is one adversarial gate, not a recursive review loop. A
 later source change invalidates only affected proof; ambiguous impact expands before completion.
 
+For material work that requires mechanically sealed host scope, limits, interruption, and receipts,
+use the separate [Sealed Host Execution](execution-control.md) operator journey. Repository-local
+skills remain the normal Codex integration; execution hooks are activated only for the exact sealed
+dispatch.
+
 ## Delegate Approved Work By Need
 
 Delegate coordinates existing approved rows; it does not create another owner-facing role. A Task

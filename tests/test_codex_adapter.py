@@ -57,6 +57,44 @@ def clean_repo(tmp_path: Path) -> Path:
     return root
 
 
+def test_git_source_check_excludes_coordinator_state_but_not_product_changes(
+    tmp_path: Path,
+) -> None:
+    root = clean_repo(tmp_path)
+    coordination = root / ".project-workflow/tasks/TASK-001-Test/COORDINATION.json"
+    coordination.parent.mkdir(parents=True)
+    (coordination.parent / "REQUIREMENTS.md").write_text("# Fixture\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=root, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "-qm",
+            "workflow item",
+        ],
+        cwd=root,
+        check=True,
+    )
+    coordination.write_text("{}\n", encoding="utf-8")
+    assert codex_adapter._git_changed_paths(root) == set()
+
+    (root / "README.md").write_text("changed\n", encoding="utf-8")
+    nested = root / "src" / "canary.txt"
+    nested.parent.mkdir()
+    nested.write_text("canary\n", encoding="utf-8")
+    assert codex_adapter._git_changed_paths(root) == {"README.md", "src/canary.txt"}
+
+
+def test_worker_scope_hard_denies_coordinator_owned_state(tmp_path: Path) -> None:
+    root = tmp_path.resolve()
+    path = ".project-workflow/tasks/EPIC-018-Example/COORDINATION.json"
+    assert codex_adapter._path_allowed(path, ["**"], root) is False
+
+
 def adapter_control(root: Path, settings: dict[str, object]) -> dict[str, object]:
     maxima = {
         "elapsed-seconds": 30,

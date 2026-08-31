@@ -1,5 +1,5 @@
 {
-  "artifact_identity": "sha256:5daca5180d9f062b67f9cf1cf465597796cfcf2cca37b9913e5f21137cf5f0f7",
+  "artifact_identity": "sha256:c28ed08d48f91cd25f92957f1b66512453df34bca99f2cb0fe03f501ce912dd8",
   "commitments": [
     {
       "amendment": null,
@@ -100,8 +100,8 @@
       "user_visible_consequence": "Every host-support and delivery claim remains subordinate to current source, exact evidence and the separately authorized merge, release, installation, adoption and owner-acceptance boundaries."
     }
   ],
-  "review_source": "EPIC-018 Coordinator review of John Detlefs's 2026-08-28 meaning approval and 2026-08-29 delivery-sequence amendment, the exact current requirements and Epic contract, five-row decomposition, complete OC-to-AC/child/proof coverage, completed TASK-099 through TASK-101 evidence, TASK-102's preserved independent QA plus affected remediation, and the exact v0.9.0 release/adoption ledger. The amendment authorized v0.9.0 merge, publication, and universal installation before the real Claude canary without narrowing or waiving any OC or parent AC: the packaged Claude adapter remains fail-closed and explicitly not runtime-certified, TASK-102 remains Blocked, TASK-103 remains Approved, no second broad QA was commissioned, and EPIC-018 cannot close until the real cross-host evidence is completed or separately deferred by the owner.",
-  "reviewed_at": "2026-08-29",
+  "review_source": "EPIC-018 Coordinator semantic review of John Detlefs's AMD-002 Codex-only release amendment, the refreshed parent requirements, Epic contract, decomposition, complete OC-to-AC/child/proof coverage, TASK-099 through TASK-102 evidence, and TASK-103's exact-package implementation, real Codex success and interruption receipts, current Claude executable blocker, proportionality ledger and frozen QA candidate. AMD-002 narrows only the v0.9.2 runtime certification and delivery claim: TASK-103 no longer owns parent AC10, Codex proof is credited only at its exact layer, Claude remains explicitly uncertified and fail closed under TASK-102, EPIC-018 stays open, and no workflow owner, QA gate, proof layer or owner-acceptance boundary is waived.",
+  "reviewed_at": "2026-08-31",
   "reviewed_by": "EPIC-018 Coordinator",
   "schema_version": 1,
   "verdict": "pass"

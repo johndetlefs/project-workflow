@@ -222,6 +222,23 @@ def _verification_validate_requirement(requirement: object) -> None:
         raise ValueError("verification_requirement.proof_contract_identity is stale or malformed.")
 
 
+def _execution_required_proof_obligations(requirement: object) -> list[str]:
+    """Derive active execution obligations from Coordinator-owned verification authority."""
+    if requirement is None:
+        return []
+    _verification_validate_requirement(requirement)
+    assert isinstance(requirement, dict)
+    if requirement["required"] is False:
+        return []
+    claims = requirement["claims"]
+    assert isinstance(claims, list)
+    proof_contract_identity = str(requirement["proof_contract_identity"])
+    return [
+        f"verification-contract:{proof_contract_identity}",
+        *(f"verification-claim:{claim}" for claim in claims),
+    ]
+
+
 def _verification_validate_campaign(campaign: object) -> None:
     if not isinstance(campaign, dict):
         raise ValueError("verification_campaign must be an object when present.")
@@ -454,6 +471,36 @@ def _coordination_validate_state(payload: object, *, target_id: str | None = Non
                     raise ValueError(
                         "verification_campaign does not match the durable verification requirement."
                     )
+    execution_control = payload.get("execution_control")
+    if execution_control is not None:
+        validated_control = _execution_validate_control(execution_control, work_id=actual_target)
+        required_obligations = _execution_required_proof_obligations(requirement)
+        active_obligations = validated_control["proof_obligations"]
+        assert isinstance(active_obligations, list)
+        missing_obligations = [
+            obligation
+            for obligation in required_obligations
+            if obligation not in active_obligations
+        ]
+        if missing_obligations:
+            raise ValueError(
+                "execution_control omits the durable verification requirement: "
+                + ", ".join(missing_obligations)
+            )
+    execution_history = payload.get("execution_control_history")
+    if execution_history is not None:
+        if not isinstance(execution_history, list):
+            raise ValueError("execution_control_history must be a list.")
+        snapshot_identities: set[str] = set()
+        for index, historical in enumerate(execution_history):
+            try:
+                validated = _execution_validate_control(historical, work_id=actual_target)
+            except ValueError as exc:
+                raise ValueError(f"execution_control_history[{index}] is invalid: {exc}") from exc
+            snapshot_identity = _execution_hash(validated)
+            if snapshot_identity in snapshot_identities:
+                raise ValueError("execution_control_history contains a duplicate snapshot.")
+            snapshot_identities.add(snapshot_identity)
 
 
 def _coordination_write_state(root: Path, target_id: str, payload: dict[str, object]) -> Path:
