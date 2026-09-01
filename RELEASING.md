@@ -77,13 +77,14 @@ attestation job passes.
 ## Verify The Public Release Independently
 
 Download the GitHub Release bundle and PyPI distributions independently. Compare filenames, sizes,
-SHA-256 values, the release receipt, and `SHA256SUMS`, then run:
+SHA-256 values, the release receipt, and `SHA256SUMS`. Bind `WHEEL` to the independently downloaded
+PyPI wheel, then run:
 
 ```bash
 uvx --from "project-workflow==$VERSION" project --version
 python scripts/verify_package_journeys.py \
-  --from "project-workflow==$VERSION" --version "$VERSION"
-gh attestation verify "project_workflow-$VERSION-py3-none-any.whl" \
+  --from "$WHEEL" --version "$VERSION"
+gh attestation verify "$WHEEL" \
   --repo johndetlefs/project-workflow
 ```
 
