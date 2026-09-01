@@ -1,0 +1,227 @@
+{
+  "fresh": {
+    "claude-code": {
+      "doctor": "project doctor: no issues found in /private/var/folders/h2/bg9tb5m911509xyft70whbr80000gn/T/project-workflow-journey-iup4gkuf/fresh-claude-code",
+      "generated_asset_parity": {
+        "asset_count": 17,
+        "manifest": {
+          ".claude/agents/project-architect.md": "sha256:fcb76f7b1422a096fb02c7bf28384966a6b3f0a612653410d1f864cfe67aff85",
+          ".claude/agents/project-backlog.md": "sha256:d1efc224b6ae605d1d282e7f82d1459d01b0c9892ca370af153e7a300fac3051",
+          ".claude/agents/project-clarify.md": "sha256:f8dd058aa7544a532b969b9dd52a1bc5b6bb6779dfc97ee29d8b091f5d18c412",
+          ".claude/agents/project-constitution.md": "sha256:d8f62b37b5d820fc9570e762bfb104c637a75e6704c9c066b381506a91512eea",
+          ".claude/agents/project-coordinator.md": "sha256:5a4c05228160b4ff278e12d6d8392b92c1802eb8292f641a3c3585083b38a3b0",
+          ".claude/agents/project-delegate.md": "sha256:2840331e70f5453da0d9a1fcbe2815d10bfab17ec0fc94d2e52c8f2f5c0f6346",
+          ".claude/agents/project-epic.md": "sha256:575749cfca9ddac90be7579bdac03079bc91fbcb841befe562fc8b360dcdd23b",
+          ".claude/agents/project-fix.md": "sha256:37f38fe35f9f72c7002aebaaa57bbf2edc490d8d83e1f66c365326578dfd55f7",
+          ".claude/agents/project-implement.md": "sha256:c841749d0baacb9d918a4f80e636379ce50de5b8f4c171eb9a9af94ad19757f4",
+          ".claude/agents/project-planner.md": "sha256:9a1112a3b32879d78303d46a7d08b2a91b2521b490b5514e3f99f44b0d25815a",
+          ".claude/agents/project-qa-review.md": "sha256:40c58d282492f55b4478ff3cc9bef1af330523fd5883e0fcfa25ac44a5d385b2",
+          ".claude/agents/project-requirements.md": "sha256:0af52718cb65dacfa417329cae63a5ddb42ac2ba77f09d975711931f358c4b66",
+          ".claude/agents/project-retro.md": "sha256:731d36d4d09185477683b6389a3b9bd6b59327d716e4d8161c29afdbdf8f0ff4",
+          ".claude/agents/project-smokebomb.md": "sha256:9b1c5e3104fb4215544d480470560d24ad72e4316cf6472bb59a0dbddf380130",
+          ".claude/agents/project-task.md": "sha256:89fb463b9678be76c1008ac67dcedf98c2a993bcf30acd875435c300adc2c8c6",
+          ".project-workflow/cli/workflow": "sha256:8803a393c57314417773c1be605ac7ffb0c33799c0fb8b55a0fb0557f9eb77e8",
+          ".project-workflow/cli/workflow.py": "sha256:8cb6a470e0608bb9367feccf2819d8b7392f10d3bad99e510169dfddc9c3dbb1"
+        },
+        "manifest_sha256": "sha256:bc447e6dcc2f12d4ebb2255dddbdb3c79316624ac46a95ec74a3ada4e673635a"
+      },
+      "init": "  \u2022 Validate workflow state: ./.project-workflow/cli/workflow doctor",
+      "intent_helper_sha256": "sha256:8cb6a470e0608bb9367feccf2819d8b7392f10d3bad99e510169dfddc9c3dbb1",
+      "upgrade": "post-upgrade validation: current; 0 finding(s), 0 owner-owned"
+    },
+    "codex": {
+      "doctor": "project doctor: no issues found in /private/var/folders/h2/bg9tb5m911509xyft70whbr80000gn/T/project-workflow-journey-iup4gkuf/fresh-codex",
+      "generated_asset_parity": {
+        "asset_count": 18,
+        "manifest": {
+          ".agents/skills/project-architect/SKILL.md": "sha256:99feee9b53098829a645146e3c0727804bf4b83a644fd0cdd1811ca65bf09c0f",
+          ".agents/skills/project-backlog/SKILL.md": "sha256:f06c316d2214e548b47f71652d9f05ea4d457ce60fc70becab97b4d32304b00a",
+          ".agents/skills/project-clarify/SKILL.md": "sha256:a82a8d2cabe64018e619dd155b8e734ae23fc03667fb790411c94b2093e756eb",
+          ".agents/skills/project-constitution/SKILL.md": "sha256:ef58d09e7d81f199486c7318c667918f5ca397d98138b219b5ddab5459ea26bf",
+          ".agents/skills/project-coordinator/SKILL.md": "sha256:e7e85c6654866b4725e3b4979b98dca873f93b190c6515a427b9d4cc253307a8",
+          ".agents/skills/project-delegate/SKILL.md": "sha256:c9d4224ac8372d0ac0be551aad730b7cac1ff541b091befb964bd72890553ec1",
+          ".agents/skills/project-epic/SKILL.md": "sha256:68171e12d07ecb4a48d732202d7cffee6c08c91a8245058686dfec069c48a3c4",
+          ".agents/skills/project-fix/SKILL.md": "sha256:f93c6f01b0ea706d1ffccaea44fd8c983ad7e7df0b0f99a4c07fa18e4656c48b",
+          ".agents/skills/project-implement/SKILL.md": "sha256:219f3c7adc648b2c929251e2570a689f49362ff35089144bc9889b60f7442713",
+          ".agents/skills/project-planner/SKILL.md": "sha256:67f8ddea9dbcc24f0a7a3d2a434125949ebe05fa7531a31c31498feb9e6265f5",
+          ".agents/skills/project-qa-review/SKILL.md": "sha256:52bd167ad75010e76d85620ad1ef1f945be3166e2b63515d798bd0f26ace23c4",
+          ".agents/skills/project-requirements/SKILL.md": "sha256:ce5cbf733ad0f46087530a3ce14c453a48a13ceb89d845f1d7908d184f4c01fb",
+          ".agents/skills/project-retro/SKILL.md": "sha256:e56f91e1e480e61dadaf69abd3c4d25d1e2d599e257901d7fa1d8d8654bb20ff",
+          ".agents/skills/project-smoke-bomb/SKILL.md": "sha256:f14b4440f606004e88feed6e39e4cf74623d23fc58f9d5dd580dffccb12c18cb",
+          ".agents/skills/project-task/SKILL.md": "sha256:da495c4daa38f6e90545b3cdcfd81a82b0fd9c807c24e74cae1b03af4ac60811",
+          ".project-workflow/cli/workflow": "sha256:8803a393c57314417773c1be605ac7ffb0c33799c0fb8b55a0fb0557f9eb77e8",
+          ".project-workflow/cli/workflow.py": "sha256:8cb6a470e0608bb9367feccf2819d8b7392f10d3bad99e510169dfddc9c3dbb1",
+          "AGENTS.md": "sha256:fca5d78b9a5ea6e2254ba532954f656b462fb7fcbb68433a538d4b0589f61b5b"
+        },
+        "manifest_sha256": "sha256:2091ae4c58cb4fbbc6b731725b33acdc35de42c191ab1f2cd14d568253a140e1"
+      },
+      "init": "  \u2022 Validate workflow state: ./.project-workflow/cli/workflow doctor",
+      "intent_helper_sha256": "sha256:8cb6a470e0608bb9367feccf2819d8b7392f10d3bad99e510169dfddc9c3dbb1",
+      "intent_journey": {
+        "acceptance_audit_sha256": "sha256:ba2bba2e493b6e6bf53240654ecba7116c88cadba026a244c2fff20e8fd1e2e0",
+        "approval_synopsis_sha256": "sha256:731f6d3945d421adb0badf89cd59950ebd4f95d7cc0c4e52809ef6ab4ffa18a2",
+        "audit_identity": "sha256:c6286720acba2a5cde35a6c67ec1998769ac5d6fe63d22e651a7039366208a40",
+        "authority_boundary": "Local exact-package proof only; not published, released, rolled out or adopted.",
+        "final_status": "Complete",
+        "global_tracker_sha256": "sha256:e56443493dbb18f92cc3578b9d369f0c3b89484d53d0eb4521f088723e4be87b",
+        "green_but_wrong_child": {
+          "audit_identity": "sha256:e5ffbf3de5257344e856dd44eb3d11d67f1f90e8e1bd9a838cc3061bfe527ff3",
+          "evidence_sha256": "sha256:925456bfc07c9e8bbcd8434193bde2c7115f6484eb08d02be5123794102945b4",
+          "implementation_sha256": "sha256:77f445e763471aab8e5ea529701412f504c65fceb8a200e490d4e955f86f300d",
+          "review_checks": {
+            "complete_archive_created": false,
+            "complete_archive_opened": false,
+            "ordinary_settings_route": true
+          },
+          "review_sha256": "sha256:0edc6da4fa7c4827be6047f2b65dd8e1179af0699088d4d9047ef74db8ae66f1"
+        },
+        "outcome_evidence_sha256": "sha256:dbab337c1cd7fa4e4b198b76b03177e76af776ba381acb51eb690bb2ae2f959c",
+        "proxy_rejection": [
+          "TASK-001 is not ready:",
+          "- intent audit is changes-requested (OC3 material drift requires an owner-approved amendment identifying the lost or added capability; lost or added capability: The member cannot open the complete exported archive.); review `INTENT-AUDIT.json` against the current requirements, decomposition and child plans"
+        ],
+        "restored_review_sha256": "sha256:ed5454e4af8b05f0472a53216e1a78936b0f1b4bb6b016f1d73da41308e46e2e"
+      },
+      "upgrade": "post-upgrade validation: current; 0 finding(s), 0 owner-owned"
+    },
+    "cursor": {
+      "doctor": "project doctor: no issues found in /private/var/folders/h2/bg9tb5m911509xyft70whbr80000gn/T/project-workflow-journey-iup4gkuf/fresh-cursor",
+      "generated_asset_parity": {
+        "asset_count": 18,
+        "manifest": {
+          ".cursor/agents/project-architect.md": "sha256:e059904665fd4d28cd50e4061f73308c829db4ad58fdc8e4a7e5ea3e988b7850",
+          ".cursor/agents/project-backlog.md": "sha256:aa78b0156144560b856a4277101cf3052f0eddb533f18aa21761938eba196940",
+          ".cursor/agents/project-clarify.md": "sha256:f5f2a47ce644955d81a6b50b27a4693c2e7375a7f63b648957bebfca6a730226",
+          ".cursor/agents/project-constitution.md": "sha256:942e69733e65d71c3ecbc01c87710f09f0c0bcab87ea802ea079426d161a018e",
+          ".cursor/agents/project-coordinator.md": "sha256:04ed50ff581df896e092302b0eeac99b537650cb9ec924a8979ed567a442a187",
+          ".cursor/agents/project-delegate.md": "sha256:4f11578db4c08c090af2db3840b45f08c333ca10abe00aa5018cf4d7c47ebf2d",
+          ".cursor/agents/project-epic.md": "sha256:d3470bd358cb8b84f05d5b032cf8cae90237ad60d6e9aaf7b91c2a11f5354385",
+          ".cursor/agents/project-fix.md": "sha256:aefdf4649ae47fd532d0f24dfc34a7f5d974929b6188780b0f46aa0b17f34ec5",
+          ".cursor/agents/project-implement.md": "sha256:3f420630d2682b6941ae5c4ec9be552dc832b8a5a9965f602927614dc8a59af3",
+          ".cursor/agents/project-planner.md": "sha256:4eadec5187875e858489417f762e510cd5ae590b2bc57ed89fc16d5704cb386e",
+          ".cursor/agents/project-qa-review.md": "sha256:ccb473ee822edb842a9285e2b2a3d158677612abad564957d5a3f8caccf5e15e",
+          ".cursor/agents/project-requirements.md": "sha256:ec22ac258197b6c2151bd978863946b4ad7861a23096eac466f3068779cfbd59",
+          ".cursor/agents/project-retro.md": "sha256:221f46146de557bbd21abc40a0728a48af5493e33174729ba95369e4ad6f4363",
+          ".cursor/agents/project-smokebomb.md": "sha256:6f3edeebb49bce0d419f895b0f7c76a946452afa28ef301c17f1b210bbdb2681",
+          ".cursor/agents/project-task.md": "sha256:4e9d9d308458c23ebb2ca013687bf10070484c7a6b0fac27da89e73682f7fc73",
+          ".cursor/rules/project-workflow.mdc": "sha256:5144e13c10e6f0973801efc274a78a24646efdd0d09ca295d760aa54dc44439e",
+          ".project-workflow/cli/workflow": "sha256:8803a393c57314417773c1be605ac7ffb0c33799c0fb8b55a0fb0557f9eb77e8",
+          ".project-workflow/cli/workflow.py": "sha256:8cb6a470e0608bb9367feccf2819d8b7392f10d3bad99e510169dfddc9c3dbb1"
+        },
+        "manifest_sha256": "sha256:a33a2ab35e5efec737e460fdde40f79f145899c3f11392ed0de7bc8fd586b114"
+      },
+      "init": "  \u2022 Validate workflow state: ./.project-workflow/cli/workflow doctor",
+      "intent_helper_sha256": "sha256:8cb6a470e0608bb9367feccf2819d8b7392f10d3bad99e510169dfddc9c3dbb1",
+      "upgrade": "post-upgrade validation: current; 0 finding(s), 0 owner-owned"
+    },
+    "github-copilot": {
+      "doctor": "project doctor: no issues found in /private/var/folders/h2/bg9tb5m911509xyft70whbr80000gn/T/project-workflow-journey-iup4gkuf/fresh-github-copilot",
+      "generated_asset_parity": {
+        "asset_count": 18,
+        "manifest": {
+          ".github/copilot-instructions.md": "sha256:fca5d78b9a5ea6e2254ba532954f656b462fb7fcbb68433a538d4b0589f61b5b",
+          ".github/prompts/Architect.prompt.md": "sha256:a617f5c8cc978ee7d458a81226173ceebd9788c41a9bfb8e795aec608316ff5b",
+          ".github/prompts/Backlog.prompt.md": "sha256:f570ddf80db2402c260b49aa7a33c4ac095182a5ab2bf05d36a5c5e3dd3d3c18",
+          ".github/prompts/Clarify.prompt.md": "sha256:2c605b21dbbb25d3fdd227c8358b5176465b78f3f3a29b1345e4644bca7840af",
+          ".github/prompts/Constitution.prompt.md": "sha256:8c1b75c74b34ef41429b5bee41185f8c236178a566c25dcb2f14f56901256650",
+          ".github/prompts/Coordinator.prompt.md": "sha256:52b2dc9086a0b4a06d6dcdb9154232c9e324101d6e1c0bd8427d6a79240e4020",
+          ".github/prompts/Delegate.prompt.md": "sha256:5577f6d9786900502dd54996cc834e5852947a85a4aeb0d2ee449f70df89f15d",
+          ".github/prompts/Epic.prompt.md": "sha256:ef25eb7bf2bee4c76e48d3cc5df73a7c50cc797e2d21245f8b21844473dc042b",
+          ".github/prompts/Fix.prompt.md": "sha256:263d3581c079608ac2fe16f351fc0f480723b3ffb3e2cbbdef5df01ab0e67a33",
+          ".github/prompts/Implement.prompt.md": "sha256:191c0bbfb9432ebb896b35ff4886cabb0d19f2918a2e3c4f912db0e904b1b420",
+          ".github/prompts/Planner.prompt.md": "sha256:cad8a76c232bd485129ba692a2f5afb67f191d6c9d9c7a299bc86320dc165ca9",
+          ".github/prompts/QAReview.prompt.md": "sha256:b6ab81a21d4a5871b2896e190a36b5499418dcebf4759914295edd14b6060858",
+          ".github/prompts/Requirements.prompt.md": "sha256:f36fda0d22aa6d176c1097e31e87216cef63ef0e87143243ed303ddb7c595de4",
+          ".github/prompts/Retro.prompt.md": "sha256:1a43fe9e0406f88dc585bbe6f3bdf0a0748552fc9eb49e43645e64eedfc634ab",
+          ".github/prompts/SmokeBomb.prompt.md": "sha256:2abb4fd5674449aecaaee0fb6abdb4efc9488f79d9b70c66a097825684be7396",
+          ".github/prompts/Task.prompt.md": "sha256:9c0af12e71beb8885c72dc2dfdb74f695c22fcdb13298961dbc7cf183fa76924",
+          ".project-workflow/cli/workflow": "sha256:8803a393c57314417773c1be605ac7ffb0c33799c0fb8b55a0fb0557f9eb77e8",
+          ".project-workflow/cli/workflow.py": "sha256:8cb6a470e0608bb9367feccf2819d8b7392f10d3bad99e510169dfddc9c3dbb1"
+        },
+        "manifest_sha256": "sha256:3151afb25f1fec2215c01ac6cf082f46b16ba1e5613e2c7c5911e9203fe94a3f"
+      },
+      "init": "  \u2022 Validate workflow state: ./.project-workflow/cli/workflow doctor",
+      "intent_helper_sha256": "sha256:8cb6a470e0608bb9367feccf2819d8b7392f10d3bad99e510169dfddc9c3dbb1",
+      "upgrade": "post-upgrade validation: current; 0 finding(s), 0 owner-owned"
+    }
+  },
+  "legacy": {
+    "apply_status": "applied",
+    "doctor": "project doctor: passed with warnings",
+    "historical_artifacts_preserved": {
+      ".project-workflow/BACKLOG.md": "sha256:4a85c0a8f21854f3ae99eacc9e1fb9efb5e48d6ab55191b73c4bc88cab78c096",
+      ".project-workflow/TRACKER.md": "sha256:ca7c792921f9125fc778cf6b2a4b067e0ce60d2172eefb57d8708eef44240cf3",
+      ".project-workflow/guidance.md": "sha256:698c6781cb69d270c033d18bae67cef623098b4841e6dd22fb0ff79017a3d095",
+      "USER-NOTES.md": "sha256:9ff443c067cb805cf734d03b6e8c3a4fb291034e21dbf93c5bf18cc9dd2023c6"
+    },
+    "owner_collision_preserved": true,
+    "owner_sha256": "b024db4eca938e12187cc539c6795e85cd466a08687ba3354654715e97f7b161",
+    "pending_delegate_sha256": "c9d4224ac8372d0ac0be551aad730b7cac1ff541b091befb964bd72890553ec1",
+    "plan_fingerprint": "sha256:cb7bf9e5f3376a0fe4b8e329255f7f04ba53b435bbe9762d8948934f39f43b38",
+    "second_plan_repository_state": "current"
+  },
+  "package_parity": {
+    "readme_sha256": "sha256:05607a82b574cfebae1aa21159e872b47fb48fbcfb88908030a61a968e9840ca",
+    "resource_count": 51,
+    "resource_manifest": {
+      "project_workflow/__init__.py": "sha256:93cb5ec921d743c08facd21917c4b8ba18c3f55996ec0c5285c4b4e7a155fd12",
+      "project_workflow/_version.py": "sha256:e239f8fb16362bb51e70e165284498acffb68a7b1b47b37f0ebc3270e22900dc",
+      "project_workflow/adapter_common.py": "sha256:10c18901e35f4e870374ba96f577326c75fbfcea54df7daea40b367ddaf69a3a",
+      "project_workflow/architecture.py": "sha256:b37ad468564610314ae7e6f0d87c1ead869af74c6ce68f198df67712863ffcca",
+      "project_workflow/claude_adapter.py": "sha256:b7d2761888f65e020928d21f7b134dbbf76dd66248c3103d43d4b7f383cec53f",
+      "project_workflow/cli.py": "sha256:e369e4a1b1fc42c5c51fb19c76d971e1f24dc43439e3b1b22007d084aa81415b",
+      "project_workflow/codex/AGENTS.md": "sha256:0c98a9252a7908757213e0beb1c47dab396c40b1fbb501b1ee4568908c831fed",
+      "project_workflow/codex/skills/project-architect/SKILL.md": "sha256:01b41b629e54778eb147a6b1126a81e4e403ab70c4c77b38bad6eeb0ce1a8dd5",
+      "project_workflow/codex/skills/project-backlog/SKILL.md": "sha256:f3c179b8a35ef163449f0e17c708d79308af455ad3a4d2c185deee1c2c230982",
+      "project_workflow/codex/skills/project-clarify/SKILL.md": "sha256:720c94b928d2a3939b7440d8f31c9320e041ff9678f49b470a110349b39604b1",
+      "project_workflow/codex/skills/project-constitution/SKILL.md": "sha256:1e213775f1c4a4cb36ca773879c6ac9b4f82a42a7a8c27b6ba469522fb01ead6",
+      "project_workflow/codex/skills/project-coordinator/SKILL.md": "sha256:96c67bb9a9650e147034b9ea2cb74055a1c1655e14cd10a7089779ad5201c0c0",
+      "project_workflow/codex/skills/project-delegate/SKILL.md": "sha256:7f064915367e9c98686fa68afb099accd71d960eedd4630113f296b34d878bc1",
+      "project_workflow/codex/skills/project-epic/SKILL.md": "sha256:829fbf884dddbad035fff5677edb1bed52e7abc7f363e2760dcfd59b8b6c3f4a",
+      "project_workflow/codex/skills/project-fix/SKILL.md": "sha256:f69da5e0a626841189881e370a92cdc0f323e7e2c035a1bef36ff563a1ab6152",
+      "project_workflow/codex/skills/project-implement/SKILL.md": "sha256:6b3e6cb479e588b4a91968696a449dfefbee4874470f323407d00a05c8f47ddd",
+      "project_workflow/codex/skills/project-planner/SKILL.md": "sha256:07d0a04a3776a42f5069da28b39d92acf222207ee1b3c808af6c60f5281760fe",
+      "project_workflow/codex/skills/project-qa-review/SKILL.md": "sha256:a3e4a97bd3f4a7cf86757ad887b8d678d2c6e5542d16a2d1a28bc1ddffcfca09",
+      "project_workflow/codex/skills/project-requirements/SKILL.md": "sha256:acc64f5d6f6ea4ece4cdc97cb14004472bbce0d980b19d17323f7adbd73062a4",
+      "project_workflow/codex/skills/project-retro/SKILL.md": "sha256:31d0042180a3b160056a6d947241aa44706ba0e741ba300e961b683589ae9327",
+      "project_workflow/codex/skills/project-smoke-bomb/SKILL.md": "sha256:f14b4440f606004e88feed6e39e4cf74623d23fc58f9d5dd580dffccb12c18cb",
+      "project_workflow/codex/skills/project-task/SKILL.md": "sha256:ffff8b40ba3f0a788fb78c26fc59888aaebabd3bb00e6e086bf0340772ae424a",
+      "project_workflow/codex_adapter.py": "sha256:eeb24719c0b199304b1e7e92b861112a5a8eebe0583f71caf350265f18a5509a",
+      "project_workflow/commands.py": "sha256:ee2d741535b56e58ab65d183b363a0135f4c6c5b6fca2605bc75d730a4f2d7be",
+      "project_workflow/contracts.py": "sha256:f5da9265be87da590c3154c0e9527ca7f1745a93e8c0f79e7f2ceaa0e08f85cd",
+      "project_workflow/coordination.py": "sha256:f6bbbb9e4e32e336e26314b228090c57a993230ddd37fe36aea38abd0fcb646a",
+      "project_workflow/cursor/rules/project-workflow.mdc": "sha256:e9f985e5a8e344d0ae40741171d19b1789c99599276ebdec90ccb68ff836970c",
+      "project_workflow/execution.py": "sha256:41efb13e2c18d0c1496e2dcaea23acc7c1cd22599608f65c6c6c7ce57f09369d",
+      "project_workflow/execution_config.py": "sha256:154628127e87ee67a580323de26ba28ddbdf21361d15599ae33a01d2dec43f50",
+      "project_workflow/inspection.py": "sha256:bc8c59fbeecada83775206fc68cb42d12b80f8bea269b889e23d3cecd708fb74",
+      "project_workflow/lifecycle.py": "sha256:69e65b87d46a5ce09326700710238e7a13c32e6a64ecd1c590c41c2abd2fd944",
+      "project_workflow/maintenance.py": "sha256:3c5ad74c31b62a9e9106be32a3bae15321e77e9f0062ec55e2d949b84ce97d68",
+      "project_workflow/orchestration.py": "sha256:8e16feadb74d7eb5da3752046369544a0cfdc3c7afa32da141c104ce80d0f5cb",
+      "project_workflow/prompts/Architect.prompt.md": "sha256:5dd29045f4e31517507565744f815b810432d98f708bb7be0a84d00c2bc4b5a7",
+      "project_workflow/prompts/Backlog.prompt.md": "sha256:87122838128109ddd06213c73da5f5ad923db67fb902fb60ee35aff7ced8b09e",
+      "project_workflow/prompts/Clarify.prompt.md": "sha256:2c605b21dbbb25d3fdd227c8358b5176465b78f3f3a29b1345e4644bca7840af",
+      "project_workflow/prompts/Constitution.prompt.md": "sha256:3f2f093d09799c7b6c6485f2053324f46ef913d10b8babf7188b8b2f22a5b722",
+      "project_workflow/prompts/Coordinator.prompt.md": "sha256:52b2dc9086a0b4a06d6dcdb9154232c9e324101d6e1c0bd8427d6a79240e4020",
+      "project_workflow/prompts/Delegate.prompt.md": "sha256:5577f6d9786900502dd54996cc834e5852947a85a4aeb0d2ee449f70df89f15d",
+      "project_workflow/prompts/Epic.prompt.md": "sha256:3dc207dbcb16b271562615a908829396d872bc74b929870e6dc1b60d014ed369",
+      "project_workflow/prompts/Fix.prompt.md": "sha256:f158081cd4f83b0e7ce2e9d6009d0eb39c675e28d610745f12734a895c179c68",
+      "project_workflow/prompts/Implement.prompt.md": "sha256:850d3ac516811f86494638a273ba743f6da4e7a00703b32105effd79f73e4775",
+      "project_workflow/prompts/Planner.prompt.md": "sha256:99d3f96cbe46ae303337f0ad35139f797dba51552dd0397822ee1373167011d1",
+      "project_workflow/prompts/QAReview.prompt.md": "sha256:157318e2c4906ed18d08209e3056bf8e99bf5e2eea465f2b2a776922045e839c",
+      "project_workflow/prompts/Requirements.prompt.md": "sha256:f20401821c23e16737701951fbcb247619e8846ae000bf403624e7bbd138b1d0",
+      "project_workflow/prompts/Retro.prompt.md": "sha256:c553aefdbc1a3b0c7b4ae0bbf6b9628ba6ffbb105a44fb6df7ab549665b7b6bd",
+      "project_workflow/prompts/SmokeBomb.prompt.md": "sha256:6b6f141be5f44c240b93448050f6b45cc9ed8e26ca4fc1364235cc49c8a6959e",
+      "project_workflow/prompts/Task.prompt.md": "sha256:e2c699f9602b13df56e29900c1b98708e272b6d48b650fec4b985f7ae5ffebcd",
+      "project_workflow/repository.py": "sha256:7df7dd2f416908a214c9181edfdeb5cf12464b2ff3b403b588c048e1ee585156",
+      "project_workflow/templates/workflow": "sha256:1dedfc563cf5cf8c8b2890a1545bb51f03ae76c180f88377ebb70c9a4073b2d8",
+      "project_workflow/templates/workflow.py": "sha256:8cb6a470e0608bb9367feccf2819d8b7392f10d3bad99e510169dfddc9c3dbb1"
+    },
+    "resource_manifest_sha256": "sha256:a7a07919af1ef6e5644022f5946074ec39a1f0c777f08853a895ae9ec80ff2fd",
+    "sdist_bound_source_count": 95,
+    "sdist_sha256": "sha256:3b9a9ccc430f35e47ad25e6e5219d45f2f7a946566af78736fe25fa752e43205",
+    "wheel_sha256": "sha256:61dff0118f01dc047c127d26cd225b0ffacfc65d01a1163d5363cab424334541"
+  },
+  "source": "project_workflow-0.10.0-py3-none-any.whl",
+  "source_sha256": "sha256:61dff0118f01dc047c127d26cd225b0ffacfc65d01a1163d5363cab424334541",
+  "version": "0.10.0"
+}

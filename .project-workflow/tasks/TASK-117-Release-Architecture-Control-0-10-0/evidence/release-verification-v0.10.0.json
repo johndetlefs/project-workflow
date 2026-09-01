@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-117",
+  "version": "0.10.0",
+  "verified_at": "2026-09-01T04:57:21Z",
+  "source": {
+    "pull_request": "https://github.com/johndetlefs/project-workflow/pull/31",
+    "pull_request_head": "ea99b35541a4cdc86a60dd515b11a66f7ce1602a",
+    "merge_commit": "0f9b2008d75e4dbcb97b54309471b4283793bd3e",
+    "tag": "v0.10.0",
+    "annotated_tag_object": "ecd444288a6e3febd6883a7fcd6daeef7c1872a2",
+    "tag_commit": "0f9b2008d75e4dbcb97b54309471b4283793bd3e",
+    "main_ci_run": "https://github.com/johndetlefs/project-workflow/actions/runs/33471192826",
+    "main_ci": "pass"
+  },
+  "release": {
+    "workflow_run": "https://github.com/johndetlefs/project-workflow/actions/runs/33471322579",
+    "workflow_run_id": "33471322579",
+    "build": "pass",
+    "attestation_generation": "pass",
+    "trusted_pypi_publication": "pass",
+    "github_release_publication": "pass",
+    "github_release": "https://github.com/johndetlefs/project-workflow/releases/tag/v0.10.0",
+    "pypi": "https://pypi.org/project/project-workflow/0.10.0/"
+  },
+  "artifacts": {
+    "wheel": {
+      "filename": "project_workflow-0.10.0-py3-none-any.whl",
+      "size": 548926,
+      "sha256": "61dff0118f01dc047c127d26cd225b0ffacfc65d01a1163d5363cab424334541",
+      "github_matches_pypi": true,
+      "github_attestation": "pass"
+    },
+    "sdist": {
+      "filename": "project_workflow-0.10.0.tar.gz",
+      "size": 719098,
+      "sha256": "3b9a9ccc430f35e47ad25e6e5219d45f2f7a946566af78736fe25fa752e43205",
+      "github_matches_pypi": true,
+      "github_attestation": "pass"
+    },
+    "release_receipt_sha256": "8303b24f7c4b7284aee400c968f83c6b896b283596dfd397a690ef88b1154ea0",
+    "sha256sums_sha256": "c535deb4e9aff1a1835a0ac4bf56e88eac46d5f6495802a8ed174b576887f91e",
+    "hosted_package_journeys_sha256": "1f4b94fb8a6035ca9914489470c09c382528d58dd3d48eb817c61db2b4591a1c",
+    "independent_public_package_journeys_sha256": "ded7db537dac73bfd3a1aa5d61fe9c3d5dcf65ebe0e41608ec69ffae3d13762b"
+  },
+  "public_verification": {
+    "release_receipt": "pass",
+    "github_pypi_byte_comparison": "pass",
+    "wheel_attestation": "pass after one infrastructure-only retry outside the restricted sandbox",
+    "sdist_attestation": "pass outside the restricted sandbox",
+    "isolated_uvx": "project 0.10.0",
+    "exact_pypi_wheel_journeys": "pass",
+    "consumer_repositories_mutated": false
+  },
+  "proof_boundaries": {
+    "claude_runtime_certified": false,
+    "cross_host_runtime_support_claimed": false,
+    "consumer_adoption_claimed": false,
+    "owner_acceptance_claimed": false
+  },
+  "follow_ups": [
+    "RELEASING.md currently shows a package specifier for verify_package_journeys.py, while the current verifier requires an exact wheel path; public verification used the independently downloaded hash-bound PyPI wheel and the runbook should be corrected separately."
+  ]
+}
