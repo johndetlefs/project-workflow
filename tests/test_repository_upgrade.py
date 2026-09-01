@@ -33,7 +33,7 @@ def test_workflow_manifest_contract_is_deterministic() -> None:
     assert workflow_cli._serialize_workflow_manifest(manifest) == (
         "{\n"
         '  "manifest_version": 1,\n'
-        '  "package_version": "0.9.2",\n'
+        '  "package_version": "0.10.0",\n'
         '  "asset_version": 8,\n'
         '  "schema_version": 1,\n'
         '  "applied_migrations": []\n'

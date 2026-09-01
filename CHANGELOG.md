@@ -4,6 +4,33 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## 0.10.0 - 2026-09-01
+
+### Added
+
+- Added proportionate `no`, `local`, and `material` architecture-impact classification so ordinary
+  established-pattern work stays cheap while material work binds a current repository architecture
+  contract before readiness.
+- Added repository-owned architecture-spine guidance, source-bound Project Architect decisions,
+  exact-candidate implementation and QA conformance, and project-selected mechanical constraints.
+- Added one canonical Project Architect semantic source with deterministic Codex and Claude
+  entrypoint generation and deliberate one-copy drift rejection.
+
+### Changed
+
+- Made current Task and Epic-child plans record architectural effect and made material readiness,
+  Review, and Complete fail closed on missing, stale, inconsistent, or unbound architecture proof.
+- Dogfooded the capability against Project Workflow's module dependencies, source ownership,
+  generated runtime, and host assets while retaining the Coordinator as the only owner-facing role
+  and shared workflow-state writer.
+
+### Known proof boundary
+
+- Project Architect discovery and invocation is proven on Codex. The generated Claude entrypoint is
+  parity-checked and packaged, but no authenticated Claude runtime canary is available; this release
+  makes no Claude runtime or cross-host support claim. Consumer adoption remains a separate future
+  decision.
+
 ## 0.9.2 - 2026-08-31
 
 ### Added

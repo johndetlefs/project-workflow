@@ -8,13 +8,13 @@ local cleanup. Public publication belongs only in `RELEASING.md`.
 Initialize only a repository with no Project Workflow installation:
 
 ```bash
-uvx --from project-workflow==0.9.2 project init --agent codex
+uvx --from project-workflow==0.10.0 project init --agent codex
 ```
 
 Upgrade an existing installation directly; do not run init first:
 
 ```bash
-uvx --from project-workflow==0.9.2 project upgrade --agent codex
+uvx --from project-workflow==0.10.0 project upgrade --agent codex
 ```
 
 Canonical UVX upgrade combines managed-asset refresh and declared repository-schema migrations in
@@ -26,16 +26,16 @@ Run normal upgrade from a clean Git worktree. The human command asks for confirm
 non-interactive agent adds `--yes`:
 
 ```bash
-uvx --from project-workflow==0.9.2 project upgrade --agent codex --yes
+uvx --from project-workflow==0.10.0 project upgrade --agent codex --yes
 ```
 
 For automation, separate the immutable plan from fingerprint-bound apply:
 
 ```bash
-uvx --from project-workflow==0.9.2 \
+uvx --from project-workflow==0.10.0 \
   project upgrade --agent codex --plan --format json
 
-uvx --from project-workflow==0.9.2 \
+uvx --from project-workflow==0.10.0 \
   project upgrade --agent codex \
   --apply --plan-fingerprint sha256:<REVIEWED_PLAN_FINGERPRINT>
 ```

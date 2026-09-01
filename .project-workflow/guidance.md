@@ -17,6 +17,7 @@ Add local conventions, validation commands, safety constraints, handoff rules, a
 - Run `uv run --locked ruff format --check src/project_workflow/*.py scripts tests`.
 - Run `uv run --locked mypy src/project_workflow/*.py`.
 - Run `uv run --locked python scripts/check_documentation.py`.
+- Run `uv run --locked python scripts/build_architect_entrypoints.py --check`.
 - Run `PATH="/opt/homebrew/bin:$PATH" uv run --locked pytest -q` for the complete regression gate.
 - Regenerate bundled runtimes only with `uv run --locked python scripts/build_runtime_bundle.py --write`, then require the same command with `--check` before delivery.
 

@@ -9,7 +9,7 @@ AGENTS.md and .project-workflow/guidance.md own repository operating rules.
 Project Workflow remains one Python package, one public project command, and one dependency-free
 repository-local helper. Modular source is an implementation improvement, not a product split.
 
-The target is eleven or fewer substantial runtime modules plus explicit host adapters. Add a module
+The target is twelve or fewer substantial runtime modules plus explicit host adapters. Add a module
 only when it owns a distinct reason to change and reduces coupling more than it adds navigation.
 Split a module when it mixes material responsibilities or exceeds 5,000 authored lines; do not
 split cohesive code solely to satisfy a line count. cli.py is limited to parser/dispatch assembly
@@ -21,6 +21,7 @@ and compatibility access and must remain below 2,000 lines after extraction.
 | --- | --- | --- |
 | contracts.py | Stable constants, errors, immutable records and operational-status value types | Python standard library |
 | repository.py | Managed assets, configuration, manifests, Markdown contracts and low-level repository operations | contracts |
+| architecture.py | Proportionate impact classification, source-bound authority and exact-candidate conformance | contracts, repository |
 | lifecycle.py | Backlog, Fix, Task and Epic records, approvals, intent, evidence, readiness and proof-layer reads | contracts, repository |
 | orchestration.py | Task/Epic work packets, delegation plans, runtime state and reconciliation primitives | contracts, repository, lifecycle |
 | execution.py | Capability-aware Task and Epic orchestrators that execute an approved delegation plan | orchestration |
@@ -47,6 +48,39 @@ cycle in a local import.
 
 Architecture tests inspect top-level internal imports, strongly connected components, module line
 budgets, generated provenance, and deterministic regeneration.
+
+## Responsibilities
+
+Project Workflow owns proportionate architecture classification, source-bound material decisions,
+lifecycle conformance gates, and host-neutral semantic guidance. Each adopting repository owns its
+actual structural responsibilities and topology in a repository-local architecture spine.
+
+## Source Ownership
+
+The architecture-control runtime is authored in `src/project_workflow/architecture.py`. Task and
+Epic-child templates are composed by their existing repository and lifecycle owners. Host-neutral
+Project Architect semantics are authored once under `src/project_workflow/prompts`; host-specific
+entrypoints are generated derivatives and never competing truth.
+
+## Shared State Boundaries
+
+The Coordinator remains the only writer of shared workflow state. Project Architect returns a
+bounded classification or architecture decision to the Coordinator; it does not update trackers,
+approval envelopes, lifecycle, evidence indexes, Git state, or owner-facing decisions.
+
+## Extension Points
+
+Repositories select architecture authority paths and measurable constraints appropriate to their
+stack. ADRs may record substantial individual trade-offs, but neither ADRs nor extension-specific
+checks replace the architecture spine. New host formats transform the canonical semantic source
+rather than introducing another authored architecture contract.
+
+## Measurable Constraints
+
+This repository selects acyclic runtime imports, manifest dependency direction, generated-runtime
+parity, canonical source ownership, and existing module budgets as mechanical constraints. Other
+repositories must choose constraints that protect their own boundaries; Project Workflow does not
+impose universal file-size, module-count, layer, or folder-layout rules.
 
 ## Authored And Generated Sources
 

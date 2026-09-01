@@ -1,0 +1,45 @@
+{
+  "task_id": "TASK-117",
+  "claims": [
+    {
+      "id": "TASK-117-PUBLIC-ARTIFACTS",
+      "parent_ac": "AC5, AC6",
+      "claim": "Public PyPI and GitHub Release 0.10.0 artifacts match the protected release receipt, checksums, reviewed main commit and immutable tag.",
+      "recipe": "deployed-artifact-alignment",
+      "status": "pending",
+      "commit": "pending",
+      "timestamp": "pending",
+      "execution_target": "PyPI project-workflow 0.10.0 and GitHub Release v0.10.0",
+      "source_artifact": "Protected GitHub release workflow bundle for v0.10.0",
+      "artifact_identity": "pending",
+      "observation_method": "Independently download both public distributions, verify SHA256SUMS and receipt identities, and verify GitHub attestation.",
+      "evidence_artifact": "evidence/release-verification-v0.10.0.json",
+      "evidence_artifact_hash": "pending",
+      "invalid_substitutes": [
+        "Local build output",
+        "Hosted CI without public artifacts",
+        "A GitHub Release page without PyPI comparison"
+      ]
+    },
+    {
+      "id": "TASK-117-PUBLIC-RUNTIME",
+      "parent_ac": "AC6",
+      "claim": "Fresh isolated execution resolves and exercises project-workflow 0.10.0 from public PyPI.",
+      "recipe": "runtime-target-source",
+      "status": "pending",
+      "commit": "pending",
+      "timestamp": "pending",
+      "execution_target": "Disposable isolated uvx and package-journey repositories",
+      "source_artifact": "project-workflow==0.10.0 from public PyPI",
+      "observation_method": "Run isolated version reporting and the repository's public exact-version package journeys.",
+      "target_used_source_proof": "pending",
+      "evidence_artifact": "evidence/release-verification-v0.10.0.json",
+      "evidence_artifact_hash": "pending",
+      "invalid_substitutes": [
+        "Editable install",
+        "Local wheel",
+        "Repository-local CLI"
+      ]
+    }
+  ]
+}

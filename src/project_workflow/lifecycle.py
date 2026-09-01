@@ -13,6 +13,7 @@ from datetime import date
 from pathlib import Path
 from typing import TypedDict
 
+from .architecture import architecture_readiness_issues
 from .contracts import (
     AC_MAPPED_IMPLEMENTATION_STATUSES,
     BACKLOG_COLUMNS,
@@ -2501,6 +2502,17 @@ def _epic_child_implementation_template(
     return (
         f"## User Story\n\n"
         f"As a ____, I want ____, so that ____.\n\n"
+        f"## Architecture Impact\n\n"
+        f"- Classification: ____\n"
+        f"- Reason: ____\n"
+        f"- Architecture authority: ____\n"
+        f"- Authority identity: ____\n"
+        f"- Architect invocation: ____\n"
+        f"- Architect decision identity: ____\n"
+        f"- Affected boundaries: ____\n"
+        f"- Architecture decision: ____\n"
+        f"- Measurable constraints: ____\n"
+        f"- Conformance plan: ____\n\n"
         f"## Parent AC Coverage\n\n"
         f"- {parent_ac_value}\n\n"
         f"{child_charter}"
@@ -2529,6 +2541,12 @@ def _epic_child_implementation_template(
         f"- Reviewer independence: ____\n"
         f"- Evidence: ____\n"
         f"- Findings: ____\n\n"
+        f"## Architecture Conformance\n\n"
+        f"- Authority identity: ____\n"
+        f"- Candidate: ____\n"
+        f"- Mechanical checks: candidate=____; receipt=____\n"
+        f"- Deviations: ____\n"
+        f"- Verdict: ____\n\n"
         f"## Retro\n\n"
         f"- Reusable lessons: ____\n"
         f"- Conventions or agent assets updated: ____\n"
@@ -3804,6 +3822,8 @@ def _task_ready_issues_for_paths(
     )
     if root is not None:
         issues.extend(_repository_scope_issues(root, requirements_text))
+        if not _is_discovery_work(requirements_text, implementation_text):
+            issues.extend(architecture_readiness_issues(root, implementation_text))
     epic_dir = requirements_path.parent.parent
     if _epic_contract_path(epic_dir).exists():
         issues.extend(

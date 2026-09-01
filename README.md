@@ -5,7 +5,7 @@ implemented, evidenced, reviewed work. Its state is plain Markdown and JSON besi
 people and coding agents can inspect the same requirements, status, decisions, and proof.
 
 Its repository guidance supports GitHub Copilot, Claude Code, OpenAI Codex, and Cursor. Sealed
-runtime enforcement has a narrower, versioned proof boundary: v0.9.2 is runtime-certified for
+runtime enforcement has a narrower, versioned proof boundary: v0.10.0 is runtime-certified for
 Codex only. The packaged Claude Code adapter remains fail-closed and uncertified until its real
 authenticated host canary passes; Cursor and GitHub Copilot are not sealed-runtime targets. Project
 Workflow complements issue trackers, Git hosts, CI, registries, and deployment platforms; it does
@@ -16,14 +16,14 @@ not replace their authority.
 From the root of an existing Git repository:
 
 ```bash
-uvx --from project-workflow==0.9.2 project init --agent codex
+uvx --from project-workflow==0.10.0 project init --agent codex
 ```
 
 Choose `github-copilot`, `claude-code`, `codex`, or `cursor` to match the agent that will operate
 the repository. For an existing installation, use upgrade—not init:
 
 ```bash
-uvx --from project-workflow==0.9.2 project upgrade --agent codex
+uvx --from project-workflow==0.10.0 project upgrade --agent codex
 ```
 
 Then describe the outcome in ordinary language. The installed guidance routes it to the smallest

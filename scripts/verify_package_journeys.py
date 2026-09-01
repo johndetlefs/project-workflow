@@ -615,6 +615,17 @@ def child_implementation() -> str:
 
 As a signed-in member, I want to export and open my complete archive, so that my account data is portable.
 
+## Architecture Impact
+
+- Classification: no
+- Reason: This disposable fixture exercises an established export outcome without changing structural boundaries.
+- Architecture authority: Not applicable
+- Authority identity: Not applicable
+- Affected boundaries: None
+- Architecture decision: Not required
+- Measurable constraints: Not required
+- Conformance plan: Not required
+
 ## Parent AC Coverage
 
 - AC1

@@ -79,6 +79,14 @@ def test_runtime_manifest_entries_are_unique_python_modules() -> None:
     assert all(path.is_file() and path.suffix == ".py" for path in paths)
 
 
+def test_runtime_manifest_conforms_to_documented_module_authority() -> None:
+    paths = runtime_modules()
+    architecture = (ROOT / "docs/architecture.md").read_text(encoding="utf-8")
+    assert len(paths) <= 12
+    for path in paths:
+        assert f"| {path.name} |" in architecture, path
+
+
 def test_generated_runtime_is_current() -> None:
     result = subprocess.run(
         [sys.executable, str(GENERATOR), "--check"],
@@ -142,6 +150,16 @@ def test_architecture_helpers_reject_forbidden_graphs() -> None:
     assert cycle_in({"a": {"b"}, "b": {"a"}}) == ("a", "b", "a")
 
 
+def test_deliberate_dependency_direction_violation_is_mechanically_visible() -> None:
+    order = {"contracts": 0, "repository": 1, "lifecycle": 2}
+    forbidden = internal_dependencies(
+        "from .lifecycle import task_ready\n",
+        set(order),
+    )
+    assert forbidden == {"lifecycle"}
+    assert not all(order[dependency] < order["repository"] for dependency in forbidden)
+
+
 def test_generated_helper_is_dependency_free() -> None:
     result = subprocess.run(
         [sys.executable, "-I", str(GENERATED_OUTPUTS[1]), "--version"],
@@ -150,7 +168,7 @@ def test_generated_helper_is_dependency_free() -> None:
         capture_output=True,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert result.stdout.strip() == "project 0.9.2"
+    assert result.stdout.strip() == "project 0.10.0"
 
 
 def test_runtime_module_size_budget_after_extraction() -> None:

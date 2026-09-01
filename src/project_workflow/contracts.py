@@ -14,6 +14,7 @@ AGENT_CHOICES = {
 }
 
 PROMPT_FILES = [
+    "Architect.prompt.md",
     "Backlog.prompt.md",
     "Constitution.prompt.md",
     "Clarify.prompt.md",
@@ -31,6 +32,7 @@ PROMPT_FILES = [
 ]
 
 CODEX_SKILL_NAMES = [
+    "project-architect",
     "project-backlog",
     "project-constitution",
     "project-task",
@@ -61,7 +63,7 @@ WORKFLOW_CONFIG_FILENAME = "config.json"
 
 WORKFLOW_MANIFEST_FILENAME = "manifest.json"
 
-CURRENT_PACKAGE_VERSION = "0.9.2"
+CURRENT_PACKAGE_VERSION = "0.10.0"
 
 CURRENT_MANIFEST_VERSION = 1
 

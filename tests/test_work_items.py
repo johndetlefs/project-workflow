@@ -807,7 +807,7 @@ def test_task_status_validates_task_id_and_docs_path(tmp_path: Path) -> None:
         cwd=tmp_path,
     )
     assert missing_tracker.returncode != 0
-    assert "uvx --from project-workflow==0.9.2 project init" in missing_tracker.stderr
+    assert "uvx --from project-workflow==0.10.0 project init" in missing_tracker.stderr
 
     init = run_project(["init"], cwd=tmp_path)
     assert init.returncode == 0, init.stderr
