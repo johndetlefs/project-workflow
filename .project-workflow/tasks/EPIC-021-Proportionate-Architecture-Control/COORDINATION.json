@@ -1,0 +1,681 @@
+{
+  "boundary_decisions": [
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "after-plan-or-decomposition",
+      "capability_change": "Four children preserve the approved architecture contract, lifecycle enforcement, canonical host generation and integrated dogfood proof without consumer or delivery expansion.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:3de2cf52297cc06e965ceafff0087aa8139c16a4864b8f08290d27c9bb315445",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:efd2ada97a760901d0f584a98554099ebf4e8650af0e1f1f3efb9e19fe9155e3",
+      "source_revision": "ebcbf031fb54dafde7778dcc3a57ad81c96396fb",
+      "user_consequence": "Proceed sequentially from the architecture contract; retain independent real-host proof boundaries."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Repository evidence corrected loaded asset provenance from an unverified 10 to canonical asset version 8; approved capability and scope are unchanged.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:3de2cf52297cc06e965ceafff0087aa8139c16a4864b8f08290d27c9bb315445",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:efd2ada97a760901d0f584a98554099ebf4e8650af0e1f1f3efb9e19fe9155e3",
+      "source_revision": "ebcbf031fb54dafde7778dcc3a57ad81c96396fb",
+      "user_consequence": "Continue only with the exact loaded 0.9.2/asset-8/contract-2 context."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-113 establishes the approved classification, architecture-spine and source-bound authority contract with focused passing evidence; lifecycle enforcement and host proof remain assigned to later children.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:4026b8aec1397efb789fe410faa7321b96c32bf72cb34813d8df1ee324b86e0a",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:efd2ada97a760901d0f584a98554099ebf4e8650af0e1f1f3efb9e19fe9155e3",
+      "source_revision": "ebcbf031fb54dafde7778dcc3a57ad81c96396fb",
+      "user_consequence": "TASK-113 may enter Testing without claiming final lifecycle enforcement or host support."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-113 implementation evidence instantiates the approved architecture contract; no owner outcome, scope or proof boundary changed.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:4026b8aec1397efb789fe410faa7321b96c32bf72cb34813d8df1ee324b86e0a",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:efd2ada97a760901d0f584a98554099ebf4e8650af0e1f1f3efb9e19fe9155e3",
+      "source_revision": "ebcbf031fb54dafde7778dcc3a57ad81c96396fb",
+      "user_consequence": "Refresh the loaded context against current authority and continue the existing child lifecycle."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "TASK-113 adversarial findings were remediated; TASK-114 lifecycle enforcement and TASK-115 canonical host generation now implement the unchanged approved capability, with Claude unavailable retained as the approved honest blocker branch.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:0ac3a92665a8e9dc790fa2bb97fd1bb565e46ec8c564023e6060905fb521024c",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:efd2ada97a760901d0f584a98554099ebf4e8650af0e1f1f3efb9e19fe9155e3",
+      "source_revision": "ebcbf031fb54dafde7778dcc3a57ad81c96396fb",
+      "user_consequence": "Refresh current authority and run fixed-candidate validation without expanding into release or consumer adoption."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-unit-start",
+      "capability_change": "Begin fixed-candidate verification for the implemented unchanged EPIC-021 scope.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:0ac3a92665a8e9dc790fa2bb97fd1bb565e46ec8c564023e6060905fb521024c",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:efd2ada97a760901d0f584a98554099ebf4e8650af0e1f1f3efb9e19fe9155e3",
+      "source_revision": "ebcbf031fb54dafde7778dcc3a57ad81c96396fb",
+      "user_consequence": "Verification may measure only the approved local architecture-control candidate; external delivery and consumers remain excluded."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "after-plan-or-decomposition",
+      "capability_change": "Current child requirements and implementations preserve the approved architecture contract, lifecycle enforcement, canonical host generation, host-specific proof and local dogfood closeout.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:0ac3a92665a8e9dc790fa2bb97fd1bb565e46ec8c564023e6060905fb521024c",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:efd2ada97a760901d0f584a98554099ebf4e8650af0e1f1f3efb9e19fe9155e3",
+      "source_revision": "ebcbf031fb54dafde7778dcc3a57ad81c96396fb",
+      "user_consequence": "Proceed with the four existing children and no consumer or external delivery work."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "Full local validation and exact-package journeys now support the unchanged child plans; the Claude runtime blocker and no-delivery boundary remain unchanged.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:93e4f9fc53cbd88a4eb8fcf1df65aca256d16c6509411f4eb2643f6660541100",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:efd2ada97a760901d0f584a98554099ebf4e8650af0e1f1f3efb9e19fe9155e3",
+      "source_revision": "ebcbf031fb54dafde7778dcc3a57ad81c96396fb",
+      "user_consequence": "Refresh authority, accept implementation returns into Testing, then run one integrated independent QA."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "unit-return-or-dependency-join",
+      "capability_change": "TASK-113 contract remediation, TASK-114 lifecycle enforcement, TASK-115 generated host entrypoints and TASK-116 fixed-candidate validation all return inside the approved envelope with current local evidence.",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:93e4f9fc53cbd88a4eb8fcf1df65aca256d16c6509411f4eb2643f6660541100",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:efd2ada97a760901d0f584a98554099ebf4e8650af0e1f1f3efb9e19fe9155e3",
+      "source_revision": "ebcbf031fb54dafde7778dcc3a57ad81c96396fb",
+      "user_consequence": "Move all children to Testing; do not claim final QA, governed host parity, release or adoption."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "none",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:21b301346c047385bd7190685cfc255086842f71151596136df8d1c7483ca351",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+      "source_revision": "3e34317a847f24ff64581c78d246adff93e29e27",
+      "user_consequence": "Integrated QA findings are resolved and the exact-candidate campaign passes without changing approved capability."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "none",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:21b301346c047385bd7190685cfc255086842f71151596136df8d1c7483ca351",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+      "source_revision": "3e34317a847f24ff64581c78d246adff93e29e27",
+      "user_consequence": "All child conformance, QA disposition, campaign and exact-candidate evidence are current for Review."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "none",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:f5052b05e999f7596cf13f238414b17dc7bfb951e5345d42f684070b482572be",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+      "source_revision": "3e34317a847f24ff64581c78d246adff93e29e27",
+      "user_consequence": "Review transitions changed tracker state only; all exact-candidate evidence and shared premises remain current for Complete."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "none",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:f5052b05e999f7596cf13f238414b17dc7bfb951e5345d42f684070b482572be",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+      "source_revision": "3e34317a847f24ff64581c78d246adff93e29e27",
+      "user_consequence": "Final QA field normalization and explicit parent-AC evidence preserve the approved capability; the exact code candidate is unchanged."
+    },
+    {
+      "affected_units": [
+        "TASK-114"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "none",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:db202c8b57ac6cf5c17f15bb56b9c422648af1a2f2b8b331c129c9050914af6d",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+      "source_revision": "3e34317a847f24ff64581c78d246adff93e29e27",
+      "user_consequence": "Parent AC6 evidence wording now states the same rejection positively; no capability, code candidate or proof changed."
+    },
+    {
+      "affected_units": [
+        "TASK-114"
+      ],
+      "amendment_identity": null,
+      "boundary": "new-evidence-or-owner-reframe",
+      "capability_change": "none",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:c1546655144b94c1eb6a455adedadf8171044182e78e4812feca632ce861ab22",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+      "source_revision": "3e34317a847f24ff64581c78d246adff93e29e27",
+      "user_consequence": "Final positive AC6 evidence wording preserves identical proof and scope."
+    },
+    {
+      "affected_units": [
+        "TASK-114"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "none",
+      "classification": "inside-envelope",
+      "decided_by": "Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:c1546655144b94c1eb6a455adedadf8171044182e78e4812feca632ce861ab22",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+      "source_revision": "3e34317a847f24ff64581c78d246adff93e29e27",
+      "user_consequence": "TASK-114 remains inside the approved lifecycle-conformance envelope with current exact-candidate proof."
+    },
+    {
+      "affected_units": [
+        "TASK-113",
+        "TASK-114",
+        "TASK-115",
+        "TASK-116"
+      ],
+      "amendment_identity": null,
+      "boundary": "before-review-or-complete",
+      "capability_change": "none",
+      "classification": "inside-envelope",
+      "decided_by": "Codex Coordinator",
+      "decision_date": "2026-09-01",
+      "intent_identity": "sha256:c1546655144b94c1eb6a455adedadf8171044182e78e4812feca632ce861ab22",
+      "relevant_ocs": [
+        "OC1",
+        "OC2",
+        "OC3",
+        "OC4",
+        "OC5",
+        "OC6",
+        "OC7"
+      ],
+      "shared_premises_valid": "yes",
+      "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+      "source_revision": "3e34317a847f24ff64581c78d246adff93e29e27",
+      "user_consequence": "The exact local candidate satisfies all parent ACs; Claude remains explicitly blocked and no external delivery or consumer-adoption claim is made."
+    }
+  ],
+  "decisions": [
+    "architecture-impact:material",
+    "bootstrap:establish-current-spine-before-production-change",
+    "execution:coordinator-sequential"
+  ],
+  "host_facts": {
+    "context_contract": "declared",
+    "telemetry": "unknown"
+  },
+  "intent_identity": "sha256:c1546655144b94c1eb6a455adedadf8171044182e78e4812feca632ce861ab22",
+  "last_boundary": {
+    "affected_units": [
+      "TASK-113",
+      "TASK-114",
+      "TASK-115",
+      "TASK-116"
+    ],
+    "amendment_identity": null,
+    "boundary": "before-review-or-complete",
+    "capability_change": "none",
+    "classification": "inside-envelope",
+    "decided_by": "Codex Coordinator",
+    "decision_date": "2026-09-01",
+    "intent_identity": "sha256:c1546655144b94c1eb6a455adedadf8171044182e78e4812feca632ce861ab22",
+    "relevant_ocs": [
+      "OC1",
+      "OC2",
+      "OC3",
+      "OC4",
+      "OC5",
+      "OC6",
+      "OC7"
+    ],
+    "shared_premises_valid": "yes",
+    "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+    "source_revision": "3e34317a847f24ff64581c78d246adff93e29e27",
+    "user_consequence": "The exact local candidate satisfies all parent ACs; Claude remains explicitly blocked and no external delivery or consumer-adoption claim is made."
+  },
+  "loaded_contract": {
+    "asset_version": "8",
+    "context_id": "root-architecture-control-2026-09-01",
+    "contract_version": "2",
+    "package_version": "0.9.2",
+    "recorded_at": "2026-09-01"
+  },
+  "next_action": "No further local lifecycle action; push, merge, release, deployment and consumer adoption require separate authority.",
+  "outcome_checkpoint": {
+    "checkpoint_unit": null,
+    "claim_class": "mechanical",
+    "record": null,
+    "required": false,
+    "status": "not-required"
+  },
+  "phase": "closeout",
+  "repositories": {
+    "project-workflow": {
+      "source_revision": "3e34317a847f24ff64581c78d246adff93e29e27"
+    }
+  },
+  "schema_version": 2,
+  "source_revision": "3e34317a847f24ff64581c78d246adff93e29e27",
+  "target_id": "EPIC-021",
+  "verification_campaign": {
+    "adapter": {
+      "capabilities": [],
+      "command": null,
+      "kind": "manual",
+      "manual_command": "Final retained-output regrade after parent-evidence wording correction."
+    },
+    "affected_scope": [
+      "EPIC-021 exact local candidate in project-workflow only"
+    ],
+    "candidate_identity": "git:3e34317a847f24ff64581c78d246adff93e29e27",
+    "claims": [
+      "proportionate-classification",
+      "fail-closed-readiness",
+      "architecture-conformance",
+      "canonical-host-generation",
+      "separate-host-canaries",
+      "dogfood"
+    ],
+    "current_stage": null,
+    "diagnostic_decision": null,
+    "impact": "known",
+    "intent_identity": "sha256:c1546655144b94c1eb6a455adedadf8171044182e78e4812feca632ce861ab22",
+    "limits": {
+      "max_elapsed_seconds": 3600,
+      "max_failures": 1,
+      "max_target_calls": 2
+    },
+    "mode": "certification",
+    "next_action": "Proceed to the one existing independent QA gate.",
+    "outcome": "pass",
+    "proof_contract_identity": "sha256:7377a7b401e1b507b6175291469202756742ba2e623e577125f80d8824373e70",
+    "receipt_ledger_identity": "sha256:d169c437929892c8447c4dea658a0c67edafb82568013194080d654e60b1f5c0",
+    "receipts": [
+      {
+        "artifact": ".project-workflow/tasks/EPIC-021-Proportionate-Architecture-Control/TASK-116-Dogfood-Architecture-Control-And-Closeout/VERIFICATION-RECEIPT.md",
+        "candidate_identity": "git:3e34317a847f24ff64581c78d246adff93e29e27",
+        "elapsed_seconds": 1,
+        "evaluator_identity": "final:deterministic",
+        "intent_identity": "sha256:c1546655144b94c1eb6a455adedadf8171044182e78e4812feca632ce861ab22",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:7377a7b401e1b507b6175291469202756742ba2e623e577125f80d8824373e70",
+        "receipt_identity": "sha256:78368936262aa64d1a2131cb926528ddae784fbe0eb7b6e719779bfd304ea7cf",
+        "recorded_at": "2026-09-01",
+        "regrade": false,
+        "runtime_identity": "retained-output:git-3e34317",
+        "scope": [
+          "final retained deterministic output"
+        ],
+        "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+        "stage": "deterministic",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "git:3e34317a847f24ff64581c78d246adff93e29e27"
+      },
+      {
+        "artifact": ".project-workflow/tasks/EPIC-021-Proportionate-Architecture-Control/TASK-115-Generate-Project-Architect-Host-Entrypoints/CANARY-CODEX.md",
+        "candidate_identity": "git:3e34317a847f24ff64581c78d246adff93e29e27",
+        "elapsed_seconds": 1,
+        "evaluator_identity": "final:canary",
+        "intent_identity": "sha256:c1546655144b94c1eb6a455adedadf8171044182e78e4812feca632ce861ab22",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:7377a7b401e1b507b6175291469202756742ba2e623e577125f80d8824373e70",
+        "receipt_identity": "sha256:0d590552f115080dbd9cb7446a8e857966f05a0bf4fea833001c6c41029e849d",
+        "recorded_at": "2026-09-01",
+        "regrade": false,
+        "runtime_identity": "retained-output:git-3e34317",
+        "scope": [
+          "final retained canary output"
+        ],
+        "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+        "stage": "canary",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "git:3e34317a847f24ff64581c78d246adff93e29e27"
+      },
+      {
+        "artifact": ".project-workflow/tasks/EPIC-021-Proportionate-Architecture-Control/TASK-116-Dogfood-Architecture-Control-And-Closeout/VERIFICATION-RECEIPT.md",
+        "candidate_identity": "git:3e34317a847f24ff64581c78d246adff93e29e27",
+        "elapsed_seconds": 1,
+        "evaluator_identity": "final:affected",
+        "intent_identity": "sha256:c1546655144b94c1eb6a455adedadf8171044182e78e4812feca632ce861ab22",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:7377a7b401e1b507b6175291469202756742ba2e623e577125f80d8824373e70",
+        "receipt_identity": "sha256:ed1541619b1475d939e73528269adfcca18a4ad406c938e10873651f8c3fc92e",
+        "recorded_at": "2026-09-01",
+        "regrade": false,
+        "runtime_identity": "retained-output:git-3e34317",
+        "scope": [
+          "final retained affected output"
+        ],
+        "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+        "stage": "affected",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "git:3e34317a847f24ff64581c78d246adff93e29e27"
+      },
+      {
+        "artifact": ".project-workflow/tasks/EPIC-021-Proportionate-Architecture-Control/TASK-116-Dogfood-Architecture-Control-And-Closeout/VERIFICATION-RECEIPT.md",
+        "candidate_identity": "git:3e34317a847f24ff64581c78d246adff93e29e27",
+        "elapsed_seconds": 1,
+        "evaluator_identity": "final:full",
+        "intent_identity": "sha256:c1546655144b94c1eb6a455adedadf8171044182e78e4812feca632ce861ab22",
+        "outcome": "pass",
+        "proof_contract_identity": "sha256:7377a7b401e1b507b6175291469202756742ba2e623e577125f80d8824373e70",
+        "receipt_identity": "sha256:ab1c05e8782193ca98fdf9b2be6033d622b7c1490a59b69aac9ea47bf24b6c73",
+        "recorded_at": "2026-09-01",
+        "regrade": false,
+        "runtime_identity": "retained-output:git-3e34317",
+        "scope": [
+          "final retained full output"
+        ],
+        "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+        "stage": "full",
+        "stage_complete": true,
+        "target_calls": 0,
+        "target_identity": "git:3e34317a847f24ff64581c78d246adff93e29e27"
+      }
+    ],
+    "schema_version": 1,
+    "source_identity": "sha256:25f705e1202debd07659ba86393bbc4d564fe06cc707dd3ba978d303227e12eb",
+    "stages": [
+      "deterministic",
+      "canary",
+      "affected",
+      "full"
+    ]
+  },
+  "verification_requirement": {
+    "affected_scope": [
+      "EPIC-021 exact local candidate in project-workflow only"
+    ],
+    "claims": [
+      "proportionate-classification",
+      "fail-closed-readiness",
+      "architecture-conformance",
+      "canonical-host-generation",
+      "separate-host-canaries",
+      "dogfood"
+    ],
+    "proof_contract_identity": "sha256:7377a7b401e1b507b6175291469202756742ba2e623e577125f80d8824373e70",
+    "required": true,
+    "stages": [
+      "deterministic",
+      "canary",
+      "affected",
+      "full"
+    ]
+  },
+  "work_item_path": ".project-workflow/tasks/EPIC-021-Proportionate-Architecture-Control"
+}
