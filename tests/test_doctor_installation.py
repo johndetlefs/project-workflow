@@ -33,7 +33,7 @@ def test_agent_mode_init_installs_doctor_guidance(tmp_path: Path) -> None:
     codex_agents = (codex_root / "AGENTS.md").read_text(encoding="utf-8")
     assert "# Existing Agent Notes" in codex_agents
     assert "<!-- project-workflow:start -->" in codex_agents
-    assert "uvx --from project-workflow==0.9.2 project init" in codex_agents
+    assert "uvx --from project-workflow==0.10.0 project init" in codex_agents
     assert "To initialize a new repository" in codex_agents
     assert "project upgrade" in codex_agents
     assert "Do not run init first" in codex_agents

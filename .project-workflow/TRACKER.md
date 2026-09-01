@@ -42,3 +42,4 @@
 | EPIC-019 | Structural Coherence And Maintainability | Complete | `tasks/EPIC-019-Structural-Coherence-And-Maintainability/REQUIREMENTS.md` |
 | EPIC-020 | Release Structural Cleanup And Upgrade All Projects | Complete | `tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/REQUIREMENTS.md` |
 | EPIC-021 | Proportionate Architecture Control | Complete | `tasks/EPIC-021-Proportionate-Architecture-Control/REQUIREMENTS.md` |
+| TASK-117 | Release Architecture Control 0.10.0 | In Progress | `tasks/TASK-117-Release-Architecture-Control-0-10-0/IMPLEMENTATION.md` |

@@ -26,8 +26,8 @@ receipt, release, adoption, and owner acceptance are separate proof layers.
 Install a new repository or upgrade an existing one through the canonical package:
 
 ```bash
-uvx --from project-workflow==0.9.2 project init --agent codex
-uvx --from project-workflow==0.9.2 project upgrade --agent codex
+uvx --from project-workflow==0.10.0 project init --agent codex
+uvx --from project-workflow==0.10.0 project upgrade --agent codex
 ```
 
 Create current Coordinator state for the approved work item before configuring execution. The
@@ -106,7 +106,7 @@ tracked and untracked product paths remain subject to the clean-source and seale
 
 ## Claude Code Adapter Status
 
-Project Workflow 0.9.2 does not claim Claude Code runtime certification. The adapter and managed
+Project Workflow 0.10.0 does not claim Claude Code runtime certification. The adapter and managed
 assets are packaged so the host-neutral boundary stays inspectable, but the current release has no
 real authenticated Claude Code canary. Material execution must therefore fail closed unless a later
 candidate proves the exact executable, authentication, hook activation, permissions, native limits,
