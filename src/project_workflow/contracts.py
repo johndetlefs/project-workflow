@@ -14,6 +14,7 @@ AGENT_CHOICES = {
 }
 
 PROMPT_FILES = [
+    "Architect.prompt.md",
     "Backlog.prompt.md",
     "Constitution.prompt.md",
     "Clarify.prompt.md",
@@ -31,6 +32,7 @@ PROMPT_FILES = [
 ]
 
 CODEX_SKILL_NAMES = [
+    "project-architect",
     "project-backlog",
     "project-constitution",
     "project-task",

@@ -29,6 +29,7 @@ jobs:
       - name: Run canonical static quality gates
         run: |
           uv run --locked python scripts/check_documentation.py
+          uv run --locked python scripts/build_architect_entrypoints.py --check
           uv run --locked python scripts/build_runtime_bundle.py --check
           uv run --locked ruff check src/project_workflow/*.py scripts tests
           uv run --locked ruff format --check src/project_workflow/*.py scripts tests

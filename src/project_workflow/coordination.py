@@ -13,6 +13,10 @@ from collections.abc import Callable, Mapping
 from dataclasses import asdict
 from pathlib import Path
 
+from .architecture import (
+    architecture_conformance_issues,
+    material_architecture_integrity_issues,
+)
 from .contracts import (
     COORDINATION_BOUNDARIES,
     COORDINATION_CONTRACT_VERSION,
@@ -2768,6 +2772,10 @@ def _update_global_tracker_row_status(
             testing_issues = _task_testing_integrity_issues(docs_text)
             if testing_issues:
                 raise SystemExit(_format_readiness_block(row_id, list(testing_issues)))
+        if _status_requires_task_readiness(new_status):
+            architecture_issues = material_architecture_integrity_issues(root, docs_text)
+            if architecture_issues:
+                raise SystemExit(_format_readiness_block(row_id, architecture_issues))
         if new_status == "Analysing" and not force and not _is_discovery_work(requirements_text):
             approval_issues = _approval_envelope_issues(
                 requirements_text,
@@ -2790,6 +2798,9 @@ def _update_global_tracker_row_status(
             )
             if repository_issues:
                 raise SystemExit(_format_readiness_block(row_id, repository_issues))
+            conformance_issues = architecture_conformance_issues(root, docs_text)
+            if conformance_issues:
+                raise SystemExit(_format_readiness_block(row_id, conformance_issues))
         if new_status == "Complete":
             if current_status != "Review":
                 raise SystemExit(
@@ -2869,7 +2880,6 @@ def _update_global_tracker_row_status(
 
         if current_status == new_status:
             return current_status, new_status
-
         row["Status"] = new_status
         line_idx = int(row["_line_idx"])
         lines[line_idx] = _format_global_tracker_row(row)
@@ -2916,6 +2926,16 @@ def _update_epic_child_status(
             testing_issues = _task_testing_integrity_issues(docs_path.read_text(encoding="utf-8"))
             if testing_issues:
                 raise SystemExit(_format_readiness_block(row_id, list(testing_issues)))
+        if _status_requires_epic_child_readiness(new_status) and new_status != "Complete":
+            docs_rel = _clean_markdown_cell_path(row.get("Docs", ""))
+            if not docs_rel:
+                raise SystemExit(f"{row_id} cannot move to {new_status} without a docs path.")
+            docs_path = root / ".project-workflow" / docs_rel
+            architecture_issues = material_architecture_integrity_issues(
+                root, docs_path.read_text(encoding="utf-8")
+            )
+            if architecture_issues:
+                raise SystemExit(_format_readiness_block(row_id, architecture_issues))
         if not force and not _epic_status_transition_allowed(current_status, new_status):
             raise SystemExit(
                 f"Illegal epic status transition for {row_id}: "
@@ -2968,6 +2988,9 @@ def _update_epic_child_status(
             )
             if repository_issues:
                 raise SystemExit(_format_readiness_block(row_id, repository_issues))
+            conformance_issues = architecture_conformance_issues(root, docs_text)
+            if conformance_issues:
+                raise SystemExit(_format_readiness_block(row_id, conformance_issues))
             if not _has_qa_review_evidence(
                 docs_text,
                 requirements_text=requirements_text,
@@ -3025,6 +3048,7 @@ def _update_epic_child_status(
                         implementation_text,
                     )
                 )
+                readiness_issues.extend(architecture_conformance_issues(root, implementation_text))
             if readiness_issues:
                 raise SystemExit(_format_readiness_block(row_id, readiness_issues))
         boundary = _coordination_transition_boundary(current_status, new_status)

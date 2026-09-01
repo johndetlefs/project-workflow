@@ -203,6 +203,17 @@ def disposable_workspace_implementation(*, completed: bool) -> str:
 
 As the workspace owner, I want one parent task to coordinate three repositories without creating child workflow state.
 
+## Architecture Impact
+
+- Classification: no
+- Reason: The fixture exercises existing workspace lifecycle and evidence behavior without changing architecture.
+- Architecture authority: Not applicable
+- Authority identity: Not applicable
+- Affected boundaries: None
+- Architecture decision: Not required
+- Measurable constraints: Not required
+- Conformance plan: Not required
+
 ## Acceptance Criteria
 
 - [{checkbox}] AC1: The parent task records valid repository scope, status, and evidence through handoff.
