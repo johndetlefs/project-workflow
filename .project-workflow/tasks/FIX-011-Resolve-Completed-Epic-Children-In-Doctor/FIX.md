@@ -4,7 +4,7 @@
 
 - Fix: FIX-011
 - Title: Resolve completed epic children in Doctor
-- Status: Review
+- Status: Complete
 - Created: 2026-11-11
 - Intent contract: compact
 
@@ -52,7 +52,7 @@ Restore Doctor and verification inspection for completed epic children, preservi
 ## Fix Plan
 
 - Scope: Lifecycle lookup, regression tests and generated runtime mirrors.
-- Non-goals: No release, version bump, repository upgrades, Massey workflow mutations or unrelated warning cleanup.
+- Non-goals: No unrelated feature or warning cleanup. Owner subsequently authorized 0.10.1 release, safe consumer upgrades and Massey closure; preserve active work.
 - Affected target: Verification projection and Doctor for terminal epic children.
 - Primary repo: .
 - Repos touched: .
@@ -78,14 +78,14 @@ Restore Doctor and verification inspection for completed epic children, preservi
 - Adjacent behavior checked: Completed children under active/completed parents retain provenance; duplicate global/epic IDs fail closed; global terminal lookup remains covered; active-only summaries exclude completed children.
 - Original acceptance criteria result: Not applicable
 - Regression evidence: New terminal epic-child test failed before implementation with the reported missing-item error and passes after correction; 33 focused verification/status tests pass; actual disposable consumer closure journey passes (below).
-- Residual risk: Unreleased candidate only. Existing installations retain the defect until a separately approved release and upgrade; no release or consumer upgrade is authorized now.
+- Residual risk: Implementation passed; public release and consumer adoption require the separate evidence below.
 
 ## Outcome
 
-- Disposition: Pending
-- Decision: ____
-- Closed by: ____
-- Closed date: ____
+- Disposition: Fixed
+- Decision: Owner accepted independently reviewed regression-tested correction and authorized release; release and adoption proof tracked separately.
+- Closed by: John Detlefs via Vimes
+- Closed date: 2026-11-11
 - Promoted to: None
 
 ## Outcome Journey
@@ -104,4 +104,16 @@ Restore Doctor and verification inspection for completed epic children, preservi
 - Reviewed scope: Canonical lookup, collector opt-in, provenance, default active status, duplicate-ID safety and generated mirrors.
 - Evidence: Independent terminal regression run: 3 passed; Doctor clean with 69 accepted warnings hidden; diff hygiene and generated mirror parity passed. Full-suite condition satisfied by 594 passing tests.
 - Findings: None.
-- Delivery boundary: Review only. Owner acceptance, merge and release remain pending.
+- Delivery boundary: Review only. Owner accepted the fix and authorized merge, release and safe rollout on 2026-11-11.
+
+## Authorized Release And Adoption
+
+- Owner direction: ship the tested fix, publish a release, bring applicable projects to current main and update Project Workflow while preserving work still in progress.
+- Version: 0.10.1, a backward-compatible defect patch with no schema change.
+- Source integration: PR #33 merged to main at 6e7d232.
+- Plan: prepare coherent version-owned source; pass locked checks, distribution receipt and exact-wheel journeys; independent bounded release review; merge after hosted CI; tag reviewed main and publish through protected trusted workflow.
+- Public proof: compare PyPI and GitHub exact artifacts, receipt and attestations; run isolated exact-version package journeys.
+- Adoption: inventory canonical roots, coordinate with Git parity audit, preserve dirty/in-flight roots, use exact public package and fingerprinted upgrade plans, verify no-op follow-up plans and Doctor separately.
+- Consumer closure: upgrade clean Massey canonical root, close TASK-009 through existing gates, verify Doctor, preserve Git evidence.
+- Stop conditions: failed proof, changed source, ambiguous root, dirty work or protected environment approval requirement. No destructive cleanup or overwriting local changes.
+- Release and rollout status: pending.

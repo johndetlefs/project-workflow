@@ -43,4 +43,4 @@
 | EPIC-020 | Release Structural Cleanup And Upgrade All Projects | Complete | `tasks/EPIC-020-Release-Structural-Cleanup-And-Upgrade-All-Projects/REQUIREMENTS.md` |
 | EPIC-021 | Proportionate Architecture Control | Complete | `tasks/EPIC-021-Proportionate-Architecture-Control/REQUIREMENTS.md` |
 | TASK-117 | Release Architecture Control 0.10.0 | Complete | `tasks/TASK-117-Release-Architecture-Control-0-10-0/IMPLEMENTATION.md` |
-| FIX-011 | Resolve completed epic children in Doctor | Review | `tasks/FIX-011-Resolve-Completed-Epic-Children-In-Doctor/FIX.md` |
+| FIX-011 | Resolve completed epic children in Doctor | Complete | `tasks/FIX-011-Resolve-Completed-Epic-Children-In-Doctor/FIX.md` |
