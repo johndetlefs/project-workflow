@@ -1,0 +1,14 @@
+[
+  {
+    "filename": "project_workflow-0.10.1-py3-none-any.whl",
+    "sha256": "308ae12dacee95bc61b29f381cf45c26b816d0a2f9ed7c8348010d914334c1a4",
+    "size": 548789,
+    "pypi_matches_github": true
+  },
+  {
+    "filename": "project_workflow-0.10.1.tar.gz",
+    "sha256": "e67a15f4f0aad231e609d8e4c196ebba3bad7727635c448e4cc9a014980cc143",
+    "size": 719682,
+    "pypi_matches_github": true
+  }
+]
