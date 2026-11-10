@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## 0.10.1 - 2026-11-11
+
+### Fixed
+
+- Doctor and verification inspection retain completed epic children, including children of completed epics, with their parent ownership and proof sources intact.
+- Duplicate work IDs fail closed during verification rather than preferring an active global row over a completed epic child.
+- Ordinary operational status remains active-only. No schema or lifecycle gate changes.
+
+### Verification
+
+- Regression coverage reproduces the former missing-child error and checks active/completed parent epics, read-only coordination, provenance and duplicate rejection.
+- The prior Claude Code runtime-certification limitation remains unchanged. Publication and consumer adoption are verified separately.
+
 ## 0.10.0 - 2026-09-01
 
 ### Added
