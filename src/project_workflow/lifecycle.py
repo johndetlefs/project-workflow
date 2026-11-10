@@ -243,6 +243,8 @@ def _parse_operational_epic_tracker(
 
 def _inspect_operational_active_work(
     root: Path,
+    *,
+    include_terminal: bool = False,
 ) -> tuple[tuple[OperationalStatusWorkItem, ...], tuple[OperationalStatusFinding, ...]]:
     workflow_dir = root / ".project-workflow"
     tracker_path = workflow_dir / "TRACKER.md"
@@ -332,7 +334,7 @@ def _inspect_operational_active_work(
                     (global_source,),
                 )
             )
-        if lifecycle not in OPERATIONAL_STATUS_GLOBAL_TERMINAL_STATES:
+        if include_terminal or lifecycle not in OPERATIONAL_STATUS_GLOBAL_TERMINAL_STATES:
             work_item = _operational_work_item_from_row(row, kind=kind, source=global_source)
             if work_item is not None:
                 active_work.append(work_item)
@@ -417,7 +419,7 @@ def _inspect_operational_active_work(
                     )
                 )
             child_is_active = lifecycle not in OPERATIONAL_STATUS_EPIC_CHILD_TERMINAL_STATES
-            if parent_is_active and child_is_active:
+            if include_terminal or (parent_is_active and child_is_active):
                 work_item = _operational_work_item_from_row(
                     row,
                     kind="epic-child",
@@ -426,7 +428,7 @@ def _inspect_operational_active_work(
                 )
                 if work_item is not None:
                     active_work.append(work_item)
-            elif not parent_is_active and child_is_active:
+            if not parent_is_active and child_is_active:
                 findings.append(
                     OperationalStatusFinding(
                         "PW_STATUS_CLOSED_EPIC_HAS_ACTIVE_CHILD",
