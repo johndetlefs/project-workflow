@@ -116,7 +116,7 @@ Restore Doctor and verification inspection for completed epic children, preservi
 - Adoption: inventory canonical roots, coordinate with Git parity audit, preserve dirty/in-flight roots, use exact public package and fingerprinted upgrade plans, verify no-op follow-up plans and Doctor separately.
 - Consumer closure: upgrade clean Massey canonical root, close TASK-009 through existing gates, verify Doctor, preserve Git evidence.
 - Stop conditions: failed proof, changed source, ambiguous root, dirty work or protected environment approval requirement. No destructive cleanup or overwriting local changes.
-- Release and rollout status: pending.
+- Release status: Published and independently verified. Clean-root rollout is tracked separately; dirty/in-progress roots are preserved.
 
 ## Independent Release Review
 
@@ -126,7 +126,23 @@ Restore Doctor and verification inspection for completed epic children, preservi
 - Correction: Preserve v0.10.0 as the historical certified baseline and explicitly make no new host-runtime certification claim for the patch.
 - Findings disposition: Resolved.
 - Affected proof: README/package metadata and final exact distribution identity; runtime implementation and tests unchanged.
-- Affected validation verdict: Pending final source/documentation gate and rebuilt exact distribution verification.
+- Affected validation verdict: Pass. Corrected source/documentation contract and rebuilt final candidate receipt/exact-wheel journeys passed; final hosted CI passed all locked checks.
 - Second QA commissioned: No.
 - Other reviewed release surfaces: coherent versions, workflow pins, generated parity, historical changelog and source ancestry passed.
 - Environment retry: Initial local exact-wheel journey saw inherited RUST_LOG INFO lines in version output; retry unsets that diagnostic variable without changing package or gates.
+
+## Published Release Receipt
+
+- Version: 0.10.1.
+- Reviewed release PR: https://github.com/johndetlefs/project-workflow/pull/34 .
+- Immutable tag/main commit: v0.10.1 at d1e478bd92852b7dfc7b7886ca9a654c7251a24c.
+- Main CI: https://github.com/johndetlefs/project-workflow/actions/runs/42921096694 passed.
+- Trusted release workflow: https://github.com/johndetlefs/project-workflow/actions/runs/42921581052 passed build, attestation, PyPI and GitHub publication.
+- Public release: https://github.com/johndetlefs/project-workflow/releases/tag/v0.10.1 .
+- Public package: https://pypi.org/project/project-workflow/0.10.1/ .
+- Independent verification: PyPI wheel and sdist are byte-identical to GitHub Release files and match the authoritative public receipt. Wheel attestation verification passed against the repository identity.
+- Isolated public install: `uvx --no-cache --no-config --isolated --from project-workflow==0.10.1 project --version` reports `project 0.10.1`.
+- Public exact-wheel journeys: fresh initialization for four guidance modes, current/legacy/no-op upgrades, Doctor and representative lifecycle journeys passed; see `evidence/0.10.1/public-package-journeys.json`.
+- Artifact identities: wheel `308ae12dacee95bc61b29f381cf45c26b816d0a2f9ed7c8348010d914334c1a4`; sdist `e67a15f4f0aad231e609d8e4c196ebba3bad7727635c448e4cc9a014980cc143`.
+- Local candidate and authoritative public archives are separate build identities. Public checks bind the exact attested release artifacts, not the earlier local archive bytes.
+- Consumer adoption: preserve per-root upgrade plan, no-op plan and Doctor evidence separately from publication; existing local changes and active work are not overwritten.
