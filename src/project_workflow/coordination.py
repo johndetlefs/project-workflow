@@ -47,7 +47,6 @@ from .contracts import (
     VERIFICATION_OPERATIONAL_STATES,
     VERIFICATION_RECEIPT_OUTCOMES,
     OperationalStatusProofLayer,
-    OperationalStatusSource,
 )
 from .lifecycle import (
     _approval_envelope_issues,
@@ -67,8 +66,6 @@ from .lifecycle import (
     _is_discovery_work,
     _legacy_adoption_evidence_untrusted,
     _operational_item_proof_layers,
-    _operational_status_global_kind,
-    _operational_work_item_from_row,
     _owner_acceptance_completion_issues,
     _parent_ac_evidence_present,
     _repository_evidence_issues,
@@ -712,23 +709,10 @@ def _coordination_source_identity(state: Mapping[str, object]) -> str:
 def _verification_work_item_layers(
     root: Path, target_id: str
 ) -> tuple[str, dict[str, OperationalStatusProofLayer]]:
-    work_items, _findings = _inspect_operational_active_work(root)
+    # Verification and Doctor must retain completed children and their Epic provenance.
+    # The ordinary operational summary remains active-only by default.
+    work_items, _findings = _inspect_operational_active_work(root, include_terminal=True)
     matches = [item for item in work_items if item.item_id == target_id]
-    if not matches:
-        tracker_path = root / ".project-workflow" / "TRACKER.md"
-        if tracker_path.is_file():
-            _lines, _header, rows = _global_tracker_rows(tracker_path)
-            terminal_rows = [row for row in rows if row.get("ID", "").strip() == target_id]
-            if len(terminal_rows) == 1:
-                item = _operational_work_item_from_row(
-                    terminal_rows[0],
-                    kind=_operational_status_global_kind(target_id),
-                    source=OperationalStatusSource(
-                        "global-tracker", ".project-workflow/TRACKER.md"
-                    ),
-                )
-                if item is not None:
-                    matches = [item]
     if len(matches) != 1:
         raise ValueError(
             f"Operational lifecycle contains {len(matches)} work items named {target_id}; "

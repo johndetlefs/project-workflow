@@ -223,6 +223,51 @@ def test_terminal_work_item_keeps_verification_campaign_inspectable(tmp_path: Pa
     assert projection["campaign_present"] is True
 
 
+@pytest.mark.parametrize("parent_status", ["In Progress", "Complete"])
+def test_terminal_epic_child_keeps_verification_inspectable(
+    tmp_path: Path, parent_status: str
+) -> None:
+    child_status = "Complete"
+    task_dir = fixture_repo(tmp_path, material_verification="no")
+    epic_dir = task_dir.parent / "EPIC-001-Parent"
+    epic_dir.mkdir()
+    child_dir = epic_dir / task_dir.name
+    task_dir.rename(child_dir)
+    (epic_dir / "REQUIREMENTS.md").write_text("# Parent requirements\n")
+    global_tracker = tmp_path / ".project-workflow/TRACKER.md"
+    global_tracker.write_text(
+        "| ID | Title | Status | Docs |\n|---|---|---|---|\n"
+        f"| EPIC-001 | Parent | {parent_status} | tasks/{epic_dir.name}/REQUIREMENTS.md |\n"
+    )
+    child_docs = f"tasks/{epic_dir.name}/{child_dir.name}/IMPLEMENTATION.md"
+    (epic_dir / "TRACKER.md").write_text(
+        "| ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        f"| TASK-001 | Bounded Verification | {child_status} | Task | AC1 | {child_docs} | | |\n"
+    )
+    state = workflow_cli._coordination_load_state(tmp_path, "TASK-001")
+    before = (child_dir / "COORDINATION.json").read_bytes()
+    projection = workflow_cli._verification_campaign_projection(tmp_path, "TASK-001", state)
+    assert projection["lifecycle"] == child_status
+    issues = []
+    workflow_cli._doctor_check_coordination_state(tmp_path, issues)
+    assert not any("Operational lifecycle contains" in issue.message for issue in issues)
+    assert (child_dir / "COORDINATION.json").read_bytes() == before
+    active, _ = workflow_cli._inspect_operational_active_work(tmp_path)
+    assert "TASK-001" not in {item.item_id for item in active}
+    all_items, _ = workflow_cli._inspect_operational_active_work(tmp_path, include_terminal=True)
+    child = next(item for item in all_items if item.item_id == "TASK-001")
+    assert child.kind == "epic-child"
+    assert workflow_cli._operational_work_item_facts(child)["owner_epic"] == "EPIC-001"
+    assert child.sources[0].kind == "epic-tracker"
+
+    # A global duplicate must not silently override the terminal child.
+    with global_tracker.open("a") as stream:
+        stream.write(f"| TASK-001 | Duplicate | In Progress | {child_docs} |\n")
+    with pytest.raises(ValueError, match="contains 2 work items"):
+        workflow_cli._verification_work_item_layers(tmp_path, "TASK-001")
+
+
 def test_incomplete_release_preflight_is_read_only_and_invokes_nothing(
     tmp_path: Path,
 ) -> None:
