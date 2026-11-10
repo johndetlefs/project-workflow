@@ -5,8 +5,8 @@ implemented, evidenced, reviewed work. Its state is plain Markdown and JSON besi
 people and coding agents can inspect the same requirements, status, decisions, and proof.
 
 Its repository guidance supports GitHub Copilot, Claude Code, OpenAI Codex, and Cursor. Sealed
-runtime enforcement has a narrower, versioned proof boundary: v0.10.1 is runtime-certified for
-Codex only. The packaged Claude Code adapter remains fail-closed and uncertified until its real
+runtime enforcement has a narrower, versioned proof boundary: v0.10.0 was runtime-certified for
+Codex only. The 0.10.1 patch makes no new host-runtime certification claim. The packaged Claude Code adapter remains fail-closed and uncertified until its real
 authenticated host canary passes; Cursor and GitHub Copilot are not sealed-runtime targets. Project
 Workflow complements issue trackers, Git hosts, CI, registries, and deployment platforms; it does
 not replace their authority.

@@ -117,3 +117,16 @@ Restore Doctor and verification inspection for completed epic children, preservi
 - Consumer closure: upgrade clean Massey canonical root, close TASK-009 through existing gates, verify Doctor, preserve Git evidence.
 - Stop conditions: failed proof, changed source, ambiguous root, dirty work or protected environment approval requirement. No destructive cleanup or overwriting local changes.
 - Release and rollout status: pending.
+
+## Independent Release Review
+
+- Reviewed candidate: e648244.
+- Original verdict: Changes requested.
+- Finding: README relabelled historical v0.10.0 Codex runtime certification as v0.10.1 without matching certification evidence.
+- Correction: Preserve v0.10.0 as the historical certified baseline and explicitly make no new host-runtime certification claim for the patch.
+- Findings disposition: Resolved.
+- Affected proof: README/package metadata and final exact distribution identity; runtime implementation and tests unchanged.
+- Affected validation verdict: Pending final source/documentation gate and rebuilt exact distribution verification.
+- Second QA commissioned: No.
+- Other reviewed release surfaces: coherent versions, workflow pins, generated parity, historical changelog and source ancestry passed.
+- Environment retry: Initial local exact-wheel journey saw inherited RUST_LOG INFO lines in version output; retry unsets that diagnostic variable without changing package or gates.
